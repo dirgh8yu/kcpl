@@ -9,8 +9,9 @@ import { getStaffContext } from "../../../admin/staff-directory.server";
 
 export const runtime = "nodejs";
 
-const WORKSPACES = new Set(["overview", "shipments", "customs", "delivery", "freight-documents", "pickups", "alerts", "finance", "payables"] as const);
-type WorkspaceParam = "overview" | "shipments" | "customs" | "delivery" | "freight-documents" | "pickups" | "alerts" | "finance" | "payables";
+// Only the Overview is arranged per person; registers keep one standard layout.
+const WORKSPACES = new Set(["overview"] as const);
+type WorkspaceParam = "overview";
 
 function resolveWorkspace(request: Request): WorkspaceParam | null {
   const url = new URL(request.url);

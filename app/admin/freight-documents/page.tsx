@@ -24,7 +24,7 @@ export default async function FreightDocumentsPage({ searchParams }: { searchPar
   const { shipment } = await searchParams;
   const focus = shipment?.trim().toUpperCase() ?? "";
   const rows = focus ? [...result.rows].sort((a, b) => Number(b.reference === focus) - Number(a.reference === focus)) : result.rows;
-  return <OperationsShell {...shellProps}><FreightDocumentsWorkspace initialRows={rows} initialSummary={result.summary} initialShipment={focus}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><FreightDocumentsWorkspace initialRows={rows} initialShipment={focus}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

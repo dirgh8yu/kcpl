@@ -2,7 +2,7 @@
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  GripVertical,
   MoreHorizontal,
   PackageCheck,
   Pencil,
@@ -35,26 +34,15 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
-  OpsKpiRail,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
   type OpsActiveFilter,
 } from "../operations-ui";
-import { ArrangeableGrid } from "../arrangeable-grid";
-import {
-  presetForStateIn,
-  savedLayoutForState,
-  WORKSPACE_PRESETS,
-  type SavedLayout,
-} from "../operations-arrangeable";
-import { CustomiseMenu, CustomiseRow } from "../ops-register";
-import { useStaffArrangement } from "../use-staff-arrangement";
 import { nepalInputToIso } from "../nepal-time";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
@@ -294,7 +282,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     cancelled: rows.filter((row) => row.status === "cancelled").length,
   };
 
-  const scheduledToday = rows.filter((row) => row.status === "confirmed" && kathmanduDateKey(rowWindowStart(row)) === todayKey).length;
   const hasSchedulable = rows.some((row) => row.status === "unscheduled" || row.status === "requested");
 
   const filtered = (() => {
@@ -473,42 +460,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     choose(next, "appointment");
   }
 
-  // Per-staff workspace layout: the summary rail and the register are arrangeable
-  // sections persisted server-side (same primitive as the Overview and Shipments).
-  const { customisable,
-    state: arrangement,
-    status: arrangeStatus,
-    applyState: setArrangement,
-    toggleHidden,
-    moveSectionToward,
-    resetArrangement,
-    saved,
-    saveCurrentAs,
-    deleteSaved,
-  } = useStaffArrangement("pickups");
-  const [arranging, setArranging] = useState(false);
-  const [arrangeMenu, setArrangeMenu] = useState(false);
-  const activePreset = presetForStateIn("pickups", arrangement);
-  const savedMatch = savedLayoutForState(saved, arrangement);
-  const onSectionKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>, id: "rail" | "register") => {
-      if (!arranging || event.defaultPrevented) return;
-      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        // Never steal arrows from text editing inside a section.
-        const target = event.target as HTMLElement | null;
-        if (target && target.closest("input, textarea, select")) return;
-        event.preventDefault();
-        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
-        return;
-      }
-      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
-        event.preventDefault();
-        toggleHidden(id);
-      }
-    },
-    [arranging, moveSectionToward, toggleHidden],
-  );
-
   return (
     <OpsPage className="pickups-workspace">
       <OpsPageHeader
@@ -529,69 +480,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
         )}
       />
 
-      {/* Per-staff layout controls. */}
-      <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow customisable={customisable}
-          arranging={arranging}
-          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
-          arrangeMenu={arrangeMenu}
-          onToggleMenu={() => setArrangeMenu(v => !v)}
-          arrangement={arrangement}
-          presets={WORKSPACE_PRESETS.pickups}
-          activePreset={activePreset}
-          applyPreset={preset => setArrangement(preset.layout)}
-          onReset={resetArrangement}
-          status={arrangeStatus}
-          sectionLabels={PICKUP_SECTION_LABELS}
-          saved={saved}
-          onSaveCurrent={saveCurrentAs}
-          onDeleteSaved={deleteSaved}
-          savedMatchId={savedMatch?.id ?? null}
-          onApplySaved={(layout: SavedLayout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
-        />
-        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={PICKUP_SECTION_LABELS}/>
-      </div>
-
-      {/* One flat rail, not five metric cards. Each segment activates the scope
-          it already mapped to; no new filtering logic. */}
-      <div className="px-4 pt-3 md:px-6">
-        <ArrangeableGrid
-          workspace="pickups"
-          state={arrangement}
-          onChange={setArrangement}
-          arranging={arranging}
-        >
-          {(id: "rail" | "register", { handleProps, hidden }) => {
-            if (hidden) return null;
-            const handle = (
-              <button
-                type="button"
-                className="ops-arrange-handle"
-                {...handleProps}
-                aria-label={`Move ${PICKUP_SECTION_LABELS[id]}`}
-                tabIndex={arranging ? 0 : -1}
-                onKeyDown={(event) => onSectionKeyDown(event, id)}
-              >
-                <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
-              </button>
-            );
-            if (id === "rail") {
-              return (
-        <div className="px-4 pt-3 md:px-6">
-          {handle}
-          <OpsKpiRail label="Pickup summary">
-          <OpsRailMetric label="To schedule" value={tabCounts.pending} tone="warning" active={focus === "pending"} onClick={() => updateFilters({ view: "pending", date: null })}/>
-          <OpsRailMetric label="Scheduled today" value={scheduledToday} tone="info" active={focus === "scheduled" && dateFilter === "today"} onClick={() => updateFilters({ view: "scheduled", date: "today" })}/>
-          <OpsRailMetric label="Driver assigned" value={summary.driver_assigned} active={focus === "assigned"} onClick={() => updateFilters({ view: "assigned", date: null })}/>
-          <OpsRailMetric label="Picked up" value={tabCounts.completed} tone="success" active={focus === "completed"} onClick={() => updateFilters({ view: "completed", date: null })}/>
-          <OpsRailMetric label="Attention" value={tabCounts.attention} tone="danger" active={focus === "attention"} onClick={() => updateFilters({ view: "attention", date: null })} title="Missed or overdue pickups"/>
-        </OpsKpiRail>
-              </div>
-            );
-          }
-          return (
       <div className="px-4 pb-8 pt-4 md:px-6">
-        {handle}
         {notice ? <div className="mb-3"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
 
         <OpsRegisterToolbar
@@ -834,10 +723,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
             </aside>
           ) : null}
         </div>
-          </div>
-            );
-          }}
-        </ArrangeableGrid>
       </div>
     </OpsPage>
   );
@@ -846,12 +731,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 function EditorClose({ label, onClose }: { label: string; onClose: () => void }) {
   return <button type="button" className="ops-inspector-close" onClick={onClose} aria-label={`Close ${label} editor`}><X size={14} strokeWidth={1.75} aria-hidden="true"/></button>;
 }
-
-/** Sections exposed to the workspace-layout customise primitive. */
-const PICKUP_SECTION_LABELS: Record<"rail" | "register", string> = {
-  rail: "Pickup summary",
-  register: "Pickup register",
-};
 
 const STEP_STATE_LABELS = { done: "Done", current: "Next", future: "", danger: "Missed" } as const;
 

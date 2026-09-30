@@ -24,12 +24,10 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
-  OpsKpiRail,
   OpsMono,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
@@ -67,24 +65,12 @@ type ApiResponse = {
 type Focus = "all" | "delayed" | "stale" | "customs" | "delivery";
 
 const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
-  { value: "all", label: "All feeds" },
-  { value: "delayed", label: "ETA delayed" },
-  { value: "stale", label: "Stale feeds" },
-  { value: "customs", label: "Customs" },
+  { value: "all", label: "All" },
+  { value: "delayed", label: "Running late" },
+  { value: "stale", label: "Gone quiet" },
+  { value: "customs", label: "At customs" },
   { value: "delivery", label: "Out for delivery" },
 ];
-
-// Module scope, not component scope: a Set built during render has a new identity
-// every time, so listing it in a dependency array would make the memo recompute on
-// every render anyway, and omitting it is what the lint rule flags. The milestones
-// are a fixed list, so they belong next to the other module constants.
-const DESTINATION_MILESTONES: ReadonlySet<TrackingMilestone> = new Set<TrackingMilestone>([
-  "arrived_destination",
-  "import_customs",
-  "out_for_delivery",
-  "delivery_attempted",
-  "delivery_refused",
-]);
 
 function dateTime(value: string | null) {
   if (!value) return "Not recorded";
@@ -153,17 +139,14 @@ function rowMatchesFocus(row: VisibilityShipment, focus: Focus) {
 
 export function TrackingVisibilityWorkspace({
   initialRows,
-  initialSummary,
   canSweep,
   initialShipment = "",
 }: {
   initialRows: VisibilityShipment[];
-  initialSummary: VisibilitySummary;
   canSweep: boolean;
   initialShipment?: string;
 }) {
   const [rows, setRows] = useState(initialRows);
-  const [summary, setSummary] = useState(initialSummary);
   const { params, search, update } = useWorkspaceQuery();
   const portalContainer = useAdminPortalContainer();
   const query = params.get("q") ?? "";
@@ -270,18 +253,6 @@ export function TrackingVisibilityWorkspace({
     [rows],
   );
 
-  const atDestination = useMemo(
-    () =>
-      rows.filter(
-        (row) =>
-          row.status !== "delivered" &&
-          row.last_milestone &&
-          DESTINATION_MILESTONES.has(row.last_milestone),
-      ).length,
-    [rows],
-  );
-
-  const freshFeeds = Math.max(0, summary.active - summary.stale);
 
   const providerHealth = useMemo(() => {
     const providers = new Map<
@@ -410,7 +381,6 @@ export function TrackingVisibilityWorkspace({
       if (!response.ok || !data.ok || !data.rows || !data.summary)
         throw new Error(data.error || "Visibility could not be refreshed.");
       setRows(data.rows);
-      setSummary(data.summary);
       if (
         selectedReference &&
         !data.rows.some((row) => row.reference === selectedReference)
@@ -496,19 +466,6 @@ export function TrackingVisibilityWorkspace({
           </>
         )}
       />
-
-      {/* One rail instead of six icon cards. Segments that already mapped to a
-          visibility scope keep exactly that behaviour; the rest are statistics. */}
-      <div className="px-4 pt-3 md:px-6">
-        <OpsKpiRail label="Live visibility summary">
-          <OpsRailMetric label="Active shipments" value={summary.active} active={focus === "all"} onClick={() => update({ view: null, page: null, selected: null })}/>
-          <OpsRailMetric label="Fresh feeds" value={freshFeeds} tone="success"/>
-          <OpsRailMetric label="ETA delayed" value={summary.delayed} tone="warning" active={focus === "delayed"} onClick={() => update({ view: focus === "delayed" ? null : "delayed", page: null, selected: null })}/>
-          <OpsRailMetric label="Stale feeds" value={summary.stale} tone="danger" active={focus === "stale"} onClick={() => update({ view: focus === "stale" ? null : "stale", page: null, selected: null })}/>
-          <OpsRailMetric label="At destination" value={atDestination}/>
-          <OpsRailMetric label="Out for delivery" value={summary.out_for_delivery} tone="info" active={focus === "delivery"} onClick={() => update({ view: focus === "delivery" ? null : "delivery", page: null, selected: null })}/>
-        </OpsKpiRail>
-      </div>
 
       <div className="px-4 pb-8 pt-4 md:px-6">
         {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}

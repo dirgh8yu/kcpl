@@ -4,7 +4,7 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowDown, ArrowRight, ArrowUp, PackagePlus, Trash2, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
   consolidationSavings,
@@ -93,8 +93,6 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
   const totals = selectedLoad ? loadTotals(selectedLoad.members.map((member) => ({ weight_kg: member.weight_kg, volume_cbm: member.volume_cbm, pieces: member.pieces, container_count: member.container_count }))) : null;
   const baselines = selectedLoad ? selectedCostBaselines(selectedLoad.members) : {};
   const savings = selectedLoad ? consolidationSavings(selectedLoad) : null;
-  const bookedLoads = loads.filter((load) => load.status === "booked").length;
-  const draftLoads = loads.filter((load) => load.status === "draft").length;
 
   function replaceLoad(next: TmsConsolidationLoad) {
     setLoads((current) => current.map((load) => load.id === next.id ? next : load));
@@ -243,12 +241,6 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
-        <OpsKpiRail label="Load planner summary">
-          <OpsRailMetric label="Loads" value={loads.length}/>
-          <OpsRailMetric label="Draft planning" value={draftLoads} tone={draftLoads ? "warning" : "neutral"} active={scope === "draft"} onClick={() => setScope(scope === "draft" ? "all" : "draft")} title="Show loads still in draft planning"/>
-          <OpsRailMetric label="Booked masters" value={bookedLoads} active={scope === "booked"} onClick={() => setScope(scope === "booked" ? "all" : "booked")} title="Show booked master loads"/>
-          <OpsRailMetric label="Unassigned orders" value={eligibleOrders.length}/>
-        </OpsKpiRail>
 
         {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 

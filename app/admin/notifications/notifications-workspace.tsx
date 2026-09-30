@@ -13,12 +13,10 @@ import {
   OpsButton,
   OpsEmptyState,
   OpsFilterSelect,
-  OpsKpiRail,
   OpsMono,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
@@ -83,13 +81,6 @@ function ageLabel(value: string) {
   if (hours < 48) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
-
-const STATE_TABS: Array<{ value: StateFilter; label: string }> = [
-  { value: "all", label: "All states" },
-  { value: "unread", label: "Unread" },
-  { value: "read", label: "Read" },
-  { value: "resolved", label: "Resolved" },
-];
 
 export function NotificationsWorkspace() {
   const router = useRouter();
@@ -209,7 +200,6 @@ export function NotificationsWorkspace() {
   }
 
   const setCategory = (value: "all" | NotificationCategory) => update({ category: value === "all" ? null : value });
-  const setState = (value: StateFilter) => update({ state: value === "all" ? null : value });
   const setSeverity = (value: SeverityFilter) => update({ severity: value === "all" ? null : value });
   const filtersActive = Boolean(query.trim()) || category !== "all" || state !== "all" || severity !== "all" || view !== "all";
 
@@ -240,16 +230,6 @@ export function NotificationsWorkspace() {
         )}
       />
 
-      <div className="px-4 pt-3 md:px-6">
-        <OpsKpiRail label="Notification summary">
-          <OpsRailMetric label="Unread" value={counts.unread} tone="info" active={state === "unread"} onClick={() => setState(state === "unread" ? "all" : "unread")}/>
-          <OpsRailMetric label="Critical" value={counts.critical} tone="danger" active={severity === "critical"} onClick={() => setSeverity(severity === "critical" ? "all" : "critical")} title="Critical severity, unresolved"/>
-          <OpsRailMetric label="Warning" value={counts.warning} tone="warning" active={severity === "warning"} onClick={() => setSeverity(severity === "warning" ? "all" : "warning")} title="Warning severity, unresolved"/>
-          <OpsRailMetric label="Today's transitions" value={counts.transitions} active={view === "transitions"} onClick={() => update({ view: view === "transitions" ? null : "transitions" })} title="Register status changes today (NPT)"/>
-          <OpsRailMetric label="Resolved" value={counts.resolved} tone="success" active={state === "resolved"} onClick={() => setState(state === "resolved" ? "all" : "resolved")}/>
-        </OpsKpiRail>
-      </div>
-
       <div className="px-4 pb-8 md:px-6">
         {error ? <div className="mb-3"><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
 
@@ -257,24 +237,23 @@ export function NotificationsWorkspace() {
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>}
           actions={(
             <>
+              <OpsFilterSelect label="Type" value={category} allLabel="All types" options={notificationCategories.map((item) => ({ value: item, label: notificationCategoryLabels[item] }))} onChange={(value) => setCategory(value as "all" | NotificationCategory)}/>
               <OpsFilterSelect label="Severity" value={severity} allLabel="All severities" options={[{ value: "critical", label: `Critical (${counts.critical})` }, { value: "warning", label: `Warning (${counts.warning})` }, { value: "info", label: "Info" }]} onChange={(value) => setSeverity(value as SeverityFilter)}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{filtered.length} shown</span>
             </>
           )}
-          tabs={(
-            <div className="notifications-toolbar-tabs">
-              <OpsScopeTabs label="Notification view" items={[{ value: "all", label: "All notifications" }, { value: "transitions", label: "Today’s transitions", count: counts.transitions }]} value={view} onChange={(value) => update({ view: value === "all" ? null : value })}/>
-              <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <OpsScopeTabs label="Notification category filters" items={notificationCategories.map((item) => ({ value: item, label: notificationCategoryLabels[item] }))} value={category} onChange={(value) => setCategory(value as "all" | NotificationCategory)}/>
-              <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <OpsScopeTabs label="Notification state filters" items={STATE_TABS.map((tab) => ({ value: tab.value, label: tab.label, count: tab.value === "unread" ? counts.unread : tab.value === "resolved" ? counts.resolved : undefined }))} value={state} onChange={(value) => setState(value as StateFilter)}/>
-            </div>
-          )}
+          // One row: what to show. Type and severity are dropdowns beside the search.
+          tabs={<OpsScopeTabs label="Show" value={view === "transitions" ? "transitions" : state === "unread" || state === "resolved" ? state : "all"} onChange={(value) => update(value === "transitions" ? { view: "transitions", state: null } : { view: null, state: value === "all" ? null : value })} items={[
+            { value: "all", label: "All" },
+            { value: "unread", label: "Unread", count: counts.unread },
+            { value: "resolved", label: "Resolved", count: counts.resolved },
+            { value: "transitions", label: "Today’s status changes", count: counts.transitions },
+          ]}/>}
         />
 
-        <section className="notifications-sparkline" aria-label="Register transitions, last 7 days">
+        {view === "transitions" ? <section className="notifications-sparkline" aria-label="Register transitions, last 7 days">
           <div className="notifications-sparkline-head">
             <Activity size={14} strokeWidth={1.75} aria-hidden="true"/>
             <strong>Register transitions</strong>
@@ -291,7 +270,7 @@ export function NotificationsWorkspace() {
               </div>
             ))}
           </div>
-        </section>
+        </section> : null}
 
         <section className="ops-surface" aria-label="Notification history">
           {loading && !data ? <OpsEmptyState compact icon={<Bell size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Loading notifications" description="Retrieving retained operational signals."/> : filtered.length ? filtered.map((item) => {

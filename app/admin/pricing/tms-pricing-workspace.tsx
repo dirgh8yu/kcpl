@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Calculator, CheckCircle2, CircleAlert, FilePlus2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import {
   deriveNrbMidpointFxRate,
@@ -95,9 +95,6 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? null;
   const customer = customers.find((item) => item.id === selectedOrder?.customer_id) ?? null;
   const matchedRule = selectedOrder ? resolvePricingRule(rules, selectedOrder) : null;
-  const pricedCount = orders.filter((order) => order.pricing_status === "priced" || order.pricing_status === "quoted").length;
-  const approvalCount = orders.filter((order) => order.pricing_status === "approval_required").length;
-  const quotedCount = orders.filter((order) => order.pricing_status === "quoted").length;
 
   const defaults = rulePricingDefaults(matchedRule, customer?.markup_percent ?? null);
 
@@ -246,12 +243,6 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
-      <OpsKpiRail label="Pricing summary">
-        <OpsRailMetric label="Priceable orders" value={orders.length}/>
-        <OpsRailMetric label="Priced" value={pricedCount}/>
-        <OpsRailMetric label="Approval queue" value={approvalCount} tone={approvalCount ? "warning" : "neutral"} active={scope === "approval_required"} onClick={() => setScope(scope === "approval_required" ? "all" : "approval_required")} title="Show orders awaiting Management approval"/>
-        <OpsRailMetric label="Quotes released" value={quotedCount} active={scope === "quoted"} onClick={() => setScope(scope === "quoted" ? "all" : "quoted")} title="Show orders with a released customer quote"/>
-      </OpsKpiRail>
 
       {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
       {showRuleForm && canManageRules ? <div className="plan-panel"><PricingRuleForm customers={customers} rules={rules} onClose={() => setShowRuleForm(false)} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}

@@ -31,11 +31,9 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
-  OpsKpiRail,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
@@ -211,13 +209,6 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
-      {total ? <OpsKpiRail label="Partner network summary">
-        <OpsRailMetric label="Active network" value={dashboard.active_count} active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")} title="Show active partners"/>
-        <OpsRailMetric label="Preferred" value={dashboard.preferred_count}/>
-        <OpsRailMetric label="Countries" value={dashboard.country_count}/>
-        {financialVisible ? <OpsRailMetric label="Unlinked supplier bills" value={dashboard.unlinked_supplier_bills} tone={dashboard.unlinked_supplier_bills ? "warning" : "neutral"}/> : null}
-        {financialVisible && dashboard.legacy_name_linked_bill_count ? <OpsRailMetric label="Legacy name links" value={dashboard.legacy_name_linked_bill_count} tone="warning"/> : <OpsRailMetric label="Partner records" value={total}/>}
-      </OpsKpiRail> : null}
 
       {notice ? <div className="network-notice"><OpsNotice tone={noticeTone(notice)} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 

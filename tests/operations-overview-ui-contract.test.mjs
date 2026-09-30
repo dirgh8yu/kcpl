@@ -14,17 +14,19 @@ const financePath = new URL("../app/admin/command-centre/overview-finance.server
 const notesPath = new URL("../app/admin/command-centre/operational-notes.server.ts", import.meta.url);
 
 // The operational questions the first screen must answer.
+// The questions the Overview answers, in the words staff read on it.
 const operationalCapabilities = [
-  "Requires attention",
-  "Customs",
-  "Overdue",
-  "Due today",
-  "Unassigned",
+  "Next steps",
+  "At customs",
+  "Overdue tasks",
+  "Deliveries due today",
+  "Shipments with no owner",
   "In transit",
-  "Attention required",
+  "Mine",
+  "Everyone",
   "Today",
-  "POD overdue",
-  "Missing documents",
+  "Proof of delivery overdue",
+  "Documents missing",
   "Shipment workload",
   "Recent activity",
   "Finance snapshot",

@@ -16,10 +16,9 @@ import {
   type CrmAccountStatus,
   type CrmCreateCustomerInput,
   type CrmCustomerSummary,
-  type CrmDashboardStats,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 
@@ -40,27 +39,14 @@ function formatMoney(value: number, currency: string) {
   catch { return `${currency} ${value.toLocaleString("en-AU")}`; }
 }
 
-function computeStats(customers: CrmCustomerSummary[]): CrmDashboardStats {
-  return {
-    total: customers.length,
-    prospects: customers.filter((customer) => customer.account_status === "prospect").length,
-    active: customers.filter((customer) => customer.account_status === "active").length,
-    dormant: customers.filter((customer) => customer.account_status === "dormant").length,
-    onHold: customers.filter((customer) => customer.account_status === "on_hold").length,
-    blacklisted: customers.filter((customer) => customer.account_status === "blacklisted").length,
-    followUpsDue: customers.reduce((total, customer) => total + customer.follow_up_count, 0),
-  };
-}
-
 function csv(value: string) { return [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))]; }
 
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
-export function CrmDashboard({ initialCustomers, initialStats, userName, userEmail, commercialVisible, jump }: { initialCustomers: CrmCustomerSummary[]; initialStats: CrmDashboardStats; userName: string; userEmail: string; commercialVisible: boolean; /** Header control for opening a Customer 360 directly. */ jump?: ReactNode }) {
+export function CrmDashboard({ initialCustomers, userName, userEmail, commercialVisible, jump }: { initialCustomers: CrmCustomerSummary[]; userName: string; userEmail: string; commercialVisible: boolean; /** Header control for opening a Customer 360 directly. */ jump?: ReactNode }) {
   const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));
   const [customers, setCustomers] = useState(buyerCustomers);
-  const [stats, setStats] = useState(buyerCustomers.length === initialCustomers.length ? initialStats : computeStats(buyerCustomers));
   const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | CrmAccountStatus>("all");
@@ -108,7 +94,7 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
       }
       if (!response.ok || !data.customer) throw new Error(data.error || "Could not create the CRM record.");
       const next = [data.customer, ...customers];
-      setCustomers(next); setStats(computeStats(next)); setSelectedId(data.customer.id); setShowCreate(false); resetForm(); setNotice(`${data.customer.display_name} added to KCPL CRM.`);
+      setCustomers(next); setSelectedId(data.customer.id); setShowCreate(false); resetForm(); setNotice(`${data.customer.display_name} added to KCPL CRM.`);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create the CRM record."); }
     finally { setSaving(false); }
   }
@@ -153,23 +139,13 @@ export function CrmDashboard({ initialCustomers, initialStats, userName, userEma
       <OpsPageHeader
         title="Customers"
         description="Accounts that buy KCPL freight and logistics services. Carriers, agents and suppliers live in Partners."
-        meta={<span>Working as {userName}</span>}
         actions={<>
           {jump}
-          <OpsButton variant="primary" onClick={openNew} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New record</OpsButton>
+          <OpsButton variant="primary" onClick={openNew} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New customer</OpsButton>
         </>}
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
-        <OpsKpiRail label="Customer summary">
-          <OpsRailMetric label="Records" value={stats.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")}/>
-          <OpsRailMetric label="Prospects" value={stats.prospects} active={statusFilter === "prospect"} onClick={() => setStatusFilter(statusFilter === "prospect" ? "all" : "prospect")}/>
-          <OpsRailMetric label="Active" value={stats.active} active={statusFilter === "active"} onClick={() => setStatusFilter(statusFilter === "active" ? "all" : "active")}/>
-          <OpsRailMetric label="Dormant" value={stats.dormant} active={statusFilter === "dormant"} onClick={() => setStatusFilter(statusFilter === "dormant" ? "all" : "dormant")}/>
-          <OpsRailMetric label="On hold" value={stats.onHold} tone={stats.onHold ? "warning" : "neutral"} active={statusFilter === "on_hold"} onClick={() => setStatusFilter(statusFilter === "on_hold" ? "all" : "on_hold")}/>
-          <OpsRailMetric label="Follow-ups" value={stats.followUpsDue} tone={stats.followUpsDue ? "warning" : "neutral"}/>
-        </OpsKpiRail>
-
         {notice ? <div className="plan-notice"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
         {showCreate ? <div ref={createRef} className="plan-panel crm-create"><CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/></div> : null}

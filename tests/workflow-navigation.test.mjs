@@ -191,8 +191,21 @@ test("only the Overview is customisable; registers keep one standard layout", as
   assert.deepEqual([...CUSTOMISABLE_WORKSPACES], ["overview"]);
   const hook = readFileSync(repoFile("app/admin/use-staff-arrangement.ts"), "utf8");
   assert.match(hook, /if \(!customisable\) return;/);
-  const row = readFileSync(repoFile("app/admin/ops-register.tsx"), "utf8");
-  assert.match(row, /if \(!customisable\) return null;/);
+  // Registers render their one layout directly: no drag grid, no hidden
+  // "Move section" handles, no layout hook.
+  for (const path of [
+    "app/admin/shipments/shipments-workspace.tsx",
+    "app/admin/pickups/pickup-appointments-workspace.tsx",
+    "app/admin/customs/customs-workspace.tsx",
+    "app/admin/delivery/delivery-workspace.tsx",
+    "app/admin/freight-documents/freight-documents-workspace.tsx",
+    "app/admin/alerts/alerts-workspace.tsx",
+    "app/admin/finance/finance-workspace.tsx",
+    "app/admin/payables/payables-workspace.tsx",
+  ]) {
+    const source = readFileSync(repoFile(path), "utf8");
+    assert.doesNotMatch(source, /ArrangeableGrid|useStaffArrangement|CustomiseRow/, path);
+  }
 });
 
 test("operations search deep-links quote results into the enquiries workspace", () => {

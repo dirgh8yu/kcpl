@@ -534,7 +534,7 @@
 .kcpl-admin-content .shipment-next-action-cell[data-tone="danger"] { color: var(--admin-danger); font-weight: 500; }
 .kcpl-admin-content .shipment-next-action-cell[data-tone="warning"] { color: var(--admin-warning); font-weight: 500; }
 .kcpl-admin-content .shipment-next-action-cell[data-tone="success"] { color: var(--admin-success); }
-.kcpl-admin-content .shipments-register-table { min-width: 1120px; }
+.kcpl-admin-content .shipments-register-table { min-width: 880px; }
 
 /* Header action cluster (Export / Import / New shipment). */
 .kcpl-admin-content .shipments-actions,
@@ -1120,35 +1120,27 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   min-height: calc(100dvh - var(--app-toolbar-height));
   padding-bottom: 24px;
 }
-.kcpl-admin-content .alerts-toolbar-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.kcpl-admin-content .alerts-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.kcpl-admin-content .alerts-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); transition: background-color var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-content .alerts-row:last-child { border-bottom: 0; }
 .kcpl-admin-content .alerts-row:hover { background: var(--admin-canvas); }
 .kcpl-admin-content .alerts-row[data-critical="true"] { background: color-mix(in srgb, var(--admin-danger) 3%, var(--admin-surface)); }
 .kcpl-admin-content .alerts-row[data-resolved] { opacity: .72; }
-.kcpl-admin-content .alerts-row-icon { flex: none; margin-top: 2px; }
+.kcpl-admin-content .alerts-row-icon { display: flex; flex: none; }
 .kcpl-admin-content .alerts-severity-icon[data-tone="danger"] { color: var(--admin-danger); }
 .kcpl-admin-content .alerts-severity-icon[data-tone="warning"] { color: var(--admin-warning); }
 .kcpl-admin-content .alerts-severity-icon[data-tone="info"] { color: var(--admin-info); }
 .kcpl-admin-content .alerts-row-main { min-width: 0; flex: 1; }
-.kcpl-admin-content .alerts-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
-.kcpl-admin-content .alerts-row-owner { color: var(--admin-muted); font-size: 12px; }
-.kcpl-admin-content .alerts-row-type { color: var(--admin-muted); font-size: 12px; font-weight: 550; }
-.kcpl-admin-content .alerts-row-tick { flex: none; width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--admin-crimson); }
-.kcpl-admin-content .alerts-row-age { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--admin-muted); font-size: 12px; white-space: nowrap; }
-.kcpl-admin-content .alerts-row-title { color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
+.kcpl-admin-content .alerts-row-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--admin-ink); font-size: 13.5px; line-height: 19px; }
+.kcpl-admin-content .alerts-row-sub { overflow: hidden; margin-top: 2px; color: var(--admin-muted); font-size: 12.5px; line-height: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.kcpl-admin-content .alerts-row-tick { flex: none; width: 16px; height: 16px; cursor: pointer; accent-color: var(--admin-crimson); }
 .kcpl-admin-content .alerts-row-link { color: inherit; font-weight: 550; text-decoration: none; }
 .kcpl-admin-content .alerts-row-link:hover { text-decoration: underline; text-underline-offset: 3px; }
-/* Registers keep one standard layout (only the Overview is customisable), so
- * their sections carry no drag handle. This sheet loads on every staff page;
- * arrangeable-grid.css does not, which left the handles showing unstyled. */
-.kcpl-admin-content .ops-arrange-grid:not([data-arrange-workspace="overview"]):not([data-arranging]) .ops-arrange-handle { display: none; }
-.kcpl-admin-content .alerts-row-detail { margin-top: 3px; color: var(--admin-muted); font-size: 12.5px; line-height: 17px; }
-.kcpl-admin-content .alerts-row-context { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; color: var(--admin-faint); font-size: 11.5px; line-height: 15px; }
+.kcpl-admin-content .alerts-footnote { margin: 12px 2px 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
 .kcpl-admin-content .alerts-row-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 @media (max-width: 860px) {
   .kcpl-admin-content .alerts-row { flex-wrap: wrap; }
-  .kcpl-admin-content .alerts-row-actions { justify-content: flex-start; }
+  .kcpl-admin-content .alerts-row-sub { white-space: normal; }
+  .kcpl-admin-content .alerts-row-actions { width: 100%; justify-content: flex-start; padding-left: 56px; }
 }
 @media (max-width: 760px) {
   .kcpl-admin-content .alerts-workspace-page,
@@ -1192,7 +1184,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .notifications-row-detail { display: block; margin-top: 2px; color: var(--admin-muted); font-size: 13px; line-height: 18px; }
 .kcpl-admin-content .notifications-row-detail[data-unread] { color: var(--admin-ink); }
 .kcpl-admin-content .notifications-row-context { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; color: var(--admin-faint); font-size: 11.5px; line-height: 15px; }
-.kcpl-admin-content .notifications-toolbar-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 
 /* 7-day transitions sparkline: quiet volume context above the history list. */
 .kcpl-admin-content .notifications-sparkline {
@@ -2245,109 +2236,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-num[data-negative="true"] { color: var(--admin-danger); }
 .kcpl-admin-content .ops-num[data-warning="true"] { color: var(--admin-warning); }
 
-/* ── Workspace layout customise ─────────────────────────────────────── */
-
-.ops-customise-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.ops-customise-hint { flex: 1 1 240px; min-width: 0; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
-.ops-customise-status { color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.ops-customise-status[data-error] { color: var(--admin-danger); }
-.ops-preset-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--admin-line);
-  border-radius: 8px;
-}
-.ops-preset-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  border-radius: 6px;
-  padding: 3px 9px;
-  background: transparent;
-  color: var(--admin-muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 18px;
-  cursor: pointer;
-  transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out);
-}
-.ops-preset-button:hover { color: var(--admin-ink); background: var(--admin-surface-soft); }
-.ops-preset-button[aria-pressed="true"] { color: var(--admin-ink); font-weight: 600; }
-.ops-preset-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--admin-crimson); }
-.ops-preset-remove {
-  display: grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-  margin-left: 2px;
-  margin-right: -3px;
-  border-radius: 4px;
-  color: var(--admin-faint);
-  cursor: pointer;
-}
-.ops-preset-remove:hover { color: var(--admin-danger); background: var(--admin-surface-soft); }
-
-/* "Saved" confirmation cue: an occasional, explicit action earns feedback.
- * Enters with the shared ease-out, holds, then fades via the same animation
- * (1400ms hold + 200ms fade = the 2400ms the component keeps the flag). */
-.ops-preset-saved-cue {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--admin-success);
-  font-size: 12px;
-  font-weight: 550;
-  white-space: nowrap;
-  animation: ops-preset-saved-cue 2400ms var(--app-ease-out) forwards;
-}
-.ops-preset-saved-cue svg { color: var(--admin-success); }
-@keyframes ops-preset-saved-cue {
-  0% { opacity: 0; transform: translateX(-3px); }
-  8%, 92% { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ops-preset-saved-cue { animation: none; }
-}
-.ops-preset-save { display: inline-flex; align-items: center; gap: 6px; }
-.ops-preset-save input {
-  width: 150px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--admin-line);
-  border-radius: 6px;
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  font: inherit;
-  font-size: 12px;
-}
-.ops-preset-save input:focus-visible { outline: 2px solid var(--app-focus, #2e90fa); outline-offset: 1px; }
-.ops-customise-menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  border: 1px solid var(--admin-line);
-  border-radius: 8px;
-  background: var(--admin-surface);
-  margin-bottom: 12px;
-  padding: 10px 12px;
-}
-.ops-customise-item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; line-height: 24px; color: var(--admin-ink); cursor: pointer; }
-.ops-customise-item input { accent-color: var(--admin-crimson); }
-
-@media (prefers-reduced-motion: reduce) {
-  .ops-preset-button { transition: none; }
-}
 
 /* Shipment conversation (portal and Job File): the reader's own messages on
    the right, KCPL's or the customer's on the left, newest at the foot. */

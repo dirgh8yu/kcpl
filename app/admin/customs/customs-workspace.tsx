@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ChevronRight, Circle, GripVertical, ShieldAlert, Sparkles, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Circle, ShieldAlert, Sparkles, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import {
   OpsBadge,
@@ -11,39 +11,29 @@ import {
   OpsEmptyState,
   OpsFacts,
   OpsFact,
-  OpsFilterChoices,
-  OpsFilterMenu,
   OpsFilterSelect,
   OpsInlineAlert,
   OpsInspectorHeader,
   OpsInspectorSection,
-  OpsKpiRail,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
+  OpsScopeTabs,
   OpsRegisterToolbar,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
 import type { CustomsAgentOption } from "./customs-clearance";
-import { ArrangeableGrid } from "../arrangeable-grid";
-import "../arrangeable-grid.css";
-import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../operations-arrangeable";
 import type { SuggestedChecklist as SuggestedChecklistData } from "./checklist-recommender";
-import { useStaffArrangement } from "../use-staff-arrangement";
-import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { CustomsClearanceEditor } from "./customs-clearance-editor";
 import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import type { CustomsDeskRow } from "./customs-data.server";
 import { customsClearanceStatusLabels } from "./customs-policy";
 
 type RiskFilter = "all" | CustomsDeskRow["risk"];
-type StateFilter = "all" | CustomsDeskRow["state"];
+type StateFilter = "all" | "held" | CustomsDeskRow["state"];
 type Notice = { tone: "success" | "danger"; text: string } | null;
 
-type CustomsSectionId = "rail" | "queue";
-const CUSTOMS_SECTION_LABELS: Record<CustomsSectionId, string> = { rail: "Customs summary", queue: "Clearance queue" };
 
 function dateLabel(value: string | null) {
   if (!value) return "Not set";
@@ -83,14 +73,23 @@ export function stateLabel(state: CustomsDeskRow["state"]) {
   return "Blocked";
 }
 
+// "Held" is an authority hold recorded on the clearance, whatever stage the
+// checklist is at; the rest follow the clearance through its stages.
 const STATE_TABS: Array<{ value: StateFilter; label: string }> = [
   { value: "all", label: "All" },
   { value: "blocked", label: "Blocked" },
+  { value: "held", label: "Held" },
   { value: "in_progress", label: "In progress" },
   { value: "awaiting_release", label: "Awaiting release" },
   { value: "ready", label: "Checklist ready" },
-  { value: "released", label: "Customs released" },
+  { value: "released", label: "Released" },
 ];
+
+function inScope(row: CustomsDeskRow, scope: StateFilter) {
+  if (scope === "all") return true;
+  if (scope === "held") return row.clearance.status === "held";
+  return row.state === scope;
+}
 
 /**
  * Checklist suggested by comparable completed shipments on the same lane. The
@@ -250,22 +249,17 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
 
-  const blockedCount = useMemo(() => rows.filter((row) => row.state === "blocked").length, [rows]);
-  const heldCount = useMemo(() => rows.filter((row) => row.clearance.status === "held").length, [rows]);
-  const awaitingCount = useMemo(() => rows.filter((row) => row.state === "awaiting_release").length, [rows]);
-  const readyCount = useMemo(() => rows.filter((row) => row.state === "ready").length, [rows]);
-  const releasedCount = useMemo(() => rows.filter((row) => row.state === "released").length, [rows]);
   const branches = useMemo(() => kcplBranches.filter((item) => rows.some((row) => row.handling_branches.includes(item))), [rows]);
   const branchOptions = useMemo(() => branches.map((item) => ({ value: item, label: item })), [branches]);
 
-  const stateCounts = useMemo(() => Object.fromEntries(STATE_TABS.map((tab) => [tab.value, tab.value === "all" ? rows.length : rows.filter((row) => row.state === tab.value).length])) as Record<StateFilter, number>, [rows]);
+  const stateCounts = useMemo(() => Object.fromEntries(STATE_TABS.map((tab) => [tab.value, rows.filter((row) => inScope(row, tab.value)).length])) as Record<StateFilter, number>, [rows]);
 
   const visible = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return rows.filter((row) => {
       if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
       if (risk !== "all" && row.risk !== risk) return false;
-      if (state !== "all" && row.state !== state) return false;
+      if (!inScope(row, state)) return false;
       if (mine && !ownedBy(currentStaff, { email: row.assigned_to_email })) return false;
       if (!terms.length) return true;
       const haystack = [row.reference, row.quote_reference, row.customer_name, row.origin, row.destination, row.mode, row.document_direction, row.branch ?? "", row.assigned_to_name ?? "", row.assigned_to_email ?? "", row.current_location ?? "", row.clearance.status, row.clearance.entry_point ?? "", row.clearance.declaration_reference ?? "", row.clearance.agent_name ?? "", row.clearance.hold_reason ?? "", row.clearance.release_evidence ?? "", ...row.open_steps.map((step) => `${step.title} ${step.detail ?? ""}`), ...row.missing_documents.map((document) => `${document.label} ${document.reason}`), ...row.document_advisories, ...row.customs_integrity_warnings].join(" ").toLowerCase();
@@ -311,41 +305,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
   const compact = selected !== null;
   const inspectorRef = useRef<HTMLElement | null>(null);
 
-  // Per-staff workspace layout: summary rail and queue are
-  // arrangeable sections persisted server-side (same primitive as Overview).
-  const { customisable,
-    state: arrangement,
-    status: arrangeStatus,
-    applyState: setArrangement,
-    toggleHidden,
-    moveSectionToward,
-    resetArrangement,
-    saved,
-    saveCurrentAs,
-    deleteSaved,
-  } = useStaffArrangement("customs");
-  const [arranging, setArranging] = useState(false);
-  const [arrangeMenu, setArrangeMenu] = useState(false);
-  const activePreset = presetForStateIn("customs", arrangement);
-  const savedMatch = savedLayoutForState(saved, arrangement);
-  const onSectionKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>, id: CustomsSectionId) => {
-      if (!arranging || event.defaultPrevented) return;
-      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        const target = event.target as HTMLElement | null;
-        if (target && target.closest("input, textarea, select")) return;
-        event.preventDefault();
-        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
-        return;
-      }
-      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
-        event.preventDefault();
-        toggleHidden(id);
-      }
-    },
-    [arranging, moveSectionToward, toggleHidden],
-  );
-
   // Escape closes the inspector, as it does on the other registers.
   useEffect(() => {
     if (!selected) return;
@@ -375,61 +334,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
         description="Shipments waiting on customs. Record each release with its evidence."
       />
 
-      <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow customisable={customisable}
-          arranging={arranging}
-          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
-          arrangeMenu={arrangeMenu}
-          onToggleMenu={() => setArrangeMenu(v => !v)}
-          arrangement={arrangement}
-          presets={WORKSPACE_PRESETS.customs}
-          activePreset={activePreset}
-          applyPreset={preset => setArrangement(preset.layout)}
-          onReset={resetArrangement}
-          status={arrangeStatus}
-          sectionLabels={CUSTOMS_SECTION_LABELS}
-          saved={saved}
-          onSaveCurrent={saveCurrentAs}
-          onDeleteSaved={deleteSaved}
-          savedMatchId={savedMatch?.id ?? null}
-          onApplySaved={(layout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
-        />
-        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={CUSTOMS_SECTION_LABELS}/>
-      </div>
-
-      <ArrangeableGrid
-        workspace="customs"
-        state={arrangement}
-        onChange={setArrangement}
-        arranging={arranging}
-      >
-        {(id: CustomsSectionId, { handleProps, hidden }) => {
-          if (hidden) return null;
-          const handle = (
-            <button type="button" className="ops-arrange-handle" {...handleProps} aria-label={`Move ${CUSTOMS_SECTION_LABELS[id]}`} tabIndex={arranging ? 0 : -1} onKeyDown={(event) => onSectionKeyDown(event, id)}>
-              <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
-            </button>
-          );
-          if (id === "rail") {
-            return (
-              <div className="px-4 pt-3 md:px-6">
-                {handle}
-                <OpsKpiRail label="Customs summary">
-                  <OpsRailMetric label="Blocked" value={blockedCount} tone="danger" active={state === "blocked"} onClick={() => setStateFilter(state === "blocked" ? "all" : "blocked")} title="Shipments blocked in clearance"/>
-                  {/* Held is a reading, not a view: there is no held state to filter to. */}
-                  <OpsRailMetric label="Held" value={heldCount} tone="danger" title="Customs authority holds recorded"/>
-                  <OpsRailMetric label="In progress" value={stateCounts.in_progress} tone="info" active={state === "in_progress"} onClick={() => setStateFilter(state === "in_progress" ? "all" : "in_progress")} title="Clearance underway"/>
-                  <OpsRailMetric label="Awaiting release" value={awaitingCount} tone="warning" active={state === "awaiting_release"} onClick={() => setStateFilter(state === "awaiting_release" ? "all" : "awaiting_release")}/>
-                  <OpsRailMetric label="Checklist ready" value={readyCount} tone="info" active={state === "ready"} onClick={() => setStateFilter(state === "ready" ? "all" : "ready")}/>
-                  <OpsRailMetric label="Released" value={releasedCount} tone="success" active={state === "released"} onClick={() => setStateFilter(state === "released" ? "all" : "released")}/>
-                  <OpsRailMetric label="All shipments" value={rows.length} active={state === "all"} onClick={() => setStateFilter("all")}/>
-                </OpsKpiRail>
-              </div>
-            );
-          }
-          return (
       <div className="px-4 pb-8 md:px-6">
-        {handle}
         {notice ? <div className="mb-3"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
         <OpsRegisterToolbar
@@ -438,16 +343,13 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
             <>
               <OpsFilterSelect label="Branch" value={branch} allLabel="All branches" options={branchOptions} onChange={(value) => setBranch(value === "all" ? "all" : value as KcplBranch)}/>
               <OpsFilterSelect label="Risk" value={risk} allLabel="All risk" options={[{ value: "critical", label: "Critical" }, { value: "warning", label: "Warning" }, { value: "normal", label: "Normal" }]} onChange={(value) => setRisk(value as RiskFilter)}/>
-              <OpsFilterMenu count={(risk !== "all" ? 1 : 0) + (branch !== "all" ? 1 : 0)} onClear={() => { setRisk("all"); setBranch("all"); }}>
-                <OpsFilterChoices label="Risk" value={risk} options={[{ value: "all", label: "Any" }, { value: "critical", label: "Critical" }, { value: "warning", label: "Warning" }, { value: "normal", label: "Normal" }]} onChange={(value) => setRisk(value as RiskFilter)}/>
-                <OpsFilterChoices label="Branch" value={branch} options={[{ value: "all", label: "All branches" }, ...branchOptions]} onChange={(value) => setBranch(value === "all" ? "all" : value as KcplBranch)}/>
-              </OpsFilterMenu>
               <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{visible.length === rows.length ? `${rows.length} shipments` : `${visible.length} of ${rows.length}`}</span>
             </>
           )}
+          tabs={<OpsScopeTabs label="Clearance stage" items={STATE_TABS.map((tab) => ({ ...tab, count: stateCounts[tab.value] }))} value={state} onChange={setStateFilter}/>}
         />
 
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
@@ -520,9 +422,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
           {selected ? <Inspector row={selected} agents={customsAgents} busy={busy} onClose={() => updateSelectedReference(null)} onCompleteStep={completeStep} inspectorRef={inspectorRef}/> : null}
         </div>
       </div>
-          );
-        }}
-      </ArrangeableGrid>
     </div>
   </OpsPage>;
 }

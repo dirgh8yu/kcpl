@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { RECENT_DELIVERED_WINDOW } from "../operational-shipments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, GripVertical, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment-activity";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -15,15 +15,6 @@ import { compareWorkQueueImpact, type ReceivableExposure } from "../command-cent
 import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
 import { useFreshnessLabel, useRegisterSnapshot } from "../use-register-poll";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { ArrangeableGrid } from "../arrangeable-grid";
-import "../arrangeable-grid.css";
-import {
-  presetForStateIn,
-  savedLayoutForState,
-  WORKSPACE_PRESETS,
-} from "../operations-arrangeable";
-import { useStaffArrangement } from "../use-staff-arrangement";
-import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, useAdminPortalContainer } from "../operations-ui";
 import {
   ModeIcon,
@@ -50,7 +41,7 @@ const STATUS_FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: "In transit", value: "in_transit" },
   { label: "Customs", value: "customs_clearance" },
   { label: "Out for delivery", value: "out_for_delivery" },
-  { label: "Attention", value: "exception" },
+  { label: "Problem", value: "exception" },
   { label: "Delivered", value: "delivered" },
 ];
 
@@ -59,9 +50,6 @@ const VIEW_OPTIONS: Array<{ value: RegisterView; label: string; icon: typeof Tab
   { value: "cards", label: "Cards", icon: LayoutGrid },
   { value: "map", label: "Map", icon: MapIcon },
 ];
-
-type ShipmentSectionId = "rail" | "register";
-const SHIPMENT_SECTION_LABELS: Record<ShipmentSectionId, string> = { rail: "Summary rail", register: "Shipment register" };
 
 function formatNepalClock(value: string) {
   const parsed = new Date(value);
@@ -118,19 +106,9 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const setSelectedReference = useCallback((value: string | null) => update({ selected: value }), [update]);
 
   const modes = useMemo(() => modeOptions(data.jobs), [data.jobs]);
-  const overview = useMemo(() => {
-    let inTransit = 0;
-    let outForDelivery = 0;
-    let customs = 0;
-    let attentionCount = 0;
-    for (const job of data.jobs) {
-      if (job.status === "in_transit") inTransit += 1;
-      else if (job.status === "out_for_delivery") outForDelivery += 1;
-      else if (job.status === "customs_clearance") customs += 1;
-      if (shipmentNeedsAttention(job)) attentionCount += 1;
-    }
-    return { total: data.jobs.length, inTransit, outForDelivery, customs, attention: attentionCount };
-  }, [data.jobs]);
+  // "Needs action" is its own scope: anything whose next step is due, the same
+  // rule the Overview's work queue uses.
+  const needsActionCount = useMemo(() => data.jobs.filter(shipmentNeedsAttention).length, [data.jobs]);
   // Live-activity window: shipments whose newest job_activity entry is younger
   // than 15 minutes earn a quiet pulse badge on their register row. The clock
   // comes from the snapshot generation time, keeping render pure.
@@ -200,8 +178,8 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const selected = selectedReference ? filtered.find((job) => job.reference === selectedReference) ?? null : null;
   const activityHighlightId = params.get("a");
   const returnTo = `/admin/shipments${search}`;
-  const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(ownerFilter !== "all") + Number(attention) + Number(overdue) + Number(live) + Number(sort !== "priority");
-  const hasFilters = Boolean(query) || status !== "all" || advancedCount > 0;
+  const advancedCount = Number(branch !== "all") + Number(mode !== "all") + Number(ownerFilter !== "all") + Number(attention && status !== "all") + Number(overdue) + Number(live) + Number(sort !== "priority");
+  const hasFilters = Boolean(query) || status !== "all" || attention || advancedCount > 0;
 
   function resetFilters() {
     update({ q: null, status: null, branch: null, mode: null, owner: null, attention: null, overdue: null, live: null, sort: null, page: null, selected: null });
@@ -216,7 +194,8 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   if (branch !== "all") activeChips.push({ key: "branch", label: branch, clear: () => setBranch("all") });
   if (mode !== "all") activeChips.push({ key: "mode", label: mode, clear: () => setMode("all") });
   if (ownerFilter !== "all") activeChips.push({ key: "owner", label: "Unassigned", clear: () => setOwnerFilter("all") });
-  if (attention) activeChips.push({ key: "attention", label: "Needs attention", clear: () => setFilters({ attention: null }) });
+  // On its own "Needs action" is a scope chip; it only needs a removable chip when it narrows a status.
+  if (attention && status !== "all") activeChips.push({ key: "attention", label: "Needs action", clear: () => setFilters({ attention: null }) });
   if (overdue) activeChips.push({ key: "overdue", label: "Overdue", clear: () => setFilters({ overdue: null }) });
   if (live) activeChips.push({ key: "live", label: "Live activity", clear: () => setFilters({ live: null }) });
   if (sort !== "priority") activeChips.push({ key: "sort", label: "Recently updated", clear: () => setFilters({ sort: null }) });
@@ -230,44 +209,23 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
     return counts;
   }, [data.jobs]);
 
+  // "All", then "Needs action" (everything with a step due), then each status.
+  // Choosing a status leaves "Needs action" to the Filters menu, where it can
+  // narrow a status too.
+  const scopeChips: Array<{ key: string; label: string; count: number; active: boolean; tone?: "danger"; onClick: () => void }> = [
+    { key: "all", label: "All", count: statusCounts.get("all") ?? 0, active: status === "all" && !attention, onClick: () => setFilters({ status: null, attention: null }) },
+    { key: "attention", label: "Needs action", count: needsActionCount, active: status === "all" && attention, tone: needsActionCount ? "danger" : undefined, onClick: () => setFilters({ status: null, attention: attention && status === "all" ? null : "1" }) },
+    ...STATUS_FILTERS.filter((item) => item.value !== "all").map((item) => ({
+      key: item.value,
+      label: item.label,
+      count: statusCounts.get(item.value) ?? 0,
+      active: status === item.value,
+      onClick: () => setStatus(item.value),
+    })),
+  ];
+
   const handleExport = useCallback(() => exportShipmentsCsv(filtered), [filtered]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  // Per-staff workspace layout: the summary rail and the register are arrangeable
-  // sections persisted server-side (same primitive as the Overview).
-  const { customisable,
-    state: arrangement,
-    status: arrangeStatus,
-    applyState: setArrangement,
-    toggleHidden,
-    moveSectionToward,
-    resetArrangement,
-    saved,
-    saveCurrentAs,
-    deleteSaved,
-  } = useStaffArrangement("shipments");
-  const [arranging, setArranging] = useState(false);
-  const [arrangeMenu, setArrangeMenu] = useState(false);
-  const activePreset = presetForStateIn("shipments", arrangement);
-  const savedMatch = savedLayoutForState(saved, arrangement);
-  const onSectionKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>, id: ShipmentSectionId) => {
-      if (!arranging || event.defaultPrevented) return;
-      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        // Never steal arrows from text editing inside a section.
-        const target = event.target as HTMLElement | null;
-        if (target && target.closest("input, textarea, select")) return;
-        event.preventDefault();
-        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
-        return;
-      }
-      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
-        event.preventDefault();
-        toggleHidden(id);
-      }
-    },
-    [arranging, moveSectionToward, toggleHidden],
-  );
 
   // "Refreshed Xs ago": ticks once a minute alongside the poll so staff can
   // trust the register is live. Turns quiet-stale past 90s (hidden tab, or a
@@ -306,31 +264,6 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       >
       </OpsPageHeader>
 
-      {/* One flat operational rail, not five floating metric cards: the register
-          below is the actual working surface, so the summary stays quiet. Segments
-          reuse the existing status scopes — no new filtering logic. */}
-      <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow customisable={customisable}
-          arranging={arranging}
-          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
-          arrangeMenu={arrangeMenu}
-          onToggleMenu={() => setArrangeMenu(v => !v)}
-          arrangement={arrangement}
-          presets={WORKSPACE_PRESETS.shipments}
-          activePreset={activePreset}
-          applyPreset={preset => setArrangement(preset.layout)}
-          onReset={resetArrangement}
-          status={arrangeStatus}
-          sectionLabels={SHIPMENT_SECTION_LABELS}
-          saved={saved}
-          onSaveCurrent={saveCurrentAs}
-          onDeleteSaved={deleteSaved}
-          savedMatchId={savedMatch?.id ?? null}
-          onApplySaved={(layout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
-        />
-        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={SHIPMENT_SECTION_LABELS}/>
-      </div>
-
       {data.partial ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="warning">This snapshot reached a loading limit. Counts may be incomplete; confirm readiness in the Job File.</OpsNotice></div> : null}
       {data.delivered_window_full && (status === "delivered" || status === "all") ? <div className="px-4 py-4 md:px-6"><OpsNotice tone="neutral">Every open job is listed. Delivered jobs show the most recent {RECENT_DELIVERED_WINDOW}; search an older one by its full reference to open its Job File.</OpsNotice></div> : null}
 
@@ -341,23 +274,22 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
               <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ref, customer, route…" aria-label="Search shipments"/>
             </div>
 
-            <div className="shipments-status-filters" role="group" aria-label="Shipment status filters">
-              {STATUS_FILTERS.map((item) => {
-                const active = status === item.value;
-                return (
-                  <button
-                    key={item.value}
-                    type="button"
-                    className="shipments-filter-tab"
-                    data-active={active || undefined}
-                    aria-pressed={active}
-                    onClick={() => setStatus(item.value)}
-                  >
-                    {item.label}
-                    <span className="shipments-tab-count" aria-hidden="true">{statusCounts.get(item.value) ?? 0}</span>
-                  </button>
-                );
-              })}
+            {/* The one place counts show: each chip is a filter and says how many it holds. */}
+            <div className="shipments-status-filters" role="group" aria-label="Shipment filters">
+              {scopeChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  className="shipments-filter-tab"
+                  data-active={chip.active || undefined}
+                  data-tone={chip.tone}
+                  aria-pressed={chip.active}
+                  onClick={chip.onClick}
+                >
+                  {chip.label}
+                  <span className="shipments-tab-count">{chip.count}</span>
+                </button>
+              ))}
             </div>
 
             <div className="shipments-toolbar-actions">
@@ -409,8 +341,8 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                     <label className="shipments-filter-toggle" data-active={attention || undefined}>
                       <input type="checkbox" checked={attention} onChange={() => setFilters({ attention: attention ? null : "1" })}/>
                       <span className="shipments-filter-check" aria-hidden="true"><svg aria-hidden="true" fill="none" height="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 12 12" width="10"><path d="M2 6.5 5 9.5 10 3"/></svg></span>
-                      <strong>Needs attention</strong>
-                      <small>Exception, overdue work or missing assignment</small>
+                      <strong>Needs action</strong>
+                      <small>A problem, overdue work or no owner</small>
                     </label>
                     <label className="shipments-filter-toggle" data-active={overdue || undefined}>
                       <input type="checkbox" checked={overdue} onChange={() => setFilters({ overdue: overdue ? null : "1" })}/>
@@ -455,30 +387,6 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           </div>
         ) : null}
 
-        <ArrangeableGrid
-          workspace="shipments"
-          state={arrangement}
-          onChange={setArrangement}
-          arranging={arranging}
-        >
-          {(id: ShipmentSectionId, { handleProps, hidden }) => {
-            if (hidden) return null;
-            const handle = (
-              <button
-                type="button"
-                className="ops-arrange-handle"
-                {...handleProps}
-                aria-label={`Move ${SHIPMENT_SECTION_LABELS[id]}`}
-                tabIndex={arranging ? 0 : -1}
-                onKeyDown={(event) => onSectionKeyDown(event, id)}
-              >
-                <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
-              </button>
-            );
-            if (id === "register") {
-              return (
-            <>
-              {handle}
         {!filtered.length ? (
           <section className="ops-surface p-4" aria-label="Shipment register">
             <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={olderReference ? <Link href={`/admin/jobs/${encodeURIComponent(olderReference)}`} className="ops-button" data-variant="secondary" data-size="md">Open Job File {olderReference}</Link> : hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
@@ -495,15 +403,12 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                 <thead>
                   <tr>
                     <th className="shipments-tick-cell"><input type="checkbox" checked={allPageTicked} onChange={tickPage} aria-label="Select every shipment on this page"/></th>
-                    <th>Ref</th>
+                    <th>Shipment</th>
                     <th>Customer · Route</th>
-                    <th>Mode</th>
                     <th>Status</th>
-                    <th>Priority</th>
                     <th>Owner</th>
                     <th>ETA</th>
-                    <th>Updated</th>
-                    <th>Next action</th>
+                    <th>Next step</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -527,15 +432,17 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                         aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
                       >
                         <td className="shipments-tick-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}><input type="checkbox" checked={ticked.has(job.reference)} onChange={() => tick(job.reference)} aria-label={`Select ${job.reference}`}/></td>
-                        <td><span className="ops-mono text-xs font-medium text-[var(--admin-info)]">{job.reference}</span>{liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}</td>
-                        <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="mt-1 block"><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
-                        <td><span className="inline-flex items-center gap-1.5 text-sm text-[var(--admin-muted)]"><ModeIcon mode={job.mode} size={14}/>{job.mode || "—"}</span></td>
-                        <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></td>
-                        {/* Only a raised priority is worth a mark; "standard" on every row was noise. */}
-                        <td>{job.priority === "standard" ? null : <span className="shipments-priority" data-priority={job.priority}>{job.priority === "urgent" ? "Urgent" : "High"}</span>}</td>
+                        {/* The reference opens the Job File in one click; the rest of the row previews it here. */}
+                        <td>
+                          <Link href={`/admin/jobs/${encodeURIComponent(job.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="shipments-ref-link ops-mono" onClick={(event) => event.stopPropagation()}>{job.reference}</Link>
+                          {liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}
+                          {/* Only a raised priority is worth a mark; "standard" on every row was noise. */}
+                          {job.priority === "standard" ? null : <span className="shipments-priority" data-priority={job.priority}>{job.priority === "urgent" ? "Urgent" : "High"}</span>}
+                        </td>
+                        <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="shipments-route-line"><ModeIcon mode={job.mode} size={13}/><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
+                        <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge><span className="shipments-updated">{relativeAge(job.updated_at, data.generated_at)}</span></td>
                         <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
                         <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
-                        <td><span className="text-sm text-[var(--admin-muted)]">{relativeAge(job.updated_at, data.generated_at)}</span></td>
                         <td><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
                       </tr>
                     );
@@ -553,36 +460,11 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
             <div className="ops-pagination-actions"><OpsButton size="sm" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null }, "push")}>Previous</OpsButton><span>Page {page} of {pageCount}</span><OpsButton size="sm" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null }, "push")}>Next</OpsButton></div>
           </div>
         ) : null}
-            </>
-          );
-            }
-            // id === "rail": the summary rail section.
-            return (
-              <section className="shipments-kpi-rail" role="list" aria-label="Register volume summary" style={{ position: "relative" }}>
-                {handle}
-                <RailMetric label="Total" value={overview.total}/>
-                <RailMetric label="In transit" value={overview.inTransit} tone="info"/>
-                <RailMetric label="Delivery" value={overview.outForDelivery} tone="success"/>
-                <RailMetric label="Customs" value={overview.customs} tone="warning"/>
-                <RailMetric label="Attention" value={overview.attention} tone={overview.attention ? "danger" : "neutral"}/>
-              </section>
-            );
-          }}
-        </ArrangeableGrid>
       </div>
 
       {selected ? <ShipmentPanel job={selected} returnTo={returnTo} container={portalContainer} onClose={() => setSelectedReference(null)} highlightId={activityHighlightId} update={update} generatedAt={data.generated_at} laneCompletionsByStaff={laneCompletionsByStaff} staffDirectory={data.staff_load}/> : null}
     </OpsPage>
   );
-}
-
-function RailMetric({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "info" | "success" | "warning" | "danger" }) {
-  return (
-    <div className="shipments-kpi" role="listitem" data-tone={tone} data-zero={value === 0 || undefined}>
-      <span className="shipments-kpi-label">{label}</span>
-      <strong className="shipments-kpi-value">{value}</strong>
-    </div>
- );
 }
 
 function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update, generatedAt, laneCompletionsByStaff, staffDirectory }: { job: CommandCentreJob; returnTo: string; container: HTMLElement | null; onClose: () => void; highlightId: string | null; update: (values: Record<string, string | null>) => void; generatedAt: string; laneCompletionsByStaff: Map<string, Map<string, OwnerCandidateEvidence>>; staffDirectory: CommandCentreStaffLoad[] }) {

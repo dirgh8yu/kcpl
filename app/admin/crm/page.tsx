@@ -5,7 +5,7 @@ import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { CrmDashboard } from "./crm-dashboard";
-import { crmDashboardStats, listCrmCustomers } from "./crm-data.server";
+import { listCrmCustomers } from "./crm-data.server";
 import type { CrmCustomerSummary } from "./crm-data";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +68,7 @@ export default async function CrmPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <CrmDashboard initialCustomers={safeCustomers} initialStats={crmDashboardStats(safeCustomers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
+      <CrmDashboard initialCustomers={safeCustomers} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
     </OperationsShell>
   );
 }

@@ -5,21 +5,12 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 import { ChevronRight } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
 
 type ApiResponse = { ok: boolean; error?: string; order?: TmsOrder };
 
 type StatusFilter = "active" | "all" | TmsOrderStatus;
-
-const tabs = [
-  { label: "Orders", href: "/admin/rating", active: true },
-  { label: "Tenders", href: "/admin/tenders" },
-  { label: "Bookings", href: "/admin/tenders" },
-  { label: "Pickups", href: "/admin/pickups" },
-  { label: "Shipments", href: "/admin/shipments" },
-  { label: "Consolidations", href: "/admin/consolidation" },
-];
 
 const statusLabels: Record<TmsOrderStatus, string> = {
   draft: "Draft",
@@ -112,10 +103,6 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
   }, [branch, modeFilter, orders, query, status]);
 
   const selected = orders.find((order) => order.id === selectedOrderId) ?? filtered[0] ?? null;
-  const active = orders.filter((order) => !["booked", "cancelled"].includes(order.status)).length;
-  const tendering = orders.filter((order) => order.status === "tendering").length;
-  const ready = orders.filter((order) => order.status === "selected").length;
-  const booked = orders.filter((order) => order.status === "booked").length;
   const statusCounts = useMemo(() => {
     const byStatus = Object.fromEntries(Object.keys(statusLabels).map((key) => [key, orders.filter((order) => order.status === key).length])) as Record<TmsOrderStatus, number>;
     return { ...byStatus, active: orders.filter((order) => !["booked", "cancelled"].includes(order.status)).length, all: orders.length } as Record<StatusFilter, number>;
@@ -171,25 +158,12 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
       description="What carriers charge us for each order, and which one we chose."
       actions={(
         <>
-          <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate Desk</Link>
-          <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="md">Create Transport Order</button>
+          <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate desk</Link>
+          <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="md">New transport order</button>
         </>
       )}
     />
 
-    <div className="px-4 pt-3 md:px-6">
-      <OpsKpiRail label="Transport orders summary">
-        <OpsRailMetric label="Active" value={active} active={status === "active"} onClick={() => setStatus("active")}/>
-        <OpsRailMetric label="Rate selected" value={ready} tone="warning" active={status === "selected"} onClick={() => setStatus(status === "selected" ? "active" : "selected")} title="Ready to tender"/>
-        <OpsRailMetric label="Tendering" value={tendering} tone="info" active={status === "tendering"} onClick={() => setStatus(status === "tendering" ? "active" : "tendering")}/>
-        <OpsRailMetric label="Booked" value={booked} tone="success" active={status === "booked"} onClick={() => setStatus(status === "booked" ? "active" : "booked")}/>
-        <OpsRailMetric label="All orders" value={orders.length} active={status === "all"} onClick={() => setStatus("all")}/>
-      </OpsKpiRail>
-    </div>
-
-      <nav className="ops-scroll-x flex h-11 items-center gap-5 overflow-x-auto border-b border-[var(--admin-line)]" aria-label="Operations workflow">
-        {tabs.map((tab) => <Link key={tab.label} href={tab.href} className={`relative flex h-10 shrink-0 items-center justify-center px-2 text-[13px] font-medium leading-[19px] ${tab.active ? "text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[var(--admin-ink)]"}`}>{tab.label}{tab.active ? <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--admin-crimson)]"/> : null}</Link>)}
-      </nav>
 
       {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 

@@ -3,7 +3,6 @@ import { OperationsShell } from "../../operations-shell";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getStaffContext } from "../../staff-directory.server";
 import type { CrmCustomerSummary } from "../crm-data";
-import { crmDashboardStats } from "../crm-data.server";
 import { CrmDashboard } from "../crm-dashboard";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +17,7 @@ export default async function NewCustomerPage() {
   const customers: CrmCustomerSummary[] = [];
   return (
     <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
-      <CrmDashboard initialCustomers={customers} initialStats={crmDashboardStats(customers)} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
+      <CrmDashboard initialCustomers={customers} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
     </OperationsShell>
   );
 }

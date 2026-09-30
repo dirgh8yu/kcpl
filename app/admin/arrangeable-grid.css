@@ -1,12 +1,4 @@
 .ops-arrange-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.ops-arrange-grid[data-arrange-workspace="shipments"],
-.ops-arrange-grid[data-arrange-workspace="customs"],
-.ops-arrange-grid[data-arrange-workspace="delivery"],
-.ops-arrange-grid[data-arrange-workspace="freight-documents"],
-.ops-arrange-grid[data-arrange-workspace="pickups"],
-.ops-arrange-grid[data-arrange-workspace="alerts"],
-.ops-arrange-grid[data-arrange-workspace="finance"],
-.ops-arrange-grid[data-arrange-workspace="payables"] { grid-template-columns: minmax(0, 1fr); }
 .ops-arrange-item { position: relative; min-width: 0; }
 .ops-arrange-item[data-hidden] { display: none; }
 

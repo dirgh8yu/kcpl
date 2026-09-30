@@ -12,6 +12,7 @@ import {
   Clock3,
   FileText,
   GripVertical,
+  ListChecks,
   MoreHorizontal,
   PackageCheck,
   Plane,
@@ -21,7 +22,7 @@ import {
   UserRoundX,
   X,
 } from "lucide-react";
-import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
+import { shipmentStatusLabels } from "../../shipment-types";
 import { statusTone } from "../shipments/shipments-views";
 import {
   shipmentNeedsAttention,
@@ -29,7 +30,6 @@ import {
 } from "../shipments/shipment-queue-policy";
 import {
   compareWorkQueueImpact,
-  workQueueImpact,
   type ReceivableExposure,
 } from "./work-queue-impact";
 import { useWorkspaceQuery } from "../use-workspace-query";
@@ -51,6 +51,7 @@ import type { OverviewFinanceSnapshot } from "./overview-finance.server";
 import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
 import type { KcplStaffRole } from "../staff-permissions";
 import { BulkAssignBar } from "../bulk-assign-bar";
+import { ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import styles from "./overview-dashboard.module.css";
 import extras from "./overview-dashboard-extras.module.css";
 
@@ -77,6 +78,8 @@ type DashboardProps = {
   canPostNotes: boolean;
   /** Picks the Overview this person starts on until they arrange their own. */
   role: KcplStaffRole;
+  /** Who is signed in, so "Next steps" can open on their own work. */
+  currentStaff: CurrentStaff;
 };
 
 type CreateOrderResponse = {
@@ -85,14 +88,12 @@ type CreateOrderResponse = {
   order?: { id: string };
 };
 
-type Metric = { href: string; label: string; value: number; tone: Tone };
 
 const overviewSectionLabels: Record<OverviewSectionId, string> = {
   "work-queue": "Work queue",
   today: "Today",
   activity: "Recent activity",
   movement: "Live movement",
-  pulse: "Shipment counts",
   workload: "Shipment workload",
   finance: "Finance snapshot",
   notes: "Operational notes",
@@ -217,109 +218,13 @@ function money(amount: number, currency: string) {
   }
 }
 
-const PULSE_POLL_MS = 60_000;
-
-/** Compact live shipments summary for the Overview. Polls the same
- * register-refresh endpoint the shipments workspace uses — no new backend —
- * and keeps its own quiet state; failures and hidden tabs leave the last
- * server-rendered numbers in place. Rows list the shipments that changed
- * status since the previous snapshot, so the widget earns its "live" label. */
-function ShipmentsPulse({ initialData, returnTo }: { initialData: CommandCentreData; returnTo: string }) {
-  const [snapshot, setSnapshot] = useState(initialData);
-  const [changes, setChanges] = useState<Array<{ reference: string; to: ShipmentStatus }>>([]);
-  const appliedAtRef = useRef(Date.parse(initialData.generated_at) || 0);
-  const knownStatusesRef = useRef(new Map(initialData.jobs.map((job) => [job.reference, job.status])));
-
-  useEffect(() => {
-    let disposed = false;
-    const poll = () => {
-      if (document.visibilityState !== "visible") return;
-      fetch("/api/admin/shipments/queue", { cache: "no-store" })
-        .then(async (response) => {
-          if (!response.ok) return;
-          const result = await response.json() as { ok?: boolean; data?: CommandCentreData };
-          if (disposed || !result.ok || !result.data) return;
-          const incoming = result.data;
-          const generatedAt = Date.parse(incoming.generated_at) || 0;
-          if (generatedAt <= appliedAtRef.current) return;
-          // A partial snapshot must never replace a complete one.
-          if (!initialData.partial && incoming.partial) return;
-          appliedAtRef.current = generatedAt;
-          const nextChanges: Array<{ reference: string; to: ShipmentStatus }> = [];
-          for (const job of incoming.jobs) {
-            const before = knownStatusesRef.current.get(job.reference);
-            if (before && before !== job.status) nextChanges.push({ reference: job.reference, to: job.status });
-          }
-          knownStatusesRef.current = new Map(incoming.jobs.map((job) => [job.reference, job.status]));
-          setChanges(nextChanges.slice(0, 3));
-          setSnapshot(incoming);
-        })
-        .catch(() => { /* the widget keeps the last good snapshot */ });
-    };
-    const timer = window.setInterval(poll, PULSE_POLL_MS);
-    const onVisible = () => { if (document.visibilityState === "visible") poll(); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => { disposed = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
-  }, [initialData.partial]);
-
-  const active = snapshot.jobs.filter((job) => job.status !== "delivered");
-  const inTransit = active.filter((job) => job.status === "in_transit").length;
-  const outForDelivery = active.filter((job) => job.status === "out_for_delivery").length;
-  const customsHold = active.filter((job) => job.status === "customs_clearance").length;
-  const attention = active.filter(shipmentNeedsAttention).length;
-  const rows: Array<{ label: string; value: number; tone: Tone; href: string }> = [
-    { label: "In transit", value: inTransit, tone: "info", href: "/admin/shipments?status=in_transit" },
-    { label: "Delivery", value: outForDelivery, tone: "violet", href: "/admin/shipments?status=out_for_delivery" },
-    { label: "Customs", value: customsHold, tone: "warning", href: "/admin/shipments?status=customs_clearance" },
-    { label: "Attention", value: attention, tone: "danger", href: "/admin/shipments?attention=1" },
-  ];
-
-  return (
-    <section className={`${styles.card} ${extras.pulseCard}`} aria-labelledby="pulse-title">
-      <div className={styles.cardHead}>
-        <div className={styles.cardTitleRow}><h2 id="pulse-title">Shipments pulse</h2><span className={extras.pulseLive} aria-hidden="true" /></div>
-        <Link className={styles.headAction} href="/admin/shipments">Open register <ArrowRight size={13} strokeWidth={1.8} /></Link>
-      </div>
-      <div className={extras.pulseBody}>
-        {rows.map((row) => (
-          <Link key={row.label} href={row.href} className={extras.pulseRow}>
-            <span className={extras.pulseLabel}>{row.label}</span>
-            <span className={extras.pulseValue} data-tone={row.tone} data-zero={row.value === 0 || undefined}>{row.value}</span>
-          </Link>
-        ))}
-      </div>
-      <div className={extras.pulseFoot}>
-        {changes.length
-          ? changes.map((change) => (
-            <Link key={change.reference} href={jobHref(change.reference, returnTo)} className={extras.pulseChange}>
-              <span className={extras.pulseLive} aria-hidden="true" />
-              <span className={styles.monoRef}>{change.reference}</span> → {shipmentStatusLabels[change.to]}
-            </Link>
-          ))
-          : <span className={extras.pulseQuiet}>{active.length} active · live every minute</span>}
-      </div>
-    </section>
-  );
-}
-
-function KpiRail({ metrics }: { metrics: Metric[] }) {
-  return (
-    <section className={styles.kpiRail} aria-label="Operational pulse">
-      {metrics.map((metric) => (
-        <Link key={metric.label} href={metric.href} className={styles.kpiCell} data-tone={metric.tone} data-zero={metric.value === 0 || undefined}>
-          <span className={styles.kpiLabel}>{metric.label}</span>
-          <span className={styles.kpiValue}>{metric.value}</span>
-        </Link>
-      ))}
-    </section>
-  );
-}
-
 /**
- * The operational work queue. Rows stay records, not cards; the empty state is
- * a single quiet line because an empty queue is good news, not a feature.
+ * "Next steps": the shipments whose next step is due, most pressing first,
+ * each with the one thing to do and a link straight to that step. It opens on
+ * the signed-in person's own work when they have some; Everyone is one click.
+ * Rows stay records, not cards; an empty queue is a single quiet line.
  */
-function WorkQueue({ jobs, total, returnTo, generatedAt, impactContext }: { jobs: CommandCentreJob[]; total: number; returnTo: string; generatedAt: string; impactContext: { exposureByCustomer: Map<string, ReceivableExposure>; operationalDate: string; now: Date } }) {
+function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, returnTo, generatedAt }: { jobs: CommandCentreJob[]; total: number; mine: boolean; mineCount: number; everyoneCount: number; onMine: (mine: boolean) => void; returnTo: string; generatedAt: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const allVisibleSelected = jobs.length > 0 && jobs.every((job) => selected.has(job.reference));
 
@@ -342,47 +247,43 @@ function WorkQueue({ jobs, total, returnTo, generatedAt, impactContext }: { jobs
   }
 
   return (
-    <section className={styles.card} aria-label="Attention required">
+    <section className={styles.card} aria-labelledby="next-steps-title">
       <div className={styles.cardHead}>
         <div className={styles.cardTitleRow}>
-          <h2>Work queue</h2>
-          <span className={`${styles.headCount} ${total ? styles.headCountAlert : undefined}`}>{total}</span>
+          <h2 id="next-steps-title">Next steps</h2>
+          <div className={extras.queueScope} role="group" aria-label="Whose shipments">
+            <button type="button" aria-pressed={mine} data-active={mine || undefined} onClick={() => onMine(true)}>Mine<span>{mineCount}</span></button>
+            <button type="button" aria-pressed={!mine} data-active={!mine || undefined} onClick={() => onMine(false)}>Everyone<span>{everyoneCount}</span></button>
+          </div>
         </div>
-        <Link className={styles.headAction} href="/admin/shipments?attention=1">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
+        {total > jobs.length ? <Link className={styles.headAction} href="/admin/shipments?attention=1">See all {total} <ArrowRight size={13} strokeWidth={1.8} /></Link> : null}
       </div>
       {/* Ticked rows get one owner in one go; the bar only shows with a selection. */}
       <div className={extras.bulkSlot}><BulkAssignBar references={[...selected]} onClear={() => setSelected(new Set())}/></div>
       {jobs.length ? (
         <div className={styles.tableWrap}>
-          <table className={styles.table} aria-label="Shipments requiring attention">
+          <table className={`${styles.table} ${extras.nextStepsTable}`} aria-label="Shipments with a step due">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
-              <th>Reference</th><th>Customer</th><th>Status</th><th>Blocker</th><th>Impact</th><th>Owner</th><th>Age</th><th><span className={styles.srOnly}>Actions</span></th>
+              <th>Shipment</th><th>Status</th><th>Next step</th><th>Owner</th><th>Updated</th>
             </tr></thead>
             <tbody>
               {jobs.map((job) => {
-                const issue = shipmentNextAction(job);
+                const step = shipmentNextAction(job);
                 const age = ageShort(job.updated_at, generatedAt);
                 const jobOwner = owner(job);
                 const tone = statusTone(job.status);
-                const impact = workQueueImpact({
-                  job,
-                  exposure: job.customer_id ? impactContext.exposureByCustomer.get(job.customer_id) ?? null : null,
-                  operationalDate: impactContext.operationalDate,
-                  now: impactContext.now,
-                });
-                const leadFactor = impact.factors[0];
                 return (
                   <tr key={job.reference}>
                     <td><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
-                    <td><Link className={styles.referenceLink} href={jobHref(job.reference, returnTo)}>{job.reference}</Link></td>
-                    <td title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</td>
+                    <td>
+                      <Link className={styles.referenceLink} href={jobHref(job.reference, returnTo)}>{job.reference}</Link>
+                      <span className={extras.queueCustomer} title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</span>
+                    </td>
                     <td><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
-                    <td><Link href={withReturn(issue.href, returnTo)} className={styles.actionLink}>{issue.label}</Link></td>
-                    <td title={impact.factors.map((factor) => `${factor.label} (×${factor.weight})`).join(" · ")}><span className={styles.impactBadge} data-tier={impact.tier}>{leadFactor ? leadFactor.label : "Monitor"}</span></td>
+                    <td><Link href={withReturn(step.href, returnTo)} className={extras.nextStepLink} data-tone={step.tone}>{step.title}<ArrowRight size={12} strokeWidth={1.8} aria-hidden="true" /></Link></td>
                     <td><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
                     <td className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
-                    <td><Link className={styles.rowAction} href={jobHref(job.reference, returnTo)} aria-label={`Open ${job.reference}`}><MoreHorizontal size={15} strokeWidth={1.8} /></Link></td>
                   </tr>
                 );
               })}
@@ -392,7 +293,9 @@ function WorkQueue({ jobs, total, returnTo, generatedAt, impactContext }: { jobs
       ) : (
         <div className={styles.queueEmpty}>
           <CheckCircle2 size={15} strokeWidth={1.8} aria-hidden="true" />
-          <div><strong>All caught up</strong><span>No shipments currently require action.</span></div>
+          {mine && everyoneCount
+            ? <div><strong>Nothing needs you right now</strong><span>{everyoneCount} shipment{everyoneCount === 1 ? "" : "s"} need someone. <button type="button" className={extras.inlineLink} onClick={() => onMine(false)}>See everyone’s</button></span></div>
+            : <div><strong>All caught up</strong><span>No shipment has a step due.</span></div>}
         </div>
       )}
     </section>
@@ -417,27 +320,28 @@ function TodayPanel({ data, workflow, customs, arrivingToday }: { data: CommandC
     <section className={`${styles.card} ${styles.todayCard}`} aria-labelledby="today-title">
       <div className={styles.cardHead}>
         <div className={styles.cardTitleRow}><h2 id="today-title">Today</h2></div>
-        <Link className={styles.headAction} href="/admin/delivery">View calendar <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
       <div className={styles.todayList}>
-        <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="danger" icon={<Plane size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/alerts" label="Overdue tasks" value={data.totals.overdue_tasks} tone="danger" icon={<ListChecks size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/shipments?attention=1" label="Shipments with no owner" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/freight-documents" label="Documents missing" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/shipments?status=customs_clearance" label="At customs" value={customs} tone="warning" icon={<ShieldCheck size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="info" icon={<Plane size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/delivery" label="Deliveries due today" value={data.totals.deliveries_today} tone="info" icon={<PackageCheck size={13} strokeWidth={1.8} />} />
         <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="info" icon={<Plane size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/customs" label="Customs clearance" value={customs} tone="warning" icon={<ShieldCheck size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/delivery" label="POD overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/tenders" label="Booking approvals" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<PackageCheck size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/freight-documents" label="Missing documents" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/shipments?attention=1" label="Unassigned shipments" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/delivery" label="Proof of delivery overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={13} strokeWidth={1.8} />} />
+        <TodayItem href="/admin/tenders" label="Bookings to approve" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<Clock3 size={13} strokeWidth={1.8} />} />
       </div>
       {critical ? (
         <Link href="/admin/alerts" className={styles.todayCritical}>
           <AlertTriangle size={14} strokeWidth={1.8} aria-hidden="true" />
-          <span className={styles.todayFootCopy}><strong>{critical} critical blocker{critical === 1 ? "" : "s"}</strong><span>Require immediate attention</span></span>
+          <span className={styles.todayFootCopy}><strong>{critical} critical problem{critical === 1 ? "" : "s"}</strong><span>Open Tasks & alerts</span></span>
           <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
         </Link>
       ) : (
         <Link href="/admin/alerts" className={styles.todayClear}>
           <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden="true" />
-          <span className={styles.todayFootCopy}><strong>{critical === null ? "Critical blockers unavailable" : "No critical blockers"}</strong><span>{critical === null ? "Confirm in Tasks & Alerts" : "No unresolved critical automation alert"}</span></span>
+          <span className={styles.todayFootCopy}><strong>{critical === null ? "Couldn’t check for critical problems" : "No critical problems"}</strong><span>{critical === null ? "Open Tasks & alerts to check" : "Nothing critical is open in Tasks & alerts"}</span></span>
           <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
         </Link>
       )}
@@ -717,7 +621,7 @@ function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, clos
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes, role }: DashboardProps) {
+export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes, role, currentStaff }: DashboardProps) {
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherClosing, setLauncherClosing] = useState(false);
   // The unmount is deferred until the exit has played, so the timer has to be
@@ -755,10 +659,15 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
     () => activeShipments.filter(shipmentNeedsAttention).sort((a, b) => compareWorkQueueImpact(a, b, impactContext)),
     [activeShipments, impactContext],
   );
-  const attentionQueue = attentionShipments.slice(0, 6);
+  // Next steps opens on the person's own work when they have some; the choice
+  // is theirs after that and is remembered in this browser.
+  const myAttention = useMemo(() => attentionShipments.filter((job) => ownedBy(currentStaff, { uid: job.assigned_to_uid, email: job.assigned_to_email })), [attentionShipments, currentStaff]);
+  const [mine, setMine] = useMineFilter("overview", myAttention.length > 0);
+  const queueJobs = mine ? myAttention : attentionShipments;
+  const attentionQueue = queueJobs.slice(0, 8);
   const arrivingToday = activeShipments.filter((job) => job.eta?.slice(0, 10) === data.operational_date).length;
-  const inTransit = activeShipments.filter((job) => job.status === "in_transit").length;
-  const customs = workflow.visibility?.customs ?? activeShipments.filter((job) => job.status === "customs_clearance").length;
+  // Shipment status, so "At customs" agrees with the lists it links to.
+  const customs = activeShipments.filter((job) => job.status === "customs_clearance").length;
 
   const {
     state: arrangement,
@@ -793,14 +702,6 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
     [arranging, moveSectionToward, toggleHidden],
   );
 
-  const metrics: Metric[] = [
-    { href: "/admin/shipments?attention=1", label: "Requires attention", value: attentionShipments.length, tone: "danger" },
-    { href: "/admin/customs", label: "Customs pending", value: data.totals.customs_blockers, tone: "warning" },
-    { href: "/admin/alerts", label: "Overdue", value: data.totals.overdue_tasks, tone: "danger" },
-    { href: "/admin/delivery", label: "Due today", value: data.totals.deliveries_today, tone: "info" },
-    { href: "/admin/shipments?attention=1", label: "Unassigned", value: data.totals.unassigned_jobs, tone: "neutral" },
-    { href: "/admin/shipments?status=in_transit", label: "In transit", value: inTransit, tone: "info" },
-  ];
 
   return (
     <div className={styles.dashboard}>
@@ -816,6 +717,23 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
           </p>
         </div>
         <div className={styles.pageHeadActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              aria-pressed={arranging}
+              onClick={() => {
+                if (arranging) {
+                  setArranging(false);
+                  setArrangeMenu(false);
+                } else {
+                  setArrangeMenu(false);
+                  setArranging(true);
+                }
+              }}
+            >
+              <GripVertical size={14} strokeWidth={1.8} />
+              {arranging ? "Done" : "Customise"}
+            </button>
           <button type="button" className={styles.blackButton} onClick={openLauncher}>
             <Plus size={14} strokeWidth={2} /> New shipment
           </button>
@@ -824,26 +742,9 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
 
       {data.partial ? <div className={styles.warningBanner}><AlertTriangle size={15} strokeWidth={1.8} /><span>This operational snapshot reached a server loading limit. Counts may be incomplete; confirm the shipment record before acting.</span></div> : null}
 
-      <div className={styles.customizeRow}>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          aria-pressed={arranging}
-          onClick={() => {
-            if (arranging) {
-              setArranging(false);
-              setArrangeMenu(false);
-            } else {
-              setArrangeMenu(false);
-              setArranging(true);
-            }
-          }}
-        >
-          <GripVertical size={14} strokeWidth={1.8} />
-          {arranging ? "Done" : "Customise"}
-        </button>
-        {arranging ? (
-          <>
+      {/* Layout controls only while arranging; Customise itself sits in the header. */}
+      {arranging ? (
+        <div className={styles.customizeRow}>
             <span className={styles.customizeHint}>
               Drag a section by its handle, or press Alt + ↑/↓ on a focused handle.
             </span>
@@ -876,9 +777,8 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
             {arrangeStatus === "saving" ? <span className={styles.customizeStatus}>Saving…</span> : null}
             {arrangeStatus === "saved" ? <span className={styles.customizeStatus}>Saved</span> : null}
             {arrangeStatus === "error" ? <span className={styles.customizeStatus} data-error>Couldn’t save — your layout stays on this device</span> : null}
-          </>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       {arranging && arrangeMenu ? (
         <div className={styles.customizeMenu} role="group" aria-label="Show or hide sections">
           {OVERVIEW_SECTION_ORDER.map(id => {
@@ -893,7 +793,6 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
         </div>
       ) : null}
 
-      <KpiRail metrics={metrics} />
 
       <ArrangeableGrid
         workspace="overview"
@@ -918,15 +817,13 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
           );
           switch (id) {
             case "work-queue":
-              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><WorkQueue jobs={attentionQueue} total={attentionShipments.length} returnTo={returnTo} generatedAt={data.generated_at} impactContext={impactContext} /></OverviewSectionShell>;
+              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><WorkQueue jobs={attentionQueue} total={queueJobs.length} mine={mine} mineCount={myAttention.length} everyoneCount={attentionShipments.length} onMine={setMine} returnTo={returnTo} generatedAt={data.generated_at} /></OverviewSectionShell>;
             case "today":
               return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><TodayPanel data={data} workflow={workflow} customs={customs} arrivingToday={arrivingToday} /></OverviewSectionShell>;
             case "activity":
               return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><RecentActivity activity={workflow.recent_activity} generatedAt={data.generated_at} returnTo={returnTo} /></OverviewSectionShell>;
             case "movement":
               return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><LiveMovement movements={workflow.movements} generatedAt={data.generated_at} returnTo={returnTo} /></OverviewSectionShell>;
-            case "pulse":
-              return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><ShipmentsPulse initialData={data} returnTo={returnTo} /></OverviewSectionShell>;
             case "workload":
               return <OverviewSectionShell id={id} arranging={arranging} handle={handle}><Workload data={data} workflow={workflow} /></OverviewSectionShell>;
             case "finance":

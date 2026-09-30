@@ -15,7 +15,7 @@ import {
 import { quoteCurrencies } from "./admin-data";
 import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface } from "./operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsScopeTabs, OpsSearch, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
 import { StaffAssignmentPicker } from "./staff-assignment-picker";
 
@@ -134,12 +134,17 @@ function workflowStatuses(current: QuoteStatus, canEditCommercial: boolean): Quo
   return [current];
 }
 
+/** Open enquiries are the work: anything not yet won or lost. */
+type EnquiryScope = "open" | "all" | QuoteStatus;
+function openEnquiry(quote: Pick<QuoteSummary, "status">) { return quote.status !== "won" && quote.status !== "lost"; }
+
 export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommercial }: { initialQuotes: QuoteSummary[]; canViewCommercial: boolean; canEditCommercial: boolean }) {
   const [quotes, setQuotes] = useState(initialQuotes);
-  const [selectedReference, setSelectedReference] = useState(initialQuotes[0]?.reference ?? "");
+  // The inbox opens on the open work, so the first one shown is an open one.
+  const [selectedReference, setSelectedReference] = useState((initialQuotes.find(openEnquiry) ?? initialQuotes[0])?.reference ?? "");
   const [detail, setDetail] = useState<QuoteDetail | null>(null);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | QuoteStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<EnquiryScope>("open");
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [loading, setLoading] = useState(Boolean(initialQuotes[0]));
   const [saving, setSaving] = useState(false);
@@ -152,7 +157,9 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
     setNotice(message ? { message, tone: tone ?? noticeTone(message) } : null);
   }, []);
 
-  const statusCounts = useMemo<Record<QuoteStatus, number>>(() => ({
+  const statusCounts = useMemo<Record<EnquiryScope, number>>(() => ({
+    open: quotes.filter(openEnquiry).length,
+    all: quotes.length,
     new: quotes.filter((quote) => quote.status === "new").length,
     reviewing: quotes.filter((quote) => quote.status === "reviewing").length,
     quoted: quotes.filter((quote) => quote.status === "quoted").length,
@@ -163,7 +170,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return quotes.filter((quote) => {
-      if (statusFilter !== "all" && quote.status !== statusFilter) return false;
+      if (statusFilter === "open" ? !openEnquiry(quote) : statusFilter !== "all" && quote.status !== statusFilter) return false;
       if (!terms.length) return true;
       const haystack = [
         quote.reference,
@@ -422,14 +429,15 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
-        <OpsKpiRail label="Enquiry pipeline">
-          <OpsRailMetric label="All" value={quotes.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")}/>
-          <OpsRailMetric label="New" value={statusCounts.new} active={statusFilter === "new"} onClick={() => setStatusFilter(statusFilter === "new" ? "all" : "new")}/>
-          <OpsRailMetric label="Reviewing" value={statusCounts.reviewing} tone={statusCounts.reviewing ? "warning" : "neutral"} active={statusFilter === "reviewing"} onClick={() => setStatusFilter(statusFilter === "reviewing" ? "all" : "reviewing")}/>
-          <OpsRailMetric label="Quoted" value={statusCounts.quoted} active={statusFilter === "quoted"} onClick={() => setStatusFilter(statusFilter === "quoted" ? "all" : "quoted")}/>
-          <OpsRailMetric label="Won" value={statusCounts.won} active={statusFilter === "won"} onClick={() => setStatusFilter(statusFilter === "won" ? "all" : "won")}/>
-          <OpsRailMetric label="Lost" value={statusCounts.lost} active={statusFilter === "lost"} onClick={() => setStatusFilter(statusFilter === "lost" ? "all" : "lost")}/>
-        </OpsKpiRail>
+        <OpsScopeTabs<EnquiryScope> label="Enquiry status" value={statusFilter} onChange={setStatusFilter} items={[
+          { value: "open", label: "Open", count: statusCounts.open },
+          { value: "new", label: "New", count: statusCounts.new },
+          { value: "reviewing", label: "Reviewing", count: statusCounts.reviewing },
+          { value: "quoted", label: "Quoted", count: statusCounts.quoted },
+          { value: "won", label: "Won", count: statusCounts.won },
+          { value: "lost", label: "Lost", count: statusCounts.lost },
+          { value: "all", label: "All", count: statusCounts.all },
+        ]}/>
 
         <div className="enq-layout">
           <aside className="enq-list" aria-label="Enquiry inbox">

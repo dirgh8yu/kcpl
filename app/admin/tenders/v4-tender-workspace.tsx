@@ -7,7 +7,7 @@ import { Plus, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
-import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
 import {
   tenderCanBook,
   tenderCanCancel,
@@ -125,10 +125,6 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
 
   const selected = tenders.find((tender) => tender.id === selectedTenderId) ?? null;
   const selectedTenderOrder = selected ? orders.find((order) => order.id === selected.order_id) ?? null : null;
-  const awaiting = tenders.filter((tender) => tender.status === "sent").length;
-  const accepted = tenders.filter((tender) => tender.status === "accepted" || tender.status === "countered").length;
-  const expired = tenders.filter((tender) => tender.status === "expired").length;
-  const booked = tenders.filter((tender) => tender.status === "booked").length;
 
   const scopeOptions = [
     { value: "active", label: "Active" },
@@ -308,12 +304,6 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
-        <OpsKpiRail label="Tender desk summary">
-          <OpsRailMetric label="Awaiting response" value={awaiting} active={status === "sent"} onClick={() => setStatus(status === "sent" ? "active" : "sent")} title="Show tenders awaiting a carrier response"/>
-          <OpsRailMetric label="Accepted / countered" value={accepted}/>
-          <OpsRailMetric label="Expired" value={expired} tone={expired ? "warning" : "neutral"} active={status === "expired"} onClick={() => setStatus(status === "expired" ? "active" : "expired")} title="Show expired tenders"/>
-          <OpsRailMetric label="Booked" value={booked} active={status === "booked"} onClick={() => setStatus(status === "booked" ? "active" : "booked")} title="Show booked tenders"/>
-        </OpsKpiRail>
 
         {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 

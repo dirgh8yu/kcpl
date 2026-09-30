@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, GripVertical, Info, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2, Info, RefreshCw } from "lucide-react";
 import { automationAlertTypeLabels, type AutomationAlert, type AutomationAlertSeverity, type AutomationAlertStatus } from "./alert-data";
 import {
   OpsBadge,
   OpsButton,
   OpsEmptyState,
+  OpsFilterSelect,
   OpsMono,
   OpsNotice,
   OpsPage,
@@ -16,15 +17,6 @@ import {
   OpsScopeTabs,
   OpsSearch,
 } from "../operations-ui";
-import { ArrangeableGrid } from "../arrangeable-grid";
-import {
-  presetForStateIn,
-  savedLayoutForState,
-  WORKSPACE_PRESETS,
-  type SavedLayout,
-} from "../operations-arrangeable";
-import { CustomiseMenu, CustomiseRow } from "../ops-register";
-import { useStaffArrangement } from "../use-staff-arrangement";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 
@@ -55,18 +47,12 @@ function SeverityIcon({ severity }: { severity: AutomationAlertSeverity }) {
   return <Info size={15} strokeWidth={1.75} className="alerts-severity-icon" data-tone="info" aria-hidden="true"/>;
 }
 
-/** Sections exposed to the workspace-layout customise primitive. */
-const ALERTS_SECTION_LABELS: Record<"rail" | "register", string> = {
-  rail: "Alert summary",
-  register: "Alert queue",
-};
-
 const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
   { value: "active", label: "Active" },
   { value: "open", label: "Open" },
   { value: "acknowledged", label: "Acknowledged" },
   { value: "resolved", label: "Resolved" },
-  { value: "all", label: "All history" },
+  { value: "all", label: "All" },
 ];
 
 export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts: AutomationAlert[]; currentStaff: CurrentStaff }) {
@@ -197,43 +183,6 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
     all: alerts.length,
   }), [alerts.length, counts]);
 
-  // Per-staff workspace layout: the summary rail and the alert queue are
-  // arrangeable sections persisted server-side (same primitive as Shipments).
-  const { customisable,
-    state: arrangement,
-    status: arrangeStatus,
-    applyState: setArrangement,
-    toggleHidden,
-    moveSectionToward,
-    resetArrangement,
-    saved,
-    saveCurrentAs,
-    deleteSaved,
-  } = useStaffArrangement("alerts");
-
-  const [arranging, setArranging] = useState(false);
-  const [arrangeMenu, setArrangeMenu] = useState(false);
-  const activePreset = presetForStateIn("alerts", arrangement);
-  const savedMatch = savedLayoutForState(saved, arrangement);
-
-  const onSectionKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>, id: "rail" | "register") => {
-      if (!arranging || event.defaultPrevented) return;
-      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        const target = event.target as HTMLElement | null;
-        if (target && target.closest("input, textarea, select")) return;
-        event.preventDefault();
-        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
-        return;
-      }
-      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
-        event.preventDefault();
-        toggleHidden(id);
-      }
-    },
-    [arranging, moveSectionToward, toggleHidden],
-  );
-
   return <OpsPage>
     <div className="alerts-workspace-page">
       <OpsPageHeader
@@ -242,79 +191,21 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
         actions={<><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
-      <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow customisable={customisable}
-          arranging={arranging}
-          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
-          arrangeMenu={arrangeMenu}
-          onToggleMenu={() => setArrangeMenu(v => !v)}
-          arrangement={arrangement}
-          presets={WORKSPACE_PRESETS.alerts}
-          activePreset={activePreset}
-          applyPreset={preset => setArrangement(preset.layout)}
-          onReset={resetArrangement}
-          status={arrangeStatus}
-          sectionLabels={ALERTS_SECTION_LABELS}
-          saved={saved}
-          onSaveCurrent={saveCurrentAs}
-          onDeleteSaved={deleteSaved}
-          savedMatchId={savedMatch?.id ?? null}
-          onApplySaved={(layout: SavedLayout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
-        />
-        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={ALERTS_SECTION_LABELS}/>
-      </div>
-
-      <div className="px-4 pt-3 md:px-6">
-        <ArrangeableGrid
-          workspace="alerts"
-          state={arrangement}
-          onChange={setArrangement}
-          arranging={arranging}
-        >
-          {(id: "rail" | "register", { handleProps, hidden }) => {
-            if (hidden) return null;
-            const handle = (
-              <button
-                type="button"
-                className="ops-arrange-handle"
-                {...handleProps}
-                aria-label={`Move ${ALERTS_SECTION_LABELS[id]}`}
-                tabIndex={arranging ? 0 : -1}
-                onKeyDown={(event) => onSectionKeyDown(event, id)}
-              >
-                <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
-              </button>
-            );
-            // The severity and status tabs above the queue carry every count and
-            // filter; a summary rail repeated all six numbers a row higher.
-            if (id === "rail") return null;
-          return (
       <div className="px-4 pb-8 md:px-6">
-        {handle}
         {notice ? <div className="mb-3"><OpsNotice tone={noticeTone} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
         <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search alert, shipment, owner…" aria-label="Search tasks and alerts"/>}
           actions={(
             <>
+              <OpsFilterSelect label="Severity" value={severity} allLabel="All severities" options={[{ value: "critical", label: `Critical (${counts.critical})` }, { value: "warning", label: `Warning (${counts.warning})` }, { value: "info", label: "Info" }]} onChange={(value) => setSeverity(value as "all" | AutomationAlertSeverity)}/>
               <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
               <span className="ops-result-count" aria-live="polite">{visible.length} showing</span>
             </>
           )}
-          tabs={(
-            <div className="alerts-toolbar-tabs">
-              <OpsScopeTabs label="Severity filter" items={[
-                { value: "all", label: "All severities", count: undefined },
-                { value: "critical", label: "Critical", count: counts.critical },
-                { value: "warning", label: "Warning", count: counts.warning },
-                { value: "info", label: "Info", count: undefined },
-              ]} value={severity} onChange={(value) => setSeverity(value)}/>
-              <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <OpsScopeTabs label="Status views" items={STATUS_TABS.map((tab) => ({ value: tab.value, label: tab.label, count: statusCounts[tab.value] }))} value={status} onChange={setStatus}/>
-            </div>
-          )}
+          tabs={<OpsScopeTabs label="Alert status" items={STATUS_TABS.map((tab) => ({ value: tab.value, label: tab.label, count: statusCounts[tab.value] }))} value={status} onChange={setStatus}/>}
         />
 
         {ticked.size ? <div className="ops-bulk-bar" role="region" aria-label="Selected alerts">
@@ -327,28 +218,23 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
           {visible.length ? visible.map((alert) => {
             const busy = busyId === alert.id;
             const resolved = alert.status === "resolved";
+            const owner = alert.assigned_to_name || alert.assigned_to_email;
+            const history = alert.resolved_at
+              ? `Resolved by ${alert.resolved_by_name || alert.resolved_by_email || "a colleague"}`
+              : alert.acknowledged_at ? `Seen by ${alert.acknowledged_by_name || alert.acknowledged_by_email || "a colleague"}` : null;
             return <div key={alert.id} className="alerts-row" data-resolved={resolved || undefined} data-critical={!resolved && alert.severity === "critical" ? "true" : undefined}>
               {resolved ? <span className="alerts-row-tick" aria-hidden="true"/> : <input type="checkbox" className="alerts-row-tick" checked={ticked.has(alert.id)} onChange={() => tick(alert.id)} aria-label={`Select ${alert.title} for ${alert.entity_id}`}/>}
-              {/* Severity is the icon; status is the tab and the line below. One
-                  badge is left, and only when someone has to step in. */}
               <div className="alerts-row-icon" role="img" aria-label={`${alert.severity} severity`} title={`${alert.severity[0].toUpperCase()}${alert.severity.slice(1)}`}><SeverityIcon severity={alert.severity}/></div>
+              {/* Two lines: what and which record, then the detail, who, where and
+                  when. The alert type repeated the title, so search keeps it instead. */}
               <div className="alerts-row-main">
-                <div className="alerts-row-meta">
-                  {alert.escalated_at && !resolved ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}
-                  <span className="alerts-row-type">{automationAlertTypeLabels[alert.type]}</span>
+                <div className="alerts-row-line">
+                  <Link href={alert.action_path} className="alerts-row-link">{alert.title}</Link>
                   <OpsMono>{alert.entity_id}</OpsMono>
-                  {alert.assigned_to_name || alert.assigned_to_email ? <span className="alerts-row-owner">· {alert.assigned_to_name || alert.assigned_to_email}</span> : null}
-                  <span className="alerts-row-age"><Clock3 size={11} strokeWidth={1.75} aria-hidden="true"/>{ageLabel(alert.last_triggered_at)}</span>
+                  {alert.escalated_at && !resolved ? <OpsBadge tone="danger">Escalated</OpsBadge> : null}
                 </div>
-                {/* The title opens the record; a separate "Open record" button repeated it on every row. */}
-                <div className="alerts-row-title"><Link href={alert.action_path} className="alerts-row-link">{alert.title}</Link></div>
-                <div className="alerts-row-detail">{alert.detail}</div>
-                <div className="alerts-row-context">
-                  <span>{alert.branch || "No branch"}</span>
-                  {alert.parent_reference && alert.parent_reference !== alert.entity_id ? <span>Parent {alert.parent_reference}</span> : null}
-                  <span>Triggered {dateTime(alert.last_triggered_at)}</span>
-                  {alert.acknowledged_at ? <span>Acknowledged {dateTime(alert.acknowledged_at)} by {alert.acknowledged_by_name || alert.acknowledged_by_email || "recorded operator"}</span> : null}
-                  {alert.resolved_at ? <span>Resolved {dateTime(alert.resolved_at)} by {alert.resolved_by_name || alert.resolved_by_email || "recorded operator"}</span> : null}
+                <div className="alerts-row-sub" title={`Triggered ${dateTime(alert.last_triggered_at)}`}>
+                  {[alert.detail, owner, alert.branch, ageLabel(alert.last_triggered_at), history].filter(Boolean).join(" · ")}
                 </div>
               </div>
               <div className="alerts-row-actions">
@@ -360,11 +246,7 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
           }) : <OpsEmptyState compact kind={counts.active === 0 && status === "active" && !filtersActive ? "healthy" : "search"} icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={counts.active === 0 && status === "active" && !filtersActive ? "No active alerts" : "No alerts match this view"} description={counts.active === 0 && status === "active" && !filtersActive ? "The operational exception queue is clear. Resolved history remains available." : "Change the search or filters to widen the view."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton> : counts.resolved ? <OpsButton size="sm" variant="secondary" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : undefined}/>}
         </section>
 
-        <div className="mt-4"><OpsNotice tone="neutral">Acknowledging an alert records review but does not transfer ownership. Resolving closes the current alert; if the condition persists, the next automation evaluation can reopen it.</OpsNotice></div>
-      </div>
-            );
-          }}
-        </ArrangeableGrid>
+        <p className="alerts-footnote">Acknowledge says someone has seen it; the alert stays open until it’s resolved. A resolved alert comes back if the problem is still there at the next check.</p>
       </div>
     </div>
   </OpsPage>;

@@ -28,12 +28,12 @@ test("normalizeArrangement falls back to the default order for empty input", () 
 });
 
 test("normalizeArrangement keeps valid custom order and appends unknown sections", () => {
-  const state = normalizeArrangement({ order: ["finance", "work-queue", "today"], hidden: ["pulse"] });
+  const state = normalizeArrangement({ order: ["finance", "work-queue", "today"], hidden: ["workload"] });
   assert.equal(state.order[0], "finance");
   assert.equal(state.order[1], "work-queue");
   assert.equal(state.order[2], "today");
   assert.equal(state.order.length, OVERVIEW_SECTION_ORDER.length);
-  assert.deepEqual(state.hidden, ["pulse"]);
+  assert.deepEqual(state.hidden, ["workload"]);
 });
 
 test("normalizeArrangement drops junk, duplicates and hidden ids that are not sections", () => {
@@ -76,63 +76,58 @@ test("isDefaultArrangement detects both order and hidden changes", () => {
 });
 
 test("section dnd ids round-trip", () => {
-  assert.equal(parseSectionDndId("overview", sectionDndId("overview", "pulse")), "pulse");
+  assert.equal(parseSectionDndId("overview", sectionDndId("overview", "today")), "today");
   assert.equal(parseSectionDndId("overview", "overview-section-bogus"), "bogus");
   assert.equal(parseSectionDndId("overview", "other"), null);
   assert.equal(parseSectionDndId("shipments", "customs-section-rail"), null);
   assert.equal(parseSectionDndId("shipments", sectionDndId("shipments", "rail")), "rail");
 });
 
-test("register workspaces have valid sections and presets", () => {
-  assert.deepEqual([...WORKSPACE_SECTIONS.shipments], ["rail", "register"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.customs], ["rail", "queue"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.delivery], ["rail", "queue"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.pickups], ["rail", "register"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.alerts], ["rail", "register"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.finance], ["rail", "register"]);
-  assert.deepEqual([...WORKSPACE_SECTIONS.payables], ["rail", "register"]);
-  for (const workspace of ["shipments", "customs", "delivery", "freight-documents", "pickups", "alerts", "finance", "payables"]) {
-    assert.ok(WORKSPACE_PRESETS[workspace].length >= 2, `${workspace} needs presets`);
-    for (const preset of WORKSPACE_PRESETS[workspace]) {
-      const normalized = normalizeArrangementFor(workspace, preset.layout);
-      assert.deepEqual(normalized.order, preset.layout.order);
-      assert.deepEqual(normalized.hidden, preset.layout.hidden);
-      assert.equal(presetForStateIn(workspace, normalized), preset.id);
-    }
+test("only the Overview is arranged per person; registers keep one layout", () => {
+  assert.deepEqual(Object.keys(WORKSPACE_SECTIONS), ["overview"]);
+  assert.deepEqual([...WORKSPACE_SECTIONS.overview], [...OVERVIEW_SECTION_ORDER]);
+  assert.deepEqual(Object.keys(WORKSPACE_PRESETS), ["overview"]);
+  for (const preset of WORKSPACE_PRESETS.overview) {
+    const normalized = normalizeArrangementFor("overview", preset.layout);
+    assert.deepEqual(normalized.order, preset.layout.order);
+    assert.deepEqual(normalized.hidden, preset.layout.hidden);
+    assert.equal(presetForStateIn("overview", normalized), preset.id);
   }
 });
 
 test("normalizeArrangementFor drops unknown ids and completes the order", () => {
-  const state = normalizeArrangementFor("customs", { order: ["queue", "pulse"], hidden: ["nope", "pulse", "rail"] });
-  assert.deepEqual(state.order, ["queue", "rail"]);
-  assert.deepEqual(state.hidden, ["rail"]);
-  assert.equal(isDefaultArrangementFor("customs", state), false);
-  assert.equal(isDefaultArrangementFor("customs", normalizeArrangementFor("customs", null)), true);
+  const state = normalizeArrangementFor("overview", { order: ["notes", "bogus"], hidden: ["nope", "notes", "today"] });
+  assert.deepEqual(state.order, ["notes", ...OVERVIEW_SECTION_ORDER.filter((id) => id !== "notes")]);
+  assert.deepEqual(state.hidden, ["notes", "today"]);
+  assert.equal(isDefaultArrangementFor("overview", state), false);
+  assert.equal(isDefaultArrangementFor("overview", normalizeArrangementFor("overview", null)), true);
 });
 
 test("normalizeSavedLayouts trims, caps and normalises every entry against the workspace", () => {
-  const saved = normalizeSavedLayouts("shipments", [
-    { id: "a", name: "  Desk  ", order: ["register", "rail"], hidden: [] },
-    { id: "a", name: "dup", order: ["rail", "register"], hidden: [] },
-    { id: "", name: "no id", order: ["rail", "register"], hidden: [] },
-    { id: "b", name: "   ", order: ["rail", "register"], hidden: [] },
+  const reversed = [...OVERVIEW_SECTION_ORDER].reverse();
+  const saved = normalizeSavedLayouts("overview", [
+    { id: "a", name: "  Desk  ", order: reversed, hidden: [] },
+    { id: "a", name: "dup", order: [...OVERVIEW_SECTION_ORDER], hidden: [] },
+    { id: "", name: "no id", order: [...OVERVIEW_SECTION_ORDER], hidden: [] },
+    { id: "b", name: "   ", order: [...OVERVIEW_SECTION_ORDER], hidden: [] },
     { id: "c", name: "junk order", order: ["nope", 42, null], hidden: ["nope"] },
   ]);
   assert.equal(saved.length, 2);
   assert.equal(saved[0].id, "a");
   assert.equal(saved[0].name, "Desk");
-  assert.deepEqual(saved[0].order, ["register", "rail"]);
+  assert.deepEqual(saved[0].order, reversed);
   // Junk order entries fall back to the workspace default order.
-  assert.deepEqual(saved[1].order, ["rail", "register"]);
+  assert.deepEqual(saved[1].order, [...OVERVIEW_SECTION_ORDER]);
   assert.deepEqual(saved[1].hidden, []);
 });
 
 test("savedLayoutForState matches exactly and saved layouts round-trip through serialize", () => {
-  const layout = { id: "x1", name: "Mine", order: ["register", "rail"], hidden: ["rail"] };
-  const saved = normalizeSavedLayouts("shipments", [layout]);
-  assert.equal(savedLayoutForState(saved, { order: ["register", "rail"], hidden: ["rail"] })?.id, "x1");
-  assert.equal(savedLayoutForState(saved, { order: ["rail", "register"], hidden: [] }), null);
-  const roundTripped = normalizeSavedLayouts("shipments", JSON.parse(JSON.stringify(saved)));
+  const reversed = [...OVERVIEW_SECTION_ORDER].reverse();
+  const layout = { id: "x1", name: "Mine", order: reversed, hidden: ["notes"] };
+  const saved = normalizeSavedLayouts("overview", [layout]);
+  assert.equal(savedLayoutForState(saved, { order: reversed, hidden: ["notes"] })?.id, "x1");
+  assert.equal(savedLayoutForState(saved, { order: [...OVERVIEW_SECTION_ORDER], hidden: [] }), null);
+  const roundTripped = normalizeSavedLayouts("overview", JSON.parse(JSON.stringify(saved)));
   assert.deepEqual(roundTripped, saved);
 });
 

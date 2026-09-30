@@ -2,7 +2,7 @@ import { getAdminAccess } from "../admin-auth";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { OperationsShell } from "../operations-shell";
 import { listPartnerOptions } from "../partners/partners.server";
-import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
+import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { getStaffContext } from "../staff-directory.server";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { listPayablesDashboard } from "./payables.server";
@@ -62,7 +62,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const branchOptions = (staff.can_access_all_branches ? [...kcplBranches] : staff.branches) as KcplBranch[];
   const defaultBranch = branchOptions[0] ?? "Kathmandu";
 
-  return <OperationsShell {...shellProps}><PayablesWorkspace dashboard={loaded.dashboard} roleLabel={kcplStaffRoleLabels[staff.permissions.role]} initialShipment={initialShipment} initialPartner={initialPartner} initialCreate={initialCreate} partnerOptions={loaded.partnerOptions} branchOptions={branchOptions} defaultBranch={defaultBranch}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><PayablesWorkspace dashboard={loaded.dashboard} initialShipment={initialShipment} initialPartner={initialPartner} initialCreate={initialCreate} partnerOptions={loaded.partnerOptions} branchOptions={branchOptions} defaultBranch={defaultBranch}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

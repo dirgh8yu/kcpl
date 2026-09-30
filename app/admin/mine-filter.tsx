@@ -17,12 +17,12 @@ const memory = new Map<string, boolean>();
 
 function storageKey(list: string) { return `kcpl:mine:${list}`; }
 
-function read(list: string) {
+function read(list: string, fallback: boolean) {
   try {
     const stored = window.localStorage.getItem(storageKey(list));
     if (stored !== null) return stored === "1";
   } catch { /* blocked storage: fall back to this visit's choice */ }
-  return memory.get(list) ?? false;
+  return memory.get(list) ?? fallback;
 }
 
 function subscribe(notify: () => void) {
@@ -31,8 +31,10 @@ function subscribe(notify: () => void) {
   return () => { window.removeEventListener(changeEvent, notify); window.removeEventListener("storage", notify); };
 }
 
-export function useMineFilter(list: string): [boolean, (next: boolean) => void] {
-  const mine = useSyncExternalStore(subscribe, () => read(list), () => false);
+/** `fallback` is the answer until the person chooses: the Overview opens on
+ * their own work when they have some. */
+export function useMineFilter(list: string, fallback = false): [boolean, (next: boolean) => void] {
+  const mine = useSyncExternalStore(subscribe, () => read(list, fallback), () => false);
   const setMine = useCallback((next: boolean) => {
     memory.set(list, next);
     try { window.localStorage.setItem(storageKey(list), next ? "1" : "0"); } catch { /* kept in memory */ }

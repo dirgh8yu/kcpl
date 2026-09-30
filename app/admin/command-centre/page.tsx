@@ -184,6 +184,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           canViewCommercial={staff.permissions.canViewCommercial}
           canPostNotes={staff.permissions.canManageJobFile}
           role={staff.permissions.role}
+          currentStaff={{ uid: access.user.uid, email: access.user.email }}
         />
       ) : null}
     </OperationsShell>

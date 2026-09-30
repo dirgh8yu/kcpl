@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronRight, GripVertical, Truck, X } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Truck, X } from "lucide-react";
 import {
   OpsBadge,
   OpsEmptyState,
@@ -11,28 +11,23 @@ import {
   OpsInlineAlert,
   OpsInspectorHeader,
   OpsInspectorSection,
-  OpsKpiRail,
   OpsButton,
   OpsPage,
   OpsPageHeader,
-  OpsRailMetric,
+  OpsScopeTabs,
   OpsRegisterToolbar,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
 import { MineToggle, ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
-import { ArrangeableGrid } from "../arrangeable-grid";
-import "../arrangeable-grid.css";
-import { presetForStateIn, savedLayoutForState, WORKSPACE_PRESETS } from "../operations-arrangeable";
-import { useStaffArrangement } from "../use-staff-arrangement";
-import { CustomiseMenu, CustomiseRow } from "../ops-register";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import { deliveryAttemptStatusLabels, type DeliveryQueueRow, type DeliverySummary } from "./delivery-control";
 
-type Focus = "all" | "active" | "failed" | "pod_pending" | "verified";
+type Focus = "all" | "ready" | "active" | "failed" | "pod_pending" | "verified";
 
 /** One focus → delivery-state mapping instead of a four-branch filter chain. */
 const FOCUS_STATE: Record<Exclude<Focus, "all">, DeliveryQueueRow["delivery_state"]> = {
+  ready: "not_started",
   active: "delivery_active",
   failed: "delivery_failed",
   pod_pending: "delivered_pod_pending",
@@ -46,8 +41,6 @@ function dateTime(value: string | null) {
   return `${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kathmandu" }).format(date)} NPT`;
 }
 
-type DeliverySectionId = "rail" | "queue";
-const DELIVERY_SECTION_LABELS: Record<DeliverySectionId, string> = { rail: "Delivery summary", queue: "Delivery queue" };
 
 function stateLabel(row: DeliveryQueueRow) {
   if (row.delivery_state === "pod_verified") return "POD verified";
@@ -127,7 +120,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   const [mine, setMine] = useMineFilter("delivery");
   const { params, update } = useWorkspaceQuery();
   const requestedFocus = params.get("view");
-  const focus: Focus = requestedFocus === "active" || requestedFocus === "failed" || requestedFocus === "pod_pending" || requestedFocus === "verified" ? requestedFocus : "all";
+  const focus: Focus = requestedFocus === "ready" || requestedFocus === "active" || requestedFocus === "failed" || requestedFocus === "pod_pending" || requestedFocus === "verified" ? requestedFocus : "all";
   const query = params.get("q") ?? initialQuery;
   const selectedReference = params.get("selected");
 
@@ -153,40 +146,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
   const compact = selected !== null;
   const inspectorRef = useRef<HTMLElement | null>(null);
 
-  // Per-staff workspace layout: summary rail and queue are
-  // arrangeable sections persisted server-side (same primitive as Overview).
-  const { customisable,
-    state: arrangement,
-    status: arrangeStatus,
-    applyState: setArrangement,
-    toggleHidden,
-    moveSectionToward,
-    resetArrangement,
-    saved,
-    saveCurrentAs,
-    deleteSaved,
-  } = useStaffArrangement("delivery");
-  const [arranging, setArranging] = useState(false);
-  const [arrangeMenu, setArrangeMenu] = useState(false);
-  const activePreset = presetForStateIn("delivery", arrangement);
-  const savedMatch = savedLayoutForState(saved, arrangement);
-  const onSectionKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>, id: DeliverySectionId) => {
-      if (!arranging || event.defaultPrevented) return;
-      if ((event.altKey || event.metaKey) && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-        const target = event.target as HTMLElement | null;
-        if (target && target.closest("input, textarea, select")) return;
-        event.preventDefault();
-        moveSectionToward(id, event.key === "ArrowUp" ? "up" : "down");
-        return;
-      }
-      if ((event.key === "h" || event.key === "H") && document.activeElement === event.currentTarget) {
-        event.preventDefault();
-        toggleHidden(id);
-      }
-    },
-    [arranging, moveSectionToward, toggleHidden],
-  );
 
   // Escape closes the inspector, as it does on the other registers.
   useEffect(() => {
@@ -217,59 +176,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
         description="Deliveries to make and proof of delivery to check. A photo or signature counts once someone has checked it."
       />
 
-      <div className="px-4 pt-3 md:px-6">
-        <CustomiseRow customisable={customisable}
-          arranging={arranging}
-          onToggle={() => { setArranging(v => !v); setArrangeMenu(false); }}
-          arrangeMenu={arrangeMenu}
-          onToggleMenu={() => setArrangeMenu(v => !v)}
-          arrangement={arrangement}
-          presets={WORKSPACE_PRESETS.delivery}
-          activePreset={activePreset}
-          applyPreset={preset => setArrangement(preset.layout)}
-          onReset={resetArrangement}
-          status={arrangeStatus}
-          sectionLabels={DELIVERY_SECTION_LABELS}
-          saved={saved}
-          onSaveCurrent={saveCurrentAs}
-          onDeleteSaved={deleteSaved}
-          savedMatchId={savedMatch?.id ?? null}
-          onApplySaved={(layout) => setArrangement({ order: layout.order, hidden: layout.hidden })}
-        />
-        <CustomiseMenu open={arranging && arrangeMenu} arrangement={arrangement} onToggle={toggleHidden} sectionLabels={DELIVERY_SECTION_LABELS}/>
-      </div>
-
-      <ArrangeableGrid
-        workspace="delivery"
-        state={arrangement}
-        onChange={setArrangement}
-        arranging={arranging}
-      >
-        {(id: DeliverySectionId, { handleProps, hidden }) => {
-          if (hidden) return null;
-          const handle = (
-            <button type="button" className="ops-arrange-handle" {...handleProps} aria-label={`Move ${DELIVERY_SECTION_LABELS[id]}`} tabIndex={arranging ? 0 : -1} onKeyDown={(event) => onSectionKeyDown(event, id)}>
-              <GripVertical size={13} strokeWidth={1.75} aria-hidden="true"/>
-            </button>
-          );
-          if (id === "rail") {
-            return (
-              <div className="px-4 pt-3 md:px-6">
-                {handle}
-                {/* One flat rail; each segment activates the view it already mapped to. */}
-                <OpsKpiRail label="Delivery summary">
-                  <OpsRailMetric label="Ready" value={initialSummary.ready} active={focus === "all"} onClick={() => setFocus("all")}/>
-                  <OpsRailMetric label="Out for delivery" value={initialSummary.out_for_delivery} tone="info" active={focus === "active"} onClick={() => setFocus(focus === "active" ? "all" : "active")}/>
-                  <OpsRailMetric label="Failed / refused" value={initialSummary.failed_or_refused} tone="danger" active={focus === "failed"} onClick={() => setFocus(focus === "failed" ? "all" : "failed")}/>
-                  <OpsRailMetric label="POD pending" value={initialSummary.delivered_pod_pending} tone="warning" active={focus === "pod_pending"} onClick={() => setFocus(focus === "pod_pending" ? "all" : "pod_pending")} title="Delivered but awaiting verified POD"/>
-                  <OpsRailMetric label="POD verified" value={initialSummary.pod_verified} tone="success" active={focus === "verified"} onClick={() => setFocus(focus === "verified" ? "all" : "verified")}/>
-                </OpsKpiRail>
-              </div>
-            );
-          }
-          return (
       <div className="px-4 pb-8 md:px-6">
-        {handle}
         <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search shipment, customer, branch…" aria-label="Search delivery and POD queue"/>}
           actions={(
@@ -280,6 +187,14 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
               <span className="ops-result-count" aria-live="polite">{rows.length === initialRows.length ? `${initialRows.length} deliveries` : `${rows.length} of ${initialRows.length}`}</span>
             </>
           )}
+          tabs={<OpsScopeTabs<Focus> label="Delivery stage" value={focus} onChange={setFocus} items={[
+            { value: "all", label: "All", count: initialRows.length },
+            { value: "ready", label: "Ready", count: initialSummary.ready },
+            { value: "active", label: "Out for delivery", count: initialSummary.out_for_delivery },
+            { value: "failed", label: "Failed or refused", count: initialSummary.failed_or_refused },
+            { value: "pod_pending", label: "Proof to check", count: initialSummary.delivered_pod_pending },
+            { value: "verified", label: "Proof verified", count: initialSummary.pod_verified },
+          ]}/>}
         />
 
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
@@ -351,9 +266,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
           {selected ? <Inspector row={selected} onClose={() => update({ selected: null })} inspectorRef={inspectorRef}/> : null}
         </div>
       </div>
-          );
-        }}
-      </ArrangeableGrid>
     </div>
   </OpsPage>;
 }

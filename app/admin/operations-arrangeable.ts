@@ -1,12 +1,10 @@
 import type { CommandCentreJob } from "./command-centre/command-centre-data";
-import { shipmentNextAction } from "./shipments/shipment-queue-policy.ts";
 
 export const OVERVIEW_SECTION_ORDER = [
   "work-queue",
   "today",
   "activity",
   "movement",
-  "pulse",
   "workload",
   "finance",
   "notes",
@@ -15,30 +13,16 @@ export const OVERVIEW_SECTION_ORDER = [
 export type OverviewSectionId = (typeof OVERVIEW_SECTION_ORDER)[number];
 
 /**
- * Sections that each workspace exposes to the arrangement primitive. The ids
- * are workspace-scoped: a layout never moves between workspaces, so ids only
- * need to be unique inside their own list. Registers use full-width rows
- * (single-column grid), the Overview uses the two-column grid.
+ * Sections each customisable workspace exposes to the arrangement primitive.
+ * Only the Overview is personal: registers (Shipments, Customs, Finance…) show
+ * one standard layout, so they have no sections here.
  */
 export const WORKSPACE_SECTIONS = {
   overview: [...OVERVIEW_SECTION_ORDER],
-  shipments: ["rail", "register"],
-  customs: ["rail", "queue"],
-  delivery: ["rail", "queue"],
-  "freight-documents": ["rail", "queue"],
-  pickups: ["rail", "register"],
-  alerts: ["rail", "register"],
-  finance: ["rail", "register"],
-  payables: ["rail", "register"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type WorkspaceKey = keyof typeof WORKSPACE_SECTIONS;
 
-/**
- * Only the Overview dashboard is personal. Registers (Shipments, Customs,
- * Finance…) show the same standard layout to everyone: a "Customise" button
- * and saved layouts on every list made each page busier than the work in it.
- */
 export const CUSTOMISABLE_WORKSPACES: readonly WorkspaceKey[] = ["overview"];
 
 export function workspaceCustomisable(workspace: WorkspaceKey) {
@@ -180,7 +164,7 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
       label: "Dispatch",
       description: "Queue, Today and live movement first — finance hidden",
       layout: {
-        order: ["work-queue", "today", "pulse", "movement", "activity", "workload", "notes", "finance"],
+        order: ["work-queue", "today", "movement", "activity", "workload", "notes", "finance"],
         hidden: ["finance"],
       },
     },
@@ -189,7 +173,7 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
       label: "Finance",
       description: "Job economics and workload up front",
       layout: {
-        order: ["finance", "workload", "work-queue", "today", "activity", "movement", "pulse", "notes"],
+        order: ["finance", "workload", "work-queue", "today", "activity", "movement", "notes"],
         hidden: [],
       },
     },
@@ -198,8 +182,8 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
       label: "Sales",
       description: "Queue, today and customer activity first — workload and finance hidden",
       layout: {
-        order: ["work-queue", "today", "activity", "movement", "notes", "pulse", "workload", "finance"],
-        hidden: ["pulse", "workload", "finance"],
+        order: ["work-queue", "today", "activity", "movement", "notes", "workload", "finance"],
+        hidden: ["workload", "finance"],
       },
     },
     {
@@ -207,166 +191,6 @@ export const WORKSPACE_PRESETS: Record<WorkspaceKey, readonly LayoutPreset[]> = 
       label: "Manager",
       description: "Every section visible in the standard order",
       layout: { order: [...OVERVIEW_SECTION_ORDER], hidden: [] },
-    },
-  ],
-  shipments: [
-    {
-      id: "operator",
-      label: "Operator",
-      description: "Summary rail above the register — the standard desk",
-      layout: { order: ["rail", "register"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Register on top, summary rail below it",
-      layout: { order: ["register", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Register only — the rail is hidden until you need it",
-      layout: { order: ["rail", "register"], hidden: ["rail"] },
-    },
-  ],
-  customs: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Customs summary, then the clearance queue",
-      layout: { order: ["rail", "queue"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Clearance queue on top; the summary follows",
-      layout: { order: ["queue", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Queue only — the summary is hidden until needed",
-      layout: { order: ["rail", "queue"], hidden: ["rail"] },
-    },
-  ],
-  delivery: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Delivery summary, then the POD queue",
-      layout: { order: ["rail", "queue"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Delivery queue on top; the summary follows",
-      layout: { order: ["queue", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Queue only — the summary is hidden until needed",
-      layout: { order: ["rail", "queue"], hidden: ["rail"] },
-    },
-  ],
-  "freight-documents": [
-    {
-      id: "standard",
-      label: "Standard",
-      description: "Production rail above the document queue",
-      layout: { order: ["rail", "queue"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Document queue on top, summary rail below",
-      layout: { order: ["queue", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Queue only — the rail is hidden until you need it",
-      layout: { order: ["rail", "queue"], hidden: ["rail"] },
-    },
-  ],
-  pickups: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Summary rail above the pickup register — the standard desk",
-      layout: { order: ["rail", "register"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Pickup register on top, summary rail below it",
-      layout: { order: ["register", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Register only — the rail is hidden until you need it",
-      layout: { order: ["rail", "register"], hidden: ["rail"] },
-    },
-  ],
-  alerts: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Alert summary above the queue — the standard desk",
-      layout: { order: ["rail", "register"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Queue first",
-      description: "Alert queue on top, summary rail below it",
-      layout: { order: ["register", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Queue only — the rail is hidden until you need it",
-      layout: { order: ["rail", "register"], hidden: ["rail"] },
-    },
-  ],
-  finance: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Receivables rail above the ledger — the standard desk",
-      layout: { order: ["rail", "register"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Ledger first",
-      description: "Receivables ledger on top, summary rail below it",
-      layout: { order: ["register", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Ledger only — the rail is hidden until you need it",
-      layout: { order: ["rail", "register"], hidden: ["rail"] },
-    },
-  ],
-  payables: [
-    {
-      id: "desk",
-      label: "Desk",
-      description: "Payables rail above the ledger — the standard desk",
-      layout: { order: ["rail", "register"], hidden: [] },
-    },
-    {
-      id: "queue-first",
-      label: "Ledger first",
-      description: "Payables ledger on top, summary rail below it",
-      layout: { order: ["register", "rail"], hidden: [] },
-    },
-    {
-      id: "lean",
-      label: "Lean",
-      description: "Ledger only — the rail is hidden until you need it",
-      layout: { order: ["rail", "register"], hidden: ["rail"] },
     },
   ],
 };
@@ -430,24 +254,6 @@ export const LAYOUT_PRESETS = WORKSPACE_PRESETS.overview;
 /* ── Overview-specific helpers (unchanged) ────────────────────────────── */
 
 const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
-
-export function countSectionJobs(section: OverviewSectionId, jobs: CommandCentreJob[]): number {
-  switch (section) {
-    case "work-queue":
-      return jobs.filter((job) => Boolean(shipmentNextAction(job))).length;
-    case "movement":
-      return jobs.filter((job) => job.status === "in_transit" || job.status === "out_for_delivery").length;
-    case "pulse":
-      return jobs.filter((job) => job.status === "customs_clearance").length;
-    case "workload":
-      return jobs.length;
-    case "today":
-    case "activity":
-    case "finance":
-    case "notes":
-      return 0;
-  }
-}
 
 export function jobPriorityRank(job: CommandCentreJob): number {
   return PRIORITY_RANK[job.priority] ?? 2;

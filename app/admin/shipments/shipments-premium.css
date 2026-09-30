@@ -38,70 +38,6 @@
   gap: 8px;
 }
 
-/* ---- Register KPI rail ----------------------------------------------------
- * One shared surface with hairline separators -- the same treatment the
- * Overview dashboard uses -- instead of five floating metric cards. */
-/* ---- Register KPI rail ----------------------------------------------------
- * Mirrors the Overview dashboard's KPI rail exactly: one hairline panel,
- * label over a strong tabular value, zeros recede, semantic tones on values
- * only. Purely informational -- the status tabs above the table are the
- * single filter surface. */
-.kcpl-admin-content .shipments-register .shipments-kpi-rail {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 1px;
-  margin-bottom: 14px;
-  overflow: hidden;
-  border: 1px solid var(--ship-line);
-  border-radius: 8px;
-  background: var(--ship-line);
-}
-
-.kcpl-admin-content .shipments-register .shipments-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-  padding: 11px 14px 12px;
-  background: var(--admin-surface);
-}
-
-.kcpl-admin-content .shipments-register .shipments-kpi .shipments-kpi-label {
-  overflow: hidden;
-  color: var(--admin-muted);
-  font-size: 11px;
-  font-weight: 570;
-  letter-spacing: 0.02em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.kcpl-admin-content .shipments-register .shipments-kpi .shipments-kpi-value {
-  color: var(--admin-ink);
-  font-size: 24px;
-  font-weight: 620;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-/* Zeros recede; live signals take their semantic colour -- value only. */
-.kcpl-admin-content .shipments-register .shipments-kpi[data-zero="true"] .shipments-kpi-value { color: var(--admin-faint); }
-.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="info"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-info); }
-.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="success"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-success); }
-.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="warning"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-warning); }
-.kcpl-admin-content .shipments-register .shipments-kpi[data-tone="danger"]:not([data-zero]) .shipments-kpi-value { color: var(--admin-danger); }
-
-/* Collapse to 3 / 2 columns like the Overview rail. */
-@media (max-width: 1160px) {
-  .kcpl-admin-content .shipments-register .shipments-kpi-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 720px) {
-  .kcpl-admin-content .shipments-register .shipments-kpi-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kcpl-admin-content .shipments-register .shipments-kpi { padding: 10px 12px 11px; }
-}
-
 /* `transform` stays in every transition list below: globals.css and operations-system.css
  * supply the :active press feedback, and a shorthand here would silently drop it. */
 .kcpl-admin-content .shipments-filter-trigger {
@@ -210,6 +146,9 @@
   color: var(--admin-crimson);
   font-weight: 600;
 }
+
+/* "Needs action" keeps its count red while there is work in it. */
+.kcpl-admin-content .shipments-register .shipments-filter-tab[data-tone="danger"] .shipments-tab-count { color: var(--admin-danger); font-weight: 600; }
 
 .kcpl-admin-content .shipments-register .shipments-toolbar-actions {
   display: flex;
@@ -557,9 +496,18 @@
   font-weight: 500;
 }
 
-/* Priority is text, and only when raised: standard rows leave the cell empty. */
-.kcpl-admin-content .shipments-register .shipments-priority { color: var(--admin-warning); font-size: 13px; font-weight: 600; }
+/* Priority is text under the reference, and only when raised. */
+.kcpl-admin-content .shipments-register .shipments-priority { display: block; margin-top: 3px; color: var(--admin-warning); font-size: 12px; font-weight: 600; }
 .kcpl-admin-content .shipments-register .shipments-priority[data-priority="urgent"] { color: var(--admin-danger); }
+
+/* The reference is the one-click way into the Job File. */
+.kcpl-admin-content .shipments-register .shipments-ref-link { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; }
+.kcpl-admin-content .shipments-register .shipments-ref-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+/* Mode rides on the route line instead of taking a column. */
+.kcpl-admin-content .shipments-register .shipments-route-line { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--admin-muted); }
+.kcpl-admin-content .shipments-register .shipments-route-line > svg { flex: none; }
+/* When it last changed, under its status. */
+.kcpl-admin-content .shipments-register .shipments-updated { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; }
 
 .kcpl-admin-content .shipment-sheet-header { border-bottom-color: var(--ship-line); }
 .kcpl-admin-content .shipment-sheet-footer {

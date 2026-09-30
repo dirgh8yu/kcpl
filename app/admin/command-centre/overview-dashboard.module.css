@@ -57,16 +57,7 @@
 
 /* ── KPI rail: one shared surface, hairline separators, no six floating cards ── */
 
-.kpiRail { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; margin-bottom: 12px; overflow: hidden; border: 1px solid var(--overview-line); border-radius: 8px; background: var(--overview-line); }
-.kpiCell { display: flex; min-width: 0; flex-direction: column; gap: 5px; padding: 11px 14px 12px; background: var(--overview-surface); color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
-.kpiCell:hover { background: var(--overview-canvas); }
-.kpiCell:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
-.kpiLabel { overflow: hidden; color: var(--overview-muted); font-size: 11px; font-weight: 570; letter-spacing: 0.02em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-.kpiValue { color: var(--overview-ink); font-size: 24px; font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
 /* Zeros recede; live danger/warning numbers carry their meaning. */
-.kpiCell[data-zero] .kpiValue { color: var(--overview-faint); }
-.kpiCell[data-tone="danger"]:not([data-zero]) .kpiValue { color: var(--overview-danger); }
-.kpiCell[data-tone="warning"]:not([data-zero]) .kpiValue { color: var(--overview-warning); }
 
 /* ── Grids ────────────────────────────────────────────────────────────────── */
 
@@ -121,8 +112,6 @@
 .checkbox { width: 14px; height: 14px; accent-color: var(--overview-action); }
 .referenceLink { color: var(--overview-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 650; text-decoration: none; }
 .referenceLink:hover { color: var(--overview-brand-crimson); text-decoration: underline; }
-.actionLink { color: var(--overview-muted); font-size: 12px; font-weight: 550; text-decoration: none; }
-.actionLink:hover { color: var(--overview-ink); text-decoration: underline; }
 .statusBadge { display: inline-flex; align-items: center; gap: 6px; min-height: 20px; border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .statusBadge::before { content: ""; width: 5px; height: 5px; flex: none; border-radius: 50%; background: currentColor; }
 .statusDanger { background: var(--overview-danger-soft); color: var(--overview-danger); }
@@ -135,10 +124,6 @@
 .ageDanger { color: var(--overview-danger); font-weight: 650; }
 
 /* Impact tier badge: ranked by severity × receivable exposure × SLA × dwell. */
-.impactBadge { display: inline-flex; align-items: center; min-height: 20px; border-radius: 999px; padding: 0 8px; background: var(--admin-surface-soft); color: var(--overview-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
-.impactBadge[data-tier="critical"] { background: var(--overview-danger-soft); color: var(--overview-danger); }
-.impactBadge[data-tier="high"] { background: var(--overview-warning-soft); color: var(--overview-warning); }
-.impactBadge[data-tier="moderate"] { background: var(--overview-info-soft); color: var(--overview-info); }
 .rowAction { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--overview-faint); cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
 .rowAction:hover { background: var(--admin-surface-soft); color: var(--overview-ink); }
 
@@ -288,7 +273,6 @@
  * .kcpl-admin-content), so the viewport overstates the room by the sidebar
  * width plus this page's padding. */
 @media (max-width: 1360px) {
-  .kpiRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Below this width a side-by-side queue + Today row leaves the queue card
@@ -307,9 +291,6 @@
 }
 
 @media (max-width: 640px) {
-  .kpiRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpiCell { padding: 10px 12px 11px; }
-  .kpiValue { font-size: 22px; }
   .pageHead { flex-direction: column; align-items: stretch; }
   .pageHeadActions { justify-content: space-between; }
   .pageHeadActions .blackButton, .pageHeadActions .secondaryButton { flex: 1; }
@@ -331,7 +312,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .blackButton, .secondaryButton, .iconButton, .textButton { transition-property: background-color, border-color, color; }
-  .kpiCell, .todayItem, .todayCritical, .todayClear, .workloadRow, .movementRow, .activityRow, .rowAction, .launcherChoice { transition: none; }
   .launcherBackdrop, .launcher { transition: none; }
 }
 
@@ -389,6 +369,8 @@
  * indicator spacing and the hover-visible handle (from arrangeable-grid.css). */
 .arrangeGrid { margin-bottom: 12px; }
 .arrangeSection { position: relative; min-width: 0; }
+/* Next steps is the page: it takes the full width, the other sections pair up below. */
+.arrangeGrid :global(.ops-arrange-item[data-section="work-queue"]) { grid-column: 1 / -1; }
 .arrangeSection[data-arranging] { outline: 1px dashed var(--overview-line-strong, var(--overview-line)); outline-offset: 4px; border-radius: 10px; }
 
 @media (max-width: 900px) {

@@ -32,7 +32,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams: P
   if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Tracking didn’t load" detail="Tracking storage is not available for this deployment." embedded/></OperationsShell>;
   const { shipment } = await searchParams;
   const initialShipment = shipment?.trim().toUpperCase() ?? "";
-  return <OperationsShell {...shell}><TrackingVisibilityWorkspace initialRows={result.rows} initialSummary={result.summary} canSweep={staff.permissions.role === "management"} initialShipment={initialShipment}/></OperationsShell>;
+  return <OperationsShell {...shell}><TrackingVisibilityWorkspace initialRows={result.rows} canSweep={staff.permissions.role === "management"} initialShipment={initialShipment}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
