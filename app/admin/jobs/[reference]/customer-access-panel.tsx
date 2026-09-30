@@ -49,7 +49,7 @@ export function CustomerAccessPanel({
     >
       {summaries.length ? (
         <OpsTableWrap>
-          <table className="ops-table ops-register-table job-access-table">
+          <table className="ops-table ops-register-table ops-stack-table job-access-table">
             <thead>
               <tr>
                 <th scope="col">Document</th>

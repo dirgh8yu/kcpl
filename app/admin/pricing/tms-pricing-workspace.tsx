@@ -259,16 +259,16 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
       <div className="ops-register-layout" data-inspector={selectedOrder ? "open" : undefined}>
         <section className="ops-surface" aria-label="Buy costs ready for sell pricing">
           {visible.length ? <OpsTableWrap>
-            <table className="ops-table ops-register-table pricing-table" data-compact={compact || undefined} aria-label="Transport orders ready for sell pricing">
+            <table className="ops-table ops-register-table ops-stack-table pricing-table" data-compact={compact || undefined} aria-label="Transport orders ready for sell pricing">
               <thead><tr><th>Order</th><th>Lane</th><th className="ops-col-num">Buy cost</th><th>Status</th>{compact ? null : <th>Quote</th>}</tr></thead>
               <tbody>{visible.map((order) => {
                 const chosen = selectedOrderId === order.id;
                 return <tr key={order.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openOrder(order)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openOrder(order); } }}>
-                  <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {title(order.mode)}</span></td>
-                  <td><span className="ops-cell-primary ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span><span className="ops-cell-secondary ops-cell-clamp">{order.customer_name || order.customer_id || "Customer not linked"}</span></td>
-                  <td className="ops-col-num"><span className="ops-num">{money(order.buy_cost, order.buy_currency)}</span></td>
-                  <td><OpsBadge tone={pricingTone(order.pricing_status)}>{title(order.pricing_status)}</OpsBadge></td>
-                  {compact ? null : <td>{order.quoted_reference ? <span className="ops-mono ops-cell-muted">{order.quoted_reference}</span> : <span className="ops-cell-muted">—</span>}</td>}
+                  <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {title(order.mode)}</span></td>
+                  <td data-cell="route"><span className="ops-cell-primary ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span><span className="ops-cell-secondary ops-cell-clamp">{order.customer_name || order.customer_id || "Customer not linked"}</span></td>
+                  <td data-cell="amount" className="ops-col-num"><span className="ops-num">{money(order.buy_cost, order.buy_currency)}</span></td>
+                  <td data-cell="status"><OpsBadge tone={pricingTone(order.pricing_status)}>{title(order.pricing_status)}</OpsBadge></td>
+                  {compact ? null : <td data-cell="meta" data-label="Quote">{order.quoted_reference ? <span className="ops-mono ops-cell-muted">{order.quoted_reference}</span> : <span className="ops-cell-muted">—</span>}</td>}
                 </tr>;
               })}</tbody>
             </table>
@@ -345,14 +345,14 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
 
       <OpsSurface className="plan-section" density="compact" title="Pricing governance" description={`${rules.length} active and retained pricing rules. Customer and lane rules outrank broad branch or global rules; priority breaks ties.`} flush>
         {rules.length ? <OpsTableWrap>
-          <table className="ops-table ops-register-table pricing-rules-table" aria-label="Pricing rules">
+          <table className="ops-table ops-register-table ops-stack-table pricing-rules-table" aria-label="Pricing rules">
             <thead><tr><th>Rule</th><th>Match</th><th>Sell basis</th><th>Floor</th><th>Status</th></tr></thead>
             <tbody>{rules.map((rule) => <tr key={rule.id}>
-              <td><span className="ops-cell-primary ops-cell-clamp" title={rule.name}>{rule.name}</span><span className="ops-cell-secondary">{title(rule.scope)} · priority {rule.priority}</span></td>
-              <td><span className="ops-cell-clamp" title={ruleMatch(rule)}>{ruleMatch(rule)}</span></td>
-              <td>{rule.markup_percent !== null ? `${rule.markup_percent}% markup` : rule.target_margin_percent !== null ? `${rule.target_margin_percent}% target margin` : "Default markup"}</td>
-              <td><span className="ops-num">{rule.minimum_margin_percent}%</span></td>
-              <td><OpsBadge tone={rule.active ? "success" : "neutral"}>{rule.active ? "Active" : "Inactive"}</OpsBadge></td>
+              <td data-cell="primary"><span className="ops-cell-primary ops-cell-clamp" title={rule.name}>{rule.name}</span><span className="ops-cell-secondary">{title(rule.scope)} · priority {rule.priority}</span></td>
+              <td data-cell="meta" data-label="Match"><span className="ops-cell-clamp" title={ruleMatch(rule)}>{ruleMatch(rule)}</span></td>
+              <td data-cell="meta" data-label="Sell">{rule.markup_percent !== null ? `${rule.markup_percent}% markup` : rule.target_margin_percent !== null ? `${rule.target_margin_percent}% target margin` : "Default markup"}</td>
+              <td data-cell="meta" data-label="Floor"><span className="ops-num">{rule.minimum_margin_percent}%</span></td>
+              <td data-cell="status"><OpsBadge tone={rule.active ? "success" : "neutral"}>{rule.active ? "Active" : "Inactive"}</OpsBadge></td>
             </tr>)}</tbody>
           </table>
         </OpsTableWrap> : <OpsEmptyState compact title="No custom pricing rules" description="KCPL uses each customer's markup percentage, then the system defaults."/>}

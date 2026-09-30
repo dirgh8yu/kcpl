@@ -184,7 +184,7 @@ export function CarrierIntegrationsWorkspace({
         flush
       >
         {filtered.length ? <OpsTableWrap>
-          <table className="ops-table ops-register-table carrier-queue-table" aria-label="Shipment integration queue">
+          <table className="ops-table ops-register-table ops-stack-table carrier-queue-table" aria-label="Shipment integration queue">
             <thead><tr><th>Shipment</th><th>Provider</th><th>Carrier reference</th><th>Status</th><th>Last tracking</th><th>Integration</th><th><span className="sr-only">Action</span></th></tr></thead>
             <tbody>{filtered.map((row) => <tr key={row.reference}>
               <td>
@@ -212,7 +212,7 @@ export function CarrierIntegrationsWorkspace({
           <OpsButton type="submit" variant="primary" size="sm" disabled={busy === "maersk"}><Ship size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === "maersk" ? "Searching…" : "Search Maersk"}</OpsButton>
         </form>
         {scheduleRows.length ? <div className="network-schedule-results"><OpsTableWrap>
-          <table className="ops-table ops-register-table carrier-schedule-table" aria-label="Maersk schedule options">
+          <table className="ops-table ops-register-table ops-stack-table carrier-schedule-table" aria-label="Maersk schedule options">
             <thead><tr><th>#</th><th>Origin</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Vessel / voyage</th><th>Service</th></tr></thead>
             <tbody>{scheduleRows.map((row) => <tr key={row.index}><td className="ops-cell-muted">{row.index}</td><td className="ops-mono">{row.origin || origin}</td><td className="ops-mono">{row.destination || destination}</td><td>{row.departure || "—"}</td><td>{row.arrival || "—"}</td><td>{[row.vessel, row.voyage].filter(Boolean).join(" · ") || "—"}</td><td>{row.service || "—"}</td></tr>)}</tbody>
           </table>

@@ -104,7 +104,7 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
     {eligible.length ? <div className="allocation-grid">
       <div className="allocation-list">
         <OpsTableWrap>
-          <table className="ops-table ops-register-table allocation-table" aria-label="Released consolidation loads">
+          <table className="ops-table ops-register-table ops-stack-table allocation-table" aria-label="Released consolidation loads">
             <thead><tr><th>Load</th><th>Allocation</th></tr></thead>
             <tbody>{eligible.map((load) => {
               const view = allocations[load.id];

@@ -120,7 +120,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
       <div className="ops-register-layout" data-inspector={panelOpen ? "open" : undefined}>
         <section className="ops-surface" aria-label="Staff access">
           {filtered.length ? <OpsTableWrap>
-            <table className="ops-table ops-register-table staff-table" data-compact={compact || undefined} aria-label="Staff directory">
+            <table className="ops-table ops-register-table ops-stack-table staff-table" data-compact={compact || undefined} aria-label="Staff directory">
               <thead><tr><th>Person</th><th>Role</th><th>Branch access</th><th>Status</th>{compact ? null : <th>Title · phone</th>}</tr></thead>
               <tbody>{filtered.map((profile) => {
                 const chosen = editingUid === profile.uid;

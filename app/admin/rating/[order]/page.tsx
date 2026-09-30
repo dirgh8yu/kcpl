@@ -121,7 +121,7 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
         </OpsSurface>
         <OpsSurface title="Carrier requests" description={relatedTenders.length === 1 ? "1 request sent for this order." : `${relatedTenders.length} requests sent for this order.`} flush>
           {relatedTenders.length ? <OpsTableWrap>
-            <table className="ops-table ops-register-table">
+            <table className="ops-table ops-register-table ops-stack-table">
               <thead><tr><th>Request</th><th>Partner</th><th>Offered</th><th>Reply due</th><th>Status</th></tr></thead>
               <tbody>{relatedTenders.map((tender) => <tr key={tender.id}>
                 <td data-cell="primary"><Link href={tender.status === "booked" ? `/admin/tenders/${encodeURIComponent(tender.id)}` : `/admin/tenders?tender=${encodeURIComponent(tender.tender_reference)}`}><OpsMono>{tender.tender_reference}</OpsMono></Link></td>

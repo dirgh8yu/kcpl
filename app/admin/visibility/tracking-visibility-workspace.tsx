@@ -491,7 +491,7 @@ export function TrackingVisibilityWorkspace({
           {filtered.length ? (
             <>
               <OpsTableWrap>
-                <table className="ops-table ops-register-table visibility-table" aria-label="Live shipment visibility">
+                <table className="ops-table ops-register-table ops-stack-table visibility-table" aria-label="Live shipment visibility">
                   <thead>
                     <tr>
                       <th>Reference</th>
@@ -517,28 +517,28 @@ export function TrackingVisibilityWorkspace({
                           onClick={() => openInspector(row)}
                           onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openInspector(row); } }}
                         >
-                          <td><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.reference}</Link></td>
-                          <td>
+                          <td data-cell="primary"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.reference}</Link></td>
+                          <td data-cell="route">
                             <span className="ops-cell-primary ops-cell-clamp">{row.customer_name || "Customer not linked"}</span>
                             <span className="ops-cell-secondary ops-cell-clamp">{row.origin} → {row.destination}</span>
                           </td>
-                          <td><span className="ops-cell-muted">{row.mode || "Not set"}</span></td>
-                          <td>
+                          <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{row.mode || "Not set"}</span></td>
+                          <td data-cell="meta" data-label="Last signal">
                             <span className="ops-cell-primary">{shortDateTime(row.last_event_at)}</span>
                             <span className="ops-cell-secondary ops-cell-clamp">{row.current_location || "Location unknown"}</span>
                           </td>
-                          <td>
+                          <td data-cell="meta" data-label="ETA">
                             <span className="ops-cell-primary" data-delayed={delayed || undefined}>{shortDateTime(row.eta)}</span>
                             {delayed ? <span className="ops-cell-secondary visibility-delayed">{delayText(row.eta_delta_hours)} vs baseline</span> : null}
                           </td>
-                          <td>
+                          <td data-cell="status">
                             <span className="visibility-status">
                               <OpsBadge tone={shipmentStatusTone(row.status)}>{shipmentStatusLabels[row.status]}</OpsBadge>
                               {row.stale ? <OpsBadge tone="danger" dot>Stale</OpsBadge> : null}
                             </span>
                           </td>
-                          <td><span className="ops-cell-muted">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Awaiting feed"}</span></td>
-                          <td className="ops-cell-open">
+                          <td data-cell="meta" data-label="Milestone"><span className="ops-cell-muted">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Awaiting feed"}</span></td>
+                          <td data-cell="open" className="ops-cell-open">
                             <button type="button" className="ops-row-open" tabIndex={-1} aria-label={`Inspect ${row.reference}`} onClick={(event) => { event.stopPropagation(); openInspector(row); }}>
                               <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                             </button>

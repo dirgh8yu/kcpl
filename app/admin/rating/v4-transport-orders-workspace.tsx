@@ -209,7 +209,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         <section className="ops-surface" aria-label="Transport order register">
           {filtered.length ? (
             <OpsTableWrap>
-              <table className="ops-table ops-register-table rating-orders-table" aria-label="Transport orders">
+              <table className="ops-table ops-register-table ops-stack-table rating-orders-table" aria-label="Transport orders">
                 <thead>
                   <tr>
                     <th>Order</th>
@@ -225,14 +225,14 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
                 <tbody>{filtered.map((order) => {
                   const chosen = selected?.id === order.id;
                   return <tr key={order.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => setSelectedOrderId(order.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedOrderId(order.id); } }} onDoubleClick={() => router.push(`/admin/rating/${encodeURIComponent(order.id)}`)} aria-label={`Select transport order ${order.id}`}>
-                    <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span></td>
-                    <td><span className="ops-cell-primary ops-cell-clamp">{order.origin} → {order.destination}</span></td>
-                    <td><span className="ops-cell-muted ops-cell-clamp">{order.customer_name || "Not linked"}</span></td>
-                    <td><span className="ops-cell-muted">{modeLabel(order.mode)}</span></td>
-                    <td><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></td>
-                    <td><span className="ops-cell-muted">{shortDate(order.pickup_date)}</span></td>
-                    <td className="ops-cell-actions"><span className="ops-cell-primary tabular-nums">{money(order.selected_cost, order.selected_currency)}</span></td>
-                    <td className="ops-cell-open">
+                    <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span></td>
+                    <td data-cell="route"><span className="ops-cell-primary ops-cell-clamp">{order.origin} → {order.destination}</span></td>
+                    <td data-cell="meta" data-label="Customer"><span className="ops-cell-muted ops-cell-clamp">{order.customer_name || "Not linked"}</span></td>
+                    <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{modeLabel(order.mode)}</span></td>
+                    <td data-cell="status"><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></td>
+                    <td data-cell="meta" data-label="Pickup"><span className="ops-cell-muted">{shortDate(order.pickup_date)}</span></td>
+                    <td data-cell="amount" className="ops-cell-actions"><span className="ops-cell-primary tabular-nums">{money(order.selected_cost, order.selected_currency)}</span></td>
+                    <td data-cell="open" className="ops-cell-open">
                       <Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open order ${order.id}`} tabIndex={-1}>
                         <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                       </Link>

@@ -264,16 +264,16 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
               <div className="load-picker">
                 <p className="load-picker-label">House orders · {selectedOrderIds.length} selected</p>
                 {eligibleOrders.length ? <div className="load-picker-list"><OpsTableWrap>
-                  <table className="ops-table ops-register-table load-picker-table" aria-label="Eligible house orders">
+                  <table className="ops-table ops-register-table ops-stack-table load-picker-table" aria-label="Eligible house orders">
                     <thead><tr><th><span className="sr-only">Select</span></th><th>Order</th><th>Lane</th><th>Customer</th><th className="ops-col-num">Weight · volume</th></tr></thead>
                     <tbody>{eligibleOrders.map((order) => {
                       const checked = selectedOrderIds.includes(order.id);
                       return <tr key={order.id} data-selected={checked || undefined}>
-                        <td className="load-picker-check"><input type="checkbox" aria-label={`Select ${order.id} for consolidation`} checked={checked} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/></td>
-                        <td><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {modeLabel(order.mode)}</span></td>
-                        <td><span className="ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span></td>
-                        <td>{order.customer_name ? <span className="ops-cell-clamp">{order.customer_name}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
-                        <td className="ops-col-num"><span className="ops-num">{order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM</span></td>
+                        <td data-cell="tick" className="load-picker-check"><input type="checkbox" aria-label={`Select ${order.id} for consolidation`} checked={checked} onChange={(event) => setSelectedOrderIds((current) => event.target.checked ? [...current, order.id] : current.filter((id) => id !== order.id))}/></td>
+                        <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span><span className="ops-cell-secondary">{order.branch} · {modeLabel(order.mode)}</span></td>
+                        <td data-cell="route"><span className="ops-cell-clamp" title={`${order.origin} → ${order.destination}`}>{order.origin} → {order.destination}</span></td>
+                        <td data-cell="meta" data-label="Customer">{order.customer_name ? <span className="ops-cell-clamp">{order.customer_name}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
+                        <td data-cell="meta" className="ops-col-num"><span className="ops-num">{order.weight_kg.toFixed(1)} kg · {order.volume_cbm.toFixed(3)} CBM</span></td>
                       </tr>;
                     })}</tbody>
                   </table>
@@ -298,17 +298,17 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
 
         <section className="ops-surface load-register" aria-label="Consolidation register">
           {visibleLoads.length ? <OpsTableWrap>
-            <table className="ops-table ops-register-table load-table" aria-label="Master loads">
+            <table className="ops-table ops-register-table ops-stack-table load-table" aria-label="Master loads">
               <thead><tr><th>Load</th><th>Branch · mode</th><th>Orders · stops</th><th>Capacity</th><th>Status</th></tr></thead>
               <tbody>{visibleLoads.map((load) => {
                 const chosen = selectedLoadId === load.id;
                 const loadWeight = load.members.reduce((sum, member) => sum + member.weight_kg, 0);
                 return <tr key={load.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => selectLoad(load.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectLoad(load.id); } }}>
-                  <td><span className="ops-cell-primary ops-mono ops-cell-id">{load.reference}</span><span className="ops-cell-secondary ops-cell-clamp" title={load.name}>{load.name}</span></td>
-                  <td><span className="ops-cell-primary">{load.branch}</span><span className="ops-cell-secondary">{modeLabel(load.mode)}{load.equipment ? ` · ${load.equipment}` : ""}</span></td>
-                  <td><span className="ops-num">{load.members.length} · {load.stops.length}</span></td>
-                  <td><span className="ops-cell-muted plan-nowrap">{loadWeight.toFixed(1)} kg{load.capacity_weight_kg ? ` of ${load.capacity_weight_kg}` : ""}</span></td>
-                  <td><OpsBadge tone={statusTone(load.status)}>{statusLabel(load.status)}</OpsBadge></td>
+                  <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{load.reference}</span><span className="ops-cell-secondary ops-cell-clamp" title={load.name}>{load.name}</span></td>
+                  <td data-cell="meta"><span className="ops-cell-primary">{load.branch}</span><span className="ops-cell-secondary">{modeLabel(load.mode)}{load.equipment ? ` · ${load.equipment}` : ""}</span></td>
+                  <td data-cell="meta" data-label="Orders · stops"><span className="ops-num">{load.members.length} · {load.stops.length}</span></td>
+                  <td data-cell="meta" data-label="Capacity"><span className="ops-cell-muted plan-nowrap">{loadWeight.toFixed(1)} kg{load.capacity_weight_kg ? ` of ${load.capacity_weight_kg}` : ""}</span></td>
+                  <td data-cell="status"><OpsBadge tone={statusTone(load.status)}>{statusLabel(load.status)}</OpsBadge></td>
                 </tr>;
               })}</tbody>
             </table>
@@ -329,14 +329,14 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
             <div className="load-detail-main">
               <OpsSurface density="compact" title={`${selectedLoad.members.length} house orders`} description={selectedLoad.status === "draft" ? "Membership can change until the load is released. Adding or removing an order regenerates the default route." : "House membership is locked to preserve procurement and shipment truth."} flush>
                 <OpsTableWrap>
-                  <table className="ops-table ops-register-table load-members-table" aria-label="House orders in this load">
+                  <table className="ops-table ops-register-table ops-stack-table load-members-table" aria-label="House orders in this load">
                     <thead><tr><th>Order</th><th>Customer</th><th className="ops-col-num">Weight · volume</th><th className="ops-col-num">Allocated</th><th><span className="sr-only">Actions</span></th></tr></thead>
                     <tbody>{selectedLoad.members.map((member) => <tr key={member.order_id}>
-                      <td><span className="ops-cell-primary ops-mono ops-cell-id">{member.order_id}</span><span className="ops-cell-secondary ops-cell-clamp" title={`${member.origin} → ${member.destination}`}>{member.origin} → {member.destination}</span></td>
-                      <td>{member.customer_name || member.customer_id ? <span className="ops-cell-clamp">{member.customer_name || member.customer_id}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
-                      <td className="ops-col-num"><span className="ops-num">{member.weight_kg.toFixed(1)} kg · {member.volume_cbm.toFixed(3)} CBM</span></td>
-                      <td className="ops-col-num">{member.allocated_cost !== null && member.allocated_currency ? <span className="ops-num">{money(member.allocated_cost, member.allocated_currency)}</span> : <span className="ops-cell-muted">—</span>}</td>
-                      <td className="ops-cell-actions">
+                      <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{member.order_id}</span><span className="ops-cell-secondary ops-cell-clamp" title={`${member.origin} → ${member.destination}`}>{member.origin} → {member.destination}</span></td>
+                      <td data-cell="meta" data-label="Customer">{member.customer_name || member.customer_id ? <span className="ops-cell-clamp">{member.customer_name || member.customer_id}</span> : <span className="ops-cell-muted">Customer not linked</span>}</td>
+                      <td data-cell="meta" className="ops-col-num"><span className="ops-num">{member.weight_kg.toFixed(1)} kg · {member.volume_cbm.toFixed(3)} CBM</span></td>
+                      <td data-cell="amount" className="ops-col-num">{member.allocated_cost !== null && member.allocated_currency ? <span className="ops-num">{money(member.allocated_cost, member.allocated_currency)}</span> : <span className="ops-cell-muted">—</span>}</td>
+                      <td data-cell="action" className="ops-cell-actions">
                         {member.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(member.shipment_reference)}`} className="ops-button" data-size="xs" data-variant="ghost">Open Job File</Link> : null}
                         {editable ? <OpsButton size="xs" variant="ghost" onClick={() => removeOrder(member.order_id)} disabled={busy} aria-label={`Remove ${member.order_id}`}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Remove</OpsButton> : null}
                       </td>

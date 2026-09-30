@@ -92,7 +92,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
       <SectionHead title="Where value is created" detail="Selected-period economics by branch, customer and route."/>
       <div className="mgmt-grid">
         <OpsSurface density="compact" title="Branch performance" description="Selected-period P&L by branch and currency." flush>
-          {analytics.branches.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Branch performance"><thead><tr><th>Branch</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th><th className="ops-col-num">Active jobs</th></tr></thead><tbody>{analytics.branches.map((row) => <tr key={`${row.branch}-${row.currency}`}>
+          {analytics.branches.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Branch performance"><thead><tr><th>Branch</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th><th className="ops-col-num">Active jobs</th></tr></thead><tbody>{analytics.branches.map((row) => <tr key={`${row.branch}-${row.currency}`}>
             <td>{row.branch === "Unassigned" ? <span className="ops-cell-primary">{row.branch}</span> : <Link href={`/admin/branches/${encodeURIComponent(row.branch)}`} className="ops-cell-primary org-link">{row.branch}</Link>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
@@ -113,7 +113,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
           })}</ul> : <Empty text="Not enough customer revenue yet."/>}
         </OpsSurface>
         <OpsSurface density="compact" title="Customer profitability" description="Selected-period P&L ranked by profit within currency." flush>
-          {topCustomers.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Customer profitability"><thead><tr><th>Customer</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topCustomers.map((row) => <tr key={`${row.customer_id || row.customer_name}-${row.currency}`}>
+          {topCustomers.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Customer profitability"><thead><tr><th>Customer</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topCustomers.map((row) => <tr key={`${row.customer_id || row.customer_name}-${row.currency}`}>
             <td>{row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-cell-primary ops-cell-clamp org-link" title={row.customer_name}>{row.customer_name}</Link> : <span className="ops-cell-primary ops-cell-clamp" title={row.customer_name}>{row.customer_name}</span>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
@@ -121,7 +121,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No customer P&L in this period."/>}
         </OpsSurface>
         <OpsSurface density="compact" title="Route economics" description="Selected-period route performance." flush>
-          {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${row.mode}-${row.currency}-${index}`}>
+          {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${row.mode}-${row.currency}-${index}`}>
             <td><span className="ops-cell-primary ops-cell-clamp" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span><span className="ops-cell-secondary">{row.mode} · {row.currency}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.jobs}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
@@ -133,7 +133,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
       <SectionHead title="Exceptions and ownership" detail="Loss-making jobs in the period, and current staff workload independent of the financial range."/>
       <div className="mgmt-grid">
         <OpsSurface density="compact" title="Loss-making jobs" description="Negative lifetime economics with financial activity in the period." flush>
-          {lossJobs.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Loss-making jobs"><thead><tr><th>Shipment</th><th>Customer</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{lossJobs.map((job) => <tr key={`${job.shipment_reference}-${job.currency}`}>
+          {lossJobs.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Loss-making jobs"><thead><tr><th>Shipment</th><th>Customer</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{lossJobs.map((job) => <tr key={`${job.shipment_reference}-${job.currency}`}>
             <td><Link href={`/admin/jobs/${encodeURIComponent(job.shipment_reference)}`} className="ops-cell-primary ops-mono ops-cell-id org-link">{job.shipment_reference}</Link><span className="ops-cell-secondary">{job.branch} · {job.currency}</span></td>
             <td><span className="ops-cell-clamp" title={job.customer_name}>{job.customer_name}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative>{money(job.profit, job.currency)}</span></td>
@@ -141,7 +141,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No loss-making jobs in the current slice."/>}
         </OpsSurface>
         <OpsSurface density="compact" title="Staff workload" description="Current ownership pressure." flush>
-          {workload.length ? <OpsTableWrap><table className="ops-table ops-register-table mgmt-table" aria-label="Staff workload"><thead><tr><th>Staff</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Tasks</th><th className="ops-col-num">Overdue</th><th className="ops-col-num">Urgent</th></tr></thead><tbody>{workload.map((row, index) => <tr key={`${row.staff_email || row.staff_name}-${index}`}>
+          {workload.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Staff workload"><thead><tr><th>Staff</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Tasks</th><th className="ops-col-num">Overdue</th><th className="ops-col-num">Urgent</th></tr></thead><tbody>{workload.map((row, index) => <tr key={`${row.staff_email || row.staff_name}-${index}`}>
             <td>{row.staff_email ? <Link href={`/admin/workload/${encodeURIComponent(row.staff_email)}`} className="ops-cell-primary org-link">{row.staff_name}</Link> : <span className="ops-cell-primary">{row.staff_name}</span>}<span className="ops-cell-secondary ops-cell-clamp">{row.staff_email || "No email"}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.active_jobs}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.open_tasks}</span></td>

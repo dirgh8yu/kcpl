@@ -67,7 +67,7 @@ export function MigrationBatchHistory({ initialDashboard }: { initialDashboard: 
           <Metric label="Records imported" value={dashboard.imported_records}/>
         </OpsKpiRail></div>
 
-        {dashboard.batches.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table migration-table min-w-[1180px]"><thead><tr><th>Batch</th><th>Stage</th><th>Source</th><th>Rows</th><th>Imported</th><th>Actor</th><th>Completed</th><th>Status</th></tr></thead><tbody>{dashboard.batches.map((batch) => <tr key={batch.id}>
+        {dashboard.batches.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table migration-table min-w-[1180px]"><thead><tr><th>Batch</th><th>Stage</th><th>Source</th><th>Rows</th><th>Imported</th><th>Actor</th><th>Completed</th><th>Status</th></tr></thead><tbody>{dashboard.batches.map((batch) => <tr key={batch.id}>
           <td><Link href={`/admin/migration/batches/${encodeURIComponent(batch.id)}`} className="ops-cell-primary ops-mono ops-cell-id org-link">{batch.id}</Link><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Created {dateTime(batch.created_at)}</p></td>
           <td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.stage_label}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.type_label}</p></td>
           <td><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.source_filename || "No source filename"}</span></td>

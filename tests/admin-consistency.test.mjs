@@ -4,6 +4,7 @@ import test from "node:test";
 
 import { freightModeLabel } from "../app/admin/freight-mode.ts";
 import { readable } from "../app/admin/readable.ts";
+import { labelStackedCells } from "../app/admin/stack-labels.ts";
 
 const repo = (path) => new URL(`../${path}`, import.meta.url);
 
@@ -139,4 +140,44 @@ test("an error screen's title is a page title", async () => {
   const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
   assert.match(css, /\.workspace-gate-panel h1 \{ margin: 4px 0 0; font-size: var\(--app-title-size\); font-weight: 600;/);
   assert.match(css, /\.workspace-gate-panel \.workspace-gate-eyebrow \{ margin: 0; color: var\(--admin-muted\); font-size: 12px;/);
+});
+
+test("every staff list table stacks into rows on a phone", async () => {
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    for (const table of source.match(/<table className="[^"]*ops-register-table[^"]*"/g) ?? []) {
+      assert.match(table, /ops-stack-table/, `${path}: ${table}`);
+    }
+  }
+  const shell = await readFile(repo("app/admin/operations-shell.tsx"), "utf8");
+  assert.match(shell, /labelStackedCells\(root\)/);
+  assert.match(shell, /observer\.observe\(root, \{ childList: true, subtree: true \}\)/);
+});
+
+test("a stacked cell takes its column heading; the first names the row, a nameless button column is the row's actions", () => {
+  const node = (tag, { text = "", attrs = {}, children = [], classes = [] } = {}) => ({
+    tag, children, classes, attrs,
+    get textContent() { return text + children.map((child) => child.textContent).join(""); },
+    hasAttribute(name) { return name in this.attrs; },
+    setAttribute(name, value) { this.attrs[name] = value; },
+    all() { return this.children.flatMap((child) => [child, ...child.all()]); },
+    querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; },
+    querySelectorAll(selector) {
+      const all = this.all();
+      if (selector === "table.ops-stack-table") return all.filter((n) => n.tag === "table" && n.classes.includes("ops-stack-table"));
+      if (selector === "thead th") return all.filter((n) => n.tag === "thead").flatMap((n) => n.all().filter((c) => c.tag === "th"));
+      if (selector === "tbody > tr") return all.filter((n) => n.tag === "tbody").flatMap((n) => n.children.filter((c) => c.tag === "tr"));
+      if (selector === "a, button") return all.filter((n) => n.tag === "a" || n.tag === "button");
+      if (selector === ".sr-only, .portal-sr-only") return all.filter((n) => n.classes.includes("sr-only"));
+      throw new Error(selector);
+    },
+  });
+  const th = (text, hidden) => node("th", hidden ? { children: [node("span", { text, classes: ["sr-only"] })] } : { text });
+  const cells = [node("td", { text: "TND-1" }), node("td", { text: "Delhivery" }), node("td", { text: "Sent", attrs: { "data-cell": "status" } }), node("td", { children: [node("button", { text: "Queue EDI 204" })] }), node("td", { text: "—" })];
+  const table = node("table", { classes: ["ops-stack-table"], children: [
+    node("thead", { children: [node("tr", { children: [th("Tender"), th("Partner"), th("Status"), th("Actions", true), th("Notes", true)] })] }),
+    node("tbody", { children: [node("tr", { children: cells })] }),
+  ] });
+  labelStackedCells(node("div", { children: [table] }));
+  assert.deepEqual(cells.map((cell) => cell.attrs), [{}, { "data-label": "Partner" }, { "data-cell": "status" }, { "data-stack": "action" }, {}]);
 });

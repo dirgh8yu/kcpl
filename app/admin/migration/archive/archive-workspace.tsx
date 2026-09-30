@@ -177,7 +177,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
       </OpsSurface>
 
       <OpsSurface density="compact" title="Historical evidence" description={`${filtered.length} of ${records.length} archived file${records.length === 1 ? "" : "s"} shown.`} action={<OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search archive…" aria-label="Search paper archive"/>} flush>
-        {filtered.length ? <OpsTableWrap><table className="ops-table ops-register-table archive-table" aria-label="Paper archive"><thead><tr><th>Archive ID</th><th>Document</th><th>Linked record</th><th>Branch · folder</th><th>Integrity</th><th>Archived by</th><th><span className="sr-only">Download</span></th></tr></thead><tbody>{filtered.map((record) => {
+        {filtered.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table archive-table" aria-label="Paper archive"><thead><tr><th>Archive ID</th><th>Document</th><th>Linked record</th><th>Branch · folder</th><th>Integrity</th><th>Archived by</th><th><span className="sr-only">Download</span></th></tr></thead><tbody>{filtered.map((record) => {
           const href = archiveEntityHref(record);
           return <tr key={record.id}>
             <td><span className="ops-cell-primary ops-mono ops-cell-id">{record.id}</span><span className="ops-cell-secondary">{dateTime(record.uploaded_at)} NPT</span>{record.recovery_id ? <span className="archive-badge"><OpsBadge tone="warning">Recovery preserved</OpsBadge></span> : null}</td>

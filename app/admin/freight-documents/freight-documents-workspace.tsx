@@ -306,7 +306,7 @@ export function FreightDocumentsWorkspace({
         <section className="ops-surface freight-documents-surface" aria-label="Freight document production queue">
           {filtered.length ? (
             <OpsTableWrap>
-              <table className="ops-table ops-register-table freight-documents-table" aria-label="Freight document production queue">
+              <table className="ops-table ops-register-table ops-stack-table freight-documents-table" aria-label="Freight document production queue">
                 <thead>
                   <tr>
                     <th>Job File</th>
@@ -329,19 +329,19 @@ export function FreightDocumentsWorkspace({
                     const pendingReview = hasPendingReview(row);
                     return (
                       <tr key={row.reference} data-selected={selectedRow || undefined} aria-current={selectedRow || undefined} tabIndex={0} onClick={() => openEditor(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openEditor(row); } }}>
-                        <td>
+                        <td data-cell="primary">
                           <Link className="ops-cell-ref ops-mono" href={`/admin/jobs/${encodeURIComponent(row.reference)}?returnTo=${encodeURIComponent(returnTo)}`} onClick={(event) => event.stopPropagation()}>{row.reference}</Link>
                           <span className="ops-cell-secondary ops-cell-clamp" title={`${row.customer_name || "Customer not linked"}${row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}`}>{row.customer_name || "Customer not linked"}{row.booking_reference ? ` · ${row.booking_reference}` : ""}</span>
                         </td>
-                        <td>
+                        <td data-cell="route">
                           <span className="ops-cell-primary freight-documents-route" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span>
                           <span className="ops-cell-secondary freight-documents-route">{row.mode || "Mode not set"}{row.carrier_name ? ` · ${row.carrier_name}` : ""}</span>
                         </td>
-                        <td>
+                        <td data-cell="meta" data-label="Document">
                           {latest ? <span className="ops-cell-primary freight-documents-doc" title={latest.label}>{latest.label}</span> : <span className="ops-cell-primary freight-documents-none">Not generated</span>}
                           {row.missing_primary_carriage_document ? <span className="ops-cell-secondary freight-documents-doc freight-documents-required" title={`${primaryLabel} ${latest ? "still required" : "required"}`}>Needs {primaryLabel}</span> : null}
                         </td>
-                        <td className="freight-documents-col-file">
+                        <td data-cell="meta" data-label="File" className="freight-documents-col-file">
                           {latest ? (
                             <>
                               <span className="ops-cell-primary ops-cell-clamp freight-documents-filename" title={latest.filename}>{middleTruncate(latest.filename, 24)}</span>
@@ -349,7 +349,7 @@ export function FreightDocumentsWorkspace({
                             </>
                           ) : <span className="ops-cell-muted">—</span>}
                         </td>
-                        <td>
+                        <td data-cell="meta" data-label="Review">
                           <div className="freight-documents-review">
                             <OpsBadge tone={review.tone}>{review.label}</OpsBadge>
                             {latest ? (
@@ -359,8 +359,8 @@ export function FreightDocumentsWorkspace({
                             ) : null}
                           </div>
                         </td>
-                        <td><OpsBadge tone={status.tone} dot={row.missing_primary_carriage_document && !pendingReview}>{status.label}</OpsBadge></td>
-                        <td>
+                        <td data-cell="status"><OpsBadge tone={status.tone} dot={row.missing_primary_carriage_document && !pendingReview}>{status.label}</OpsBadge></td>
+                        <td data-cell="action">
                           <div className="ops-cell-actions">
                             {latest ? <OpsButton size="xs" variant="ghost" aria-label={`Open PDF for ${row.reference}`} title="Open the current PDF in a new tab" onClick={(event) => { event.stopPropagation(); void openDocument(row.reference, latest.document_id); }}>PDF</OpsButton> : null}
                             <OpsButton size="xs" variant={row.missing_primary_carriage_document || pendingReview ? "secondary" : "ghost"} className="freight-documents-action" onClick={(event) => { event.stopPropagation(); openEditor(row); }}>{row.missing_primary_carriage_document ? "Produce primary" : pendingReview ? "Continue" : "Manage"}</OpsButton>

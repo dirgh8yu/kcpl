@@ -323,7 +323,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
         <section className="ops-surface document-vault-surface" aria-label="Document evidence queue">
           {visible.length ? (
             <OpsTableWrap>
-              <table className="ops-table ops-register-table document-vault-table" data-compact={compact || undefined} aria-label="All documents">
+              <table className="ops-table ops-register-table ops-stack-table document-vault-table" data-compact={compact || undefined} aria-label="All documents">
                 <thead>
                   <tr>
                     <th>Document</th>
@@ -342,24 +342,24 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
                     const rowSelected = selectedKey === key;
                     return (
                       <tr key={key} data-selected={rowSelected || undefined} data-inactive={inactive || undefined} aria-current={rowSelected || undefined} tabIndex={0} onClick={() => openRow(key)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openRow(key); } }}>
-                        <td>
+                        <td data-cell="primary">
                           <span className="ops-cell-primary ops-cell-clamp" title={row.filename}>{row.filename}</span>
                           <span className="ops-cell-secondary ops-cell-clamp">{row.uploaded_by_source === "customer_portal" ? <span className="document-vault-source">From customer · </span> : null}by {row.uploaded_by} · {bytes(row.size_bytes)}</span>
                         </td>
-                        <td><span className="ops-cell-primary document-vault-type">{shipmentDocumentTypeLabels[row.document_type]}</span></td>
-                        <td>
+                        <td data-cell="meta" data-label="Type"><span className="ops-cell-primary document-vault-type">{shipmentDocumentTypeLabels[row.document_type]}</span></td>
+                        <td data-cell="meta" data-label="Shipment">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{row.shipment_reference}</span>
                           <span className="ops-cell-secondary document-vault-customer">{row.customer_name}</span>
                         </td>
-                        {compact ? null : <td><span className="ops-cell-muted" title={dateTime(row.uploaded_at)}>{shortDateTime(row.uploaded_at)}</span></td>}
-                        {compact ? null : <td>{row.expires_on ? <span className="document-vault-expiry">{dateOnly(row.expires_on)}</span> : <span className="ops-cell-muted">—</span>}</td>}
-                        <td>
+                        {compact ? null : <td data-cell="meta" data-label="Uploaded"><span className="ops-cell-muted" title={dateTime(row.uploaded_at)}>{shortDateTime(row.uploaded_at)}</span></td>}
+                        {compact ? null : <td data-cell="meta" data-label="Expiry">{row.expires_on ? <span className="document-vault-expiry">{dateOnly(row.expires_on)}</span> : <span className="ops-cell-muted">—</span>}</td>}
+                        <td data-cell="status">
                           <div className="freight-documents-review">
                             <OpsBadge tone={statusTone(row.effective_status)}>{statusLabel(row.effective_status)}</OpsBadge>
                             {row.customer_safe ? <span className="freight-documents-safety" data-safe="true"><ShieldCheck size={12} strokeWidth={1.75} aria-hidden="true"/>Customer-safe</span> : <span className="freight-documents-safety">Internal</span>}
                           </div>
                         </td>
-                        {compact ? null : <td><span className={`document-vault-next-action${row.effective_status === "verified" ? " is-complete" : row.effective_status === "rejected" || row.effective_status === "expired" ? " is-attention" : ""}`}>{nextAction(row)}</span></td>}
+                        {compact ? null : <td data-cell="meta" data-label="Next"><span className={`document-vault-next-action${row.effective_status === "verified" ? " is-complete" : row.effective_status === "rejected" || row.effective_status === "expired" ? " is-attention" : ""}`}>{nextAction(row)}</span></td>}
                       </tr>
                     );
                   })}

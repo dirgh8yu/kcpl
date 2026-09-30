@@ -120,7 +120,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
           tabs={<OpsScopeTabs label="Reconciliation filters" items={FILTER_TABS} value={filter} onChange={(value) => setFilter(value)}/>}
         />
 
-        <div className="ops-table-wrap"><table className="ops-table ops-register-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
+        <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
           {filtered.length ? filtered.map((bill) => {
             const partnerId = selections[bill.reference] || "";
             const selectedPartner = partnerById.get(partnerId);

@@ -7,6 +7,7 @@ import { Bell, ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } f
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
+import { labelStackedCells } from "./stack-labels";
 import { StaffShortcuts } from "./staff-shortcuts";
 import { shortcutHubs } from "./staff-shortcuts-policy";
 import { OperationsAccountMenu, type AccountTab } from "./operations-account-menu";
@@ -76,6 +77,19 @@ export function OperationsShell({
 
   // Remember who is signed in and what they can open, so the next page's
   // loading state draws this same sidebar instead of grey placeholders.
+  // Phones: label stacked table cells with their column heading, and keep
+  // doing so as lists filter, page and load.
+  useEffect(() => {
+    const root = document.querySelector(".kcpl-admin-content");
+    if (!root) return;
+    let frame = 0;
+    const label = () => { frame = 0; labelStackedCells(root); };
+    label();
+    const observer = new MutationObserver(() => { if (!frame) frame = requestAnimationFrame(label); });
+    observer.observe(root, { childList: true, subtree: true });
+    return () => { observer.disconnect(); if (frame) cancelAnimationFrame(frame); };
+  }, []);
+
   useEffect(() => {
     if (!placeholder) rememberShell({ userName, ...capabilities });
   }, [placeholder, userName, capabilities]);

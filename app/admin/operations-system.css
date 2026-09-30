@@ -382,7 +382,7 @@
 .kcpl-admin-content .ops-field small { color: var(--admin-faint); font-size: 12px; font-weight: 400; line-height: 16px; }
 .kcpl-admin-content .ops-field textarea { min-height: 96px; padding: 10px 11px; border: 1px solid var(--admin-line); background: var(--admin-surface); }
 .kcpl-admin-content .ops-search { display: flex; align-items: center; min-height: var(--app-control-height); min-width: 0; gap: 8px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 0 12px; color: var(--admin-faint); background: var(--admin-surface); }
-.kcpl-admin-content .ops-search input { width: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; background: transparent; outline: none; box-shadow: none; font-size: 13.5px; line-height: 20px; }
+.kcpl-admin-content .ops-search input { align-self: stretch; width: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; background: transparent; outline: none; box-shadow: none; font-size: 13.5px; line-height: 20px; }
 .kcpl-admin-content .ops-search:focus-within { outline: 2px solid var(--app-focus); outline-offset: 1px; box-shadow: none; }
 .kcpl-admin-content :where(.ops-field input,.ops-field select,.ops-field textarea,.shipments-filter):focus { outline: 2px solid var(--app-focus); outline-offset: 1px; box-shadow: none; }
 
@@ -1733,6 +1733,14 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="amount"] { flex: 0 1 auto; order: 4; font-weight: 600; }
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="action"] { flex: 1 1 100%; order: 5; }
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="open"] { display: none; }
+  /* Untagged tables: the first cell is the record, the rest are small labelled facts. */
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td:not([data-cell]) { flex: 0 1 auto; order: 4; color: var(--admin-muted); font-size: var(--app-text-sm); }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td:not([data-cell]):first-child { flex: 1 1 100%; order: 0; color: var(--admin-ink); font-size: var(--app-text-base); font-weight: 500; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-stack="action"] { flex: 1 1 100%; order: 5; }
+  /* A stacked table no longer scrolls sideways, so it needs no scroll shadow. */
+  .kcpl-admin-shell .kcpl-admin-content .ops-scroll-x:has(> .ops-stack-table) { background: var(--admin-surface); }
+  /* On the invoice the lines share the sheet's margin with the totals below. */
+  .kcpl-admin-shell .kcpl-admin-content .invoice-sheet .ops-stack-table tbody > tr { padding-inline: 0; }
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-label]::before { content: attr(data-label) " "; color: var(--admin-faint); font-weight: 400; }
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table[data-row-link] td[data-cell="primary"] a:first-of-type::after { content: ""; position: absolute; inset: 0; }
   .kcpl-admin-shell .kcpl-admin-content .ops-stack-table[data-row-link] td:not([data-cell="primary"]) :is(a, button, input) { position: relative; z-index: 1; }
@@ -2050,6 +2058,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-badge > i { flex: none; width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
 .kcpl-admin-content .ops-register-table .ops-sort-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-register-table .ops-sort-button:hover { color: var(--admin-ink); } }
+/* On touch a column heading's sort control is a thumb-sized target. */
+@media (pointer: coarse) { .kcpl-admin-content .ops-register-table .ops-sort-button { min-height: 32px; } }
 /* Cell text roles: one strong line, one quiet line. */
 .kcpl-admin-content .ops-cell-primary { display: block; overflow: hidden; color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .ops-cell-secondary { display: block; overflow: hidden; margin-top: 1px; color: var(--admin-muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }

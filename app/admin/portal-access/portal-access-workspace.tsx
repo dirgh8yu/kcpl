@@ -229,7 +229,7 @@ export function PortalAccessWorkspace({
         >
           {rows.length ? (
             <OpsTableWrap>
-              <table className="ops-table ops-register-table portal-table" aria-label="Portal accounts">
+              <table className="ops-table ops-register-table ops-stack-table portal-table" aria-label="Portal accounts">
                 <thead><tr><th>Contact</th><th>Customer</th><th>Access</th><th>State</th><th>Last sign-in</th><th><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {rows.map((account) => (

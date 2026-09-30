@@ -49,7 +49,7 @@ export default async function RecoveryPage() {
         </OpsSurface>
 
         <OpsSurface density="compact" title="Recovery queue" description="Open a batch to generate its live recovery dry run. Completed recoveries remain visible as permanent migration evidence." flush>
-          {dashboard?.batches.length ? <OpsTableWrap><table className="ops-table ops-register-table recovery-table" aria-label="Migration batches for recovery"><thead><tr><th>Batch</th><th>Stage</th><th>Migration state</th><th className="ops-col-num">Imported</th><th>Recovery</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{dashboard.batches.map((batch) => {
+          {dashboard?.batches.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table recovery-table" aria-label="Migration batches for recovery"><thead><tr><th>Batch</th><th>Stage</th><th>Migration state</th><th className="ops-col-num">Imported</th><th>Recovery</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{dashboard.batches.map((batch) => {
             const recoverable = batch.status === "completed" || batch.status === "partial_failure" || batch.status === "interrupted";
             const recoveryTone = batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : batch.rollback_status === "running" ? "info" : "neutral";
             return <tr key={batch.id}>

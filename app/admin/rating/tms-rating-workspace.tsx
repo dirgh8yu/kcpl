@@ -223,7 +223,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
 
         <OpsSurface className="rate-queue" density="compact" title="Transport orders" description="Rate an order whenever cargo facts or supplier pricing change." flush>
           {orders.length ? <OpsTableWrap>
-            <table className="ops-table ops-register-table rate-orders-table" aria-label="Transport orders">
+            <table className="ops-table ops-register-table ops-stack-table rate-orders-table" aria-label="Transport orders">
               <thead><tr><th>Order</th><th>Lane</th><th>Cargo</th><th>Pickup</th><th>Status</th><th className="ops-col-num">Selected cost</th></tr></thead>
               <tbody>{orders.map((order) => {
                 const chosen = selectedOrderId === order.id;
@@ -249,7 +249,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
             flush
           >
             {!selectedOrder ? <OpsEmptyState compact title="No order selected" description="Choose an order to compare Partner procurement rates."/> : results.length ? <OpsTableWrap>
-              <table className="ops-table ops-register-table rate-results-table" aria-label="Compatible Partner buy rates">
+              <table className="ops-table ops-register-table ops-stack-table rate-results-table" aria-label="Compatible Partner buy rates">
                 <thead><tr><th>Partner</th><th>Service</th><th>Basis</th><th className="ops-col-num">Linehaul</th><th className="ops-col-num">Fuel</th><th className="ops-col-num">Accessorials</th><th className="ops-col-num">Total</th><th>Transit</th><th><span className="sr-only">Action</span></th></tr></thead>
                 <tbody>{results.map((result) => {
                   const isSelected = selectedOrder.selected_rate_card_id === result.rate_card_id;

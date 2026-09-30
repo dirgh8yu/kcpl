@@ -370,7 +370,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
           <section className="ops-surface" aria-label="Tender register">
             {filtered.length ? <OpsTableWrap>
-              <table className="ops-table ops-register-table tender-table" data-compact={compact || undefined} aria-label="Tenders">
+              <table className="ops-table ops-register-table ops-stack-table tender-table" data-compact={compact || undefined} aria-label="Tenders">
                 <thead>
                   <tr>
                     <th>Tender</th>
@@ -386,21 +386,21 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
                     const chosen = selected?.id === tender.id;
                     return (
                       <tr key={tender.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openTender(tender.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openTender(tender.id); } }}>
-                        <td>
+                        <td data-cell="primary">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{tender.tender_reference}</span>
                           <span className="ops-cell-secondary ops-mono">{tender.order_id}</span>
                         </td>
-                        <td>
+                        <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp" title={`${tender.origin} → ${tender.destination}`}>{tender.origin} → {tender.destination}</span>
                           <span className="ops-cell-secondary">{compact ? tender.partner_name : tender.mode}</span>
                         </td>
-                        {compact ? null : <td>
+                        {compact ? null : <td data-cell="meta" data-label="Partner">
                           <span className="ops-cell-primary ops-cell-clamp" title={tender.partner_name}>{tender.partner_name}</span>
                           <span className="ops-cell-secondary">{channelLabels[tender.channel]}</span>
                         </td>}
-                        <td className="ops-col-num"><span className="ops-num">{finalCommercial(tender)}</span></td>
-                        <td><OpsBadge tone={stateTone(tender.status)}>{tmsTenderStatusLabels[tender.status]}</OpsBadge></td>
-                        {compact ? null : <td><span className="ops-cell-muted plan-nowrap">{shortDate(tender.response_due_at)}</span></td>}
+                        <td data-cell="amount" className="ops-col-num"><span className="ops-num">{finalCommercial(tender)}</span></td>
+                        <td data-cell="status"><OpsBadge tone={stateTone(tender.status)}>{tmsTenderStatusLabels[tender.status]}</OpsBadge></td>
+                        {compact ? null : <td data-cell="meta" data-label="Reply due"><span className="ops-cell-muted plan-nowrap">{shortDate(tender.response_due_at)}</span></td>}
                       </tr>
                     );
                   })}

@@ -115,7 +115,7 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
         flush
       >
         {handoffShown.length ? <OpsTableWrap>
-          <table className="ops-table ops-register-table edi-handoff-table" aria-label="Tenders eligible for EDI 204">
+          <table className="ops-table ops-register-table ops-stack-table edi-handoff-table" aria-label="Tenders eligible for EDI 204">
             <thead><tr><th>Tender</th><th>Partner</th><th>Route</th><th>Channel</th><th><span className="sr-only">Action</span></th></tr></thead>
             <tbody>{handoffShown.map((tender) => <tr key={tender.id}>
               <td><Link href={`/admin/tenders?tender=${encodeURIComponent(tender.id)}`} className="ops-cell-primary ops-mono ops-cell-id network-link">{tender.tender_reference}</Link></td>
@@ -141,7 +141,7 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
         flush
       >
         {filtered.length ? <OpsTableWrap>
-          <table className="ops-table ops-register-table edi-ledger-table" aria-label="EDI transaction ledger">
+          <table className="ops-table ops-register-table ops-stack-table edi-ledger-table" aria-label="EDI transaction ledger">
             <thead><tr><th>Set</th><th>Direction</th><th>Reference</th><th>Partner</th><th>Status</th><th>Control</th><th>Created</th><th>Message</th></tr></thead>
             <tbody>{filtered.map((row) => <tr key={row.id}>
               <td><span className="ops-cell-primary ops-mono">{row.transaction_set}</span></td>
