@@ -24,6 +24,7 @@ import {
 import type { PortalSession } from "./portal-auth";
 import { portalNeeds, type PortalNeed } from "./portal-needs";
 import { portalTranslator } from "./portal-i18n";
+import { PortalTrackBar } from "./portal-shipment-track";
 
 export function PortalOverview({ session, overview }: { session: PortalSession; overview: PortalOverviewData }) {
   const t = portalTranslator(session.locale);
@@ -81,7 +82,7 @@ export function PortalOverview({ session, overview }: { session: PortalSession; 
                           <span className="portal-lane">{shipment.origin || t("overview.origin")}<span className="portal-lane-arrow" aria-hidden="true">→</span>{shipment.destination || t("overview.destination")}</span>
                           {shipment.current_location ? <span className="portal-cell-detail">{t("overview.now_at", { location: shipment.current_location })}</span> : null}
                         </td>
-                        <td data-cell="status"><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge></td>
+                        <td data-cell="status"><span className="portal-status-stack"><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge><PortalTrackBar status={shipment.status}/></span></td>
                         <td data-cell="meta" data-label={t("overview.col_eta")}>{portalDate(shipment.eta)}</td>
                         <td data-cell="meta" data-label={t("overview.col_last_update")}>{portalDateTime(shipment.updated_at)}</td>
                         <td data-cell="open">

@@ -35,9 +35,9 @@ import {
   portalDocumentLabel,
   portalFileSize,
   portalModeLabel,
-  portalStatusLabel,
-  portalStatusTone,
 } from "../../portal-format";
+import { PortalShipmentTrack } from "../../portal-shipment-track";
+import { portalTrackPosition } from "../../portal-track";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Shipment · KCPL Customer Portal", robots: { index: false, follow: false } };
@@ -100,6 +100,7 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
   const waiting = checklist.some((row) => row.state === "needed" || row.state === "resend");
+  const exception = portalTrackPosition(shipment.status) < 0;
   const exchange = <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale} requested={requested}/>;
 
   return (
@@ -112,11 +113,11 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
           <span>{t("ship.opened", { date: portalDate(shipment.created_at) })}</span>
           <span>{t("ship.last_update", { when: portalDateTime(shipment.updated_at) })}</span>
         </>}
-        actions={<>
-          <OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge>
-          <Link href="/portal/shipments" className="ops-button" data-variant="secondary" data-size="sm">{t("overview.all_shipments")}</Link>
-        </>}
-      />
+      >
+        {/* The status, drawn as where the shipment is on its way. The way back
+            to the list is the Shipments tab, lit above. */}
+        <PortalShipmentTrack status={shipment.status} locale={locale} note={shipment.customer_note}/>
+      </OpsPageHeader>
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
@@ -159,7 +160,9 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
             </OpsSurface>
           ) : null}
 
-          {shipment.customer_note ? (
+          {/* On a shipment that needs attention the note is the reason, and it
+              sits in the alert under the title. */}
+          {shipment.customer_note && !exception ? (
             <OpsNotice tone="neutral">{shipment.customer_note}</OpsNotice>
           ) : null}
 

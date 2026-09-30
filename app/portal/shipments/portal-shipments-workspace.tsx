@@ -18,6 +18,7 @@ import { OpsRegisterToolbar, OpsScopeTabs } from "../../admin/ops-register";
 import type { PortalShipmentView } from "../portal-access-policy";
 import { portalDate, portalDateTime, portalModeLabel, portalStatusLabel, portalStatusTone } from "../portal-format";
 import { portalTranslator, type PortalLocale, type PortalTextKey } from "../portal-i18n";
+import { PortalTrackBar } from "../portal-shipment-track";
 
 type ShipmentFocus = "all" | "active" | "in_transit" | "attention" | "delivered";
 
@@ -123,7 +124,7 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
                         <span className="portal-lane">{shipment.origin || t("overview.origin")}<span className="portal-lane-arrow" aria-hidden="true">→</span>{shipment.destination || t("overview.destination")}</span>
                         {shipment.current_location ? <span className="portal-cell-detail">{t("overview.now_at", { location: shipment.current_location })}</span> : null}
                       </td>
-                      <td data-cell="status"><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge></td>
+                      <td data-cell="status"><span className="portal-status-stack"><OpsBadge tone={portalStatusTone(shipment.status)} dot>{portalStatusLabel(shipment.status, locale)}</OpsBadge><PortalTrackBar status={shipment.status}/></span></td>
                       <td data-cell="meta" data-label={t("ships.col_carrier")}>
                         {shipment.carrier ?? t("common.none")}
                         {shipment.carrier_reference ? <span className="portal-cell-detail"><OpsMono>{shipment.carrier_reference}</OpsMono></span> : null}

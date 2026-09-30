@@ -324,6 +324,10 @@
 .kcpl-admin-content .ops-surface-description { margin-top: 2px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-surface-body { padding: 18px; }
 .kcpl-admin-content .ops-surface-body-flush { padding: 0; }
+/* A surface with nothing under its header is a header card, not a header
+ * over an empty band (a form that opens on demand, say). */
+.kcpl-admin-content .ops-surface-body:empty { display: none; }
+.kcpl-admin-content .ops-surface-header:has(+ .ops-surface-body:empty) { border-bottom: 0; }
 .kcpl-admin-content .ops-toolbar { display: flex; flex-wrap: wrap; align-items: center; min-height: 56px; gap: var(--app-space-2); padding: var(--app-space-2) 0; border-bottom: 1px solid var(--admin-line); background: transparent; }
 .kcpl-admin-content .ops-filter-chip {
   display: inline-flex;
@@ -1576,6 +1580,40 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-timeline-detail { margin: 0 0 4px; color: var(--admin-muted); font-size: var(--app-text-base); line-height: 1.5; }
 .kcpl-admin-content .portal-timeline-location { display: block; color: var(--admin-faint); font-size: var(--app-text-sm); font-weight: 500; }
 
+/* Shipment progress: six steps under the shipment's title, drawn where the
+ * shipment stands. Ink for the road travelled, a ringed dot for today, grey
+ * ahead. Crimson is kept for trouble, as in the customer app. */
+.kcpl-admin-content .ops-page-header > :is(.portal-track, .portal-track-alert) { max-width: 880px; margin: 0 0 20px; }
+.kcpl-admin-content .portal-track-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .portal-track-steps li { position: relative; display: grid; align-content: start; gap: 8px; min-width: 0; }
+.kcpl-admin-content .portal-track-steps li:not(:last-child)::after { content: ""; position: absolute; top: 8px; left: 26px; right: 8px; height: 2px; border-radius: 1px; background: var(--admin-line-strong); }
+.kcpl-admin-content .portal-track-steps li[data-state="done"]::after { background: var(--admin-ink); }
+.kcpl-admin-content .portal-track-dot { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--admin-surface); box-shadow: inset 0 0 0 2px var(--admin-line-strong); }
+.kcpl-admin-content .portal-track-steps li[data-state="done"] .portal-track-dot { background: var(--admin-ink); box-shadow: none; color: var(--admin-on-dark); }
+.kcpl-admin-content .portal-track-steps li[data-state="current"] .portal-track-dot { box-shadow: inset 0 0 0 2px var(--admin-ink), 0 0 0 4px var(--admin-surface-muted); }
+.kcpl-admin-content .portal-track-steps li[data-state="current"] .portal-track-dot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--admin-ink); }
+.kcpl-admin-content .portal-track-label { padding-right: 8px; color: var(--admin-faint); font-size: var(--app-text-base); line-height: 18px; overflow-wrap: anywhere; }
+.kcpl-admin-content .portal-track-steps li[data-state="done"] .portal-track-label { color: var(--admin-muted); }
+.kcpl-admin-content .portal-track-steps li[aria-current="step"] .portal-track-label { color: var(--admin-ink); font-weight: 600; }
+.kcpl-admin-content .portal-track-caption { display: none; }
+.kcpl-admin-content .portal-track-alert { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); background: var(--admin-danger-bg); color: var(--admin-danger); font-size: var(--app-text-base); line-height: 20px; }
+.kcpl-admin-content .portal-track-alert svg { flex: none; margin-top: 2px; }
+.kcpl-admin-content .portal-track-alert p { margin: 0; }
+.kcpl-admin-content .portal-track-alert-note { display: block; margin-top: 2px; color: var(--admin-ink); }
+/* In a list the badge names the status; the bar under it shows how far along. */
+/* One length for every row, so a glance down the column compares progress. */
+.kcpl-admin-content .portal-status-stack { display: inline-grid; justify-items: start; gap: 6px; }
+.kcpl-admin-content .portal-track-bar { display: flex; gap: 2px; width: 96px; }
+.kcpl-admin-content .portal-track-bar > span { flex: 1; height: 3px; border-radius: 2px; background: var(--admin-line-strong); }
+.kcpl-admin-content .portal-track-bar > span[data-filled] { background: var(--admin-ink); }
+@media (max-width: 560px) {
+  /* Six labels do not fit a phone: the dots stay, one line names today. */
+  .kcpl-admin-content .portal-track-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .kcpl-admin-content .portal-track-caption { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 12px 0 0; color: var(--admin-muted); font-size: var(--app-text-base); line-height: 20px; }
+  .kcpl-admin-content .portal-track-caption strong { color: var(--admin-ink); font-weight: 600; }
+  .kcpl-admin-content .portal-track-caption > span::before { content: "·"; margin-right: 8px; color: var(--admin-faint); }
+}
+
 .kcpl-admin-content .portal-document-list { display: grid; gap: var(--app-space-2); margin: 0; padding: 0; list-style: none; }
 .kcpl-admin-content .portal-document-list li { display: flex; align-items: center; gap: var(--app-space-3); padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); }
 .kcpl-admin-content .portal-document-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--app-radius-sm); background: var(--admin-surface-muted); color: var(--admin-muted); }
@@ -1705,6 +1743,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="amount"][data-label] { flex: 1 1 100%; order: 4; font-size: var(--app-text-md); }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="action"] { flex: 1 1 100%; order: 5; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-cell="open"] { display: none; }
+  .kcpl-portal-route .kcpl-admin-content .portal-stack-table .portal-status-stack { justify-items: end; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table td[data-label]::before { content: attr(data-label) " "; color: var(--admin-faint); font-weight: 400; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td[data-cell="primary"] .portal-row-link::after { content: ""; position: absolute; inset: 0; }
   .kcpl-portal-route .kcpl-admin-content .portal-stack-table[data-row-link] td:not([data-cell="primary"]) a { position: relative; z-index: 1; }

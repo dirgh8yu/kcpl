@@ -82,6 +82,18 @@ const en = {
   "status.exception": "Exception",
   "status.unknown": "Shipment update",
 
+  /* Shipment progress track: short step names, one per status */
+  "track.label": "Shipment progress",
+  "track.booking_confirmed": "Booked",
+  "track.preparing": "Preparing",
+  "track.in_transit": "In transit",
+  "track.customs_clearance": "Customs",
+  "track.out_for_delivery": "Out for delivery",
+  "track.delivered": "Delivered",
+  "track.done": "done",
+  "track.step_of": "Step {step} of {total}",
+  "track.next": "Next: {step}",
+
   /* Mode */
   "mode.air": "Air freight",
   "mode.sea": "Sea freight",
@@ -699,6 +711,17 @@ const ne: Record<PortalTextKey, string> = {
   "status.delivered": "डेलिभर भयो",
   "status.exception": "समस्या",
   "status.unknown": "ढुवानी अद्यावधिक",
+
+  "track.label": "ढुवानीको प्रगति",
+  "track.booking_confirmed": "बुक भयो",
+  "track.preparing": "तयारी",
+  "track.in_transit": "बाटोमा",
+  "track.customs_clearance": "भन्सार",
+  "track.out_for_delivery": "डेलिभरीमा",
+  "track.delivered": "डेलिभर भयो",
+  "track.done": "सम्पन्न",
+  "track.step_of": "{total} मध्ये चरण {step}",
+  "track.next": "अर्को: {step}",
 
   "mode.air": "हवाई ढुवानी",
   "mode.sea": "समुद्री ढुवानी",
