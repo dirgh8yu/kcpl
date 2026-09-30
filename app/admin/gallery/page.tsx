@@ -7,6 +7,7 @@ import { OperationsShell } from "../operations-shell";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { galleryStorageAvailable, listGalleryEntries } from "../../site-gallery.server";
 import { GalleryWorkspace } from "./gallery-workspace";
+import { mockGalleryEntries, qaMockDataEnabled } from "../qa-fixtures";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Website gallery", robots: { index: false, follow: false } };
@@ -26,6 +27,7 @@ export default async function AdminGalleryPage() {
     isManagement: staff.permissions.role === "management",
   };
   if (staff.permissions.role !== "management") return <OperationsShell {...shellProps}><V4WorkspaceGate embedded title="Management access required" detail="Publishing images on the public website is restricted to KCPL Management." /></OperationsShell>;
+  if (qaMockDataEnabled()) return <OperationsShell {...shellProps}><GalleryWorkspace initialItems={mockGalleryEntries()} /></OperationsShell>;
   if (!galleryStorageAvailable()) return <OperationsShell {...shellProps}><V4WorkspaceGate embedded title="Image storage is unavailable" detail="Configure the Firebase Storage bucket for this deployment before uploading gallery images." /></OperationsShell>;
 
   let entries;

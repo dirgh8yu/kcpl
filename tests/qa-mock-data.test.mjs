@@ -27,6 +27,10 @@ import {
   mockTmsOrders,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
+  mockGalleryEntries,
+  mockGalleryImagePath,
+  mockOpenJobTasks,
+  mockStaffProfiles,
   qaMockDataEnabled,
 } from "../app/admin/qa-fixtures.ts";
 
@@ -124,6 +128,10 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/crm/crm-rate-cards.server.ts",
     "app/admin/crm/crm-customer-documents.server.ts",
     "app/admin/crm/crm-customer-finance.server.ts",
+    // Workload and Website gallery
+    "app/admin/workload/[key]/page.tsx",
+    "app/admin/gallery/page.tsx",
+    "app/api/admin/gallery/[id]/image/route.ts",
   ];
   for (const path of loaders) {
     const text = source(path);
@@ -481,4 +489,35 @@ test("QA preview: batch, supplier bill, Rate Desk and reconciliation pages open"
   // The preview still refuses a role without Accounts Payable authority.
   assert.ok(read.indexOf("qaMockDataEnabled()") < read.indexOf("canManageFinance"));
   assert.ok(read.indexOf("canManageFinance") < read.indexOf('kind: "ready"'));
+});
+
+test("preview Workload tasks match the Overview's counts, and each owner's branches cover their shipments", () => {
+  const now = Date.UTC(2026, 8, 18, 12, 0, 0);
+  const data = mockCommandCentre({ can_access_all_branches: true, branches: [] }, now);
+  const tasks = mockOpenJobTasks(data.jobs, now);
+  for (const job of data.jobs.filter((row) => row.status !== "delivered")) {
+    const mine = tasks.filter((task) => task.shipment_reference === job.reference);
+    assert.equal(mine.length, job.open_tasks, job.reference);
+    assert.equal(mine.filter((task) => Date.parse(task.due_at) < now).length, job.overdue_tasks, job.reference);
+  }
+  const profiles = mockStaffProfiles(now);
+  for (const load of data.staff_load) {
+    const profile = profiles.find((row) => row.uid === load.key);
+    assert.ok(profile, `${load.key} links to a profile`);
+    if (profile.branch_scope === "all") continue;
+    for (const job of data.jobs.filter((row) => row.assigned_to_uid === load.key && row.status !== "delivered")) {
+      assert.ok(profile.branches.includes(job.primary_branch), `${profile.display_name} owns ${job.reference} at ${job.primary_branch}`);
+    }
+  }
+});
+
+test("preview gallery rows show photos the repo ships, and no other id resolves", () => {
+  const entries = mockGalleryEntries(Date.UTC(2026, 8, 18));
+  assert.ok(entries.some((entry) => entry.published) && entries.some((entry) => !entry.published));
+  for (const entry of entries) {
+    const path = mockGalleryImagePath(entry.id);
+    assert.match(path, /^\/images\/[a-z-]+\.jpg$/);
+    assert.ok(readFileSync(`${root}/public${path}`).length > 0, path);
+  }
+  for (const id of ["qa-gallery-0", "qa-gallery-99", "abc123", "../qa-gallery-1"]) assert.equal(mockGalleryImagePath(id), null, id);
 });

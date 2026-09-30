@@ -1,19 +1,12 @@
 import { loadShipmentChildren } from "../../operational-shipments.server";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  CalendarDays,
   CheckCircle2,
-  CircleAlert,
   Clock3,
   Landmark,
-  ListTodo,
-  PackageCheck,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+  } from "lucide-react";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
 import { getAdminAccess } from "../../admin-auth";
@@ -21,12 +14,11 @@ import { loadCommandCentre } from "../../command-centre/command-centre.server";
 import type { CommandCentreJob } from "../../command-centre/command-centre-data";
 import { kcplBranches, type KcplBranch } from "../../crm/crm-data";
 import { OperationsShell } from "../../operations-shell";
+import { OpsKpiRail, OpsRailMetric } from "../../ops-register";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsKpiCard,
-  OpsKpiStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
@@ -34,6 +26,7 @@ import {
 } from "../../operations-ui";
 import { getStaffContext, listStaffProfiles } from "../../staff-directory.server";
 import { kcplStaffRoleLabels } from "../../staff-permissions";
+import { mockOpenJobTasks, qaMockDataEnabled } from "../../qa-fixtures";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Workload", robots: { index: false, follow: false } };
@@ -107,7 +100,8 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   const shellProps = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: staff.permissions.role === "management" };
   const shellGate = (title: string, detail: string) => <OperationsShell {...shellProps}><Gate title={title} detail={detail} embedded/></OperationsShell>;
   if (!staff.permissions.canManageJobFile) return shellGate("Operations access required", "Your current role does not include operational Job File access.");
-  if (!firebaseRuntimeConfigured()) return shellGate("Workload can’t be shown right now", "The records service isn’t responding. Try again in a minute.");
+  const preview = qaMockDataEnabled();
+  if (!preview && !firebaseRuntimeConfigured()) return shellGate("Workload can’t be shown right now", "The records service isn’t responding. Try again in a minute.");
 
   const { key: rawKey } = await params;
   const key = decodeURIComponent(rawKey).trim().toLowerCase();
@@ -128,11 +122,10 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
 
   // The tasks of the jobs this person can see, read per job; a collection-group
   // read kept the oldest 8,000 tasks and missed new work.
-  const taskDocs = await loadShipmentChildren(firebaseAdminDb(), [...accessibleReferences], "job_tasks");
-  const tasks: StaffTask[] = taskDocs.flatMap((doc) => {
-    const row = doc.data() as Record<string, unknown>;
+  const taskRows = qaMockDataEnabled() ? mockOpenJobTasks(data.jobs, now).map((row) => ({ id: row.id, shipmentReference: row.shipment_reference, row: row as Record<string, unknown> }))
+    : (await loadShipmentChildren(firebaseAdminDb(), [...accessibleReferences], "job_tasks")).map((doc) => ({ id: doc.id, shipmentReference: shipmentIdFromTask(doc.ref), row: doc.data() as Record<string, unknown> }));
+  const tasks: StaffTask[] = taskRows.flatMap(({ id, shipmentReference, row }) => {
     if (row.completed === true) return [];
-    const shipmentReference = shipmentIdFromTask(doc.ref);
     if (!shipmentReference || !accessibleReferences.has(shipmentReference)) return [];
 
     const email = text(row.assigned_to_email).trim().toLowerCase();
@@ -143,7 +136,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
     const dueAt = nullable(row.due_at);
     const dueTime = dueAt ? Date.parse(dueAt) : Number.NaN;
     return [{
-      id: doc.id,
+      id,
       shipmentReference,
       title: text(row.title, "Operational task"),
       detail: nullable(row.detail),
@@ -160,39 +153,33 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
 
   const overdueTasks = tasks.filter((task) => task.overdue).length;
   const urgentJobs = assignedJobs.filter((job) => job.priority === "urgent" || job.status === "exception").length;
-  const exceptionJobs = assignedJobs.filter((job) => job.status === "exception").length;
   const customsOpen = assignedJobs.reduce((sum, job) => sum + job.required_customs_open, 0);
-  const dueToday = assignedJobs.filter((job) => job.eta?.slice(0, 10) === data.operational_date).length;
   const attentionJobs = assignedJobs.filter((job) => job.status === "exception" || job.priority === "urgent" || job.overdue_tasks > 0 || job.required_customs_open > 0);
 
   return (
     <OperationsShell {...shellProps} detailLabel={targetName}>
       <OpsPage>
         <OpsPageHeader
-          eyebrow="Staff workload"
-          title={<span className="inline-flex items-center gap-2"><UserRound size={24}/>{targetName}</span>}
-          description="A live view of this staff member’s assigned movements, operational tasks, overdue work, urgent jobs and branch responsibility."
+          eyebrow="Workload"
+          title={targetName}
+          description="The shipments this person owns, their open tasks and what needs attention first."
           meta={<>
             {profile?.job_title ? <span>{profile.job_title}</span> : null}
             {targetEmail ? <span>{targetEmail}</span> : null}
             <span>{profile ? kcplStaffRoleLabels[profile.role] : "Operational owner"}</span>
             <span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span>
           </>}
-          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Overview</Link>{staff.permissions.canManageStaff && profile ? <Link href="/admin/staff" className="ops-button" data-variant="secondary" data-size="md">Staff directory<ArrowUpRight size={12}/></Link> : null}</div>}
-        >
-          <OpsKpiStrip>
-            <OpsKpiCard label="Assigned shipments" value={assignedJobs.length} detail={assignedJobs.length === 1 ? "active movement" : "active movements"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
-            <OpsKpiCard label="Open tasks" value={tasks.length} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks ? "danger" : tasks.length ? "info" : "success"}/>
-            <OpsKpiCard label="Urgent jobs" value={urgentJobs} detail={urgentJobs ? "priority or exception work" : "no urgent movement"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={urgentJobs ? "warning" : "success"}/>
-            <OpsKpiCard label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={customsOpen ? "warning" : "success"}/>
-            <OpsKpiCard label="Exceptions" value={exceptionJobs} detail={exceptionJobs ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={exceptionJobs ? "danger" : "success"}/>
-            <OpsKpiCard label="Due today" value={dueToday} detail={dueToday ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="neutral"/>
-          </OpsKpiStrip>
-        </OpsPageHeader>
+          actions={staff.permissions.canManageStaff && profile ? <Link href="/admin/staff" className="ops-button" data-variant="secondary" data-size="md">People & branches<ArrowUpRight size={12}/></Link> : null}
+        />
 
         <div className="ops-content ops-stack">
-          <div className="ops-grid-main">
-            <OpsSurface eyebrow="Ownership" title="Assigned shipments" description={`${assignedJobs.length} active movement${assignedJobs.length === 1 ? "" : "s"} currently owned by ${targetName}.`} flush>
+          <OpsKpiRail label="Workload at a glance">
+            <OpsRailMetric label="Assigned shipments" value={assignedJobs.length}/>
+            <OpsRailMetric label="Open tasks" value={tasks.length} detail={overdueTasks ? `${overdueTasks} overdue` : undefined} tone={overdueTasks ? "danger" : "neutral"}/>
+            <OpsRailMetric label="Urgent or exception" value={urgentJobs} tone={urgentJobs ? "warning" : "neutral"}/>
+            <OpsRailMetric label="Customs steps open" value={customsOpen} tone={customsOpen ? "warning" : "neutral"}/>
+          </OpsKpiRail>
+          <OpsSurface eyebrow="Ownership" title="Assigned shipments" description={`${assignedJobs.length} active movement${assignedJobs.length === 1 ? "" : "s"} currently owned by ${targetName}.`} flush>
               {assignedJobs.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table ops-stack-table min-w-[980px] w-full"><thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Branch</th><th>ETA</th><th>Tasks</th><th>Customs</th><th></th></tr></thead><tbody>{assignedJobs.map((job) => <tr key={job.reference}>
                 <td><strong className="ops-route"><span>{job.origin || "Origin"}</span><ArrowRight size={11} className="ops-route-arrow"/><span>{job.destination || "Destination"}</span></strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name}</span></td>
                 <td><OpsMono>{job.reference}</OpsMono><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.current_location || job.primary_branch}</span></td>
@@ -203,20 +190,19 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
                 <td className={job.required_customs_open ? "font-semibold text-[var(--admin-warning)]" : ""}>{job.required_customs_open}/{job.required_customs_total}</td>
                 <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File<ArrowUpRight size={11}/></Link></td>
               </tr>)}</tbody></table></div> : <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={16}/>} title="No assigned shipments" description={`${targetName} does not currently own an active movement.`}/>} 
-            </OpsSurface>
+          </OpsSurface>
 
-            <div className="ops-stack">
+          <div className="ops-grid-2">
               <OpsSurface eyebrow="Responsibility" title="Branch access" description={profile ? "Branches assigned to this staff profile within your own accessible scope." : "Branches inferred from currently assigned movements."} flush>
                 {responsibility.length ? <div className="divide-y divide-[var(--admin-line)]">{responsibility.map((branch) => {
                   const jobsAtBranch = assignedJobs.filter((job) => job.primary_branch === branch || job.handling_branches.includes(branch)).length;
-                  return <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--admin-surface-soft)]"><span className="flex items-center gap-2 text-[11px] font-semibold text-[var(--admin-ink)]"><Landmark size={12} className="text-[var(--admin-muted)]"/>{branch}</span><span className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{jobsAtBranch} active<ArrowUpRight size={11}/></span></Link>;
+                  return <Link key={branch} href={`/admin/branches/${encodeURIComponent(branch)}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--admin-surface-soft)]"><span className="flex items-center gap-2 text-[length:var(--app-text-sm)] font-semibold text-[var(--admin-ink)]"><Landmark size={12} className="text-[var(--admin-muted)]"/>{branch}</span><span className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{jobsAtBranch} active<ArrowUpRight size={11}/></span></Link>;
                 })}</div> : <OpsEmptyState compact kind="neutral" icon={<Landmark size={15}/>} title="No branch responsibility recorded" description="No branch scope is currently available for this operational owner."/>}
               </OpsSurface>
 
               <OpsSurface eyebrow="Attention" title="Priority movements" description="Assigned shipments with an exception, urgent priority, overdue task or customs blocker." flush priority={attentionJobs.length ? "warning" : "success"}>
-                {attentionJobs.length ? <div className="divide-y divide-[var(--admin-line)]">{attentionJobs.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--admin-surface-soft)]"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="truncate text-[11px] text-[var(--admin-ink)]">{job.origin || "Origin"} → {job.destination || "Destination"}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.overdue_tasks ? `${job.overdue_tasks} overdue · ` : ""}{job.required_customs_open ? `${job.required_customs_open} customs open · ` : ""}{job.priority} priority</span></div><ArrowUpRight size={12} className="shrink-0 text-[var(--admin-muted)]"/></Link>)}</div> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={15}/>} title="No priority pressure" description="No assigned movement currently has an exception, overdue work, urgent priority or customs blocker."/>}
+                {attentionJobs.length ? <div className="divide-y divide-[var(--admin-line)]">{attentionJobs.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--admin-surface-soft)]"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="truncate text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{job.origin || "Origin"} → {job.destination || "Destination"}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.overdue_tasks ? `${job.overdue_tasks} overdue · ` : ""}{job.required_customs_open ? `${job.required_customs_open} customs open · ` : ""}{job.priority} priority</span></div><ArrowUpRight size={12} className="shrink-0 text-[var(--admin-muted)]"/></Link>)}</div> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={15}/>} title="No priority pressure" description="No assigned movement currently has an exception, overdue work, urgent priority or customs blocker."/>}
               </OpsSurface>
-            </div>
           </div>
 
           <OpsSurface eyebrow="Task queue" title="Open tasks" description={`Operational tasks specifically assigned to ${targetName}, including work on shipments they may not directly own.`} flush priority={overdueTasks ? "danger" : tasks.length ? "info" : "success"}>

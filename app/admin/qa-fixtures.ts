@@ -179,7 +179,9 @@ export function mockCommandCentre(staff: KcplStaffContext, now = Date.now()): Co
   const staffLoad = STAFF_SEEDS.map((person) => {
     const rows = active.filter((job) => job.assigned_to_email === person.email);
     return {
-      key: person.email,
+      // Keyed like the live Overview: by uid, which is what Job File owner
+      // links carry.
+      key: `uid-${person.email.split("@")[0]}`,
       uid: `uid-${person.email.split("@")[0]}`,
       name: person.name,
       email: person.email,
@@ -1204,7 +1206,9 @@ export function mockStaffProfiles(now = Date.now()): KcplStaffProfile[] {
     phone: "+977 1 4000000",
     role: roles[index],
     branch_scope: index === 4 ? "all" : "selected",
-    branches: index === 4 ? [] : [(["Kathmandu", "Birgunj", "Kathmandu", "Kolkata", "Kathmandu"] as KcplBranch[])[index]],
+    // Each person's branches cover the shipments they own in the seeds, so
+    // Workload's branch list and its shipments agree.
+    branches: index === 4 ? [] : ([["Birgunj"], ["Birgunj", "Kathmandu", "Raxaul"], ["Kathmandu"], ["Birgunj", "Kathmandu", "Kolkata"]] as KcplBranch[][])[index],
     active: true,
     created_at: iso(now, -(index + 200) * DAY),
     updated_at: iso(now, -(index + 1) * DAY),
@@ -2126,6 +2130,63 @@ function mockJobTasks(job: CommandCentreJob, now: number): JobTask[] {
     created_at: iso(now, -72 * HOUR + index * HOUR),
     created_by: JOB_OWNER.name,
   }));
+}
+
+/** Open tasks across the given jobs, as stored task rows: each job gets as
+ * many as its open_tasks count, the first overdue_tasks of them past due, so
+ * the Workload page tells the same story as the Overview. */
+export function mockOpenJobTasks(jobs: CommandCentreJob[], now = Date.now()) {
+  const seeds: Array<[string, string]> = [
+    ["Lodge customs declaration", "Submit entry once HS classification is agreed with the broker."],
+    ["Confirm delivery window with consignee", "Warehouse accepts deliveries 09:00-16:00 only."],
+    ["Chase signed packing list", "Customer to send the final signed copy for the entry."],
+    ["Book the onward truck", "Confirm a 10T truck for the last leg."],
+    ["Check the carrier invoice", "Match the freight bill against the accepted rate."],
+    ["Send the arrival notice", "Tell the consignee the expected arrival and the charges due."],
+  ];
+  return jobs.filter((job) => job.status !== "delivered").flatMap((job) => Array.from({ length: job.open_tasks }, (_, index) => {
+    const [title, detail] = seeds[index % seeds.length];
+    const overdue = index < job.overdue_tasks;
+    return {
+      id: `${job.reference}-open-${index + 1}`,
+      shipment_reference: job.reference,
+      title,
+      detail,
+      branch: job.primary_branch,
+      due_at: iso(now, (overdue ? -(6 + index * 5) : 8 + index * 20) * HOUR),
+      assigned_to_name: job.assigned_to_name,
+      assigned_to_email: job.assigned_to_email,
+      completed: false,
+    };
+  }));
+}
+
+const GALLERY_SEEDS: { title: string; alt: string; file: string; width: number; height: number; published: boolean; daysAgo: number }[] = [
+  { title: "Air freight at Kathmandu", alt: "Cargo being loaded into an aircraft hold", file: "/images/air-freight.jpg", width: 1802, height: 873, published: true, daysAgo: 2 },
+  { title: "Ocean freight", alt: "A container ship at sea", file: "/images/ocean-freight.jpg", width: 1844, height: 853, published: true, daysAgo: 9 },
+  { title: "Road freight into Nepal", alt: "A KCPL truck on a mountain road", file: "/images/nepal-road-freight.jpg", width: 1774, height: 887, published: false, daysAgo: 1 },
+  { title: "Himalayan corridor", alt: "Snow peaks above the road into Kathmandu", file: "/images/himalayan-hero.jpg", width: 2400, height: 1600, published: false, daysAgo: 20 },
+];
+
+/** Website gallery rows for the preview, drawn from photos the repo already
+ * ships, so the manager has something to show without Storage. */
+export function mockGalleryEntries(now = Date.now()) {
+  return GALLERY_SEEDS.map((seed, index) => ({
+    id: `qa-gallery-${index + 1}`,
+    title: seed.title,
+    alt: seed.alt,
+    width: seed.width,
+    height: seed.height,
+    published: seed.published,
+    created_at: iso(now, -seed.daysAgo * 24 * HOUR),
+    updated_at: iso(now, -seed.daysAgo * 24 * HOUR),
+  }));
+}
+
+/** The repo photo behind a preview gallery row, or null for any other id. */
+export function mockGalleryImagePath(id: string) {
+  const match = /^qa-gallery-(\d+)$/.exec(id);
+  return match ? GALLERY_SEEDS[Number(match[1]) - 1]?.file ?? null : null;
 }
 
 function mockCustomsSteps(job: CommandCentreJob, now: number): CustomsStep[] {

@@ -1,27 +1,20 @@
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
-  CircleAlert,
-  Landmark,
-  ListTodo,
-  PackageCheck,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
 import { getAdminAccess } from "../../admin-auth";
 import { kcplBranches, type KcplBranch } from "../../crm/crm-data";
 import { OperationsShell } from "../../operations-shell";
+import { OpsKpiRail, OpsRailMetric } from "../../ops-register";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import {
   OpsBadge,
   OpsEmptyState,
-  OpsKpiCard,
-  OpsKpiStrip,
   OpsMono,
   OpsPage,
   OpsPageHeader,
@@ -96,11 +89,9 @@ export default async function BranchOperationsPage({ params }: { params: Promise
 
   const branch = decodedBranch;
   const jobs = data.jobs.filter((job) => job.primary_branch === branch || job.handling_branches.includes(branch));
-  const branchLoad = data.branch_load.find((item) => item.branch === branch);
   const openTasks = jobs.reduce((sum, job) => sum + job.open_tasks, 0);
   const overdueTasks = jobs.reduce((sum, job) => sum + job.overdue_tasks, 0);
   const customsOpen = jobs.reduce((sum, job) => sum + job.required_customs_open, 0);
-  const exceptions = jobs.filter((job) => job.status === "exception").length;
   const unassigned = jobs.filter((job) => !job.assigned_to_name && !job.assigned_to_email).length;
   const pressureJobs = jobs.filter((job) => issueFor(job));
 
@@ -133,24 +124,20 @@ export default async function BranchOperationsPage({ params }: { params: Promise
       <OpsPage>
         <OpsPageHeader
           eyebrow="Branch"
-          title={<span className="inline-flex items-center gap-2"><Landmark size={24}/>{branch}</span>}
-          description="A live branch-level drill-down of active movements, ownership, ETAs, tasks, customs work and exceptions."
+          title={branch}
+          description="Active shipments at this branch, who owns them, what is due and what is blocked."
           meta={<><span>{kcplStaffRoleLabels[staff.permissions.role]}</span><span>Operational date {dateOnly(data.operational_date)}</span><span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span></>}
-          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Overview</Link><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
-        >
-          <OpsKpiStrip>
-            <OpsKpiCard label="Active shipments" value={jobs.length} detail={jobs.length === 1 ? "movement at this branch" : "movements at this branch"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
-            <OpsKpiCard label="Unassigned" value={unassigned} detail={unassigned ? "owner required" : "all movements owned"} icon={<UserRound size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={unassigned ? "warning" : "success"}/>
-            <OpsKpiCard label="Open tasks" value={openTasks} detail={overdueTasks ? `${overdueTasks} overdue` : "no overdue work"} icon={<ListTodo size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={overdueTasks ? "danger" : openTasks ? "info" : "success"}/>
-            <OpsKpiCard label="Customs work" value={customsOpen} detail={customsOpen ? "required steps open" : "no customs blockers"} icon={<ShieldCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={customsOpen ? "warning" : "success"}/>
-            <OpsKpiCard label="Exceptions" value={exceptions} detail={exceptions ? "shipment exception state" : "no critical exceptions"} icon={<CircleAlert size={18} strokeWidth={1.9} aria-hidden="true"/>} tone={exceptions ? "danger" : "success"}/>
-            <OpsKpiCard label="Due today" value={branchLoad?.deliveries_today ?? 0} detail={(branchLoad?.deliveries_today ?? 0) ? "ETA falls today" : "nothing due today"} icon={<CalendarDays size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="neutral"/>
-          </OpsKpiStrip>
-        </OpsPageHeader>
+          actions={<div className="flex items-center gap-2"><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
+        />
 
         <div className="ops-content ops-stack">
-          <div className="ops-grid-main">
-            <OpsSurface eyebrow="Live movements" title="Active shipments" description={`${jobs.length} active movement${jobs.length === 1 ? "" : "s"} connected to ${branch}.`} flush>
+          <OpsKpiRail label="Branch at a glance">
+            <OpsRailMetric label="Active shipments" value={jobs.length}/>
+            <OpsRailMetric label="Unassigned" value={unassigned} tone={unassigned ? "warning" : "neutral"}/>
+            <OpsRailMetric label="Open tasks" value={openTasks} detail={overdueTasks ? `${overdueTasks} overdue` : undefined} tone={overdueTasks ? "danger" : "neutral"}/>
+            <OpsRailMetric label="Customs steps open" value={customsOpen} tone={customsOpen ? "warning" : "neutral"}/>
+          </OpsKpiRail>
+          <OpsSurface eyebrow="Live movements" title="Active shipments" description={`${jobs.length} active movement${jobs.length === 1 ? "" : "s"} connected to ${branch}.`} flush>
               {jobs.length ? (
                 <div className="ops-scroll-x ops-table-wrap overflow-x-auto">
                   <table className="ops-table ops-register-table ops-stack-table min-w-[1050px] w-full">
@@ -170,23 +157,22 @@ export default async function BranchOperationsPage({ params }: { params: Promise
                   </table>
                 </div>
               ) : <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={16}/>} title="No active movements" description={`There are currently no active shipments connected to ${branch}.`}/>} 
-            </OpsSurface>
+          </OpsSurface>
 
-            <div className="ops-stack">
+          <div className="ops-grid-2">
               <OpsSurface eyebrow="ETA watch" title="Upcoming ETAs" description="Next scheduled arrivals or deliveries for this branch." flush>
-                {upcomingEtas.length ? <div>{upcomingEtas.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><div className="min-w-0"><strong className="block truncate text-[12px] text-[var(--admin-ink)]">{job.origin || "Origin"} → {job.destination || "Destination"}</strong><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {ownerLabel(job)}</span></div><div className="shrink-0 text-right"><strong className="text-[11px] text-[var(--admin-info)]">{dateOnly(job.eta)}</strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{shipmentStatusLabels[job.status]}</span></div></Link>)}</div> : <OpsEmptyState compact kind="healthy" icon={<CalendarDays size={15}/>} title="No upcoming ETA set" description="Active shipments at this branch do not currently have a future ETA recorded."/>}
+                {upcomingEtas.length ? <div>{upcomingEtas.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><div className="min-w-0"><strong className="block truncate text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{job.origin || "Origin"} → {job.destination || "Destination"}</strong><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {ownerLabel(job)}</span></div><div className="shrink-0 text-right"><strong className="text-[length:var(--app-text-sm)] text-[var(--admin-info)]">{dateOnly(job.eta)}</strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{shipmentStatusLabels[job.status]}</span></div></Link>)}</div> : <OpsEmptyState compact kind="healthy" icon={<CalendarDays size={15}/>} title="No upcoming ETA set" description="Active shipments at this branch do not currently have a future ETA recorded."/>}
               </OpsSurface>
 
               <OpsSurface eyebrow="Ownership" title="Owners" description="Active movement load by current shipment owner." flush>
                 {owners.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table ops-stack-table min-w-[520px] w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
               </OpsSurface>
-            </div>
           </div>
 
           <OpsSurface eyebrow="Attention" title="Exceptions & blockers" description="Movements at this branch with exceptions, overdue work, customs blockers, missing ownership or elevated priority." flush priority={pressureJobs.length ? "warning" : "success"}>
             {pressureJobs.length ? <div>{pressureJobs.map((job) => {
               const issue = issueFor(job)!;
-              return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="grid grid-cols-[4px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><span className="ops-priority-rail" data-tone={issue.tone}/><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[12px] text-[var(--admin-ink)]">{issue.title}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {job.origin || "Origin"} → {job.destination || "Destination"} · {issue.detail}</p></div><ArrowUpRight size={13} className="text-[var(--admin-muted)]"/></Link>;
+              return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="grid grid-cols-[4px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><span className="ops-priority-rail" data-tone={issue.tone}/><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{issue.title}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {job.origin || "Origin"} → {job.destination || "Destination"} · {issue.detail}</p></div><ArrowUpRight size={13} className="text-[var(--admin-muted)]"/></Link>;
             })}</div> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16}/>} title="Branch clear" description={`${branch} has no active exceptions, overdue tasks, customs blockers, unassigned movements or elevated-priority work.`}/>} 
           </OpsSurface>
         </div>
