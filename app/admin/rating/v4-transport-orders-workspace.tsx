@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
+import { freightModeLabel } from "../freight-mode";
 
 type ApiResponse = { ok: boolean; error?: string; order?: TmsOrder };
 
@@ -38,9 +39,7 @@ function statusTone(status: TmsOrderStatus): "success" | "info" | "warning" | "n
   return "neutral";
 }
 
-function modeLabel(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
+const modeLabel = freightModeLabel;
 
 function shortDate(value: string | null) {
   if (!value) return "Not set";
@@ -58,7 +57,7 @@ function money(value: number | null, currency: string | null) {
 function nextAction(order: TmsOrder) {
   if (order.status === "draft") return { title: "Rate transport order", detail: "Compare the order against active Partner buy rates before procurement." };
   if (order.status === "rated") return { title: "Select procurement rate", detail: "A compatible rate has been calculated but no Partner rate is locked yet." };
-  if (order.status === "selected") return { title: "Open Tender Workspace", detail: "The procurement rate is selected. Tendering remains server-authoritative." };
+  if (order.status === "selected") return { title: "Open carrier booking", detail: "The procurement rate is selected. Tendering remains server-authoritative." };
   if (order.status === "tendering") return { title: "Review carrier response", detail: "Tender activity is in progress. Booking requires an accepted or valid counter-offer." };
   if (order.status === "booked") return { title: "Review booking handoff", detail: "The accepted commercial outcome has already moved into execution." };
   return { title: "Review record", detail: "This transport order is not currently progressing through procurement." };
@@ -175,7 +174,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
       </section> : null}
 
       {showCreate ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-5">
-        <div className="mb-4"><p className="text-[14px] font-semibold">Create Transport Order</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Create the planning record first. Rating, tender and booking authority remain separate downstream steps.</p></div>
+        <div className="mb-4"><p className="text-[14px] font-semibold">Create transport order</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Create the planning record first. Rating, tender and booking authority remain separate downstream steps.</p></div>
         <form onSubmit={createOrder} className="grid gap-x-4 gap-y-3 md:grid-cols-4">
           <Field label="Branch"><select value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
           <Field label="Mode"><select value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></Field>

@@ -17,6 +17,7 @@ import { MovementControl, POST_UPDATE_EVENT } from "./movement-control";
 import { PickupControl } from "./pickup-control";
 import type { JobPickup } from "./job-step-context.server";
 import { buildJobSteps, initialJobPanel, type JobPanel, type JobStep, type JobStepState } from "./job-steps";
+import { freightModeLabel } from "../../freight-mode";
 
 /** Other parts of the Job File (the closeout, a blocker's fix link) open a
  * panel by announcing it; the record owns which one is showing. */
@@ -148,7 +149,7 @@ export function JobRecord({
     <OpsPageHeader
       eyebrow={<span className="ops-mono job-record-kicker">{job.reference}</span>}
       title={<span className="job-record-title">{job.origin || "Origin"} → {job.destination || "Destination"}<OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
-      description={`${job.customer_name || "No customer linked"} · ${job.mode ? job.mode[0].toUpperCase() + job.mode.slice(1) : "Mode not set"}${job.carrier ? ` · ${job.carrier}` : ""}`}
+      description={`${job.customer_name || "No customer linked"} · ${freightModeLabel(job.mode)}${job.carrier ? ` · ${job.carrier}` : ""}`}
       meta={<><span>ETA {shortDate(job.eta)}</span><span>Owner {job.assigned_to_name || job.assigned_to_email || "nobody yet"}</span></>}
       // Tells the customer where the shipment is: the "Post update" form under
       // In transit, which publishes to their tracking page.

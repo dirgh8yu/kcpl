@@ -18,6 +18,7 @@ import { AdminShipmentPanel } from "./admin-shipment-panel";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsScopeTabs, OpsSearch, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
 import { StaffAssignmentPicker } from "./staff-assignment-picker";
+import { freightModeLabel } from "./freight-mode";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 const statusLabels: Record<QuoteStatus, string> = { new: "New", reviewing: "Reviewing", quoted: "Quoted", won: "Won", lost: "Lost" };
@@ -27,11 +28,7 @@ type DetailTab = (typeof detailTabs)[number];
 type NoticeTone = "neutral" | "success" | "warning" | "danger";
 type NoticeState = { message: string; tone: NoticeTone };
 
-const modeLabels: Record<string, string> = { air: "Air freight", sea: "Sea freight", road: "Road freight", rail: "Rail freight", multimodal: "Multimodal freight", unsure: "Mode not decided" };
-
-function modeLabel(mode: string) {
-  return (modeLabels[mode.toLowerCase()] ?? mode) || "Freight";
-}
+const modeLabel = freightModeLabel;
 
 function statusTone(status: QuoteStatus): "neutral" | "info" | "warning" | "success" {
   if (status === "new") return "info";
@@ -263,9 +260,9 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
         body: JSON.stringify({ quoteReference: detail.reference }),
       });
       const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || "Could not confirm the CRM customer.");
-      await refreshDetail(`CRM customer ${id} confirmed for this enquiry.`);
-    } catch (error) { showNotice(error instanceof Error ? error.message : "Could not confirm the CRM customer."); }
+      if (!response.ok) throw new Error(data.error || "Could not confirm the customer record.");
+      await refreshDetail(`Customer record ${id} confirmed for this enquiry.`);
+    } catch (error) { showNotice(error instanceof Error ? error.message : "Could not confirm the customer record."); }
     finally { setSaving(false); }
   }
 
@@ -281,10 +278,10 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
       const data = await response.json() as { customerId?: string; error?: string; matches?: QuoteCrmMatch[] };
       if (!response.ok) {
         if (data.matches?.length) setDetail((current) => current ? { ...current, crm_matches: data.matches ?? current.crm_matches, crm_match_state: "suggested" } : current);
-        throw new Error(data.error || "Could not create the CRM customer.");
+        throw new Error(data.error || "Could not create the customer record.");
       }
       await refreshDetail(`Customer ${data.customerId ?? "record"} created and linked to this enquiry.`);
-    } catch (error) { showNotice(error instanceof Error ? error.message : "Could not create the CRM customer."); }
+    } catch (error) { showNotice(error instanceof Error ? error.message : "Could not create the customer record."); }
     finally { setSaving(false); }
   }
 
@@ -292,7 +289,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
     event.preventDefault();
     if (!detail) return;
     if (detail.status === "won" && !detail.customer_id) {
-      showNotice("Confirm or create the CRM customer before marking this quote Won.", "warning");
+      showNotice("Confirm or create the customer record before marking this quote Won.", "warning");
       return;
     }
     setSaving(true); setNotice(null);
@@ -424,7 +421,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
   return (
     <OpsPage>
       <OpsPageHeader
-        title="Freight enquiries"
+        title="Enquiries"
         description="Freight requests from the website and customers. Quote them, then win them into shipments."
       />
 
@@ -475,7 +472,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                     <p className="ops-inspector-kicker">{detail.reference}</p>
                     <h2 className="enq-record-title"><span>{detail.origin || "Origin"}</span><ArrowRight size={16} strokeWidth={1.75} className="enq-route-arrow" aria-hidden="true"/><span>{detail.destination || "Destination"}</span></h2>
                     <p className="enq-record-meta">{detail.company_name || detail.contact_name} · {modeLabel(detail.mode)} · received {formatDate(detail.created_at)}</p>
-                    <div className="plan-badges enq-record-badges"><OpsBadge tone={statusTone(detail.status)}>{statusLabels[detail.status]}</OpsBadge>{detail.customer_id ? <OpsBadge tone="success">CRM linked</OpsBadge> : <OpsBadge tone="warning">CRM customer required</OpsBadge>}</div>
+                    <div className="plan-badges enq-record-badges"><OpsBadge tone={statusTone(detail.status)}>{statusLabels[detail.status]}</OpsBadge>{detail.customer_id ? <OpsBadge tone="success">Customer linked</OpsBadge> : <OpsBadge tone="warning">Customer record required</OpsBadge>}</div>
                   </div>
                   <div className="ops-inspector-actions">
                     <a href={`mailto:${detail.contact_email}`} className="ops-button" data-variant="secondary" data-size="sm"><Mail size={14} strokeWidth={1.75} aria-hidden="true"/>Email contact</a>
@@ -515,7 +512,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
                   <aside className="enq-overview-side">
                     <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
-                    <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer confirmed. Commercial staff can progress through Quoted, Won or Lost." : "Confirm the CRM customer before marking this enquiry Won."}>
+                    <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer confirmed. Commercial staff can progress through Quoted, Won or Lost." : "Confirm the customer record before marking this enquiry Won."}>
                       <form onSubmit={saveQuote} className="ops-inspector-form enq-workflow">
                         <OpsField label="Status" className="col-span-full" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or shipment record." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField>
                         <OpsField label="Assigned to" className="col-span-full" hint="From People & branches; name, email and phone fill automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField>
@@ -529,7 +526,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                       </OpsFacts>
                     </OpsSurface> : null}
                     {detail.shipment ? <OpsSurface density="compact" title={<span className="ops-mono">{detail.shipment.reference}</span>} description="A controlled shipment and shipment record exist for this accepted quote.">
-                      <div className="ops-inspector-actions"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Shipment record</a></div>
+                      <div className="ops-inspector-actions"><OpsButton variant="ghost" size="sm" onClick={() => setActiveTab("shipment")}>Shipment workspace</OpsButton><a href={`/admin/jobs/${encodeURIComponent(detail.shipment.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</a></div>
                     </OpsSurface> : null}
                   </aside>
                 </div> : null}
@@ -562,7 +559,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                   </form>
                 </OpsSurface> : null}
 
-                {activeTab === "shipment" ? <OpsSurface density="compact" title="Shipment" description={detail.shipment ? "This enquiry’s shipment. Work it from its own page." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the CRM customer first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status}/></OpsSurface> : null}
+                {activeTab === "shipment" ? <OpsSurface density="compact" title="Shipment" description={detail.shipment ? "This enquiry’s shipment. Work it from its own page." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the customer record first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status}/></OpsSurface> : null}
 
                 {activeTab === "activity" ? <OpsSurface density="compact" title="Activity & communications" description="Customer quote emails and internal notes in one chronological history.">
                   <form onSubmit={addNote} className="enq-note-form">
@@ -596,16 +593,16 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
 function CustomerControl({ detail, saving, manualCustomerId, onManualCustomerId, onLink, onCreate }: { detail: QuoteDetail; saving: boolean; manualCustomerId: string; onManualCustomerId: (value: string) => void; onLink: (customerId: string) => void; onCreate: () => void }) {
   if (detail.customer_id) {
-    return <OpsSurface density="compact" title="CRM customer" description="This relationship flows into the shipment, Job File, Customer 360 and Finance." action={<a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Customer 360<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>}>
+    return <OpsSurface density="compact" title="Customer record" description="This relationship flows into the shipment, Job File, the customer’s page and Receivables." action={<a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Open customer<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>}>
       <OpsFacts><OpsFact label="Linked account"><span className="ops-mono">{detail.customer_id}</span></OpsFact></OpsFacts>
     </OpsSurface>;
   }
 
   return <OpsSurface density="compact" title="Confirm customer before marking Won" description="Confirm a suggested account, enter a known KCPL customer reference, or create a new prospect only when no duplicate exists.">
     {detail.crm_matches.length ? <ul className="enq-matches">{detail.crm_matches.slice(0, 4).map((match) => <li key={match.id}><button type="button" disabled={saving} onClick={() => onLink(match.id)}>
-      <span className="min-w-0"><strong>{match.display_name}</strong><span>{match.reason || "Existing CRM details match"} · <span className="ops-mono">{match.id}</span></span></span>
+      <span className="min-w-0"><strong>{match.display_name}</strong><span>{match.reason || "Existing customer details match"} · <span className="ops-mono">{match.id}</span></span></span>
       <span className="enq-match-action">Confirm</span>
-    </button></li>)}</ul> : <OpsInspectorNote tone="warning" title="No existing CRM match was found for this enquiry."/>}
+    </button></li>)}</ul> : <OpsInspectorNote tone="warning" title="No existing customer matched this enquiry."/>}
     <div className="ops-inspector-form plan-subform">
       <OpsField label="Known customer reference" hint="Optional" className="col-span-full"><input value={manualCustomerId} onChange={(event) => onManualCustomerId(event.target.value.toUpperCase())} placeholder="KCPL-C-…"/></OpsField>
       <div className="col-span-full ops-inspector-actions">

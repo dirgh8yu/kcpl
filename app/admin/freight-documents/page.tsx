@@ -6,7 +6,7 @@ import { listFreightDocumentWorkspace } from "./freight-documents.server";
 import { FreightDocumentsWorkspace } from "./freight-documents-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Freight Documents", robots: { index: false, follow: false } };
+export const metadata = { title: "Freight documents", robots: { index: false, follow: false } };
 
 export default async function FreightDocumentsPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();
@@ -29,7 +29,7 @@ export default async function FreightDocumentsPage({ searchParams }: { searchPar
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Freight Documents"
+    eyebrow="Freight documents"
     title={title}
     detail={detail}
     embedded={embedded}

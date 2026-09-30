@@ -60,13 +60,13 @@ export default async function ConsolidationPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Load planning"
+    eyebrow="Load planning"
     title={title}
     detail={detail}
     embedded={embedded}
     actions={[
-      { href: "/admin/rating", label: "Rate Desk", primary: true },
-      { href: "/admin/tenders", label: "Tender Workspace" },
+      { href: "/admin/rating", label: "Rate desk", primary: true },
+      { href: "/admin/tenders", label: "Carrier booking" },
     ]}
   />;
 }

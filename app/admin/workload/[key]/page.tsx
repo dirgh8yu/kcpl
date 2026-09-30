@@ -166,7 +166,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
   const attentionJobs = assignedJobs.filter((job) => job.status === "exception" || job.priority === "urgent" || job.overdue_tasks > 0 || job.required_customs_open > 0);
 
   return (
-    <OperationsShell {...shellProps}>
+    <OperationsShell {...shellProps} detailLabel={targetName}>
       <OpsPage>
         <OpsPageHeader
           eyebrow="Staff workload"
@@ -178,7 +178,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
             <span>{profile ? kcplStaffRoleLabels[profile.role] : "Operational owner"}</span>
             <span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span>
           </>}
-          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Operations home</Link>{staff.permissions.canManageStaff && profile ? <Link href="/admin/staff" className="ops-button" data-variant="secondary" data-size="md">Staff directory<ArrowUpRight size={12}/></Link> : null}</div>}
+          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Overview</Link>{staff.permissions.canManageStaff && profile ? <Link href="/admin/staff" className="ops-button" data-variant="secondary" data-size="md">Staff directory<ArrowUpRight size={12}/></Link> : null}</div>}
         >
           <OpsKpiStrip>
             <OpsKpiCard label="Assigned shipments" value={assignedJobs.length} detail={assignedJobs.length === 1 ? "active movement" : "active movements"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
@@ -193,7 +193,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
         <div className="ops-content ops-stack">
           <div className="ops-grid-main">
             <OpsSurface eyebrow="Ownership" title="Assigned shipments" description={`${assignedJobs.length} active movement${assignedJobs.length === 1 ? "" : "s"} currently owned by ${targetName}.`} flush>
-              {assignedJobs.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[980px] w-full"><thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Branch</th><th>ETA</th><th>Tasks</th><th>Customs</th><th></th></tr></thead><tbody>{assignedJobs.map((job) => <tr key={job.reference}>
+              {assignedJobs.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table min-w-[980px] w-full"><thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Branch</th><th>ETA</th><th>Tasks</th><th>Customs</th><th></th></tr></thead><tbody>{assignedJobs.map((job) => <tr key={job.reference}>
                 <td><strong className="ops-route"><span>{job.origin || "Origin"}</span><ArrowRight size={11} className="ops-route-arrow"/><span>{job.destination || "Destination"}</span></strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name}</span></td>
                 <td><OpsMono>{job.reference}</OpsMono><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.current_location || job.primary_branch}</span></td>
                 <td><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td>
@@ -201,7 +201,7 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
                 <td>{dateOnly(job.eta)}</td>
                 <td className={job.overdue_tasks ? "font-bold text-[var(--admin-danger)]" : ""}>{job.open_tasks}{job.overdue_tasks ? <span className="ml-1 text-[length:var(--app-label-size)]">({job.overdue_tasks} overdue)</span> : null}</td>
                 <td className={job.required_customs_open ? "font-semibold text-[var(--admin-warning)]" : ""}>{job.required_customs_open}/{job.required_customs_total}</td>
-                <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open job<ArrowUpRight size={11}/></Link></td>
+                <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File<ArrowUpRight size={11}/></Link></td>
               </tr>)}</tbody></table></div> : <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={16}/>} title="No assigned shipments" description={`${targetName} does not currently own an active movement.`}/>} 
             </OpsSurface>
 
@@ -220,13 +220,13 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
           </div>
 
           <OpsSurface eyebrow="Task queue" title="Open tasks" description={`Operational tasks specifically assigned to ${targetName}, including work on shipments they may not directly own.`} flush priority={overdueTasks ? "danger" : tasks.length ? "info" : "success"}>
-            {tasks.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[900px] w-full"><thead><tr><th>Task</th><th>Shipment</th><th>Branch</th><th>Due</th><th>State</th><th></th></tr></thead><tbody>{tasks.map((task) => <tr key={`${task.shipmentReference}:${task.id}`}>
+            {tasks.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table min-w-[900px] w-full"><thead><tr><th>Task</th><th>Shipment</th><th>Branch</th><th>Due</th><th>State</th><th></th></tr></thead><tbody>{tasks.map((task) => <tr key={`${task.shipmentReference}:${task.id}`}>
               <td><strong className="block max-w-[360px] text-[var(--admin-ink)]">{task.title}</strong>{task.detail ? <span className="mt-1 block max-w-[420px] truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{task.detail}</span> : null}</td>
               <td><OpsMono>{task.shipmentReference}</OpsMono></td>
               <td>{task.branch}</td>
               <td className={task.overdue ? "font-bold text-[var(--admin-danger)]" : ""}>{task.dueAt ? dateTimeNepal(task.dueAt) : "No due date"}</td>
               <td>{task.overdue ? <OpsBadge tone="danger" dot>Overdue</OpsBadge> : <OpsBadge tone={task.dueAt ? "info" : "neutral"}>{task.dueAt ? "Open" : "Unscheduled"}</OpsBadge>}</td>
-              <td><Link href={`/admin/jobs/${encodeURIComponent(task.shipmentReference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open job<ArrowUpRight size={11}/></Link></td>
+              <td><Link href={`/admin/jobs/${encodeURIComponent(task.shipmentReference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File<ArrowUpRight size={11}/></Link></td>
             </tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<Clock3 size={15}/>} title="No open tasks" description={`${targetName} has no accessible open operational tasks assigned right now.`}/>} 
           </OpsSurface>
         </div>
@@ -236,5 +236,5 @@ export default async function StaffWorkloadPage({ params }: { params: Promise<{ 
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Staff workload" title={title} detail={detail} embedded={embedded}/>;
+  return <V4WorkspaceGate eyebrow="Workload" title={title} detail={detail} embedded={embedded}/>;
 }

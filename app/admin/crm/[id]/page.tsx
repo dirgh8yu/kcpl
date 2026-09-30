@@ -54,7 +54,7 @@ function redactHistoryForRole(history: CrmOperationsHistory, permissions: StaffC
 
 export default async function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations" detail="Customer 360 is available only to authorised KCPL staff."/>;
+  if (access.kind !== "authorized") return <CustomerGate title="Sign in to KCPL Operations" detail="Customer pages are available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
   const permissions = staff.permissions;
@@ -74,7 +74,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   const { id } = await params;
   const customerAccess = await checkCrmCustomerReadAccess(id, staff);
   if (customerAccess.kind === "unavailable") return shellGate("Customer can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
-  if (customerAccess.kind === "missing") return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
+  if (customerAccess.kind === "missing") return shellGate("Customer not found", "This customer record does not exist or has been archived.");
   if (customerAccess.kind === "forbidden") return shellGate("Customer access restricted", "This customer belongs to a KCPL branch outside your assigned access.");
   let customer: CrmCustomerDetail | null | undefined;
   let linked: CrmQuoteLinkItem[] = [];
@@ -111,7 +111,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
 
   if (failed) return <CustomerGate title="Customer didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/>;
   if (customer === undefined) return shellGate("Customer can’t be opened right now", "The records service isn’t responding. Try again in a minute.");
-  if (!customer || customer.archived) return shellGate("Customer not found", "This CRM record does not exist or has been archived.");
+  if (!customer || customer.archived) return shellGate("Customer not found", "This customer record does not exist or has been archived.");
 
   const safeCustomer = redactCustomerForRole(customer, permissions);
   const reconciledCustomer = reconcileCustomerFinance(safeCustomer, financeSnapshot, permissions);
@@ -141,7 +141,7 @@ function Tool({ title, detail, children }: { title: string; detail: string; chil
 
 function CustomerGate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Customer 360"
+    eyebrow="Customer"
     title={title}
     detail={detail}
     embedded={embedded}

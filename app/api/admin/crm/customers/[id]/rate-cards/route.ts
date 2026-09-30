@@ -64,7 +64,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (accessError) return accessError;
   try {
     const result = await listCrmRateCards(id);
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, rateCards: result.rateCards });
   } catch (error) {
@@ -90,7 +90,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (accessError) return accessError;
   try {
     const result = await createCrmRateCard(id, parsed.input, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, rateCard: result.rateCard }, 201);
   } catch (error) {

@@ -34,7 +34,7 @@ export default async function RecoveryPage() {
         description="Preview first, then undo one batch. A batch can’t be undone once its records have been worked on."
         meta={<span>Management + finance authority · no force-delete mode · Paper Archive preserved</span>}
         actions={<>
-          <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link>
+          <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper archive</Link>
           <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
         </>}
       />
@@ -77,5 +77,5 @@ function Rule({ icon, step, title, detail }: { icon: React.ReactNode; step: stri
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Undo an import" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Recovery", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/archive", label: "Paper Archive" }]}/>;
+  return <V4WorkspaceGate eyebrow="Undo an import" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Recovery", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/archive", label: "Paper archive" }]}/>;
 }

@@ -17,21 +17,21 @@
 
 .createField label {
   color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .createField input,
 .createField select {
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   border: 1px solid var(--admin-line);
-  border-radius: 6px;
+  border-radius: var(--app-radius);
   background: var(--admin-surface);
   color: var(--admin-ink);
   padding: 0 10px;
   font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   outline: none;
 }
 
@@ -96,12 +96,13 @@
 
 
 /* Next steps: whose shipments, and each step as the link that does it. */
-.queueScope { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; padding: 2px; border: 1px solid var(--admin-line); border-radius: 7px; }
-.queueScope button { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; color: var(--admin-muted); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
+.queueScope { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; }
+/* The registers' scope tabs (.ops-scope-tab), so Mine / Everyone reads as the same control. */
+.queueScope button { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 9px; border: 0; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
 @media (hover: hover) and (pointer: fine) { .queueScope button:hover { color: var(--admin-ink); } }
-.queueScope button[data-active] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 650; }
+.queueScope button[data-active] { background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
 .queueScope button span { color: var(--admin-faint); font-variant-numeric: tabular-nums; }
-.queueScope button[data-active] span { color: var(--admin-crimson); }
+.queueScope button[data-active] span { color: var(--admin-crimson-dark); font-weight: 600; }
 .queueScope button:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
 .queueCustomer { display: block; max-width: 280px; overflow: hidden; margin-top: 2px; color: var(--admin-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .nextStepLink { display: inline-flex; align-items: center; gap: 5px; color: var(--admin-ink); font-size: 13px; font-weight: 550; text-decoration: none; }

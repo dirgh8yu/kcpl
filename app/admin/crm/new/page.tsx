@@ -23,5 +23,5 @@ export default async function NewCustomerPage() {
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Customers" title={title} detail={detail} actions={[{ href: "/admin/crm", label: "Customers", primary: true }, { href: "/admin/command-centre", label: "Operations Home" }]}/>;
+  return <V4WorkspaceGate eyebrow="Customers" title={title} detail={detail} actions={[{ href: "/admin/crm", label: "Customers", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
 }

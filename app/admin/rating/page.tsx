@@ -13,7 +13,7 @@ export const metadata = { title: "Buy rates", robots: { index: false, follow: fa
 
 export default async function RatingPage({ searchParams }: { searchParams: Promise<{ order?: string; view?: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="KCPL Transport Orders are available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Buy rates are available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -23,7 +23,7 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
     canViewCommercial: staff.permissions.canViewCommercial,
     canManageJobFile: staff.permissions.canManageJobFile,
   };
-  if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Transport Orders and procurement pricing are restricted to authorised Commercial, Accounts and Management users." embedded/></OperationsShell>;
+  if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Buy rates are restricted to Commercial, Accounts and Management users." embedded/></OperationsShell>;
 
   const { order, view } = await searchParams;
 

@@ -566,7 +566,7 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update,
 
           <footer className="shipment-sheet-footer shrink-0 border-t border-[var(--admin-line)] bg-[var(--admin-surface)]">
             <div className="shipment-sheet-inner flex flex-wrap items-center justify-end gap-2">
-              <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open shipment</Link>
+              <Link href={withReturn(`/admin/jobs/${encodeURIComponent(job.reference)}`)} className="ops-button" data-variant="secondary" data-size="md">Open Job File</Link>
               <Link href={withReturn(action.href)} className="ops-button" data-variant="primary" data-size="md">{action.title}</Link>
             </div>
           </footer>

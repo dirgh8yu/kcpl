@@ -89,7 +89,7 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
       >
         <ol className="migration-stages">
           <Stage number="1" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
-          <Stage number="2" title="Shipment history" detail="Active movements and completed historical shipments linked to real CRM customers." state="complete"/>
+          <Stage number="2" title="Shipment history" detail="Active movements and completed historical shipments linked to real customer records." state="complete"/>
           <Stage number="3A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
           <Stage number="3B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
           <Stage number="4A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="complete"/>
@@ -106,7 +106,7 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
       {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} customers imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> recorded {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"}. <Link href="/admin/crm" className="font-bold underline">Open Customers</Link>.</OpsNotice> : null}
 
-      <OpsSurface density="compact" title="Stage 1 · Customer master" description="Customer CSV intake → validate → preview → confirm. Stage 1 stays available because shipment history and receivables still depend on a clean CRM customer master. Supplier finance uses the separate Partner network as its identity source." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download customer template</a>}>
+      <OpsSurface density="compact" title="Stage 1 · Customer master" description="Customer CSV intake → validate → preview → confirm. Stage 1 stays available because shipment history and receivables still depend on a clean customer list. Supplier finance uses the separate Partner network as its identity source." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download customer template</a>}>
         <div className="migration-intake">
           <div>
             <label className="migration-drop">
@@ -126,7 +126,7 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
             <ul>
               <li>Required columns: <strong>display_name</strong> and <strong>primary_branch</strong>.</li>
               <li>Branch must match a KCPL branch in the template vocabulary.</li>
-              <li>Name, email, phone and tax ID are checked against existing CRM records and earlier rows in the same CSV.</li>
+              <li>Name, email, phone and tax ID are checked against existing customer records and earlier rows in the same CSV.</li>
               <li>Invalid and possible-duplicate rows are never imported automatically.</li>
               <li>Every confirmed import receives a migration batch ID and appears in the Migration Control Centre automatically.</li>
             </ul>

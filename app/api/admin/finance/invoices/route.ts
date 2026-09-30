@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     } else if (linked.kind === "unlinked") {
       return json({
         ok: false,
-        error: "Confirm the CRM customer before invoicing this shipment.",
+        error: "Confirm the customer record before invoicing this shipment.",
         resolutionPath: `/admin/finance/new/${encodeURIComponent(shipmentReference)}`,
         quoteReference: linked.quoteReference,
         suggestions: linked.suggestions,
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
 
   if (result.kind === "created") return json({ ok: true, reference: result.reference }, 201);
   if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment reference was not found." }, 404);
-  if (result.kind === "customer_missing") return json({ ok: false, error: "Customer record was not found. CRM customer references start with KCPL-C-." }, 404);
-  if (result.kind === "customer_required") return json({ ok: false, error: "Link a shipment to CRM or enter a KCPL-C customer reference." }, 400);
+  if (result.kind === "customer_missing") return json({ ok: false, error: "Customer not found. Customer references start with KCPL-C-." }, 404);
+  if (result.kind === "customer_required") return json({ ok: false, error: "Link the shipment to a customer or enter a KCPL-C customer reference." }, 400);
   if (result.kind === "relationship_mismatch") return json({ ok: false, error: "The shipment, quote and customer must all belong to the same branch." }, 409);
   if (result.kind === "invalid_amount") return json({ ok: false, error: "Enter an invoice amount greater than zero." }, 400);
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);

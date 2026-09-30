@@ -57,5 +57,5 @@ async function loadWallboardState(
 }
 
 function WallboardGate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Operations" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Overview", primary: true }]} />;
+  return <V4WorkspaceGate eyebrow="Office wall screen" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Overview", primary: true }]} />;
 }

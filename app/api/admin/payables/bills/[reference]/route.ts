@@ -40,10 +40,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
 
   if (action === "approve") {
     const gate = await ensureFreightAuditForPayment(reference, auth.staff);
-    if (gate.kind === "blocked") return json({ ok: false, error: "Freight Audit is blocking approval. Resolve the invoice mismatch or obtain Management variance approval first.", code: "FREIGHT_AUDIT_BLOCKED", audit: gate.audit }, 409);
+    if (gate.kind === "blocked") return json({ ok: false, error: "The bill check is blocking approval. Resolve the invoice mismatch or obtain Management variance approval first.", code: "FREIGHT_AUDIT_BLOCKED", audit: gate.audit }, 409);
     if (gate.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
     if (gate.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
-    if (gate.kind === "unavailable") return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
+    if (gate.kind === "unavailable") return json({ ok: false, error: "Supplier bill checks are temporarily unavailable." }, 503);
   }
 
   const result = action === "approve"

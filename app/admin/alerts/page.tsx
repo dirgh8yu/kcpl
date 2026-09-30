@@ -102,7 +102,7 @@ export default async function AlertsPage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Attention Desk"
+    eyebrow="Tasks & alerts"
     title={title}
     detail={detail}
     embedded={embedded}

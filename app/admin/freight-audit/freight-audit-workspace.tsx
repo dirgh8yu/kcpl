@@ -4,8 +4,9 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, BadgeCheck, CircleDollarSign, RefreshCw, ShieldAlert } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSurface } from "../operations-ui";
 import { freightAuditStatusLabels, type FreightAuditQueueRow, type FreightAuditStatus, type FreightAuditSummary } from "./freight-audit";
+import { readable } from "../readable";
 
 type ApiResponse = { ok: boolean; error?: string; rows?: FreightAuditQueueRow[]; summary?: FreightAuditSummary };
 
@@ -34,7 +35,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   async function refresh() {
     const response = await fetch("/api/admin/freight-audit", { cache: "no-store" });
     const data = await response.json() as ApiResponse;
-    if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Freight Audit could not be refreshed.");
+    if (!response.ok || !data.ok || !data.rows || !data.summary) throw new Error(data.error || "Bill checks could not be refreshed.");
     setRows(data.rows); setSummary(data.summary);
     if (!data.rows.some((row) => row.payable_reference === selectedReference)) setSelectedReference(data.rows[0]?.payable_reference ?? "");
   }
@@ -47,16 +48,17 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
     try {
       const response = await fetch("/api/admin/freight-audit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reference: selected.payable_reference, action, note }) });
       const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok) throw new Error(data.error || "Freight Audit action failed.");
+      if (!response.ok || !data.ok) throw new Error(data.error || "The bill check action failed.");
       await refresh();
       setNote("");
-      setNotice({ tone: action === "approve_variance" ? "success" : action === "dispute" ? "warning" : action === "reject" ? "warning" : "success", text: action === "approve_variance" ? "Variance approved against the current commercial fingerprint. Accounts can now approve/pay this bill unless the bill or booking changes." : action === "dispute" ? "Supplier invoice moved to Disputed and remains blocked from payment." : action === "reject" ? "Supplier invoice rejected and remains blocked from payment." : "Freight Audit recalculated from the current booking and supplier bill." });
-    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Freight Audit action failed." }); }
+      setNotice({ tone: action === "approve_variance" ? "success" : action === "dispute" ? "warning" : action === "reject" ? "warning" : "success", text: action === "approve_variance" ? "Variance approved against the current commercial fingerprint. Accounts can now approve/pay this bill unless the bill or booking changes." : action === "dispute" ? "Supplier invoice moved to Disputed and remains blocked from payment." : action === "reject" ? "Supplier invoice rejected and remains blocked from payment." : "Bill check recalculated from the current booking and supplier bill." });
+    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "The bill check action failed." }); }
     finally { setBusy(false); }
   }
 
-  return <div className="ops-content ops-stack">
+  return <OpsPage>
     <OpsPageHeader title="Supplier bill checks" description="Check each supplier bill against what we booked before paying it. Taxes are shown but not compared, and currencies are never converted."/>
+    <div className="ops-content ops-stack">
 
     <OpsKpiRail label="Freight audit summary">
       <OpsRailMetric label="Bills audited" value={summary.total} title="Current payable queue"/>
@@ -86,7 +88,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
             <Metric label="Tolerance" value={`${selected.tolerance_percent.toFixed(2)}% or ${selected.invoice_currency} ${selected.tolerance_amount.toFixed(2)}`}/>
           </div>
 
-          {selected.expected_linehaul !== null ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="mb-3"><div className="text-[11px] font-bold text-[var(--admin-ink)]">Booked rate-card baseline</div><div className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Reconstructed from the selected Partner rate card and the booked order quantity. This breakdown is hidden when a negotiated counter-offer replaced the original rate-card economics.</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Linehaul" value={money(selected.booked_currency, selected.expected_linehaul)}/><Metric label="Fuel surcharge" value={money(selected.booked_currency, selected.expected_fuel_surcharge)}/><Metric label="Accessorials" value={money(selected.booked_currency, selected.expected_accessorials)}/><Metric label="Rating unit" value={selected.expected_rate_unit?.replaceAll("_", " ") ?? "Not available"}/><Metric label="Booked quantity" value={selected.expected_quantity === null ? "Not available" : selected.expected_quantity.toLocaleString("en-AU")}/><Metric label="Minimum charge" value={selected.minimum_applied === null ? "Not available" : selected.minimum_applied ? "Applied" : "Not applied"}/></div></div> : null}
+          {selected.expected_linehaul !== null ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="mb-3"><div className="text-[11px] font-bold text-[var(--admin-ink)]">Booked rate-card baseline</div><div className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Reconstructed from the selected Partner rate card and the booked order quantity. This breakdown is hidden when a negotiated counter-offer replaced the original rate-card economics.</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Linehaul" value={money(selected.booked_currency, selected.expected_linehaul)}/><Metric label="Fuel surcharge" value={money(selected.booked_currency, selected.expected_fuel_surcharge)}/><Metric label="Accessorials" value={money(selected.booked_currency, selected.expected_accessorials)}/><Metric label="Rating unit" value={selected.expected_rate_unit ? readable(selected.expected_rate_unit) : "Not available"}/><Metric label="Booked quantity" value={selected.expected_quantity === null ? "Not available" : selected.expected_quantity.toLocaleString("en-AU")}/><Metric label="Minimum charge" value={selected.minimum_applied === null ? "Not available" : selected.minimum_applied ? "Applied" : "Not applied"}/></div></div> : null}
 
           <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-bold text-[var(--admin-ink)]">Match-Pay status</div><div className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{selected.booked_partner_name ?? "No TMS carrier snapshot"}{selected.carrier_reference ? ` · Booking ${selected.carrier_reference}` : ""}</div></div><OpsBadge tone={tone(selected.status)}>{freightAuditStatusLabels[selected.status]}</OpsBadge></div></div>
 
@@ -95,13 +97,14 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
           {selected.dispute_note ? <OpsNotice tone="warning"><strong>Dispute:</strong> {selected.dispute_note}</OpsNotice> : null}
           {selected.resolution_note ? <OpsNotice tone="neutral"><strong>Resolution:</strong> {selected.resolution_note}</OpsNotice> : null}
 
-          <label className="block"><span className="mb-1 block text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">Decision / dispute note</span><textarea className="ops-textarea min-h-24" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Required for dispute, rejection or approved variance..."/></label>
+          <label className="block"><span className="mb-1 block text-[length:var(--app-label-size)] font-semibold text-[var(--admin-muted)]">Decision / dispute note</span><textarea className="ops-textarea min-h-24" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Required for dispute, rejection or approved variance…"/></label>
           <div className="flex flex-wrap gap-2"><OpsButton variant="secondary" onClick={() => act("recheck")} disabled={busy}><RefreshCw size={12}/>Recheck</OpsButton>{selected.status === "review_required" ? <OpsButton variant="secondary" onClick={() => act("dispute")} disabled={busy}><ShieldAlert size={12}/>Dispute</OpsButton> : null}{isManagement && (selected.status === "review_required" || selected.status === "disputed") ? <OpsButton variant="primary" onClick={() => act("approve_variance")} disabled={busy}><BadgeCheck size={12}/>Approve variance</OpsButton> : null}{isManagement && (selected.status === "review_required" || selected.status === "disputed") ? <OpsButton variant="danger" onClick={() => act("reject")} disabled={busy}>Reject invoice</OpsButton> : null}</div>
           <div className="flex flex-wrap gap-2 border-t border-[var(--admin-line)] pt-3"><Link href={`/admin/payables/bills/${encodeURIComponent(selected.payable_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open supplier bill</Link>{selected.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-button" data-variant="ghost" data-size="sm">Open Job File</Link> : null}</div>
         </div>}
       </OpsSurface>
     </div>
-  </div>;
+    </div>
+  </OpsPage>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><div className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.12em] text-[var(--admin-faint)]">{label}</div><div className="mt-1 text-[12px] font-bold capitalize text-[var(--admin-ink)]">{value}</div></div>; }

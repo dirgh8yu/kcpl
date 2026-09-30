@@ -55,5 +55,5 @@ export default async function PartnersPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
+  return <V4WorkspaceGate eyebrow="Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
 }

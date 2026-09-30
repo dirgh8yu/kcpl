@@ -56,7 +56,7 @@ export function CrmQuoteMatchDock({
     <div className="fixed bottom-5 right-5 z-[80] w-[min(430px,calc(100vw-2.5rem))] text-[var(--admin-ink)]">
       {open ? <div className="mb-3 max-h-[70vh] overflow-y-auto rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-2xl">
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-black/10 bg-[var(--admin-crimson)] p-5 text-[var(--admin-on-crimson)]">
-          <div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#d4ad62]">Quote relationship</p><h3 className="mt-1 text-base font-semibold">CRM enquiry links</h3></div>
+          <div><p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.16em] text-[#d4ad62]">Quote relationship</p><h3 className="mt-1 text-base font-semibold">Linked enquiries</h3></div>
           <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-[var(--app-radius)] border border-white/15 text-white/60 hover:bg-white/10" aria-label="Close quote links"><X size={14} /></button>
         </div>
         <div className="p-4">

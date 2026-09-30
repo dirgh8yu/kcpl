@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsInspectorNote, OpsNotice, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { ConsolidationAllocationView } from "./tms-consolidation-allocation";
 import type { TmsConsolidationLoad } from "./tms-consolidation";
+import { readable } from "../readable";
 
 type AllocationMap = Record<string, ConsolidationAllocationView>;
 type ApiResponse = {
@@ -130,7 +131,7 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
         {!allocation ? <p className="ops-inspector-hint">After the master tender is accepted or countered, prepare the commercial allocation here. Booking will fail closed until this exact package exists.</p> : <>
           <OpsFacts columns={2}>
             <OpsFact label="Master procurement">{money(allocation.total, allocation.currency)}</OpsFact>
-            <OpsFact label="Allocation basis">{allocation.allocation_basis.replaceAll("_", " ")}</OpsFact>
+            <OpsFact label="Allocation basis">{readable(allocation.allocation_basis)}</OpsFact>
             <OpsFact label="Approvals">{`${allocation.approved_approvals}/${allocation.required_approvals}`}</OpsFact>
             <OpsFact label="Package"><span className="ops-mono allocation-package" title={allocation.package_id}>{allocation.package_id}</span></OpsFact>
           </OpsFacts>

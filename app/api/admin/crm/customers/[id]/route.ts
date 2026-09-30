@@ -81,12 +81,12 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
   const { id } = await context.params;
   const access = await checkCrmCustomerAccess(id, auth.staff);
-  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
   if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
   if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
   try {
     const customer = await getCrmCustomer(id);
-    if (customer === undefined) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (customer === undefined) return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (!customer || customer.archived) return crmJson({ ok: false, error: "Customer record not found." }, 404);
     const financeSnapshot = auth.permissions.canViewCommercial
       ? await getCrmCustomerFinanceSnapshot(id, auth.staff) ?? null
@@ -108,7 +108,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (capabilityError) return capabilityError;
   const { id } = await context.params;
   const access = await checkCrmCustomerAccess(id, auth.staff);
-  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
   if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
   if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
 
@@ -153,7 +153,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 
   const includesCommercial = ["preferredCurrency", "pricingNotes", "markupPercent", "preferredCarriers"].some((key) => key in body);
-  if (cleanCrmText(body.outstandingBalance)) return crmJson({ ok: false, error: "Outstanding balance is calculated from Receivables and cannot be edited in CRM." }, 400);
+  if (cleanCrmText(body.outstandingBalance)) return crmJson({ ok: false, error: "Outstanding balance is calculated from Receivables and cannot be edited on the customer." }, 400);
   const includesCredit = ["paymentTermsDays", "creditLimit"].some((key) => key in body);
   if (includesCommercial && !auth.permissions.canEditCommercial) return crmJson({ ok: false, error: "Your KCPL role cannot edit commercial pricing." }, 403);
   if (includesCredit && !auth.permissions.canManageCredit) return crmJson({ ok: false, error: "Your KCPL role cannot edit customer credit controls." }, 403);
@@ -213,7 +213,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       allowCredit: auth.permissions.canManageCredit,
     });
 
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     if (result.kind === "invalid_branch") return crmJson({ ok: false, error: "This customer’s branch is missing or wrong. Management needs to fix it before it can be edited." }, 409);
     if (result.kind === "branch_conflict") return crmJson({ ok: false, error: `Customer branch cannot change while linked ${result.relation.replaceAll("_", " ")} ${result.reference} belongs to another branch.` }, 409);
@@ -240,12 +240,12 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
   const { id } = await context.params;
   const access = await checkCrmCustomerAccess(id, auth.staff);
-  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
   if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
   if (access.kind === "forbidden") return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
   try {
     const result = await archiveCrmCustomer(id, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, archived: true });
   } catch (error) {

@@ -10,7 +10,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
   try {
     const result = await listCrmQuoteLinks(id, auth.staff);
-    if (result === null) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result === null) return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     return crmJson({ ok: true, ...result });
   } catch (error) {
     console.error("Failed to list KCPL CRM quote links", id, error);
@@ -41,7 +41,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (accessError) return accessError;
   try {
     const result = await linkQuoteToCrmCustomer(id, quoteReference, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing_customer") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     if (result.kind === "missing_quote") return crmJson({ ok: false, error: "Quote not found." }, 404);
     if (result.kind === "forbidden") return crmJson({ ok: false, error: "This quote has a shipment outside your KCPL branch access." }, 403);

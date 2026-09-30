@@ -6,7 +6,7 @@ import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { StaffManager } from "./staff-manager";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "People & Branches", robots: { index: false, follow: false } };
+export const metadata = { title: "People & branches", robots: { index: false, follow: false } };
 
 export default async function StaffPage() {
   const access = await getAdminAccess();
@@ -30,5 +30,5 @@ export default async function StaffPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · People & Branches" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/staff", label: "People & Branches", primary: true }, { href: "/admin/management", label: "Management" }, { href: "/admin/notifications", label: "Notifications" }]}/>;
+  return <V4WorkspaceGate eyebrow="People & branches" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/staff", label: "People & Branches", primary: true }, { href: "/admin/management", label: "Management" }, { href: "/admin/notifications", label: "Notifications" }]}/>;
 }

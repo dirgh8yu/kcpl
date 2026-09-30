@@ -2366,7 +2366,7 @@ export function mockShipmentWorkflowReadiness(reference: string, staff: KcplStaf
     can_close: closeBlockers.length === 0,
     stages: [
       stage("won", "Won", "complete", "Shipment and Job File created from an accepted quote."),
-      stage("setup", "Setup", "complete", `CRM customer ${job.customer_id ?? "linked"} confirmed.`),
+      stage("setup", "Setup", "complete", `Customer record ${job.customer_id ?? "linked"} confirmed.`),
       stage("customs", "Customs", customsReady ? "complete" : "current", customsReady ? "Customs checklist complete and explicit release recorded." : `${completedCustoms}/${requiredCustoms.length} required customs steps complete.`),
       stage("documents", "Docs", documentPackReady ? "complete" : "blocked", documentPackReady ? "Verified required document pack is present." : "Required files are missing, unverified or expired."),
       stage("transit", "Transit", inTransitOrLater ? "complete" : "pending", inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet."),

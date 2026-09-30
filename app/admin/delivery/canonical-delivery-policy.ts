@@ -44,7 +44,7 @@ export const canonicalDeliveryBlockerMessages: Record<CanonicalDeliveryBlockerCo
   invalid_canonical_status: "Shipment canonical status is invalid.",
   invalid_primary_branch: "Shipment primary branch is missing or invalid.",
   canonical_transition_invalid: "Shipment must be Out for delivery before canonical Delivered can be recorded.",
-  customer_link_required: "A valid CRM customer link is required before canonical delivery completion.",
+  customer_link_required: "A valid customer record link is required before canonical delivery completion.",
   delivery_attempt_required: "A current KCPL Delivery Control attempt must record physical delivery first.",
   pod_not_verified: "KCPL POD verification is required before canonical delivery completion.",
   customs_steps_incomplete: "Required Customs checklist steps must be complete before canonical delivery completion.",

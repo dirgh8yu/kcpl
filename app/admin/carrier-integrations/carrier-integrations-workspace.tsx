@@ -8,6 +8,7 @@ import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../
 import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
 import type { CarrierProviderDashboard, CarrierShipmentCandidate } from "./carrier-integrations.server";
+import { readable } from "../readable";
 
 type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 
@@ -29,7 +30,7 @@ function shipmentTone(status: string): Tone {
 }
 
 function shipmentLabel(status: string) {
-  return (shipmentStatuses as readonly string[]).includes(status) ? shipmentStatusLabels[status as ShipmentStatus] : status.replaceAll("_", " ");
+  return (shipmentStatuses as readonly string[]).includes(status) ? shipmentStatusLabels[status as ShipmentStatus] : readable(status);
 }
 
 function providerLabel(row: CarrierShipmentCandidate) {

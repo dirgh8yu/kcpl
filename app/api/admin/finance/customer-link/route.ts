@@ -11,7 +11,7 @@ function json(body: unknown, status = 200) {
 function authorizationFailure(kind: string) {
   if (kind === "unavailable") return json({ ok: false, error: "Finance authorization storage is unavailable." }, 503);
   if (kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
-  if (kind === "customer_missing") return json({ ok: false, error: "CRM customer not found." }, 404);
+  if (kind === "customer_missing") return json({ ok: false, error: "Customer record not found." }, 404);
   if (kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);
   if (kind === "invalid_branch") return json({ ok: false, error: "Shipment has no authoritative KCPL branch and cannot be changed." }, 409);
   if (kind === "relationship_mismatch") return json({ ok: false, error: "Shipment, quote and customer must belong to a compatible KCPL branch." }, 409);
@@ -43,17 +43,17 @@ export async function POST(request: Request) {
       return json({ ok: true, customerId: result.customerId, customerName: "customerName" in result ? result.customerName : undefined });
     }
     if (result.kind === "possible_duplicate") {
-      return json({ ok: false, code: "possible_duplicate", error: "A similar CRM customer already exists in this branch. Confirm the existing customer instead.", suggestions: result.suggestions }, 409);
+      return json({ ok: false, code: "possible_duplicate", error: "A similar customer record already exists in this branch. Confirm the existing customer instead.", suggestions: result.suggestions }, 409);
     }
     if (["forbidden", "invalid_branch", "relationship_mismatch", "customer_missing"].includes(result.kind)) return authorizationFailure(result.kind);
     if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
     if (result.kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);
-    if (result.kind === "unavailable") return json({ ok: false, error: "CRM customer creation is temporarily unavailable." }, 503);
-    return json({ ok: false, error: "A CRM customer could not be created from this quote." }, 400);
+    if (result.kind === "unavailable") return json({ ok: false, error: "Customer record creation is temporarily unavailable." }, 503);
+    return json({ ok: false, error: "A customer record could not be created from this quote." }, 400);
   }
 
   const customerId = typeof body.customerId === "string" ? body.customerId.trim().toUpperCase() : "";
-  if (!customerId) return json({ ok: false, error: "Choose a CRM customer." }, 400);
+  if (!customerId) return json({ ok: false, error: "Choose a customer record." }, 400);
 
   const authorization = await authorizeFinanceCustomerLink(shipmentReference, customerId, staff);
   if (authorization.kind !== "authorized") return authorizationFailure(authorization.kind);
@@ -61,9 +61,9 @@ export async function POST(request: Request) {
   if (result.kind === "linked") return json({ ok: true, customerId: result.customerId });
   if (result.kind === "already_linked") return json({ ok: false, error: `This shipment is already linked to ${result.customerId}.` }, 409);
   if (["forbidden", "invalid_branch", "relationship_mismatch", "customer_missing"].includes(result.kind)) return authorizationFailure(result.kind);
-  if (result.kind === "missing_customer") return json({ ok: false, error: "CRM customer not found. Check the KCPL-C reference." }, 404);
+  if (result.kind === "missing_customer") return json({ ok: false, error: "Customer record not found. Check the KCPL-C reference." }, 404);
   if (result.kind === "shipment_missing") return json({ ok: false, error: "Shipment not found." }, 404);
   if (result.kind === "quote_missing") return json({ ok: false, error: "The originating quote could not be found for this shipment." }, 404);
-  if (result.kind === "unavailable") return json({ ok: false, error: "CRM linking is temporarily unavailable." }, 503);
+  if (result.kind === "unavailable") return json({ ok: false, error: "Customer linking is temporarily unavailable." }, 503);
   return json({ ok: false, error: "The customer could not be linked." }, 400);
 }

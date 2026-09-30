@@ -181,7 +181,7 @@ export async function archiveCrmCustomer(customerId: string, actor: Actor) {
     });
     transaction.create(customerRef.collection("activity").doc(activityId("activity")), {
       type: "customer_archived",
-      title: "CRM record archived",
+      title: "Customer record archived",
       detail: "The record was archived without deleting its operational history.",
       actor_name: actor.name,
       actor_email: actor.email,

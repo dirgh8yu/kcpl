@@ -19,7 +19,7 @@ function suggestionsFromQuote(value: unknown): FinanceCustomerSuggestion[] {
     const data = item as Record<string, unknown>;
     const id = text(data.id).toUpperCase();
     if (!id) return [];
-    return [{ id, display_name: text(data.display_name) || id, reason: text(data.reason) || "CRM match" }];
+    return [{ id, display_name: text(data.display_name) || id, reason: text(data.reason) || "Customer match" }];
   });
 }
 

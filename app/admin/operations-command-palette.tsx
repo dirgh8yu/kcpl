@@ -7,6 +7,7 @@ import type { WorkflowWorkspace, WorkspaceIconName } from "./workflow-navigation
 import { workspaceMatchesPath, workspaceSearchText, workflowGroupOrder } from "./workflow-navigation";
 import { WorkspaceIcon } from "./workflow-icon";
 import { clearRecents, pushRecent, readRecents, type PaletteRecent, type RecentKind } from "./palette-recents";
+import { readable } from "./readable";
 
 type SearchResult = {
   kind: "shipment" | "customer" | "quote" | "order" | "tender" | "partner" | "payable";
@@ -135,11 +136,11 @@ export function OperationsCommandPalette({ open, instant = false, onClose, works
   const entries = useMemo<PaletteEntry[]>(() => {
     const needle = query.trim().toLowerCase();
     const quickActionCandidates: PaletteEntry[] = [
-      { key: "action:new-customer", title: "New customer", subtitle: "Create a Customer 360 account", meta: null, href: "/admin/crm/new", kind: "action" },
+      { key: "action:new-customer", title: "New customer", subtitle: "Create a customer account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
       ...(allowedIds.has("delivery") ? [{ key: "action:delivery", title: "Work Delivery & POD", subtitle: "Open final-mile attempts and POD review", meta: null, href: "/admin/delivery", kind: "action" as const }] : []),
       ...(allowedIds.has("receivables") ? [{ key: "action:new-invoice", title: "New invoice", subtitle: "Bill a customer, from a shipment or on its own", meta: null, href: "/admin/finance/new", kind: "action" as const }] : []),
-      ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before Freight Audit", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
+      ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before its bill check", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
     ];
     const quickActions = quickActionCandidates.filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
 
@@ -258,7 +259,7 @@ export function OperationsCommandPalette({ open, instant = false, onClose, works
             >
               <span className={`${index === selectedIndex ? "text-[var(--admin-crimson)]" : "text-[var(--admin-muted)]"}`}>{resultIcon(entry)}</span>
               <span className="min-w-0"><span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><strong className="truncate text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)]">{entry.title}</strong><span className="shrink-0 border border-[var(--admin-line-strong)] px-1.5 py-0.5 text-[length:var(--app-label-size)] font-normal text-[var(--admin-muted)]">{entry.recent && entry.kind !== "action" ? "Recent" : kindLabel(entry.kind)}</span></span><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{entry.subtitle}</span></span>
-              {entry.meta ? <span className="hidden shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-muted)] sm:block">{entry.meta.replaceAll("_", " ")}</span> : <span/>}
+              {entry.meta ? <span className="hidden shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-muted)] sm:block">{readable(entry.meta)}</span> : <span/>}
               <ArrowRight size={13} strokeWidth={1.75} className="shrink-0 text-[var(--admin-muted)]"/>
             </button>
           ))}

@@ -9,7 +9,7 @@ import { galleryStorageAvailable, listGalleryEntries } from "../../site-gallery.
 import { GalleryWorkspace } from "./gallery-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Website Gallery", robots: { index: false, follow: false } };
+export const metadata = { title: "Website gallery", robots: { index: false, follow: false } };
 
 export default async function AdminGalleryPage() {
   const access = await getAdminAccess();

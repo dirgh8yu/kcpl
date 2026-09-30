@@ -27,7 +27,7 @@ export function requireCrmCapability(permissions: StaffCapabilities, capability:
 export async function requireCrmCustomerAccess(customerId: string, staff: KcplStaffContext) {
   const access = await checkCrmCustomerAccess(customerId, staff);
   if (access.kind === "ready") return null;
-  if (access.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+  if (access.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
   if (access.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
   return crmJson({ ok: false, error: "This customer is outside your KCPL branch access." }, 403);
 }

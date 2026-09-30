@@ -87,6 +87,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("KCPL Custom GPT Freight Audit briefing failed", error);
-    return gptActionJson({ ok: false, error: "The KCPL Freight Audit briefing is temporarily unavailable." }, 503);
+    return gptActionJson({ ok: false, error: "The KCPL supplier bill check briefing is temporarily unavailable." }, 503);
   }
 }

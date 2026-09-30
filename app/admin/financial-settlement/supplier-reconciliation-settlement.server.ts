@@ -120,9 +120,9 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
       });
     }
 
-    const detail = `${billReference} relinked from ${currentSupplierName || currentSupplierId || "unidentified supplier"} to ${partnerName}. AP approval, published job cost and Freight Audit approval were invalidated for review.`;
+    const detail = `${billReference} relinked from ${currentSupplierName || currentSupplierId || "unidentified supplier"} to ${partnerName}. Payables approval, the published job cost and the bill check approval were reset for review.`;
     transaction.set(partnerRef.collection("activity").doc(`reconcile-${billReference}`), {
-      type: "supplier_reconciliation", title: "Legacy supplier bill reconciled", detail,
+      type: "supplier_reconciliation", title: "Old supplier bill linked", detail,
       actor_name: actor.name, actor_email: actor.email, created_at: now,
     }, { merge: true });
     transaction.set(billRef.collection("activity").doc(`reconcile-${now.replace(/[^0-9]/g, "")}`), {

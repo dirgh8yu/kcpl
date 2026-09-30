@@ -309,7 +309,7 @@ export function FreightDocumentsWorkspace({
               <table className="ops-table ops-register-table freight-documents-table" aria-label="Freight document production queue">
                 <thead>
                   <tr>
-                    <th>Job file</th>
+                    <th>Job File</th>
                     <th>Route</th>
                     <th>Current document</th>
                     <th className="freight-documents-col-file">Filename / revision</th>

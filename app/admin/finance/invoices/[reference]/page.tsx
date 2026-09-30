@@ -29,7 +29,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Finance access is restricted" detail="Invoices and Accounts Receivable are available to Management and Accounts roles only."/></OperationsShell>;
+  if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Finance access is restricted" detail="Invoices are available to Management and Accounts roles only."/></OperationsShell>;
 
   const { reference } = await params;
   // QA preview: the same invoices the Receivables register lists.
@@ -52,5 +52,5 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Finance · Invoice" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/payables", label: "Payables" }]}/>;
+  return <V4WorkspaceGate eyebrow="Invoice" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/payables", label: "Payables" }]}/>;
 }

@@ -228,7 +228,7 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
       : "Customs checklist complete. Explicit release is not required by the current lane rule.";
   const stages: WorkflowStage[] = [
     { id: "won", label: "Won", state: "complete", detail: "Shipment and Job File created from an accepted quote." },
-    { id: "setup", label: "Setup", state: stageState(customerLinked, !customerLinked), detail: customerLinked ? `CRM customer ${customerId} confirmed.` : "Confirm or create the CRM customer before progression." },
+    { id: "setup", label: "Setup", state: stageState(customerLinked, !customerLinked), detail: customerLinked ? `Customer record ${customerId} confirmed.` : "Confirm or create the customer record before progression." },
     { id: "customs", label: "Customs", state: stageState(customsReady, customerLinked && !customsReady, customsClearanceStatus === "held"), detail: customsStageDetail },
     { id: "documents", label: "Docs", state: stageState(documentPackReady, customsReady && !documentPackReady), detail: documentPackReady ? "Verified required document pack is present." : "Required files are missing, unverified or expired." },
     { id: "transit", label: "Transit", state: stageState(inTransitOrLater, customsReady && documentPackReady && !inTransitOrLater), detail: inTransitOrLater ? "Movement has reached transit/clearance stage." : "Movement milestone not reached yet." },

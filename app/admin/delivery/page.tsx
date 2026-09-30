@@ -38,7 +38,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Delivery & POD"
+    eyebrow="Delivery & POD"
     title={title}
     detail={detail}
     embedded={embedded}

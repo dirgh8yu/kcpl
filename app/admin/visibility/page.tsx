@@ -37,7 +37,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams: P
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Tracking"
+    eyebrow="Tracking"
     title={title}
     detail={detail}
     embedded={embedded}

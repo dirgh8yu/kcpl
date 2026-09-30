@@ -360,7 +360,7 @@ export async function createCrmCustomer(input: CrmCreateCustomerInput, actor: Ac
   batch.create(ref, document);
   batch.create(ref.collection("activity").doc(childId("activity")), activityData(
     "customer_created",
-    "CRM record created",
+    "Customer record created",
     `${actor.name} created this customer record.`,
     actor,
     now,

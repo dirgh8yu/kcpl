@@ -423,7 +423,7 @@ function PartnerInspector({ partner, inspectorRef, commercialVisible, financialV
     </div>
     <footer className="ops-inspector-footer">
       {repairOnly ? <span className="network-footer-note">Management repair</span> : null}
-      <Link href={`/admin/partners/${encodeURIComponent(partner.id)}`} className="ops-button" data-variant="secondary" data-size="sm"><ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true"/>Partner 360</Link>
+      <Link href={`/admin/partners/${encodeURIComponent(partner.id)}`} className="ops-button" data-variant="secondary" data-size="sm"><ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true"/>Open partner</Link>
       {canEditRecord ? <OpsButton variant="primary" size="sm" onClick={onEdit}><Pencil size={14} strokeWidth={1.75} aria-hidden="true"/>Edit partner</OpsButton> : null}
     </footer>
   </aside>;

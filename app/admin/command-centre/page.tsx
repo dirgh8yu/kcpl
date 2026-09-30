@@ -197,7 +197,7 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
 // rendered as unstyled text.
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Operations"
+    eyebrow="Overview"
     title={title}
     detail={detail}
     embedded={embedded}

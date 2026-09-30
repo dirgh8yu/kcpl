@@ -177,9 +177,9 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
       if (!tenderResponse.ok || !tenderData.ok || !tenderData.tenders) throw new Error(tenderData.error || "Tenders could not be refreshed.");
       setOrders(orderData.orders);
       setTenders(tenderData.tenders);
-      setNotice({ tone: "success", text: "Tender Workspace refreshed." });
+      setNotice({ tone: "success", text: "Carrier booking refreshed." });
     } catch (error) {
-      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Tender Workspace could not be refreshed." });
+      setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Carrier booking could not be refreshed." });
     } finally {
       setBusy(false);
     }

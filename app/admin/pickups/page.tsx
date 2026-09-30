@@ -31,7 +31,7 @@ export default async function PickupPage({ searchParams }: { searchParams: Promi
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Pickups"
+    eyebrow="Pickups"
     title={title}
     detail={detail}
     embedded={embedded}

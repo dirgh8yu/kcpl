@@ -24,8 +24,8 @@
 .kcpl-admin-content .mgmt-range { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; }
 .kcpl-admin-content .mgmt-range a.ops-scope-tab { text-decoration: none; }
 .kcpl-admin-content .mgmt-range-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
-.kcpl-admin-content .mgmt-range-form label { display: grid; gap: 3px; color: var(--admin-muted); font-size: 11.5px; font-weight: 500; }
-.kcpl-admin-content .mgmt-range-form .ops-input { width: 150px; min-height: 32px; padding: 5px 9px; font-size: 13px; }
+.kcpl-admin-content .mgmt-range-form label { display: grid; gap: 4px; color: var(--admin-muted); font-size: 12px; font-weight: 500; }
+.kcpl-admin-content .mgmt-range-form .ops-input { width: 150px; min-height: var(--app-field-height); padding: 0 10px; font-size: 13px; }
 .kcpl-admin-content .mgmt-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
 @media (min-width: 1500px) { .kcpl-admin-content .mgmt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kcpl-admin-content .mgmt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); align-items: start; gap: 16px; }

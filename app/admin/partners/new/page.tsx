@@ -23,15 +23,15 @@ export default async function NewPartnerPage() {
     isManagement: staff.permissions.role === "management",
   };
   const canEdit = canEditPartnerNetwork(staff.permissions);
-  if (!canEdit) return <OperationsShell {...shellProps}><Gate embedded title="Partner editing is restricted" detail="Your current KCPL role has read-only Partner Network access."/></OperationsShell>;
+  if (!canEdit) return <OperationsShell {...shellProps}><Gate embedded title="Partner editing is restricted" detail="Your role can view partners but not change them."/></OperationsShell>;
 
   const canGlobal = staff.permissions.role === "management" || staff.can_access_all_branches;
   const ownerOptions: PartnerOwnerBranch[] = [...(canGlobal ? ["Global" as const] : []), ...staff.branches];
   if (!ownerOptions.length) return <OperationsShell {...shellProps}><Gate embedded title="No editable branch is assigned" detail="A KCPL branch assignment is required before you can create a Partner record."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><NewPartnerWorkspace ownerOptions={ownerOptions}/></OperationsShell>;
+  return <OperationsShell {...shellProps} detailLabel="New partner"><NewPartnerWorkspace ownerOptions={ownerOptions}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · New Partner" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/command-centre", label: "Operations Home" }]}/>;
+  return <V4WorkspaceGate eyebrow="Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
 }

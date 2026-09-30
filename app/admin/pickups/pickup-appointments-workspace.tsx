@@ -54,6 +54,7 @@ import {
   type PickupQueueRow,
   type PickupSummary,
 } from "./pickup-appointments";
+import { readable } from "../readable";
 
 type ApiResponse = { ok?: boolean; error?: string; rows?: PickupQueueRow[]; summary?: PickupSummary };
 type Focus = "all" | "pending" | "scheduled" | "assigned" | "completed" | "attention" | "cancelled";
@@ -614,13 +615,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 <div className="ops-inspector-body">
                   {selected.status !== "picked_up" && selected.status !== "cancelled" ? (
                     <div className="ops-inspector-actions">
-                      <OpsButton type="button" variant="secondary" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
+                      <OpsButton type="button" variant="secondary" size="sm" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>{selected.status === "unscheduled" ? "Schedule" : "Reschedule"}</OpsButton>
                       {selected.status === "confirmed" || selected.status === "requested" ? (
                         <OpsButton variant="primary" type="button" onClick={() => openEditor("driver")}><UserRound size={15} strokeWidth={1.75} aria-hidden="true"/>Assign driver</OpsButton>
                       ) : selected.status === "driver_assigned" ? (
                         <OpsButton variant="primary" type="button" onClick={() => openEditor("outcome")}><PackageCheck size={15} strokeWidth={1.75} aria-hidden="true"/>Pickup outcome</OpsButton>
                       ) : (
-                        <OpsButton variant="primary" type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</OpsButton>
+                        <OpsButton variant="primary" size="sm" type="button" onClick={() => openEditor("appointment")}><CalendarClock size={15} strokeWidth={1.75} aria-hidden="true"/>Set appointment</OpsButton>
                       )}
                     </div>
                   ) : null}
@@ -644,7 +645,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                         <OpsField label="Window start" className="col-span-full"><input name="pickup-window-start" type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)}/></OpsField>
                         <OpsField label="Window end" className="col-span-full"><input name="pickup-window-end" type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)}/></OpsField>
                         <OpsField label="Pickup location"><input value={pickupLocation} onChange={(event) => setPickupLocation(event.target.value)} placeholder="Warehouse, factory, terminal…"/></OpsField>
-                        <OpsField label="Request channel"><select value={channel} onChange={(event) => setChannel(event.target.value as PickupChannel)}>{pickupChannels.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></OpsField>
+                        <OpsField label="Request channel"><select value={channel} onChange={(event) => setChannel(event.target.value as PickupChannel)}>{pickupChannels.map((item) => <option key={item} value={item}>{readable(item)}</option>)}</select></OpsField>
                         <OpsField label="Contact name"><input value={contactName} onChange={(event) => setContactName(event.target.value)}/></OpsField>
                         <OpsField label="Contact phone"><input value={contactPhone} onChange={(event) => setContactPhone(event.target.value)}/></OpsField>
                         <OpsField label="Carrier reference"><input value={providerReference} onChange={(event) => setProviderReference(event.target.value)} placeholder="Appointment reference"/></OpsField>
@@ -696,7 +697,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                     <OpsFacts>
                       <OpsFact label="Customer">{selected.customer_name}</OpsFact>
                       <OpsFact label="Date & time" warning={!selectedWindowStart}>{selectedWindowStart ? `${dateLabel(selectedWindowStart)} · ${timeLabel(selectedWindowStart)}${selectedWindowEnd ? `–${timeLabel(selectedWindowEnd)}` : ""} NPT` : "Not scheduled"}</OpsFact>
-                      <OpsFact label="Carrier">{selected.partner_name || selected.channel.replaceAll("_", " ")}</OpsFact>
+                      <OpsFact label="Carrier">{selected.partner_name || readable(selected.channel)}</OpsFact>
                       <OpsFact label="Driver / vehicle">{selected.driver_name ? `${selected.driver_name}${selected.vehicle_reference ? ` · ${selected.vehicle_reference}` : ""}` : "Not assigned"}</OpsFact>
                       <OpsFact label="Contact">{[selected.contact_name, selected.contact_phone].filter(Boolean).join(" · ") || "Not provided"}</OpsFact>
                       <OpsFact label="Reference">{selected.provider_reference || "—"}</OpsFact>
@@ -717,7 +718,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
               </div>
 
               <footer className="ops-inspector-footer">
-                <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="md"><ExternalLink size={15} strokeWidth={1.75} aria-hidden="true"/>View shipment</Link>
+                <Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm"><ExternalLink size={15} strokeWidth={1.75} aria-hidden="true"/>Open Job File</Link>
                 <button type="button" className="ops-inspector-close" onClick={() => editor === "outcome" ? setEditor("details") : openEditor("outcome")} aria-label="More pickup actions" aria-expanded={editor === "outcome"}><MoreHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/></button>
               </footer>
             </aside>

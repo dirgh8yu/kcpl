@@ -26,7 +26,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
 
   return <OpsPage>
     <OpsPageHeader
-      title="Reports"
+      title="Management"
       description="How the business is doing this period. Each currency is shown separately."
       meta={<span>{analytics.range.label} · generated {generated}</span>}
       actions={<>

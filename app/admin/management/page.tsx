@@ -58,5 +58,5 @@ export default async function ManagementPage({ searchParams }: { searchParams: P
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Management" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/management", label: "Management", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/staff", label: "People & Branches" }]}/>;
+  return <V4WorkspaceGate eyebrow="Management" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/management", label: "Management", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/staff", label: "People & Branches" }]}/>;
 }

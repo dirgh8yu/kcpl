@@ -60,6 +60,7 @@
   --app-sidebar-width: 226px;
   --app-toolbar-height: 58px;
   --app-control-height: 40px;
+  --app-field-height: 34px;
   --app-control-height-touch: 44px;
   --app-radius: 8px;
   --app-surface-radius: 10px;
@@ -320,7 +321,7 @@
 .kcpl-admin-content .ops-surface-header {
   display: flex; align-items: flex-start; justify-content: space-between; flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface);
 }
-.kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; }
+.kcpl-admin-content .ops-surface-header h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
 .kcpl-admin-content .ops-surface-description { margin-top: 2px; color: var(--admin-muted); font-size: 13px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-surface-body { padding: 18px; }
 .kcpl-admin-content .ops-surface-body-flush { padding: 0; }
@@ -352,7 +353,7 @@
 .kcpl-admin-content .ops-filter-chip[data-active="true"] { border-color: var(--admin-crimson); background: var(--admin-crimson); color: var(--admin-surface); }
 
 /* Buttons have distinct intent. Secondary and destructive actions never inherit primary fill. */
-.kcpl-admin-shell .ops-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: var(--app-control-height); padding: 0 14px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-ink); font-size: 14px; font-weight: 500; line-height: 20px; text-decoration: none; box-shadow: none; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; }
+.kcpl-admin-shell .ops-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: var(--app-control-height); padding: 0 14px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-ink); font-size: 14px; font-weight: 500; line-height: 20px; text-decoration: none; white-space: nowrap; box-shadow: none; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; }
 .kcpl-admin-shell .ops-button[data-size="sm"] { min-height: 36px; padding-inline: 11px; font-size: 13px; line-height: 18px; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-shell .ops-button:hover:not(:disabled) { transform: none; background: var(--admin-surface-muted); color: var(--admin-ink); border-color: var(--admin-line-strong); box-shadow: none; } }
 .kcpl-admin-shell .ops-button[data-variant="primary"] { background: var(--admin-crimson); border-color: var(--admin-crimson); color: white; }
@@ -365,8 +366,15 @@
 .kcpl-admin-shell .ops-button:disabled, .kcpl-admin-shell .ops-button[aria-disabled="true"] { background: var(--admin-surface-muted); border-color: var(--admin-line); color: var(--admin-faint); box-shadow: none; transform: none; opacity: .65; }
 .kcpl-admin-content :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) { min-height: var(--app-control-height); border-radius: var(--app-radius); font-size: 14px; font-weight: 400; line-height: 20px; color: var(--admin-ink); font-family: inherit; box-shadow: none; }
 .kcpl-admin-content :where(.ops-field input,.ops-field select,.ops-input,.ops-select,.shipments-filter) { width: 100%; min-height: var(--app-control-height); padding: 8px 11px; border: 1px solid var(--admin-line); background: var(--admin-surface); border-radius: var(--app-radius); }
-.kcpl-admin-content .ops-field { display: grid; gap: 6px; }
-.kcpl-admin-content .ops-field-label { margin: 0; color: var(--admin-muted); font-size: 13px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.kcpl-admin-content .ops-field { display: grid; align-content: start; gap: 6px; }
+.kcpl-admin-content .ops-field-label { margin: 0; color: var(--admin-muted); font-size: 12px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+/* One field everywhere -- page forms, panels, inspectors, the customer page:
+ * 34px (44px on phones), 13px regular text, the app's corner radius. The
+ * older sheets set 44px / 12px bold / 2px corners with stronger selectors,
+ * so this one is specific enough to win rather than a :where(). */
+.kcpl-admin-content :is(.ops-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), .ops-field select, input.ops-input, select.ops-input, .ops-select, .crm360-input:not(textarea)) { min-height: var(--app-field-height); padding: 0 10px; border-radius: var(--app-radius); font-size: 13px; font-weight: 400; }
+.kcpl-admin-content :is(.ops-field textarea, textarea.ops-input, textarea.crm360-input, .ops-textarea) { min-height: 72px; padding: 8px 10px; border-radius: var(--app-radius); font-size: 13px; font-weight: 400; line-height: 20px; }
+.kcpl-admin-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]), select, textarea) { border-radius: var(--app-radius); }
 .kcpl-admin-content .ops-field small { color: var(--admin-faint); font-size: 12px; font-weight: 400; line-height: 16px; }
 .kcpl-admin-content .ops-field textarea { min-height: 96px; padding: 10px 11px; border: 1px solid var(--admin-line); background: var(--admin-surface); }
 .kcpl-admin-content .ops-search { display: flex; align-items: center; min-height: var(--app-control-height); min-width: 0; gap: 8px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 0 12px; color: var(--admin-faint); background: var(--admin-surface); }
@@ -422,6 +430,9 @@
   box-shadow: 0 0 0 3px rgb(220 20 60 / 10%);
 }
 .kcpl-admin-content .ops-notice, .kcpl-admin-content .ops-error-state { border-radius: var(--app-surface-radius); padding: 12px 14px; font-size: 13px; font-weight: 400; line-height: 20px; }
+/* A notice's Dismiss / Try again read as small text buttons, not 10px caps. */
+.kcpl-admin-content .ops-notice button { min-height: 28px; padding: 0 8px; border: 0; border-radius: var(--app-radius-sm); background: transparent; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-notice button:hover { background: color-mix(in srgb, currentColor 10%, transparent); } }
 .kcpl-admin-content .ops-notice {
   opacity: 1;
   transform: translateY(0);
@@ -734,7 +745,7 @@
   .app-skip-link { left: 10px; }
 }
 @media (max-width: 760px) {
-  .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-row-height: 52px; --app-title-size: 22px;   }
+  .kcpl-admin-route { --app-page-gap: 16px; --app-toolbar-height: 52px; --app-control-height: 44px; --app-field-height: 44px; --app-row-height: 52px; --app-title-size: 22px;   }
   /* iOS zooms the page on focus of any input under 16px — never let a mobile
    * form control's font drop below that, regardless of --app-font-size. */
   .kcpl-admin-shell :where(input,textarea,select) { font-size: max(16px, var(--app-font-size)); }
@@ -1941,7 +1952,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-register-toolbar-search .ops-search input { font-size: 13px; }
 .kcpl-admin-content .ops-register-toolbar-actions { grid-area: actions; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
 .kcpl-admin-content .ops-register-toolbar-tabs { grid-area: tabs; min-width: 0; }
-.kcpl-admin-content .ops-register-toolbar-actions .ops-button[data-size="md"] { min-height: 32px; gap: 6px; padding-inline: 10px; font-size: 12px; font-weight: 500; }
+.kcpl-admin-content .ops-register-toolbar-actions .ops-button { min-height: 32px; gap: 6px; padding-inline: 10px; font-size: 12px; font-weight: 500; }
 .kcpl-admin-content .ops-toolbar-divider { width: 1px; height: 18px; margin-inline: 2px; background: var(--admin-line); }
 .kcpl-admin-content .ops-result-count { display: inline-flex; min-height: 24px; align-items: center; padding: 0 2px; color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -2072,7 +2083,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-inspector-header { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 16px 9px; border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content .ops-inspector-heading { min-width: 0; }
 .kcpl-admin-content .ops-inspector-kicker { margin: 0; overflow: hidden; color: var(--admin-muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.kcpl-admin-content .ops-inspector-heading h2 { margin: 3px 0 0; color: var(--admin-ink); font-size: 17px; font-weight: 600; letter-spacing: -0.022em; line-height: 1.25; }
+.kcpl-admin-content .ops-inspector-heading h2 { margin: 3px 0 0; color: var(--admin-ink); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
 .kcpl-admin-content .ops-inspector-subtitle { margin: 2px 0 0; color: var(--admin-muted); font-size: 12.5px; line-height: 18px; }
 .kcpl-admin-content .ops-inspector-header-actions { display: flex; flex: none; align-items: center; gap: 6px; }
 .kcpl-admin-content .ops-inspector-close { display: inline-grid; width: 30px; height: 30px; flex: none; place-items: center; border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); cursor: pointer; }
@@ -2090,11 +2101,13 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-inspector-footer { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px 12px; border-top: 1px solid var(--admin-line); background: var(--admin-surface); }
 .kcpl-admin-content .ops-inspector-footer .ops-button { min-height: 34px; font-size: 13px; }
 .kcpl-admin-content .ops-inspector-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.kcpl-admin-content .ops-inspector-actions .ops-button { min-height: 32px; padding-inline: 11px; font-size: 12.5px; }
+/* Inspector actions are the small size wherever they are declared, so a
+ * panel's buttons match the rest of the app's small buttons. */
+.kcpl-admin-content .ops-inspector-actions .ops-button { min-height: 36px; padding-inline: 11px; font-size: 13px; }
 .kcpl-admin-content .ops-inspector-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 .kcpl-admin-content .ops-inspector-form .ops-field { gap: 4px; }
-.kcpl-admin-content .ops-inspector-form .ops-field-label { font-size: 11.5px; }
-.kcpl-admin-content .ops-inspector-form :where(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 32px; padding: 5px 9px; font-size: 13px; font-weight: 400; }
+.kcpl-admin-content .ops-inspector-form .ops-field-label { font-size: 12px; }
+.kcpl-admin-content .ops-inspector-form :where(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: var(--app-field-height); padding: 5px 10px; font-size: 13px; font-weight: 400; }
 .kcpl-admin-content .ops-inspector-form textarea { min-height: 64px; padding: 7px 9px; font-size: 13px; font-weight: 400; }
 
 .kcpl-admin-content .ops-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 20px; margin: 0; }
@@ -2427,6 +2440,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 
 /* "Assigned to me": one toggle on each work list, beside its filters. */
 .kcpl-admin-content .ops-mine-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+/* In the toolbar it stands with the 32px filter buttons. */
+.kcpl-admin-content .ops-register-toolbar .ops-mine-toggle { min-height: 32px; padding: 0 10px; border-radius: var(--app-radius); }
 
 /* The enquiry's view of its shipment: a summary and the way in. */
 .kcpl-admin-content .enquiry-shipment-summary { display: grid; gap: 12px; }

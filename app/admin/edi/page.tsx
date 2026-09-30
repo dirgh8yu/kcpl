@@ -39,5 +39,5 @@ export default async function EdiGatewayPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · EDI messages" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/edi", label: "EDI messages", primary: true }, { href: "/admin/tenders", label: "Tender Desk" }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
+  return <V4WorkspaceGate eyebrow="EDI messages" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/edi", label: "EDI messages", primary: true }, { href: "/admin/tenders", label: "Tender Desk" }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
 }

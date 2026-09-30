@@ -11,7 +11,7 @@ export const metadata = { title: "Supplier bill checks", robots: { index: false,
 
 export default async function FreightAuditPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Freight Audit is available only to authorised KCPL finance staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Supplier bill checks are available only to authorised KCPL finance staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -21,7 +21,7 @@ export default async function FreightAuditPage({ searchParams }: { searchParams:
     canManageJobFile: staff.permissions.canManageJobFile,
     isManagement: staff.permissions.role === "management",
   };
-  if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Freight Audit access restricted" detail="Management or Accounts access is required for Match-Pay controls."/></OperationsShell>;
+  if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Supplier bill checks are restricted" detail="Management or Accounts access is required for Match-Pay controls."/></OperationsShell>;
 
   let result: Awaited<ReturnType<typeof listFreightAuditQueue>>;
   try { result = await listFreightAuditQueue(staff); }
@@ -33,5 +33,5 @@ export default async function FreightAuditPage({ searchParams }: { searchParams:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Finance · Freight Audit" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/freight-audit", label: "Freight Audit", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/finance", label: "Receivables" }]}/>;
+  return <V4WorkspaceGate eyebrow="Supplier bill checks" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/freight-audit", label: "Supplier bill checks", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/finance", label: "Receivables" }]}/>;
 }

@@ -85,7 +85,7 @@ export function ShipmentImportPanel() {
         <div className="migration-rules">
           <p className="migration-rules-title">Stage 2 rules</p>
           <ul>
-            <li>Every shipment must link to an existing Stage 1 / CRM customer by <strong>customer_id</strong> or one exact, unique customer name.</li>
+            <li>Every shipment must link to an existing Stage 1 customer record by <strong>customer_id</strong> or one exact, unique customer name.</li>
             <li><strong>active</strong> rows enter live Operations and receive the standard KCPL task, customs and document workflow.</li>
             <li><strong>historical</strong> rows must be Delivered and are imported as completed migration records without generating live operational work.</li>
             <li>Shipment reference and carrier reference duplicates are blocked before import.</li>

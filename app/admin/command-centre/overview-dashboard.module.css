@@ -27,7 +27,7 @@
   --overview-brand-crimson: var(--admin-crimson);
   max-width: 1600px;
   margin: 0 auto;
-  padding: 16px 20px 28px;
+  padding: 16px 24px 28px; /* the 24px gutter every other page uses */
 }
 
 /* ── Page header ─────────────────────────────────────────────────────────── */
@@ -41,7 +41,8 @@
 
 /* ── Compact controls: 34px, 6px radius, no chrome beyond the border ─────── */
 
-.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; border-radius: 6px; padding: 0 12px; font: inherit; font-size: 12.5px; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+/* The app's small button: same height, radius, size and weight as .ops-button[data-size="sm"]. */
+.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: var(--app-radius); padding: 0 11px; font: inherit; font-size: 13px; font-weight: 500; line-height: 18px; white-space: nowrap; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 .blackButton { border: 1px solid var(--overview-action); background: var(--overview-action); color: var(--overview-surface); }
 @media (hover: hover) and (pointer: fine) { .blackButton:hover { border-color: var(--overview-action-hover); background: var(--overview-action-hover); } }
 .blackButton:disabled { cursor: default; opacity: 0.45; }
@@ -103,10 +104,11 @@
 .table th:nth-child(6), .table td:nth-child(6) { width: 128px; }
 .table th:nth-child(7), .table td:nth-child(7) { width: 52px; }
 .table th:nth-child(8), .table td:nth-child(8) { width: 34px; }
-.table th { height: 30px; border-bottom: 1px solid var(--overview-line); background: var(--overview-canvas); padding: 0 10px; color: var(--overview-faint); font-size: 10.5px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
+/* The registers' column headings (.ops-register-table th). */
+.table th { height: 34px; border-bottom: 1px solid var(--overview-line); background: var(--overview-canvas); padding: 0 10px; color: var(--admin-muted); font-size: 11px; font-weight: 600; line-height: 14px; text-align: left; text-transform: uppercase; letter-spacing: 0.04em; }
 /* The action column is exactly its 30px button; the generic 20px of cell padding would clip it into an ellipsis. */
 .table th:last-child, .table td:last-child { padding-left: 2px; padding-right: 2px; }
-.table td { height: 40px; border-bottom: 1px solid var(--overview-line); padding: 8px 10px; color: var(--overview-ink); font-size: 12.5px; vertical-align: middle; }
+.table td { height: 42px; border-bottom: 1px solid var(--overview-line); padding: 6px 10px; color: var(--overview-ink); font-size: 13px; line-height: 18px; vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }
 @media (hover: hover) and (pointer: fine) { .table tbody tr:hover td { background: var(--overview-canvas); } }
 .checkbox { width: 14px; height: 14px; accent-color: var(--overview-action); }

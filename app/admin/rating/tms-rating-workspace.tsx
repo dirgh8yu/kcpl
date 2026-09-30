@@ -16,6 +16,7 @@ import {
   type TmsOrder,
   type TmsRateUnit,
 } from "./tms-rating";
+import { freightModeLabel } from "../freight-mode";
 
 type PartnerOption = { id: string; name: string };
 type ApiResponse = { ok: boolean; error?: string; order?: TmsOrder; orders?: TmsOrder[]; rateCard?: PartnerBuyRateCard; rateCards?: PartnerBuyRateCard[]; results?: RatingResult[]; result?: RatingResult };
@@ -24,7 +25,7 @@ function money(value: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(value); }
   catch { return `${currency} ${value.toFixed(2)}`; }
 }
-function modeLabel(value: string) { return value.charAt(0).toUpperCase() + value.slice(1); }
+const modeLabel = freightModeLabel;
 function dateLabel(value: string | null) { if (!value) return "Any date"; const d = new Date(`${value}T00:00:00`); return Number.isNaN(d.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(d); }
 
 export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, branches, canUseGlobalBranch, canManageRateCards }: {
@@ -84,11 +85,11 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
     try {
       const response = await fetch("/api/admin/rating", { cache: "no-store" });
       const data = await response.json() as ApiResponse;
-      if (!response.ok || !data.ok || !data.orders || !data.rateCards) throw new Error(data.error || "Rate Desk could not be refreshed.");
+      if (!response.ok || !data.ok || !data.orders || !data.rateCards) throw new Error(data.error || "The rate desk could not be refreshed.");
       setOrders(data.orders); setRateCards(data.rateCards);
       if (!selectedOrderId && data.orders[0]) setSelectedOrderId(data.orders[0].id);
       setNotice({ tone: "success", text: "Orders and Partner buy rates refreshed." });
-    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Rate Desk could not be refreshed." }); }
+    } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "The rate desk could not be refreshed." }); }
     finally { setBusy(false); }
   }
   // The top bar's refresh reloads this desk; the page no longer has its own button.
@@ -158,8 +159,8 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow={<Link href="/admin/rating" className="rate-back"><ArrowLeft size={14} strokeWidth={1.75} aria-hidden="true"/>Transport Orders</Link>}
-        title="Rate Desk"
+        eyebrow={<Link href="/admin/rating" className="rate-back"><ArrowLeft size={14} strokeWidth={1.75} aria-hidden="true"/>Transport orders</Link>}
+        title="Rate desk"
         description="Compare Partner buy rates and lock the procurement rate."
         actions={<>
           {canManageRateCards ? <OpsButton variant="secondary" onClick={() => setShowRate((value) => !value)} aria-expanded={showRate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Partner buy rate</OpsButton> : null}
@@ -168,7 +169,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6">
-        <OpsKpiRail label="Rate Desk summary">
+        <OpsKpiRail label="Rate desk summary">
           <OpsRailMetric label="Orders" value={orders.length}/>
           <OpsRailMetric label="Selected rates" value={selectedOrders}/>
           <OpsRailMetric label="Active buy rates" value={activeRateCards}/>

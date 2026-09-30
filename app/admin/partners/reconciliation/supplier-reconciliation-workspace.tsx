@@ -23,7 +23,7 @@ const FILTER_TABS: Array<{ value: "all" | "suggested" | "manual" | "customer_ref
   { value: "all", label: "All unresolved" },
   { value: "suggested", label: "Suggestions" },
   { value: "manual", label: "Needs manual match" },
-  { value: "customer_reference", label: "Legacy Customer IDs" },
+  { value: "customer_reference", label: "Old customer IDs" },
 ];
 
 function identityLabel(bill: SupplierReconciliationBill) {
@@ -91,14 +91,14 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
       title="Supplier records"
       description="Link old bills to the right partner. Suggestions are only suggestions; nothing changes until you confirm."
       meta={<><span>{roleLabel}</span><span>{snapshot.unresolved_count} unresolved</span></>}
-      actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Accounts Payable</Link></>}
+      actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Payables</Link></>}
     />
 
     <div className="px-4 pt-3 md:px-6">
       <OpsKpiRail label="Reconciliation summary">
         <OpsRailMetric label="Unresolved bills" value={snapshot.unresolved_count} tone={snapshot.unresolved_count ? "warning" : "success"}/>
         <OpsRailMetric label="Exact-name suggestions" value={snapshot.exact_match_count} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
-        <OpsRailMetric label="Legacy Customer IDs" value={snapshot.customer_reference_count} tone="warning" active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
+        <OpsRailMetric label="Old customer IDs" value={snapshot.customer_reference_count} tone="warning" active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
         <OpsRailMetric label="Needs manual match" value={snapshot.no_suggestion_count} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
       </OpsKpiRail>
     </div>
@@ -107,7 +107,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
       <div className="mb-3"><OpsInlineAlert tone="warning" icon={<TriangleAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Exact-name suggestions are not automatic matches.</strong> Review the supplier name, bill reference, branch and job before confirming. Reconciliation never changes amounts, payment history, bill status or currency.</OpsInlineAlert></div>
 
-      <OpsSurface eyebrow="Legacy supplier identity" title="Bills requiring Partner linkage" description={`${filtered.length} of ${snapshot.bills.length} unresolved supplier bills shown.`} flush>
+      <OpsSurface eyebrow="Legacy supplier identity" title="Bills to link to a partner" description={`${filtered.length} of ${snapshot.bills.length} unresolved supplier bills shown.`} flush>
         <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search bill, supplier, old ID, Partner, shipment or branch"/>}
           actions={(
@@ -120,7 +120,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
           tabs={<OpsScopeTabs label="Reconciliation filters" items={FILTER_TABS} value={filter} onChange={(value) => setFilter(value)}/>}
         />
 
-        <div className="ops-table-wrap"><table className="ops-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
+        <div className="ops-table-wrap"><table className="ops-table ops-register-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
           {filtered.length ? filtered.map((bill) => {
             const partnerId = selections[bill.reference] || "";
             const selectedPartner = partnerById.get(partnerId);

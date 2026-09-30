@@ -39,8 +39,8 @@ async function loadCustomers(staff: Awaited<ReturnType<typeof getStaffContext>>)
 
 export default async function CrmPage() {
   const access = await getAdminAccess();
-  if (access.kind === "unconfigured") return <CrmGate title="CRM access needs configuration" detail="Firebase and KCPL staff access must be configured before the CRM can load."/>;
-  if (access.kind === "signed-out") return <CrmGate title="Sign in to KCPL Operations" detail="The CRM is private and available only to authorised KCPL staff." signIn/>;
+  if (access.kind === "unconfigured") return <CrmGate title="Customers need configuration" detail="Firebase and KCPL staff access must be configured before Customers can load."/>;
+  if (access.kind === "signed-out") return <CrmGate title="Sign in to KCPL Operations" detail="Customers are private and available only to authorised KCPL staff." signIn/>;
 
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {
@@ -75,7 +75,7 @@ export default async function CrmPage() {
 
 function CrmGate({ title, detail, signIn = false, embedded = false }: { title: string; detail: string; signIn?: boolean; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Customers"
+    eyebrow="Customers"
     title={title}
     detail={detail}
     embedded={embedded}

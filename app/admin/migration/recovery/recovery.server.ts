@@ -100,7 +100,7 @@ async function inspectCustomer(id: string, context: InspectContext) {
   if (!invoices.empty) reasons.push("Customer has receivable dependencies.");
   if (!quotes.empty) reasons.push("Customer has enquiry/quote dependencies.");
   if (!payables.empty) reasons.push("Customer has payable dependencies.");
-  if (!contacts.empty || !addresses.empty || !notes.empty || !tasks.empty) reasons.push("Customer has CRM child records created after import.");
+  if (!contacts.empty || !addresses.empty || !notes.empty || !tasks.empty) reasons.push("The customer has records added after the import.");
   const activitySafe = activity.size === 1 && text(activity.docs[0]?.get("type")) === "customer_created";
   if (!activitySafe) reasons.push("Customer activity history is no longer the untouched Stage 1 creation state.");
 

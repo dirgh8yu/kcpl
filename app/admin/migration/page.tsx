@@ -35,5 +35,5 @@ export default async function MigrationPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Import old records" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration", label: "Import old records", primary: true }, { href: "/admin/migration/archive", label: "Paper Archive" }, { href: "/admin/management", label: "Management" }]}/>;
+  return <V4WorkspaceGate eyebrow="Import old records" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration", label: "Import old records", primary: true }, { href: "/admin/migration/archive", label: "Paper archive" }, { href: "/admin/management", label: "Management" }]}/>;
 }

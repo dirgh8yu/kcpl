@@ -60,7 +60,7 @@ export async function GET() {
   if ("response" in auth) return auth.response;
   try {
     const customers = await listCrmCustomers(auth.staff);
-    if (customers === null) return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (customers === null) return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     return crmJson({ ok: true, customers: customers.map((customer) => redactSummary(customer, auth.permissions.canViewCommercial)) });
   } catch (error) {
     console.error("Failed to list KCPL CRM customers", error);
@@ -161,11 +161,11 @@ export async function POST(request: Request) {
   try {
     const duplicates = await findCrmDuplicates(input);
     if (duplicates.length && body.allowDuplicate !== true) {
-      return crmJson({ ok: false, code: "possible_duplicate", error: "A similar CRM record already exists.", duplicates }, 409);
+      return crmJson({ ok: false, code: "possible_duplicate", error: "A similar customer record already exists.", duplicates }, 409);
     }
 
     const result = await createCrmCustomer(input, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     return crmJson({ ok: true, customer: redactSummary(result.customer, auth.permissions.canViewCommercial) }, 201);
   } catch (error) {
     console.error("Failed to create KCPL CRM customer", error);

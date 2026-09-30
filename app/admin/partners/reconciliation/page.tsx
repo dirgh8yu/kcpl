@@ -52,5 +52,5 @@ export default async function SupplierReconciliationPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Finance · Supplier records" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners/reconciliation", label: "Reconciliation", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/partners", label: "Partners" }]}/>;
+  return <V4WorkspaceGate eyebrow="Supplier records" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners/reconciliation", label: "Reconciliation", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/partners", label: "Partners" }]}/>;
 }

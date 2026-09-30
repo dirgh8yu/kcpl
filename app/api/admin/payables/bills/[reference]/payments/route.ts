@@ -31,7 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (gate.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
   if (gate.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
   if (gate.kind === "relationship_mismatch") return json({ ok: false, error: "This supplier bill has an incompatible shipment or order branch relationship." }, 409);
-  if (gate.kind === "unavailable") return json({ ok: false, error: "Freight Audit storage is unavailable." }, 503);
+  if (gate.kind === "unavailable") return json({ ok: false, error: "Supplier bill checks are temporarily unavailable." }, 503);
 
   const idempotencyKey = request.headers.get("idempotency-key")?.trim() || (typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "");
   const result = await recordPayablePaymentWithSettlementIntegrity(reference, {
@@ -54,7 +54,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (result.kind === "idempotency_conflict") return json({ ok: false, code: "IDEMPOTENCY_CONFLICT", error: "This payment idempotency key was already used for a different payment request." }, 409);
   if (result.kind === "audit_stale") return json({ ok: false, code: "FREIGHT_AUDIT_STALE", error: "The supplier bill or its commercial basis changed after Match-Pay approval. Re-audit before payment." }, 409);
   if (result.kind === "audit_blocked") return json({ ok: false, code: "FREIGHT_AUDIT_BLOCKED", error: `Match-Pay status ${result.auditStatus || "unknown"} does not permit settlement.` }, 409);
-  if (result.kind === "audit_missing") return json({ ok: false, code: "FREIGHT_AUDIT_REQUIRED", error: "A current Freight Audit / Match-Pay record is required before settlement." }, 422);
+  if (result.kind === "audit_missing") return json({ ok: false, code: "FREIGHT_AUDIT_REQUIRED", error: "A current A bill check is required before settlement." }, 422);
   if (result.kind === "currency_mismatch") return json({ ok: false, code: "CURRENCY_MISMATCH", error: "Payment currency must exactly match the supplier invoice currency. No hidden FX conversion is allowed." }, 422);
   if (result.kind === "invalid_financial_state") return json({ ok: false, code: "INVALID_FINANCIAL_STATE", error: "The supplier bill totals or outstanding balance are inconsistent and require Accounts review." }, 422);
   if (result.kind === "invalid_status") return json({ ok: false, error: "Payments cannot be recorded against this supplier bill status." }, 409);

@@ -227,13 +227,13 @@ function resolveCustomer(customerIdValue: string, customerNameValue: string, cus
   let customer: CustomerRecord | null = null;
   if (id) {
     customer = customers.byId.get(id) ?? null;
-    if (!customer || customer.archived) issues.push(`Customer ${id} does not exist as an active CRM record.`);
+    if (!customer || customer.archived) issues.push(`Customer ${id} does not exist as an active customer record.`);
     else if (name && normalize(name) !== customer.normalizedName) issues.push(`Customer name does not match ${id} (${customer.name}).`);
   } else if (name) {
     const matches = customers.byName.get(normalize(name)) ?? [];
     if (matches.length === 1) customer = matches[0];
     else if (matches.length > 1) issues.push(`Customer name is ambiguous. Use customer_id for ${name}.`);
-    else issues.push(`No active CRM customer matches ${name}. Import the customer in Stage 1 first.`);
+    else issues.push(`No active customer record matches ${name}. Import the customer in Stage 1 first.`);
   } else {
     issues.push("Customer ID or exact customer name is required.");
   }

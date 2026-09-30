@@ -80,13 +80,13 @@ export default async function MarketEstimatePage() {
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Market rates"
+    eyebrow="Market rates"
     title={title}
     detail={detail}
     embedded={embedded}
     actions={[
       { href: "/admin/enquiries", label: "Enquiries", primary: true },
-      { href: "/admin/rating", label: "Rate Desk" },
+      { href: "/admin/rating", label: "Rate desk" },
     ]}
   />;
 }

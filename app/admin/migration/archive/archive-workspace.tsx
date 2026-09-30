@@ -129,7 +129,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
       meta={<span>Management only · 20 MB per file · no destructive archive actions</span>}
       actions={<>
         <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
-        <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link>
+        <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Undo an import</Link>
         <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>}Refresh</OpsButton>
       </>}
     />

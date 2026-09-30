@@ -128,14 +128,15 @@ export default async function BranchOperationsPage({ params }: { params: Promise
       canManageStaff={staff.permissions.canManageStaff}
       canManageFinance={staff.permissions.canManageFinance}
       isManagement={staff.permissions.role === "management"}
+      detailLabel={branch}
     >
       <OpsPage>
         <OpsPageHeader
-          eyebrow="Branch operations"
+          eyebrow="Branch"
           title={<span className="inline-flex items-center gap-2"><Landmark size={24}/>{branch}</span>}
           description="A live branch-level drill-down of active movements, ownership, ETAs, tasks, customs work and exceptions."
           meta={<><span>{kcplStaffRoleLabels[staff.permissions.role]}</span><span>Operational date {dateOnly(data.operational_date)}</span><span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span></>}
-          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Operations home</Link><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
+          actions={<div className="flex items-center gap-2"><Link href="/admin/command-centre" className="ops-button" data-variant="secondary" data-size="md"><ArrowLeft size={13}/>Overview</Link><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
         >
           <OpsKpiStrip>
             <OpsKpiCard label="Active shipments" value={jobs.length} detail={jobs.length === 1 ? "movement at this branch" : "movements at this branch"} icon={<PackageCheck size={18} strokeWidth={1.9} aria-hidden="true"/>} tone="info"/>
@@ -152,7 +153,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
             <OpsSurface eyebrow="Live movements" title="Active shipments" description={`${jobs.length} active movement${jobs.length === 1 ? "" : "s"} connected to ${branch}.`} flush>
               {jobs.length ? (
                 <div className="ops-scroll-x ops-table-wrap overflow-x-auto">
-                  <table className="ops-table min-w-[1050px] w-full">
+                  <table className="ops-table ops-register-table min-w-[1050px] w-full">
                     <thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Owner</th><th>ETA</th><th>Open tasks</th><th>Customs</th><th></th></tr></thead>
                     <tbody>{jobs.map((job) => (
                       <tr key={job.reference}>
@@ -163,7 +164,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
                         <td>{dateOnly(job.eta)}</td>
                         <td className={job.overdue_tasks ? "font-bold text-[var(--admin-danger)]" : ""}>{job.open_tasks}{job.overdue_tasks ? <span className="ml-1 text-[length:var(--app-label-size)]">({job.overdue_tasks} overdue)</span> : null}</td>
                         <td className={job.required_customs_open ? "font-semibold text-[var(--admin-warning)]" : ""}>{job.required_customs_open}/{job.required_customs_total}</td>
-                        <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open job<ArrowUpRight size={11}/></Link></td>
+                        <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File<ArrowUpRight size={11}/></Link></td>
                       </tr>
                     ))}</tbody>
                   </table>
@@ -177,7 +178,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
               </OpsSurface>
 
               <OpsSurface eyebrow="Ownership" title="Owners" description="Active movement load by current shipment owner." flush>
-                {owners.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table min-w-[520px] w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
+                {owners.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table min-w-[520px] w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
               </OpsSurface>
             </div>
           </div>
@@ -195,5 +196,5 @@ export default async function BranchOperationsPage({ params }: { params: Promise
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Operations" title={title} detail={detail}/>;
+  return <V4WorkspaceGate eyebrow="Branch" title={title} detail={detail}/>;
 }

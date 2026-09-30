@@ -179,7 +179,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     return json({ ok: false, error: "A Won quote cannot be moved backwards. Continue the accepted movement from its Shipment or shipment record.", code: "WON_LOCKED" }, 409);
   }
   if (result.kind === "customer-required") {
-    return json({ ok: false, error: "Confirm or create the CRM customer before marking this quote Won.", code: "CUSTOMER_REQUIRED" }, 409);
+    return json({ ok: false, error: "Confirm or create the customer record before marking this quote Won.", code: "CUSTOMER_REQUIRED" }, 409);
   }
 
   let shipment = null;
@@ -202,7 +202,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
       }
       if (shipmentResult.kind === "unavailable") shipmentWarning = "Shipment storage is temporarily unavailable.";
       if (shipmentResult.kind === "customer-required" || shipmentResult.kind === "customer-missing") {
-        return json({ ok: false, error: "A valid CRM customer is required before shipment creation.", code: "CUSTOMER_REQUIRED" }, 409);
+        return json({ ok: false, error: "A valid customer record is required before shipment creation.", code: "CUSTOMER_REQUIRED" }, 409);
       }
     } catch (error) {
       console.error("Failed to create KCPL shipment from won quote", reference, error);
@@ -253,16 +253,16 @@ export async function POST(request: Request, context: { params: Promise<{ refere
       const customerBranch = auth.staff.can_access_all_branches ? "Kathmandu" : auth.staff.branches[0];
       if (!customerBranch) return json({ ok: false, error: "Your staff profile has no KCPL branch available for this customer." }, 403);
       const result = await createCrmCustomerFromQuote(reference, { name: auth.user.displayName, email: auth.user.email }, customerBranch, auth.staff);
-      if (result.kind === "unavailable") return json({ ok: false, error: "CRM storage is unavailable." }, 503);
+      if (result.kind === "unavailable") return json({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
       if (result.kind === "missing_quote") return json({ ok: false, error: "Quote not found." }, 404);
       if (result.kind === "forbidden") return json({ ok: false, error: "This enquiry has a shipment outside your KCPL branch access." }, 403);
-      if (result.kind === "duplicates") return json({ ok: false, error: "Possible CRM matches already exist. Confirm one of them instead of creating a duplicate.", code: "CRM_MATCHES_EXIST", matches: result.matches }, 409);
+      if (result.kind === "duplicates") return json({ ok: false, error: "Possible customer matches already exist. Confirm one of them instead of creating a duplicate.", code: "CRM_MATCHES_EXIST", matches: result.matches }, 409);
       if (result.kind === "already_linked") return json({ ok: true, customerId: result.customerId });
       if (result.kind === "created_and_linked") return json({ ok: true, customerId: result.customer.id, customer: result.customer }, 201);
       return json({ ok: false, error: "The customer could not be created from this enquiry." }, 500);
     } catch (error) {
       console.error("Failed to create CRM customer from quote", reference, error);
-      return json({ ok: false, error: "The CRM customer could not be created." }, 500);
+      return json({ ok: false, error: "The customer record could not be created." }, 500);
     }
   }
 

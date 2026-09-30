@@ -16,7 +16,7 @@ export const metadata = { title: "Carrier booking", robots: { index: false, foll
 
 export default async function TenderDeskPage({ searchParams }: { searchParams: Promise<{ tender?: string; state?: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="The KCPL Tender Workspace is available only to authorised staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Carrier booking is available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
   const shellProps = {
     userName: access.user.displayName,
@@ -88,5 +88,5 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">KCPL Tender Workspace</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Transport Orders</Link><Link href="/admin/partners" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Partners</Link></div></section></main>;
+  return <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-54px)]" : "min-h-screen"}`}><section className="w-full max-w-xl border-y border-[var(--admin-line)] bg-[var(--admin-surface)] p-8"><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-crimson)]">Carrier booking</p><h1 className="mt-3 text-[22px] font-semibold tracking-[-.02em]">{title}</h1><p className="mt-3 text-[13px] leading-6 text-[var(--admin-muted)]">{detail}</p><div className="mt-6 flex gap-2"><Link href="/admin/rating" className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Transport orders</Link><Link href="/admin/partners" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Partners</Link></div></section></main>;
 }

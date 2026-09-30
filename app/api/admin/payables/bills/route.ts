@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   if (result.kind === "supplier_missing") return json({ ok: false, error: "Partner reference was not found. Choose an active Partner record or leave it blank for an unregistered supplier." }, 404);
   if (result.kind === "supplier_forbidden") return json({ ok: false, error: "This partner is outside your KCPL branch access." }, 403);
   if (result.kind === "supplier_scope_mismatch") return json({ ok: false, error: "This partner belongs to a different branch from the bill. Pick a partner from the same branch." }, 409);
-  if (result.kind === "customer_missing") return json({ ok: false, error: "The shipment references a CRM customer that no longer exists." }, 409);
+  if (result.kind === "customer_missing") return json({ ok: false, error: "The shipment references a customer record that no longer exists." }, 409);
   if (result.kind === "customer_scope_mismatch") return json({ ok: false, error: "The shipment’s customer belongs to a different branch. Fix the branch on one of them first." }, 409);
   if (result.kind === "supplier_required") return json({ ok: false, error: "Choose a partner or enter an unregistered supplier/carrier name." }, 400);
   if (result.kind === "supplier_bill_reference_required") return json({ ok: false, error: "A supplier invoice reference is required so duplicate settlement can be prevented safely." }, 400);

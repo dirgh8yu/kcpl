@@ -34,5 +34,5 @@ export default async function CarrierIntegrationsPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Carrier connections" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/carrier-integrations", label: "Carrier connections", primary: true }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/partners", label: "Partners" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
+  return <V4WorkspaceGate eyebrow="Carrier connections" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/carrier-integrations", label: "Carrier connections", primary: true }, { href: "/admin/visibility", label: "Tracking" }, { href: "/admin/partners", label: "Partners" }, { href: "/admin/edi", label: "EDI messages" }]}/>;
 }

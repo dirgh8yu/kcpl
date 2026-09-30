@@ -21,6 +21,7 @@ import {
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
+import { readable } from "../readable";
 
 const emptyForm: CrmCreateCustomerInput = {
   entityKind: "company", displayName: "", legalName: "", tradingName: "", relationshipTypes: ["customer"], accountStatus: "prospect", leadStage: "new_lead", leadSource: "", primaryEmail: "", primaryPhone: "", website: "", industry: "", taxId: "", country: "Nepal", primaryBranch: "Kathmandu", accountManagerName: "", accountManagerEmail: "", accountManagerPhone: "", billingEmail: "", preferredCurrency: "NPR", paymentTermsDays: "", creditLimit: "", outstandingBalance: "", pricingNotes: "", markupPercent: "", preferredCarriers: [], transportPreferences: [], tags: [], internalSummary: "",
@@ -92,10 +93,10 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
       if (response.status === 409 && data.code === "possible_duplicate") {
         setDuplicates(data.duplicates ?? []); setNotice("Possible duplicate found. Review the existing record before creating another one."); return;
       }
-      if (!response.ok || !data.customer) throw new Error(data.error || "Could not create the CRM record.");
+      if (!response.ok || !data.customer) throw new Error(data.error || "Could not create the customer record.");
       const next = [data.customer, ...customers];
-      setCustomers(next); setSelectedId(data.customer.id); setShowCreate(false); resetForm(); setNotice(`${data.customer.display_name} added to KCPL CRM.`);
-    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create the CRM record."); }
+      setCustomers(next); setSelectedId(data.customer.id); setShowCreate(false); resetForm(); setNotice(`${data.customer.display_name} added to Customers.`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create the customer record."); }
     finally { setSaving(false); }
   }
 
@@ -237,12 +238,12 @@ function CustomerInspector({ customer, commercialVisible, inspectorRef, onClose 
             <OpsFact label="Gross profit">{formatMoney(customer.profit_total, customer.preferred_currency)}</OpsFact>
             <OpsFact label="Gross margin">{`${grossMargin.toFixed(1)}%`}</OpsFact>
           </OpsFacts>
-          <p className="ops-inspector-hint plan-subform">Headline lifetime totals. Full terms and rate cards live in Customer 360.</p>
+          <p className="ops-inspector-hint plan-subform">Headline lifetime totals. Full terms and rate cards are on the customer’s page.</p>
         </OpsInspectorSection> : null}
       </div>
     </div>
     <footer className="ops-inspector-footer">
-      <Link href={`/admin/crm/${encodeURIComponent(customer.id)}`} className="ops-button" data-variant="primary" data-size="sm">Open Customer 360<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link>
+      <Link href={`/admin/crm/${encodeURIComponent(customer.id)}`} className="ops-button" data-variant="primary" data-size="sm">Open customer<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></Link>
     </footer>
   </aside>;
 }
@@ -284,7 +285,7 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
       <div className="ops-form-grid">
         <OpsField label="Account status"><select value={form.accountStatus} onChange={(event) => setField("accountStatus", event.target.value as CrmCreateCustomerInput["accountStatus"])}>{crmAccountStatuses.map((status) => <option value={status} key={status}>{crmAccountStatusLabels[status]}</option>)}</select></OpsField>
         <OpsField label="Lead stage"><select value={form.leadStage} onChange={(event) => setField("leadStage", event.target.value as CrmCreateCustomerInput["leadStage"])}>{crmLeadStages.map((stage) => <option value={stage} key={stage}>{crmLeadStageLabels[stage]}</option>)}</select></OpsField>
-        <OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{source.replaceAll("_", " ")}</option>)}</select></OpsField>
+        <OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{readable(source)}</option>)}</select></OpsField>
         <OpsField label="Primary branch"><select value={form.primaryBranch} onChange={(event) => setField("primaryBranch", event.target.value as CrmCreateCustomerInput["primaryBranch"])}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
         <OpsField label="Account manager" hint="From People & branches; name, email and phone fill automatically." className="ops-form-wide"><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => { setField("accountManagerName", staff.name); setField("accountManagerEmail", staff.email); setField("accountManagerPhone", staff.phone); }}/></OpsField>
         <OpsField label="Internal summary" className="ops-form-wide"><textarea value={form.internalSummary} onChange={(event) => setField("internalSummary", event.target.value)} placeholder="What should another KCPL staff member know before speaking with this account?"/></OpsField>

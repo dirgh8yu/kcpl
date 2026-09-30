@@ -272,7 +272,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
                 </tr>;
               })}</tbody>
             </table>
-          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No orders match" : "No orders ready for sell pricing"} description={filtersActive ? "Change or reset the filters." : "Select a partner buy rate in Rate Desk first. Only non-master orders with a selected procurement cost appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={resetFilters}>Reset filters</OpsButton> : undefined}/>}
+          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No orders match" : "No orders ready for sell pricing"} description={filtersActive ? "Change or reset the filters." : "Select a partner buy rate on the rate desk first. Only non-master orders with a selected procurement cost appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={resetFilters}>Reset filters</OpsButton> : undefined}/>}
           {visible.length ? <footer className="ops-register-footer"><span>Only non-master orders with a selected procurement cost appear here.</span></footer> : null}
         </section>
 

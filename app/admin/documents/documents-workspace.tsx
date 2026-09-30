@@ -173,8 +173,8 @@ function Inspector({
 
         <div className="ops-inspector-actions">
           {row.review_status !== "deleted" ? <a href={`/api/admin/shipments/${encodeURIComponent(row.shipment_reference)}/documents/${row.id}`} className="ops-button" data-variant="secondary" data-size="sm"><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download</a> : null}
-          <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Job File</Link>
-          {row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-button" data-variant="ghost" data-size="sm">Customer 360</Link> : null}
+          <Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File</Link>
+          {row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-button" data-variant="ghost" data-size="sm">Open customer</Link> : null}
           {canDelete ? <OpsButton variant="danger" size="sm" disabled={busyId === row.id} onClick={() => void onDelete(row)}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>{busyId === row.id ? "Deleting…" : "Delete"}</OpsButton> : null}
         </div>
 
@@ -294,7 +294,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
 
   return <OpsPage className="document-vault-register">
     <OpsPageHeader
-      title="All documents"
+      title="Documents"
       description="Every uploaded document. A new upload counts once someone else has checked it."
     />
 

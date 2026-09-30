@@ -48,6 +48,7 @@ import {
   type VisibilityShipment,
   type VisibilitySummary,
 } from "./tracking-visibility";
+import { readable } from "../readable";
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 
@@ -828,7 +829,7 @@ function TrackingVisibilityPanel({
                   <OpsFact label="Provider">{row.last_provider || "Not recorded"}</OpsFact>
                   <OpsFact label="Latest ETA">{dateTime(row.eta)}</OpsFact>
                   <OpsFact label="ETA movement" warning={(row.eta_delta_hours ?? 0) >= 24}>{delayText(row.eta_delta_hours)}</OpsFact>
-                  <OpsFact label="Source">{row.last_source ? row.last_source.replaceAll("_", " ") : "No source recorded"}</OpsFact>
+                  <OpsFact label="Source">{row.last_source ? readable(row.last_source) : "No source recorded"}</OpsFact>
                 </OpsFacts>
               </OpsInspectorSection>
 
@@ -841,7 +842,7 @@ function TrackingVisibilityPanel({
                         <div className="min-w-0">
                           <div className="visibility-event-head"><span className="visibility-event-title">{event.title}</span><span className="visibility-event-milestone">{trackingMilestoneLabels[event.milestone]}</span></div>
                           <p className="visibility-event-detail">{event.location || "Location not supplied"}{event.details ? ` · ${event.details}` : ""}</p>
-                          <p className="visibility-event-meta">{event.provider || event.source.replaceAll("_", " ")}{event.eta ? ` · ETA ${dateTime(event.eta)}` : ""}</p>
+                          <p className="visibility-event-meta">{event.provider || readable(event.source)}{event.eta ? ` · ETA ${dateTime(event.eta)}` : ""}</p>
                         </div>
                       </li>
                     ))}
@@ -872,7 +873,7 @@ function TrackingVisibilityPanel({
 
           <footer className="ops-inspector-footer visibility-sheet-footer">
             <span className="ops-inspector-hint">Manual updates join the same normalized tracking timeline.</span>
-            <OpsButton variant="primary" disabled={busy || !rawStatus.trim()} onClick={recordEvent}>
+            <OpsButton variant="primary" size="sm" disabled={busy || !rawStatus.trim()} onClick={recordEvent}>
               <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>
               {busy ? "Recording…" : "Record tracking event"}
             </OpsButton>

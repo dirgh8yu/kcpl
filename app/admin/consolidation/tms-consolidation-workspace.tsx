@@ -202,7 +202,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
     try {
       const data = await action({ action: "release", loadId: selectedLoad.id });
       await refresh();
-      setNotice({ tone: "success", text: `${selectedLoad.reference} is locked for procurement. Rate master order ${data.masterOrderId} in the Rate Desk, then tender it normally.` });
+      setNotice({ tone: "success", text: `${selectedLoad.reference} is locked for procurement. Rate master order ${data.masterOrderId} on the rate desk in Buy rates, then send it to carriers.` });
     } catch (error) { setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Load could not be released to procurement." }); }
     finally { setBusy(false); }
   }
@@ -337,7 +337,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                       <td className="ops-col-num"><span className="ops-num">{member.weight_kg.toFixed(1)} kg · {member.volume_cbm.toFixed(3)} CBM</span></td>
                       <td className="ops-col-num">{member.allocated_cost !== null && member.allocated_currency ? <span className="ops-num">{money(member.allocated_cost, member.allocated_currency)}</span> : <span className="ops-cell-muted">—</span>}</td>
                       <td className="ops-cell-actions">
-                        {member.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(member.shipment_reference)}`} className="ops-button" data-size="xs" data-variant="ghost">Job File</Link> : null}
+                        {member.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(member.shipment_reference)}`} className="ops-button" data-size="xs" data-variant="ghost">Open Job File</Link> : null}
                         {editable ? <OpsButton size="xs" variant="ghost" onClick={() => removeOrder(member.order_id)} disabled={busy} aria-label={`Remove ${member.order_id}`}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Remove</OpsButton> : null}
                       </td>
                     </tr>)}</tbody>
@@ -395,7 +395,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
               </OpsSurface>
 
               {selectedLoad.status === "ready_for_procurement" && selectedLoad.master_order_id ? <OpsInspectorNote tone="info" title={`Master procurement order ${selectedLoad.master_order_id}`}>
-                Rate the master order in the Rate Desk, then tender it normally.
+                Rate the master order on the rate desk in Buy rates, then send it to carriers.
                 <span className="load-note-actions"><Link href="/admin/rating" className="ops-button" data-size="xs" data-variant="secondary">Rate master order</Link><Link href="/admin/tenders" className="ops-button" data-size="xs" data-variant="ghost">Tender Desk</Link></span>
               </OpsInspectorNote> : null}
               {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each house order keeps its own shipment record while remaining linked to this master movement.</OpsInspectorNote> : null}

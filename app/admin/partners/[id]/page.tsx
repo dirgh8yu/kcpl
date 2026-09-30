@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function Partner360Page({ params }: { params: Promise<{ id: string }> }) {
   const access = await getAdminAccess();
-  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Partner 360 is available only to authorised KCPL staff."/>;
+  if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Partner pages are available only to authorised KCPL staff."/>;
 
   const staff = await getStaffContext(access.user);
   const shellProps = {
@@ -30,7 +30,7 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
   };
   const { id } = await params;
   const partnerId = decodeURIComponent(id).trim().toUpperCase();
-  if (!/^KCPL-P-[A-Z0-9-]+$/.test(partnerId)) return <OperationsShell {...shellProps}><Gate embedded title="Partner reference is invalid" detail="The requested Partner 360 record does not use a valid KCPL partner reference."/></OperationsShell>;
+  if (!/^KCPL-P-[A-Z0-9-]+$/.test(partnerId)) return <OperationsShell {...shellProps}><Gate embedded title="Partner reference is invalid" detail="The requested partner does not use a valid KCPL partner reference."/></OperationsShell>;
 
   let result;
   try {
@@ -50,5 +50,5 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Network · Partner 360" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
+  return <V4WorkspaceGate eyebrow="Partner" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
 }

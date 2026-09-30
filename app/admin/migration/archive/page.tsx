@@ -7,7 +7,7 @@ import { listPaperArchive } from "./archive.server";
 import { PaperArchiveWorkspace } from "./archive-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Paper Archive", robots: { index: false, follow: false } };
+export const metadata = { title: "Paper archive", robots: { index: false, follow: false } };
 
 export default async function PaperArchivePage() {
   const access = await getAdminAccess();
@@ -33,5 +33,5 @@ export default async function PaperArchivePage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="KCPL Organisation · Paper Archive" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/archive", label: "Paper Archive", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/recovery", label: "Recovery" }]}/>;
+  return <V4WorkspaceGate eyebrow="Paper archive" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/archive", label: "Paper archive", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/recovery", label: "Recovery" }]}/>;
 }

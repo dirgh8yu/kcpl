@@ -47,7 +47,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       assignedToEmail,
       assignedToPhone,
     }, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     return crmJson({ ok: true, task: result.task }, 201);
   } catch (error) {
@@ -80,7 +80,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (accessError) return accessError;
   try {
     const result = await setCrmTaskCompleted(id, taskId, body.completed, { name: auth.user.displayName, email: auth.user.email });
-    if (result.kind === "unavailable") return crmJson({ ok: false, error: "CRM storage is unavailable." }, 503);
+    if (result.kind === "unavailable") return crmJson({ ok: false, error: "Customer records are temporarily unavailable." }, 503);
     if (result.kind === "missing") return crmJson({ ok: false, error: "Customer record not found." }, 404);
     if (result.kind === "task_missing") return crmJson({ ok: false, error: "Follow-up task not found." }, 404);
     return crmJson({ ok: true, task: result.task });

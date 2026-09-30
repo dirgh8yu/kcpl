@@ -64,12 +64,12 @@ export default async function EnquiriesPage({ searchParams }: { searchParams: Pr
 
 function EnquiryGate({ title, detail }: { title: string; detail: string }) {
   return <V4WorkspaceGate
-    eyebrow="KCPL Enquiries"
+    eyebrow="Enquiries"
     title={title}
     detail={detail}
     embedded
     actions={[
-      { href: "/admin/command-centre", label: "Operations Home", primary: true },
+      { href: "/admin/command-centre", label: "Overview", primary: true },
       { href: "/admin/shipments", label: "Shipments" },
     ]}
   />;

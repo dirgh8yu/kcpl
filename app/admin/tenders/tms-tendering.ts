@@ -25,6 +25,15 @@ export const tmsTenderStatusLabels: Record<TmsTenderStatus, string> = {
   booked: "Booked",
 };
 
+/** One colour per carrier request state, wherever a request is listed. */
+export function tenderTone(status: TmsTenderStatus) {
+  if (status === "booked") return "success" as const;
+  if (status === "accepted") return "info" as const;
+  if (status === "countered") return "warning" as const;
+  if (status === "rejected" || status === "expired") return "danger" as const;
+  return "neutral" as const;
+}
+
 export type TmsTender = {
   id: string;
   order_id: string;

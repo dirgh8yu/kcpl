@@ -34,7 +34,7 @@ export function AdminShipmentPanel({ shipment, quoteStatus }: { shipment: Shipme
         <p className="enquiry-shipment-summary-ref"><OpsMono>{shipment.reference}</OpsMono><OpsBadge tone={statusTone(shipment.status)} dot>{shipmentStatusLabels[shipment.status]}</OpsBadge></p>
       </div>
       <div className="job-form-actions">
-        <a href={job} className="ops-button" data-variant="primary" data-size="sm">Open shipment<ArrowRight size={13} strokeWidth={1.75} aria-hidden="true"/></a>
+        <a href={job} className="ops-button" data-variant="primary" data-size="sm">Open Job File<ArrowRight size={13} strokeWidth={1.75} aria-hidden="true"/></a>
         <a href={`/tracking?reference=${encodeURIComponent(shipment.reference)}`} target="_blank" rel="noreferrer" className="ops-button" data-variant="ghost" data-size="sm">Customer’s tracking page<ExternalLink size={12} strokeWidth={1.75} aria-hidden="true"/></a>
       </div>
     </div>
