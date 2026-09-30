@@ -125,3 +125,13 @@ test("bulk owner changes go through the single-shipment checks, capped", async (
   assert.match(alerts, /bulk\("acknowledge"\)/);
   assert.match(alerts, /bulk\("resolve"\)/);
 });
+
+test("Send customer update opens the Job File's own Post update form", async () => {
+  const record = await source("app/admin/jobs/[reference]/job-record.tsx");
+  const movement = await source("app/admin/jobs/[reference]/movement-control.tsx");
+  // The header button used to open the staff notification inbox, which cannot send anything.
+  assert.doesNotMatch(record, /\/admin\/notifications\?shipment=/);
+  assert.match(record, /show\("transit"\); window\.dispatchEvent\(new Event\(POST_UPDATE_EVENT\)\)/);
+  assert.match(movement, /window\.addEventListener\(POST_UPDATE_EVENT, open\)/);
+  assert.match(movement, /<input ref=\{updateTitle\} name="title"/);
+});

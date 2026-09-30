@@ -42,10 +42,10 @@ export function NewReceivableWorkspace() {
   }
 
   return <OpsPage>
-    <OpsPageHeader title="New invoice" description="Enter a shipment reference to bill its customer, or a customer reference for a general invoice." actions={<Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
+    <OpsPageHeader title="New invoice" description="Enter a shipment reference to bill its customer, or a customer reference for a general invoice."/>
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-      <OpsSurface eyebrow="Customer invoice" title="Create invoice draft" description="Shipment-linked invoicing preserves the existing customer-linking guard and sends unresolved jobs to the dedicated resolution workflow.">
+      <OpsSurface title="Invoice details" description="Saved as a draft. Check it on the invoice page, then issue it.">
         <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <OpsField label="Shipment reference" hint="Optional. If entered, KCPL resolves the CRM customer from the shipment."><input value={form.shipmentReference} onChange={(event) => setForm({ ...form, shipmentReference: event.target.value, customerId: event.target.value.trim() ? "" : form.customerId })} placeholder="KCPL-S-..."/></OpsField>
           <OpsField label={shipmentMode ? "Customer reference" : "Customer reference"} hint={shipmentMode ? "Resolved automatically from the shipment." : "Required when no shipment is entered. KCPL-C-..."}><input disabled={shipmentMode} value={shipmentMode ? "Resolved from shipment" : form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} placeholder="KCPL-C-..."/></OpsField>

@@ -13,7 +13,7 @@ import type { PickupAppointmentStatus } from "../../pickups/pickup-appointments"
 import { OpsBadge, OpsNotice, OpsPageHeader, OpsSurface } from "../../operations-ui";
 import { ShipmentStatusControl } from "../../shipment-status-control";
 import { statusTone } from "../../shipments/shipments-views";
-import { MovementControl } from "./movement-control";
+import { MovementControl, POST_UPDATE_EVENT } from "./movement-control";
 import { PickupControl } from "./pickup-control";
 import type { JobPickup } from "./job-step-context.server";
 import { buildJobSteps, initialJobPanel, type JobPanel, type JobStep, type JobStepState } from "./job-steps";
@@ -150,7 +150,9 @@ export function JobRecord({
       title={<span className="job-record-title">{job.origin || "Origin"} → {job.destination || "Destination"}<OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
       description={`${job.customer_name || "No customer linked"} · ${job.mode ? job.mode[0].toUpperCase() + job.mode.slice(1) : "Mode not set"}${job.carrier ? ` · ${job.carrier}` : ""}`}
       meta={<><span>ETA {shortDate(job.eta)}</span><span>Owner {job.assigned_to_name || job.assigned_to_email || "nobody yet"}</span></>}
-      actions={<Link className="ops-button" data-variant="secondary" data-size="md" href={`/admin/notifications?shipment=${reference}`}>Send customer update</Link>}
+      // Tells the customer where the shipment is: the "Post update" form under
+      // In transit, which publishes to their tracking page.
+      actions={<button type="button" className="ops-button" data-variant="secondary" data-size="md" onClick={() => { show("transit"); window.dispatchEvent(new Event(POST_UPDATE_EVENT)); }}>Send customer update</button>}
     />
 
     <div className="job-guide">

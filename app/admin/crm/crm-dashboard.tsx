@@ -259,8 +259,8 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
 }) {
   return <OpsSurface
     density="compact"
-    title="Create CRM record"
-    description="Start with identity and ownership. Commercial and operating preferences are available below when useful."
+    title="New customer"
+    description="Name, contact and owner first. Terms and preferences are optional, below."
     action={<button type="button" onClick={onCancel} className="ops-inspector-close" aria-label="Close create customer"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
   >
     {duplicates.length ? <div className="crm-duplicates">

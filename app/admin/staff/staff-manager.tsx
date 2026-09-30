@@ -5,7 +5,7 @@ import { Check, UserPlus, UsersRound, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { kcplStaffRoleLabels, kcplStaffRoles, type KcplStaffRole } from "../staff-permissions";
 import type { KcplStaffProfile } from "../staff-directory";
-import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsSearch, OpsTableWrap } from "../operations-ui";
 
 type Draft = {
   email: string;
@@ -99,17 +99,12 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
     <OpsPageHeader
       title="People & branches"
       description="Who can use KCPL Operations, their role and their branches."
-      meta={<span>{profiles.length} staff profiles · {activeCount} active</span>}
+      // One line for access review; the list below counts the people.
+      meta={<span>{activeCount} active{suspended ? <> · <span className="text-[var(--admin-danger)]">{suspended} suspended</span></> : null} · {allBranchCount} with all-branch access</span>}
       actions={<OpsButton variant="primary" onClick={startNew}><UserPlus size={16} strokeWidth={1.75} aria-hidden="true"/>Add staff</OpsButton>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
-      <OpsKpiRail label="Staff access summary">
-        <OpsRailMetric label="Active staff" value={activeCount}/>
-        <OpsRailMetric label="Suspended" value={suspended} tone={suspended ? "danger" : "neutral"}/>
-        <OpsRailMetric label="All-branch access" value={allBranchCount}/>
-        <OpsRailMetric label="Branches" value={kcplBranches.length}/>
-      </OpsKpiRail>
 
       <OpsRegisterToolbar
         search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, email, role or branch" aria-label="Search staff"/>}

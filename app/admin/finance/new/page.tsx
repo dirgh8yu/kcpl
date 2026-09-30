@@ -14,7 +14,7 @@ export default async function NewReceivablePage() {
   if (!staff.permissions.canManageFinance) return <Gate title="Finance access is restricted" detail="Customer invoices are available to Management and Accounts roles only."/>;
 
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"} detailLabel="New invoice">
       <NewReceivableWorkspace />
     </OperationsShell>
   );

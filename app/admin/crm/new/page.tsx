@@ -16,7 +16,7 @@ export default async function NewCustomerPage() {
 
   const customers: CrmCustomerSummary[] = [];
   return (
-    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"}>
+    <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"} detailLabel="New customer">
       <CrmDashboard initialCustomers={customers} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
     </OperationsShell>
   );

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Pencil, Send } from "lucide-react";
 import type { ShipmentStatus } from "../../../shipment-types";
 import { OpsButton, OpsField, OpsNotice, OpsSurface } from "../../operations-ui";
 
 type Editor = null | "details" | "update";
+
+/** Opens the "Post update" form from elsewhere on the Job File (its header). */
+export const POST_UPDATE_EVENT = "kcpl:job-post-update";
 
 const suggestedUpdates = ["Picked up", "Departed origin", "Arrived at border", "Crossed the border", "Arrived at destination depot", "Customs cleared"];
 
@@ -34,6 +37,15 @@ export function MovementControl({
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const endpoint = `/api/admin/shipments/${encodeURIComponent(reference)}`;
+  const updateTitle = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const open = () => setEditor("update");
+    window.addEventListener(POST_UPDATE_EVENT, open);
+    return () => window.removeEventListener(POST_UPDATE_EVENT, open);
+  }, []);
+  // The form opens ready to type in; no animation, it is a direct action.
+  useEffect(() => { if (editor === "update") updateTitle.current?.focus(); }, [editor]);
 
   async function send(method: "PATCH" | "POST", body: Record<string, unknown>, message: string) {
     setBusy(true);
@@ -99,7 +111,7 @@ export function MovementControl({
     </form> : null}
 
     {editor === "update" ? <form onSubmit={publish} className="job-form job-form-grid job-form-grid-2">
-      <OpsField label="What happened" className="job-form-span-all"><input name="title" required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Departed origin"/></OpsField>
+      <OpsField label="What happened" className="job-form-span-all"><input ref={updateTitle} name="title" required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Departed origin"/></OpsField>
       <div className="job-form-span-all ops-filter-choices" role="group" aria-label="Common updates">
         {suggestedUpdates.map((item) => <button key={item} type="button" className="ops-filter-choice" data-active={title === item || undefined} aria-pressed={title === item} onClick={() => setTitle(item)}>{item}</button>)}
       </div>
