@@ -107,4 +107,4 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   </OpsPage>;
 }
 
-function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><div className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.12em] text-[var(--admin-faint)]">{label}</div><div className="mt-1 text-[12px] font-bold capitalize text-[var(--admin-ink)]">{value}</div></div>; }
+function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><div className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-faint)]">{label}</div><div className="mt-1 text-[12px] font-bold capitalize text-[var(--admin-ink)]">{value}</div></div>; }

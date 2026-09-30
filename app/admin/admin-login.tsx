@@ -54,7 +54,7 @@ export function AdminLogin() {
   return (
     <form onSubmit={submit} className="mt-8 grid gap-5" aria-busy={busy}>
       <div className="grid gap-2">
-        <label htmlFor="admin-email" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+        <label htmlFor="admin-email" className="text-[11px] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">
           Staff email
         </label>
         <div className="group relative">
@@ -77,7 +77,7 @@ export function AdminLogin() {
       </div>
 
       <div className="grid gap-2">
-        <label htmlFor="admin-password" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+        <label htmlFor="admin-password" className="text-[11px] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">
           Password
         </label>
         <div className="group relative">

@@ -57,7 +57,7 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
   return (
     <main className={`grid place-items-center bg-[var(--admin-canvas)] p-6 text-[var(--admin-ink)] ${embedded ? "min-h-[calc(100vh-64px)]" : "min-h-screen"}`}>
       <section className="w-full max-w-xl border-y border-[var(--admin-ink)] py-8">
-        <p className="text-[length:var(--app-label-size)] uppercase tracking-[0.11em] text-[var(--admin-crimson)]">KCPL Shipments</p>
+        <p className="text-[length:var(--app-label-size)] uppercase tracking-[.04em] text-[var(--admin-crimson)]">KCPL Shipments</p>
         <h1 className="mt-3 text-[32px] font-normal tracking-[-.04em]">{title}</h1>
         <p className="mt-4 text-[14px] leading-6 text-[var(--admin-muted)]">{detail}</p>
         <div className="mt-7 flex flex-wrap gap-3">

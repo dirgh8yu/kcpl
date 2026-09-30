@@ -482,21 +482,6 @@
 
 /* Status pills recede inside the register: tint + tone text, no border ring,
  * so the strongest treatment in a row is its data, not its chrome. */
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge {
-  min-height: 20px;
-  border-color: transparent;
-  padding: 2px 8px;
-  background: transparent;
-  font-size: 11.5px;
-  font-weight: 550;
-  letter-spacing: 0;
-}
-
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="info"] { background: var(--admin-info-bg); color: var(--admin-info); }
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="success"] { background: var(--admin-success-bg); color: var(--admin-success); }
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="warning"] { background: var(--admin-warning-bg); color: var(--admin-warning); }
-.kcpl-admin-content .shipments-register .shipments-register-table .ops-badge[data-tone="danger"] { background: var(--admin-danger-bg); color: var(--admin-danger); }
 
 /* Next action reads as plain high-contrast work language; red is reserved for
  * genuine blockers (tone comes from shipmentNextAction). */
@@ -605,7 +590,6 @@
 }
 
 .kcpl-admin-content .shipment-sheet-facts dd[data-warning] { color: var(--admin-danger); }
-.kcpl-admin-content .shipment-sheet-facts .ops-badge { min-height: 20px; padding: 1px 7px; font-size: 11px; }
 
 .kcpl-admin-content .shipment-sheet-next {
   padding-top: 12px;

@@ -80,10 +80,9 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
   return <OpsPage>
     <OpsPageHeader
       eyebrow="Partner"
-      title={partner.display_name}
+      title={<span className="inline-flex flex-wrap items-center gap-2">{partner.display_name}<OpsBadge tone={statusTone(partner.status)} dot>{partnerStatusLabels[partner.status]}</OpsBadge></span>}
       description={partner.legal_name || "Contacts, services, rates and bills for this partner."}
       meta={<>
-        <OpsBadge tone={statusTone(partner.status)} dot>{partnerStatusLabels[partner.status]}</OpsBadge>
         {partner.preferred ? <OpsBadge tone="accent"><Star size={10} fill="currentColor"/>Preferred</OpsBadge> : null}
         {partner.types.slice(0, 4).map((type) => <OpsBadge key={type}>{partnerTypeLabels[type]}</OpsBadge>)}
       </>}
@@ -110,8 +109,8 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
               <Fact label="Updated" value={dateTime(partner.updated_at)}/>
               <Fact label="Last linked activity" value={dateTime(partner.last_activity_at)}/>
             </div>
-            <div className="mt-5 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.06em] text-[var(--admin-muted)]">Services / modes</p><div className="mt-2 flex flex-wrap gap-1.5">{partner.modes.length ? partner.modes.map((mode) => <OpsBadge key={mode} tone="info">{partnerModeLabels[mode]}</OpsBadge>) : <span className="text-[11px] text-[var(--admin-muted)]">No services selected.</span>}</div></div>
-            {partner.tags.length ? <div className="mt-4 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.06em] text-[var(--admin-muted)]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{partner.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}
+            <div className="mt-5 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">Services / modes</p><div className="mt-2 flex flex-wrap gap-1.5">{partner.modes.length ? partner.modes.map((mode) => <OpsBadge key={mode} tone="info">{partnerModeLabels[mode]}</OpsBadge>) : <span className="text-[11px] text-[var(--admin-muted)]">No services selected.</span>}</div></div>
+            {partner.tags.length ? <div className="mt-4 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{partner.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}
           </OpsSurface>
 
           <OpsSurface title="Jobs" description={snapshot.jobs.length ? `${snapshot.jobs.length} linked through this partner's supplier bills, newest first.` : "Shipments linked through this partner's supplier bills."} flush>
@@ -155,6 +154,6 @@ function PartnerFinance({ summaries, bills }: { summaries: PartnerFinanceSummary
   </div>;
 }
 
-function Fact({ label, value }: { label: string; value: string }) { return <div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.06em] text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[11px] leading-5 text-[var(--admin-ink)]">{value}</p></div>; }
-function FinanceFact({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.06em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[12px] ${danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
+function Fact({ label, value }: { label: string; value: string }) { return <div><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[11px] leading-5 text-[var(--admin-ink)]">{value}</p></div>; }
+function FinanceFact({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) { return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">{label}</p><strong className={`mt-1.5 block text-[12px] ${danger ? "text-[var(--admin-danger)]" : "text-[var(--admin-ink)]"}`}>{value}</strong></div>; }
 function ContactLink({ icon, href, label, external = false }: { icon: React.ReactNode; href: string; label: string; external?: boolean }) { return <a href={href} {...(external ? { target: "_blank", rel: "noreferrer" } : {})} className="flex items-center gap-2 text-[11px] text-[var(--admin-muted)] hover:text-[var(--admin-crimson)] hover:underline">{icon}<span className="min-w-0 truncate">{label}</span>{external ? <ExternalLink size={9}/> : null}</a>; }

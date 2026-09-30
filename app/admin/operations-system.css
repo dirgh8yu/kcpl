@@ -301,6 +301,10 @@
 .kcpl-admin-content .ops-page-header-main { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; width: 100%; max-width: none; margin: 0; padding: 0 0 18px; }
 .kcpl-admin-content .ops-page-heading { min-width: 0; max-width: 900px; }
 .kcpl-admin-content .ops-page-heading h1 { margin: 0; font-size: var(--app-title-size); font-weight: 600; line-height: 32px; letter-spacing: -.02em; }
+/* An error or sign-in screen's title is a page title too. */
+.kcpl-admin-content .workspace-gate-panel h1, .workspace-gate-panel h1 { margin: 4px 0 0; font-size: var(--app-title-size); font-weight: 600; line-height: 32px; letter-spacing: -.02em; }
+.workspace-gate-panel .workspace-gate-eyebrow { margin: 0; color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: 0; text-transform: none; }
+.workspace-gate-panel .workspace-gate-detail { margin-top: 4px; color: var(--admin-muted); font-size: 13.5px; line-height: 20px; }
 .kcpl-admin-content .ops-eyebrow { margin: 0 0 4px; color: var(--admin-muted); font-size: 12px; font-weight: 500; letter-spacing: 0; line-height: 16px; text-transform: none; }
 .kcpl-admin-content .ops-page-description { max-width: 850px; margin-top: 3px; color: var(--admin-muted); font-size: 13.5px; font-weight: 400; line-height: 20px; }
 .kcpl-admin-content .ops-page-meta { display: flex; flex-wrap: wrap; margin-top: 7px; gap: 4px 16px; color: var(--admin-faint); font-size: 12px; font-weight: 400; line-height: 16px; }
@@ -411,14 +415,16 @@
  * in with the hover colours; it still fades out as focus moves on. */
 .kcpl-admin-route :focus-visible { transition-duration: 0s; }
 .kcpl-admin-shell :where(a,button,input,select,textarea):focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
-.kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
-.kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }
-.kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); border-color: var(--admin-success-line); background: var(--admin-success-bg); }
-.kcpl-admin-content .ops-badge[data-tone="danger"] { color: var(--admin-danger); border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
-.kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-crimson); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
-.kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); border-color: var(--admin-warning-line); background: var(--admin-warning-bg); }
-.kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); border-color: var(--admin-info-line); background: var(--admin-info-bg); }
-.kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); border-color: var(--admin-accent-line); background: var(--admin-accent-bg); }
+/* One badge everywhere -- page headers, registers, panels, timelines: a 22px
+ * tinted pill, 12px text, no outline. */
+.kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; background: var(--admin-surface-muted); color: var(--admin-muted); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; white-space: nowrap; }
+.kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-muted); background: var(--admin-surface-muted); }
+.kcpl-admin-content .ops-badge[data-tone="success"] { color: var(--admin-success); background: var(--admin-success-bg); }
+.kcpl-admin-content .ops-badge[data-tone="danger"] { color: var(--admin-danger); background: var(--admin-danger-bg); }
+.kcpl-admin-content .ops-badge[data-tone="accent"] { color: var(--admin-crimson); background: var(--admin-accent-bg); }
+.kcpl-admin-content .ops-badge[data-tone="warning"] { color: var(--admin-warning); background: var(--admin-warning-bg); }
+.kcpl-admin-content .ops-badge[data-tone="info"] { color: var(--admin-info); background: var(--admin-info-bg); }
+.kcpl-admin-content .ops-badge[data-tone="violet"] { color: var(--admin-crimson-deep); background: var(--admin-accent-bg); }
 .kcpl-admin-content .ops-search:focus-within,
 .kcpl-admin-content .ops-filter-chip:focus-visible,
 .kcpl-admin-content .app-nav-group a:focus-visible {
@@ -1053,7 +1059,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .freight-document-revisions { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--admin-line); }
 .kcpl-admin-content .freight-document-revisions li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content .freight-document-revisions li[data-superseded="true"] .freight-document-revision-title { color: var(--admin-muted); font-weight: 500; }
-.kcpl-admin-content .freight-document-revisions .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11px; }
 .kcpl-admin-content .freight-document-revision-title { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; }
 .kcpl-admin-content .freight-document-revision-meta { max-width: 420px; margin: 2px 0 0; overflow: hidden; color: var(--admin-muted); font-size: 11.5px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .freight-document-inspector-footer { padding: 10px 20px 12px; }
@@ -2042,9 +2047,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-register-table tbody tr:hover { background: var(--admin-canvas); } }
 .kcpl-admin-content .ops-register-table tbody tr:focus-visible { box-shadow: inset 0 0 0 2px var(--app-focus); }
 .kcpl-admin-content .ops-register-table tbody tr[data-selected="true"] { background: var(--admin-surface-muted); }
-.kcpl-admin-content .ops-register-table .ops-badge { min-height: 20px; padding: 2px 8px; border-color: transparent; font-size: 11.5px; font-weight: 550; letter-spacing: 0; white-space: nowrap; }
-.kcpl-admin-content .ops-register-table .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
-.kcpl-admin-content .ops-register-table .ops-badge > i { width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+.kcpl-admin-content .ops-badge > i { flex: none; width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
 .kcpl-admin-content .ops-register-table .ops-sort-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-register-table .ops-sort-button:hover { color: var(--admin-ink); } }
 /* Cell text roles: one strong line, one quiet line. */
@@ -2186,7 +2189,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty h3 { margin: 0; color: var(--admin-ink); font-size: 12.5px; font-weight: 600; line-height: 18px; }
 .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty p { max-width: 640px; margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; font-weight: 400; line-height: 17px; }
 .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"]) .ops-empty-action { display: flex; justify-content: flex-start; margin-top: 8px; }
-.kcpl-admin-content .ops-fact .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
 @media (max-width: 760px) {
   .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > :is(.ops-surface-header, .ops-surface-body) { padding-inline: 14px; }
   .kcpl-admin-content :is(.ops-surface[data-density="compact"], [data-surface-density="compact"] .ops-surface) > .ops-surface-header { flex-wrap: wrap; }

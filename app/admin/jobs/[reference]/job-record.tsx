@@ -147,10 +147,12 @@ export function JobRecord({
 
   return <div className="shipment-detail-v2 job-record" data-panel-active={panel} data-surface-density="compact">
     <OpsPageHeader
-      eyebrow={<span className="ops-mono job-record-kicker">{job.reference}</span>}
-      title={<span className="job-record-title">{job.origin || "Origin"} → {job.destination || "Destination"}<OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
-      description={`${job.customer_name || "No customer linked"} · ${freightModeLabel(job.mode)}${job.carrier ? ` · ${job.carrier}` : ""}`}
-      meta={<><span>ETA {shortDate(job.eta)}</span><span>Owner {job.assigned_to_name || job.assigned_to_email || "nobody yet"}</span></>}
+      // Every record page reads the same way: the kind of record, then its
+      // reference and status, then the route, then the facts.
+      eyebrow="Shipment"
+      title={<span className="job-record-title"><span className="ops-mono">{job.reference}</span><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
+      description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}
+      meta={<><span>{job.customer_name || "No customer linked"}</span><span>{freightModeLabel(job.mode)}{job.carrier ? ` · ${job.carrier}` : ""}</span><span>ETA {shortDate(job.eta)}</span><span>Owner {job.assigned_to_name || job.assigned_to_email || "nobody yet"}</span></>}
       // Tells the customer where the shipment is: the "Post update" form under
       // In transit, which publishes to their tracking page.
       actions={<button type="button" className="ops-button" data-variant="secondary" data-size="md" onClick={() => { show("transit"); window.dispatchEvent(new Event(POST_UPDATE_EVENT)); }}>Send customer update</button>}

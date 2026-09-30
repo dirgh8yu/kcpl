@@ -23,7 +23,6 @@
 .kcpl-admin-content .visibility-context { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 12px; margin-top: 16px; }
 .kcpl-admin-content .visibility-spotlight-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .kcpl-admin-content .visibility-spotlight-head .ops-mono { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; }
-.kcpl-admin-content .visibility-spotlight-head .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
 .kcpl-admin-content .visibility-spotlight-customer { margin: 4px 0 8px; color: var(--admin-muted); font-size: 12.5px; line-height: 17px; }
 
 /* Provider and signal lists: hairline rows, state as a word with a dot. */

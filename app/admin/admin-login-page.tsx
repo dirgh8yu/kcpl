@@ -18,12 +18,12 @@ export function AdminLoginPage() {
             </div>
             <div>
               <p className="text-[17px] font-semibold tracking-[-0.02em]">KAPILESHWOR</p>
-              <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.28em] text-white/55">Cargo Pvt. Ltd.</p>
+              <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-white/55">Cargo Pvt. Ltd.</p>
             </div>
           </div>
 
           <div className="relative z-10 max-w-[650px] pb-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#FF8BA2]">KCPL Operations</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[.04em] text-[#FF8BA2]">KCPL Operations</p>
             <h1 className="mt-5 max-w-[620px] text-[42px] font-semibold leading-[1.04] tracking-[-0.045em] xl:text-[54px]">
               One private workspace for the cargo operation.
             </h1>
@@ -46,13 +46,13 @@ export function AdminLoginPage() {
               </div>
               <div>
                 <p className="text-[14px] font-semibold tracking-[-0.02em]">KAPILESHWOR</p>
-                <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.22em] text-[var(--admin-muted)]">Cargo Pvt. Ltd.</p>
+                <p className="mt-0.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">Cargo Pvt. Ltd.</p>
               </div>
             </div>
 
             <div className="rounded-[var(--app-radius)] border border-black/[0.08] bg-[var(--admin-surface)] p-6 shadow-[0_24px_70px_rgba(16,16,16,0.08)] sm:p-8 xl:p-10">
               <div className="flex items-center justify-between gap-6">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-canvas)] px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--admin-canvas)] px-3 py-1.5 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">
                   <LockKeyhole size={12} /> Private access
                 </span>
                 <span className="h-2 w-2 rounded-full bg-[var(--admin-crimson)] shadow-[0_0_0_5px_rgba(220,20,60,0.08)]" aria-hidden="true" />

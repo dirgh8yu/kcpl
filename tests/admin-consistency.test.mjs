@@ -107,3 +107,36 @@ test("every staff list table uses the register style", async () => {
     }
   }
 });
+
+test("one badge: no screen resizes it", async () => {
+  // The three oldest sheets still carry their own base rule; everything
+  // after them uses the single .kcpl-admin-content .ops-badge definition.
+  const legacy = new Set(["operations-theme.css", "admin-design-system.css", "operations-polish.css"]);
+  const sheets = (await files("app/admin", ".css")).filter((path) => !legacy.has(path.split("/").pop()));
+  for (const path of sheets) {
+    const css = await readFile(repo(path), "utf8");
+    // Frozen sheets sit in @layer kcpl-legacy and lose to the unlayered rule.
+    if (/^\s*(\/\*[^]*?\*\/\s*)?@layer kcpl-legacy/.test(css)) continue;
+    for (const [rule] of css.matchAll(/[^\n{}]*\.ops-badge[^{]*\{[^}]*\}/g)) {
+      if (rule.trim().startsWith("/*") || rule.includes(".kcpl-admin-content .ops-badge {")) continue;
+      assert.doesNotMatch(rule, /min-height|font-size|padding/, `${path}: ${rule.trim().slice(0, 90)}`);
+    }
+  }
+});
+
+test("record pages read the same way: type, reference with status, route", async () => {
+  const job = await readFile(repo("app/admin/jobs/[reference]/job-record.tsx"), "utf8");
+  assert.match(job, /eyebrow="Shipment"/);
+  assert.match(job, /title=\{<span className="job-record-title"><span className="ops-mono">\{job\.reference\}<\/span><OpsBadge/);
+  const invoice = await readFile(repo("app/admin/finance/invoices/[reference]/invoice-workspace.tsx"), "utf8");
+  assert.match(invoice, /eyebrow="Invoice" title=\{<span[^>]*><OpsMono>\{invoice\.reference\}<\/OpsMono><OpsBadge/);
+  for (const path of ["app/admin/crm/[id]/customer-360-workspace.tsx", "app/admin/partners/[id]/partner-360-workspace.tsx"]) {
+    assert.match(await readFile(repo(path), "utf8"), /title=\{<span className="inline-flex flex-wrap items-center gap-2">\{(customer|partner)\.display_name\}<OpsBadge/, path);
+  }
+});
+
+test("an error screen's title is a page title", async () => {
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  assert.match(css, /\.workspace-gate-panel h1 \{ margin: 4px 0 0; font-size: var\(--app-title-size\); font-weight: 600;/);
+  assert.match(css, /\.workspace-gate-panel \.workspace-gate-eyebrow \{ margin: 0; color: var\(--admin-muted\); font-size: 12px;/);
+});

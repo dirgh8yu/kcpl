@@ -168,7 +168,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
 
       {createdOrderId ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div><p className="text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--admin-success)]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
+          <div><p className="text-[11px] font-semibold uppercase tracking-[.04em] text-[var(--admin-success)]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
           <div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Open order</Link><Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Continue to rating</Link><button type="button" onClick={() => setCreatedOrderId(null)} className="inline-flex h-8 items-center rounded-[var(--app-radius)] px-3 text-[12px] font-semibold text-[var(--admin-muted)]">Return to list</button></div>
         </div>
       </section> : null}

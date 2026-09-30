@@ -87,7 +87,7 @@ export function CrmCustomerDocumentsPanel({
     <section className="bg-[var(--admin-surface-muted)] px-5 pb-6 lg:px-8">
       <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-sm">
         <div className="border-b border-black/10 p-6 sm:p-8">
-          <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.18em] text-[#b78a3e]">Permanent account files</p>
+          <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[#b78a3e]">Permanent account files</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-.035em]">Customer document vault</h2>
           <p className="mt-2 max-w-2xl text-xs leading-6 text-black/45">Keep KYC, PAN/VAT, contracts, credit agreements, standing instructions and rate sheets against the customer, separate from shipment documents.</p>
         </div>
@@ -96,8 +96,8 @@ export function CrmCustomerDocumentsPanel({
         {notice ? <div className="mx-6 mt-5 rounded-[var(--app-radius)] bg-[#fff8e8] px-4 py-3 text-xs font-bold text-[#6d5427] sm:mx-8">{notice}</div> : null}
 
         <form onSubmit={upload} className="mx-6 mt-5 grid gap-3 rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4 sm:mx-8 md:grid-cols-[220px_1fr_auto] md:items-end">
-          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-black/40">Document type</span><select className="crm360-input" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></label>
-          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.13em] text-black/40">File · max 15 MB</span><input ref={fileRef} type="file" className="block w-full rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] px-3 py-2.5 text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" /></label>
+          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">Document type</span><select className="crm360-input" value={documentType} onChange={(event) => setDocumentType(event.target.value as CrmCustomerDocumentType)}>{crmCustomerDocumentTypes.map((type) => <option key={type} value={type}>{crmCustomerDocumentTypeLabels[type]}</option>)}</select></label>
+          <label><span className="mb-1.5 block text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-black/40">File · max 15 MB</span><input ref={fileRef} type="file" className="block w-full rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] px-3 py-2.5 text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" /></label>
           <button type="submit" disabled={busy || !storageAvailable} className="ops-button" data-variant="primary" data-size="sm"><Upload size={14} />{busy ? "Working…" : "Upload"}</button>
         </form>
 

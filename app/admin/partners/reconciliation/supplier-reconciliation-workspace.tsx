@@ -144,5 +144,5 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
 }
 
 function Review({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.07em] text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[11px] font-semibold leading-5 text-[var(--admin-ink)]">{value}</p></div>;
+  return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-3"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">{label}</p><p className="mt-1.5 text-[11px] font-semibold leading-5 text-[var(--admin-ink)]">{value}</p></div>;
 }
