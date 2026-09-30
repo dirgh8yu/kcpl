@@ -32,6 +32,7 @@
   --ops-shadow: 0 18px 50px rgba(81, 61, 47, .055);
   --ops-shadow-float: 0 24px 70px rgba(78, 57, 43, .13);
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--ops-canvas);
   color: var(--ops-ink);
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -49,7 +50,7 @@
 .kcpl-ops input::placeholder, .kcpl-ops textarea::placeholder { color: #aaa19a; }
 .kcpl-ops table { border-collapse: separate; border-spacing: 0; }
 .kcpl-ops tbody tr { transition: background-color .16s ease; }
-.kcpl-ops tbody tr:hover { background: #fcf8f4; }
+@media (hover: hover) and (pointer: fine) { .kcpl-ops tbody tr:hover { background: #fcf8f4; } }
 
 /* Safety net while older admin modules are migrated to the shared primitives. */
 .kcpl-ops [class*="bg-[#091624]"],
@@ -79,8 +80,10 @@
 .kcpl-ops [class*="border-black/10"] { border-color: var(--ops-line-soft); }
 .kcpl-ops [class*="focus:border-[#aa8748]"]:focus,
 .kcpl-ops [class*="focus:border-[#9e7b3e]"]:focus { border-color: var(--ops-accent); }
+@media (hover: hover) and (pointer: fine) {
 .kcpl-ops [class*="hover:border-[#b78a3e]"]:hover,
 .kcpl-ops [class*="hover:border-[#c5aa78]"]:hover { border-color: #e2a38f; }
+}
 .kcpl-ops [class*="shadow-[inset_3px_0_0_#b78a3e]"] { box-shadow: inset 3px 0 0 var(--ops-accent); }
 .kcpl-ops [class*="rounded-[28px]"], .kcpl-ops [class*="rounded-[26px]"] { border-radius: 18px; }
 .kcpl-ops [class*="rounded-xl"] { border-radius: 13px; }
@@ -90,6 +93,7 @@
 /* Shared page anatomy */
 .ops-page {
   min-height: calc(100vh - 58px);
+  min-height: calc(100dvh - 58px);
   background:
     radial-gradient(circle at 88% -12%, rgba(241, 188, 168, .22), transparent 31rem),
     radial-gradient(circle at 4% 0%, rgba(229, 211, 191, .22), transparent 25rem),
@@ -153,14 +157,14 @@
 .ops-field small { display: block; margin-top: 5px; color: #a89f98; font-size: 9px; font-weight: 520; line-height: 1.45; }
 
 .ops-button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 11px; padding: 0 13px; font-size: 10px; font-weight: 730; line-height: 1; cursor: pointer; transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease; }
-.ops-button:hover:not(:disabled) { transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .ops-button:hover:not(:disabled) { transform: translateY(-1px); } }
 .ops-button:disabled { cursor: default; opacity: .5; }
 .ops-button[data-variant="primary"] { background: var(--ops-accent); color: white; box-shadow: 0 7px 18px rgba(191, 91, 68, .15); }
-.ops-button[data-variant="primary"]:hover:not(:disabled) { background: var(--ops-accent-hover); }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="primary"]:hover:not(:disabled) { background: var(--ops-accent-hover); } }
 .ops-button[data-variant="secondary"] { border-color: var(--ops-line); background: white; color: #5d544d; }
-.ops-button[data-variant="secondary"]:hover:not(:disabled) { border-color: #dbcfc6; background: #fffdfb; }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="secondary"]:hover:not(:disabled) { border-color: #dbcfc6; background: #fffdfb; } }
 .ops-button[data-variant="ghost"] { background: transparent; color: #756b63; }
-.ops-button[data-variant="ghost"]:hover:not(:disabled) { background: #f5efea; color: #4e4640; }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="ghost"]:hover:not(:disabled) { background: #f5efea; color: #4e4640; } }
 .ops-button[data-variant="danger"] { border-color: #efd1d1; background: #fff4f3; color: #a34f51; }
 .ops-button[data-size="sm"] { min-height: 32px; border-radius: 9px; padding-inline: 10px; font-size: 9px; }
 
@@ -195,7 +199,7 @@
 .ops-table tbody tr:last-child td { border-bottom: 0; }
 .ops-table strong { color: #443c36; }
 .ops-table a { color: inherit; }
-.ops-table a:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .ops-table a:hover { text-decoration: underline; text-underline-offset: 3px; } }
 
 
 

@@ -80,7 +80,7 @@
   cursor: pointer;
   transition: background 160ms ease, border-color 160ms ease;
 }
-.wb-dot:hover { border-color: var(--wb-faint); }
+@media (hover: hover) and (pointer: fine) { .wb-dot:hover { border-color: var(--wb-faint); } }
 .wb-dot[data-active] { background: var(--wb-crimson); border-color: var(--wb-crimson); }
 .wb-dot:focus-visible { outline: 2px solid var(--wb-info); outline-offset: 2px; }
 

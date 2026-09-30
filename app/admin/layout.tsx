@@ -5,7 +5,8 @@ import { getAdminAccess } from "./admin-auth";
 import { getDisplayPreferences } from "./notifications/display-preferences.server";
 import type { DisplayPreferences } from "./notifications/display-preferences";
 import { OperationsDisplayPreferences } from "./operations-display-preferences";
-import { SiteDocument, baseMetadata, baseViewport } from "../site-document";
+import { SiteDocument, baseMetadata } from "../site-document";
+import { productViewport } from "../product-viewport";
 
 const adminFont = Geist({
   subsets: ["latin"],
@@ -33,7 +34,7 @@ async function layoutDisplayPreferences(): Promise<DisplayPreferences | null> {
 /* Root layout for the operations console: English only, so it takes the
  * document's default language. */
 export const metadata = baseMetadata;
-export const viewport = baseViewport;
+export const viewport = productViewport;
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   let density: DisplayPreferences["density"] | undefined;

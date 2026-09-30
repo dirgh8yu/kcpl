@@ -42,6 +42,7 @@
 
 .ops-page {
   min-height: calc(100vh - 54px);
+  min-height: calc(100dvh - 54px);
   background: var(--ops-canvas);
 }
 
@@ -125,7 +126,7 @@
   box-shadow: none;
 }
 
-.ops-surface:hover { border-color: var(--ops-line); }
+@media (hover: hover) and (pointer: fine) { .ops-surface:hover { border-color: var(--ops-line); } }
 .ops-surface[data-priority="info"] { border-color: #cdddfd; background: #fbfdff; }
 .ops-surface[data-priority="success"] { border-color: #cfe8da; background: #fbfefc; }
 .ops-surface[data-priority="warning"] { border-color: #ead9ae; background: #fffdfa; }
@@ -223,11 +224,11 @@
 }
 .ops-button[data-size="sm"] { min-height: 30px; padding-inline: 10px; font-size: 11px; }
 .ops-button[data-variant="primary"] { border-color: var(--ops-accent); background: var(--ops-accent); color: #fff; box-shadow: none; }
-.ops-button[data-variant="primary"]:hover { background: var(--ops-accent-hover); border-color: var(--ops-accent-hover); }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="primary"]:hover { background: var(--ops-accent-hover); border-color: var(--ops-accent-hover); } }
 .ops-button[data-variant="secondary"] { border-color: var(--ops-line); background: #fff; color: var(--ops-ink); }
-.ops-button[data-variant="secondary"]:hover { border-color: #c8c8c8; background: #fbfbf9; }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="secondary"]:hover { border-color: #c8c8c8; background: #fbfbf9; } }
 .ops-button[data-variant="ghost"] { border-color: transparent; background: transparent; color: var(--ops-ink-soft); }
-.ops-button[data-variant="ghost"]:hover { background: #f2f2f2; color: var(--ops-ink); }
+@media (hover: hover) and (pointer: fine) { .ops-button[data-variant="ghost"]:hover { background: #f2f2f2; color: var(--ops-ink); } }
 .ops-button[data-variant="danger"] { border-color: #f0cccc; background: #fff; color: var(--ops-rose); }
 .ops-button:disabled { opacity: .48; cursor: not-allowed; }
 .ops-button:not(:disabled):active { transform: translateY(1px); }
@@ -269,7 +270,7 @@
   border-bottom: 1px solid var(--ops-line);
   vertical-align: middle;
 }
-.ops-table tbody tr:hover { background: #fbfbf9; }
+@media (hover: hover) and (pointer: fine) { .ops-table tbody tr:hover { background: #fbfbf9; } }
 .ops-table tbody tr:focus-within,
 .ops-table tbody tr[data-selected="true"] {
   background: #fbfbf9;

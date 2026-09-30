@@ -11,7 +11,7 @@
 .kcpl-admin-content .network-section { margin-top: 16px; }
 .kcpl-admin-content .network-nowrap { white-space: nowrap; }
 .kcpl-admin-content .network-link { color: var(--admin-ink); text-decoration: none; }
-.kcpl-admin-content .network-link:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .network-link:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 2px; } }
 .kcpl-admin-content .network-error { display: block; color: var(--admin-danger); font-size: 12.5px; line-height: 17px; }
 .kcpl-admin-content .network-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .kcpl-admin-content .network-footer-note { margin-right: auto; color: var(--admin-muted); font-size: 12px; }

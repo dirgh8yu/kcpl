@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "../product.css";
 import type { ReactNode } from "react";
-import { SiteDocument, baseMetadata, baseViewport } from "../site-document";
+import { SiteDocument, baseMetadata } from "../site-document";
+import { productViewport } from "../product-viewport";
 
 const portalFont = Geist({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "KCPL Portal", statusBarStyle: "default" },
 };
 
-export const viewport = baseViewport;
+export const viewport = productViewport;
 
 /*
  * The customer portal renders on the same foundation as the staff product:

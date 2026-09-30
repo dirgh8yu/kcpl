@@ -170,8 +170,10 @@
   color: var(--kcpl-copy);
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] .ops-content-wide a:hover {
   color: var(--kcpl-c);
+}
 }
 
 /* Commercial finance data is a ledger. */
@@ -240,8 +242,10 @@
   white-space: nowrap;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] > div > header nav :is(a, span):hover {
   color: var(--kcpl-ink);
+}
 }
 
 .kcpl-admin-shell[data-commercial-context] main[class*="min-h-[calc(100vh-54px)]"] div[class*="lg:grid-cols-[minmax(0,800px)_351px]"] {
@@ -368,8 +372,10 @@
   transition: background-color 120ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] table tbody tr:hover {
   background: var(--kcpl-canvas);
+}
 }
 
 /* Inputs use one predictable enterprise control language. */

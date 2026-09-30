@@ -35,7 +35,7 @@
 .kcpl-admin-content .visibility-list-meta { overflow: hidden; color: var(--admin-muted); font-size: 11.5px; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .kcpl-admin-content .visibility-list-time { flex: none; color: var(--admin-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
 .kcpl-admin-content .visibility-list-button { display: flex; width: calc(100% + 12px); align-items: center; gap: 10px; min-height: 40px; margin: 0 -6px; border: 0; border-radius: var(--app-radius-sm); padding: 0 6px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
-.kcpl-admin-content .visibility-list-button:hover { background: var(--admin-canvas); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .visibility-list-button:hover { background: var(--admin-canvas); } }
 .kcpl-admin-content .visibility-list-button:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; }
 .kcpl-admin-content .visibility-state { display: inline-flex; flex: none; align-items: center; gap: 5px; color: var(--admin-muted); font-size: 11.5px; font-weight: 550; white-space: nowrap; }
 .kcpl-admin-content .visibility-state::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--admin-faint); }
@@ -49,7 +49,7 @@
 .kcpl-admin-content .visibility-signal-dot[data-tone="warning"] { background: var(--admin-warning); }
 .kcpl-admin-content .visibility-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; border-top: 1px solid var(--admin-line); padding-top: 8px; }
 .kcpl-admin-content .visibility-links a { color: var(--admin-muted); font-size: 12px; font-weight: 550; text-decoration: none; }
-.kcpl-admin-content .visibility-links a:hover { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .visibility-links a:hover { color: var(--admin-crimson); } }
 
 /* Inspector event timeline: time column, title, quiet milestone word. */
 .kcpl-admin-content .visibility-events { margin: 0; padding: 0; list-style: none; }

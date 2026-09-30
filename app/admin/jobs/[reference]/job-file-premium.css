@@ -34,7 +34,7 @@
 .kcpl-admin-content .job-steps ol > li:not(:last-child)::after { content: ""; position: absolute; top: 30px; bottom: -6px; left: 19px; width: 1px; background: var(--admin-line); pointer-events: none; }
 .kcpl-admin-content .job-steps ol > li[data-state="done"]:not(:last-child)::after { background: var(--admin-success); }
 .kcpl-admin-content .job-steps button { display: flex; width: 100%; min-height: 36px; align-items: flex-start; gap: 10px; border: 0; border-radius: var(--app-radius-sm); padding: 8px 10px; background: transparent; color: var(--admin-muted); font: inherit; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out); }
-.kcpl-admin-content .job-steps button:hover { background: var(--admin-canvas); color: var(--admin-ink); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-steps button:hover { background: var(--admin-canvas); color: var(--admin-ink); } }
 .kcpl-admin-content .job-steps button[data-active="true"] { background: var(--admin-surface-muted); color: var(--admin-ink); }
 .kcpl-admin-content .job-steps button:focus-visible { outline: 2px solid var(--admin-ink); outline-offset: -2px; }
 .kcpl-admin-content .job-step-icon { position: relative; z-index: 1; display: grid; width: 20px; height: 20px; flex: none; place-items: center; border: 1.5px solid var(--admin-line-strong); border-radius: 999px; background: var(--admin-surface); color: var(--admin-faint); }
@@ -64,7 +64,7 @@
 .kcpl-admin-content .job-panel-line { margin: 0; color: var(--admin-ink); font-size: 13px; line-height: 19px; }
 .kcpl-admin-content .job-panel-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; border: 0; padding: 0; background: none; color: var(--admin-muted); font: inherit; font-size: 12.5px; font-weight: 550; text-decoration: none; cursor: pointer; }
 .kcpl-admin-content .job-step-head .job-panel-link { margin-top: 0; }
-.kcpl-admin-content .job-panel-link:hover { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-panel-link:hover { color: var(--admin-crimson); } }
 .kcpl-admin-content .job-row-reject { display: grid; gap: 6px; margin-top: 8px; max-width: 420px; }
 
 /* Panels use the shared compact density (operations-system.css, "Compact
@@ -109,14 +109,14 @@
 .kcpl-admin-content .job-row .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; font-weight: 550; }
 .kcpl-admin-content .job-row .ops-badge[data-tone="neutral"] { background: var(--admin-surface-muted); color: var(--admin-muted); font-weight: 500; }
 .kcpl-admin-content .job-row-tag { display: inline-flex; min-height: 18px; align-items: center; border-radius: 4px; padding: 0 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 11px; font-weight: 500; text-decoration: none; }
-.kcpl-admin-content .job-row-tag:hover { color: var(--admin-ink); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-row-tag:hover { color: var(--admin-ink); } }
 .kcpl-admin-content .job-row-detail { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
 .kcpl-admin-content .job-row-detail strong { color: var(--admin-ink); font-weight: 600; }
 .kcpl-admin-content .job-row-danger { color: var(--admin-danger); }
 .kcpl-admin-content .job-row-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 3px; color: var(--admin-faint); font-size: 11.5px; line-height: 16px; }
 .kcpl-admin-content .job-row-meta strong { color: var(--admin-ink); font-weight: 550; }
 .kcpl-admin-content .job-row-meta a { color: var(--admin-muted); text-decoration: none; }
-.kcpl-admin-content .job-row-meta a:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-row-meta a:hover { color: var(--admin-crimson); text-decoration: underline; text-underline-offset: 3px; } }
 .kcpl-admin-content .job-row-meta [data-overdue="true"],
 .kcpl-admin-content .job-overdue { color: var(--admin-danger); font-weight: 550; }
 .kcpl-admin-content .job-row-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
@@ -126,7 +126,7 @@
 /* Completion control: an 18px check, square for checklist steps, round for tasks. */
 .kcpl-admin-content .job-check { display: grid; width: 18px; height: 18px; flex: none; place-items: center; margin-top: 1px; border: 1.5px solid var(--admin-line-strong); border-radius: 5px; background: var(--admin-surface); color: transparent; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out); }
 .kcpl-admin-content .job-check[data-shape="round"] { border-radius: 999px; }
-.kcpl-admin-content .job-check:hover:not(:disabled) { border-color: var(--admin-ink); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-check:hover:not(:disabled) { border-color: var(--admin-ink); } }
 .kcpl-admin-content .job-check[aria-pressed="true"] { border-color: var(--admin-success); background: var(--admin-success); color: var(--admin-surface); }
 .kcpl-admin-content .job-row[data-overdue="true"] .job-check:not([aria-pressed="true"]) { border-color: var(--admin-danger); }
 
@@ -177,7 +177,7 @@
 .kcpl-admin-content .job-subpanel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .kcpl-admin-content .job-subpanel-head :is(h3, h4) { margin: 0; }
 .kcpl-admin-content .job-select-row { display: grid; gap: 2px; width: calc(100% + 20px); margin: 0 -10px; border: 0; border-radius: var(--app-radius-sm); padding: 8px 10px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
-.kcpl-admin-content .job-select-row:hover { background: var(--admin-canvas); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .job-select-row:hover { background: var(--admin-canvas); } }
 .kcpl-admin-content .job-select-row[data-selected="true"] { background: var(--admin-surface-muted); }
 .kcpl-admin-content .job-select-row .ops-badge { min-height: 20px; padding: 1px 7px; border-color: transparent; font-size: 11.5px; }
 

@@ -54,10 +54,12 @@
   color: var(--admin-surface);
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-content .shipments-register .shipments-actions [data-variant="primary"]:hover,
 .kcpl-admin-content .shipment-sheet-footer [data-variant="primary"]:hover {
   border-color: var(--admin-crimson-dark);
   background: var(--admin-crimson-dark);
+}
 }
 
 .kcpl-admin-content :is(.shipments-filter-trigger, .shipments-filter-tab, .shipments-view-toggle button, .shipments-filter-chip, .shipments-chip-clear):focus-visible,
@@ -91,7 +93,7 @@
   background: var(--admin-surface-muted);
 }
 
-.kcpl-admin-content .shipments-register .shipments-toolbar-search .ops-search:hover { border-color: var(--ship-line); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-register .shipments-toolbar-search .ops-search:hover { border-color: var(--ship-line); } }
 
 .kcpl-admin-content .shipments-register .shipments-status-filters {
   grid-area: tabs;
@@ -123,9 +125,11 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-content .shipments-filter-tab:hover {
   color: var(--admin-ink);
   background: var(--admin-surface-muted);
+}
 }
 
 .kcpl-admin-content .shipments-filter-tab[data-active="true"],
@@ -182,7 +186,7 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipments-register .shipments-view-toggle button:hover { color: var(--admin-ink); background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-register .shipments-view-toggle button:hover { color: var(--admin-ink); background: var(--admin-surface-muted); } }
 
 .kcpl-admin-content .shipments-register .shipments-view-toggle button[data-active="true"] {
   border-color: transparent;
@@ -247,7 +251,7 @@
   color: var(--admin-crimson);
 }
 
-.kcpl-admin-content .shipments-filter-clear:hover { background: color-mix(in srgb, var(--admin-crimson) 8%, transparent); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-filter-clear:hover { background: color-mix(in srgb, var(--admin-crimson) 8%, transparent); } }
 
 .kcpl-admin-content .shipments-filter-done {
   display: inline-flex;
@@ -258,7 +262,7 @@
   color: var(--admin-ink);
 }
 
-.kcpl-admin-content .shipments-filter-done:hover { background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-filter-done:hover { background: var(--admin-surface-muted); } }
 
 .kcpl-admin-content .shipments-filter-row {
   display: grid;
@@ -308,7 +312,7 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipments-filter-toggle:hover { background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-filter-toggle:hover { background: var(--admin-surface-muted); } }
 
 .kcpl-admin-content .shipments-filter-toggle input {
   position: absolute;
@@ -410,9 +414,9 @@
 
 .kcpl-admin-content .shipments-filter-chip svg { color: var(--admin-faint); transition: color var(--app-duration-fast) var(--app-ease-out); }
 
-.kcpl-admin-content .shipments-filter-chip:hover { border-color: var(--admin-danger-line); background: var(--admin-danger-bg); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-filter-chip:hover { border-color: var(--admin-danger-line); background: var(--admin-danger-bg); } }
 
-.kcpl-admin-content .shipments-filter-chip:hover svg { color: var(--admin-danger); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-filter-chip:hover svg { color: var(--admin-danger); } }
 
 .kcpl-admin-content .shipments-chip-clear {
   min-height: 24px;
@@ -427,7 +431,7 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), box-shadow var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipments-chip-clear:hover { color: var(--admin-danger); background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-chip-clear:hover { color: var(--admin-danger); background: var(--admin-surface-muted); } }
 
 /* ---- Register table ------------------------------------------------------- */
 
@@ -464,7 +468,7 @@
 /* Rows are scanned constantly, so the hover is an instant colour change and nothing
  * moves -- the same call plans/admin-motion-audit.md made for the admin tables. */
 .kcpl-admin-content .shipments-register .shipments-register-table tbody tr { outline: none; }
-.kcpl-admin-content .shipments-register .shipments-register-table tbody tr:hover { background: var(--ship-canvas); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-register .shipments-register-table tbody tr:hover { background: var(--ship-canvas); } }
 .kcpl-admin-content .shipments-register .shipments-register-table tbody tr:focus-visible { box-shadow: inset var(--ship-focus); }
 
 .kcpl-admin-content .shipments-register .shipments-register-table tbody tr[data-selected="true"] {
@@ -502,7 +506,7 @@
 
 /* The reference is the one-click way into the Job File. */
 .kcpl-admin-content .shipments-register .shipments-ref-link { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; }
-.kcpl-admin-content .shipments-register .shipments-ref-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-register .shipments-ref-link:hover { text-decoration: underline; text-underline-offset: 2px; } }
 /* Mode rides on the route line instead of taking a column. */
 .kcpl-admin-content .shipments-register .shipments-route-line { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--admin-muted); }
 .kcpl-admin-content .shipments-register .shipments-route-line > svg { flex: none; }
@@ -618,7 +622,7 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out), border-color var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipment-sheet-next-link:hover { background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-next-link:hover { background: var(--admin-surface-muted); } }
 
 .kcpl-admin-content .shipment-sheet-ready-row { padding: 0; }
 
@@ -633,8 +637,8 @@
   transition: background-color var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipment-sheet-ready-link:hover strong { color: var(--admin-crimson); }
-.kcpl-admin-content .shipment-sheet-ready-link:hover svg { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-ready-link:hover strong { color: var(--admin-crimson); } }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-ready-link:hover svg { color: var(--admin-crimson); } }
 
 /* Recent activity: a few quiet rows from the existing jobs activity API. */
 .kcpl-admin-content .shipment-sheet-activity:last-child { border-bottom: 0; }
@@ -677,7 +681,7 @@
 .kcpl-admin-content .shipment-sheet-activity-row:not(:disabled) { cursor: pointer; }
 .kcpl-admin-content .shipment-sheet-activity-row:disabled { cursor: default; }
 
-.kcpl-admin-content .shipment-sheet-activity-row:not(:disabled):hover .shipment-sheet-activity-title { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-activity-row:not(:disabled):hover .shipment-sheet-activity-title { color: var(--admin-crimson); } }
 
 .kcpl-admin-content .shipment-sheet-activity-row:focus-visible {
   outline: none;
@@ -764,7 +768,7 @@
   transition: color var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipment-sheet-activity-more:hover { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-activity-more:hover { color: var(--admin-crimson); } }
 
 /* Copy deep link inside an expanded activity row. */
 .kcpl-admin-content .shipment-sheet-activity-copy {
@@ -783,7 +787,7 @@
   transition: color var(--app-duration-fast) var(--app-ease-out);
 }
 
-.kcpl-admin-content .shipment-sheet-activity-copy:hover { color: var(--admin-crimson); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipment-sheet-activity-copy:hover { color: var(--admin-crimson); } }
 
 /* Quiet "updated just now" cue after a poll surfaces new rows. */
 .kcpl-admin-content .shipment-sheet-activity[data-flash] h3 {

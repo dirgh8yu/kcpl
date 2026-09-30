@@ -16,6 +16,7 @@
   --kcpl-line-soft: #E7E7E1;
   --kcpl-secondary: #EEEEE8;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--kcpl-canvas);
   color: var(--kcpl-ink);
   font-family: var(--font-geist), Arial, sans-serif;
@@ -171,9 +172,9 @@
   color: #fff;
 }
 
-.kcpl-admin-content .ops-button[data-variant="primary"]:hover { background: #B61032; border-color: #B61032; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-button[data-variant="primary"]:hover { background: #B61032; border-color: #B61032; } }
 .kcpl-admin-content .ops-button[data-variant="secondary"] { border-color: #A5A5A0; background: transparent; color: var(--kcpl-ink); }
-.kcpl-admin-content .ops-button[data-variant="secondary"]:hover { border-color: var(--kcpl-ink); background: #E9E9E3; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-button[data-variant="secondary"]:hover { border-color: var(--kcpl-ink); background: #E9E9E3; } }
 
 /* Reduce the previous floating-SaaS visual language across operational modules. */
 .kcpl-admin-content [class*="rounded-[28px]"],
@@ -203,7 +204,7 @@
 .kcpl-admin-content table { border-collapse: collapse; }
 .kcpl-admin-content thead { border-bottom: 1px solid var(--kcpl-ink); }
 .kcpl-admin-content tbody tr { border-bottom-color: var(--kcpl-line); }
-.kcpl-admin-content tbody tr:hover { background: #F0F0EA; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content tbody tr:hover { background: #F0F0EA; } }
 
 
 /* Shared operations register/table treatment, including Shipments. */

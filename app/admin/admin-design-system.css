@@ -15,6 +15,7 @@
  * only the layout and typeface it actually owns. */
 .kcpl-admin-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--admin-canvas);
   color: var(--admin-ink);
   font-family: var(--font-geist), Arial, sans-serif;
@@ -62,6 +63,7 @@
 /* Shared page hierarchy */
 .ops-page {
   min-height: calc(100vh - 114px);
+  min-height: calc(100dvh - 114px);
   background: var(--admin-canvas);
   color: var(--admin-ink);
 }
@@ -217,7 +219,7 @@ button.ops-button {
   transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 .ops-button[data-size="sm"] { min-height: 36px; padding-inline: 11px; font-size: 11px; }
-.ops-button:hover:not(:disabled) { border-color: var(--admin-crimson-dark); background: var(--admin-crimson-dark); color: #fff; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(220, 20, 60, .12); }
+@media (hover: hover) and (pointer: fine) { .ops-button:hover:not(:disabled) { border-color: var(--admin-crimson-dark); background: var(--admin-crimson-dark); color: #fff; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(220, 20, 60, .12); } }
 .ops-button:active:not(:disabled) { border-color: var(--admin-crimson-deep); background: var(--admin-crimson-deep); transform: translateY(0); box-shadow: none; }
 .ops-button:disabled,
 .ops-button[aria-disabled="true"] { cursor: not-allowed; border-color: #C8C8C2; background: #C8C8C2; color: #686862; box-shadow: none; transform: none; }
@@ -404,19 +406,20 @@ button.ops-button {
 }
 
 .ops-table tbody tr { transition: background .14s ease, box-shadow .14s ease; }
-.ops-table tbody tr:hover { background: var(--admin-surface-muted); }
+@media (hover: hover) and (pointer: fine) { .ops-table tbody tr:hover { background: var(--admin-surface-muted); } }
 .ops-table tbody tr:focus-visible { outline-offset: -2px; }
 
 /* Workspace access/error state */
 .workspace-gate {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   background: var(--admin-canvas);
   padding: 24px;
   color: var(--admin-ink);
 }
-.workspace-gate[data-embedded="true"] { min-height: calc(100vh - 114px); }
+.workspace-gate[data-embedded="true"] { min-height: calc(100vh - 114px); min-height: calc(100dvh - 114px); }
 .workspace-gate-panel {
   width: min(100%, 560px);
   border: 1px solid var(--admin-line);
@@ -456,7 +459,7 @@ button.ops-button {
 }
 
 @media (max-width: 760px) {
-  .ops-page { min-height: calc(100vh - 114px); }
+  .ops-page { min-height: calc(100vh - 114px); min-height: calc(100dvh - 114px); }
   .ops-page-header { padding: 22px 16px 0; }
   .ops-page-header-main { padding-bottom: 18px; }
   .ops-page-heading h1 { font-size: clamp(30px, 10vw, 38px); }
@@ -480,7 +483,7 @@ button.ops-button {
   .ops-search input { font-size: 16px; }
   .ops-table { min-width: 700px; }
   .workspace-gate { padding: 16px; }
-  .workspace-gate[data-embedded="true"] { min-height: calc(100vh - 114px); }
+  .workspace-gate[data-embedded="true"] { min-height: calc(100vh - 114px); min-height: calc(100dvh - 114px); }
   .workspace-gate-panel { padding: 24px 20px; }
   .workspace-gate-actions { display: grid; grid-template-columns: 1fr; }
   .workspace-gate-actions .ops-button { width: 100%; }

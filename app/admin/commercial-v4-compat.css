@@ -161,12 +161,14 @@
   transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] .ops-button:hover:not(:disabled) {
   border-color: var(--commercial-crimson-dark);
   background: var(--commercial-crimson-dark);
   color: #FFFFFF;
   transform: translateY(-1px);
   box-shadow: 0 5px 14px rgba(220,20,60,.14);
+}
 }
 
 .kcpl-admin-shell[data-commercial-context] .ops-button:active:not(:disabled) {
@@ -191,6 +193,7 @@
   transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#dc143c]"]:hover:not(:disabled),
 .kcpl-admin-shell[data-commercial-context] a[class*="bg-[#dc143c]"]:hover,
 .kcpl-admin-shell[data-commercial-context] button[class*="bg-[#DC143C]"]:hover:not(:disabled),
@@ -198,6 +201,7 @@
   background: var(--commercial-crimson-dark);
   transform: translateY(-1px);
   box-shadow: 0 5px 14px rgba(220,20,60,.14);
+}
 }
 
 
@@ -333,8 +337,10 @@
   background: var(--commercial-white);
 }
 
+@media (hover: hover) and (pointer: fine) {
 .kcpl-admin-shell[data-commercial-context] tbody tr:hover {
   background: var(--commercial-canvas);
+}
 }
 
 .kcpl-admin-shell[data-commercial-context] td {
