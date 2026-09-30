@@ -201,7 +201,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
           <section className="ops-surface" aria-label="Delivery and POD register">
             {rows.length ? (
               <OpsTableWrap>
-                <table className="ops-table ops-register-table delivery-table" data-compact={compact || undefined} aria-label="Delivery and POD queue">
+                <table className="ops-table ops-register-table delivery-table ops-stack-table" data-compact={compact || undefined} aria-label="Delivery and POD queue">
                   <thead>
                     <tr>
                       <th>Shipment</th>
@@ -226,30 +226,30 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                         onClick={() => update({ selected: row.reference }, "push")}
                         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); update({ selected: row.reference }, "push"); } }}
                       >
-                        <td>
+                        <td data-cell="primary">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{row.reference}</span>
                           <span className="ops-cell-secondary">{row.mode}</span>
                         </td>
-                        <td>
+                        <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>
                           <span className="ops-cell-secondary ops-cell-clamp">{row.origin} → {row.destination}</span>
                         </td>
-                        <td><span className="ops-cell-muted">{row.primary_branch}</span></td>
-                        <td>
+                        <td data-cell="meta"><span className="ops-cell-muted">{row.primary_branch}</span></td>
+                        <td data-cell="meta">
                           <span className="ops-cell-primary">{row.next_delivery_at ? dateTime(row.next_delivery_at) : row.last_attempt_at ? dateTime(row.last_attempt_at) : "Not scheduled"}</span>
                           <span className="ops-cell-secondary">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : `${row.attempt_count} attempt${row.attempt_count === 1 ? "" : "s"}`}</span>
                         </td>
-                        <td>
+                        <td data-cell="status">
                           <span className="delivery-state-cell">
                             <OpsBadge tone={stateTone(row)} dot>{stateLabel(row)}</OpsBadge>
                             {row.delivery_state === "pod_verified" ? <CheckCircle2 size={14} strokeWidth={1.75} className="delivery-state-icon" aria-hidden="true"/> : exception ? <AlertTriangle size={14} strokeWidth={1.75} className="delivery-state-icon" data-danger={row.delivery_state === "delivery_failed" || undefined} aria-hidden="true"/> : null}
                           </span>
                         </td>
-                        <td>
+                        <td data-cell="meta" data-label="Proof">
                           <span className="ops-cell-primary"><OpsBadge tone={podTone(row)} dot>{podLabel(row)}</OpsBadge></span>
                           <span className="ops-cell-secondary">{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</span>
                         </td>
-                        <td className="ops-cell-open">
+                        <td data-cell="open" className="ops-cell-open">
                           <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open Delivery and POD control for ${row.reference}`} tabIndex={-1}>
                             <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                           </Link>

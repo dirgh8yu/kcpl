@@ -1637,6 +1637,32 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .portal-nav-link, .portal-signout, .portal-skip-link { transition: none; }
 }
 
+/* Phones: staff lists read as stacked rows, not a table scrolled sideways
+ * with the status, owner and next step off screen. Each cell says what it is
+ * (data-cell): the tick box, the record and its status share the first line,
+ * the customer or route runs full width, facts follow as small labelled items
+ * (data-label), and the one thing to do comes last. Where the table carries
+ * data-row-link, the record's link covers the row, so the whole row opens it. */
+@media (max-width: 760px) {
+  .kcpl-admin-shell .kcpl-admin-content table.ops-stack-table { display: block; width: 100%; min-width: 0; }
+  .kcpl-admin-shell .kcpl-admin-content table.ops-stack-table > thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table tbody { display: block; width: 100%; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table tbody > tr { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 12px 14px; border-bottom: 1px solid var(--admin-line); }
+  .kcpl-admin-shell .kcpl-admin-content table.ops-stack-table > tbody > tr > td { display: block; width: auto; height: auto; min-height: 0; padding: 0; border: 0; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table tbody > tr::after { content: ""; flex-basis: 100%; order: 2; height: 0; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="tick"] { position: relative; z-index: 1; flex: none; order: 0; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="primary"] { flex: 1 1 0; min-width: 0; order: 0; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="status"] { flex: none; margin-left: auto; order: 1; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="route"] { flex: 1 1 100%; order: 3; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="meta"] { flex: 0 1 auto; order: 4; color: var(--admin-muted); font-size: var(--app-text-sm); }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="amount"] { flex: 0 1 auto; order: 4; font-weight: 600; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="action"] { flex: 1 1 100%; order: 5; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-cell="open"] { display: none; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table td[data-label]::before { content: attr(data-label) " "; color: var(--admin-faint); font-weight: 400; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table[data-row-link] td[data-cell="primary"] a:first-of-type::after { content: ""; position: absolute; inset: 0; }
+  .kcpl-admin-shell .kcpl-admin-content .ops-stack-table[data-row-link] td:not([data-cell="primary"]) :is(a, button, input) { position: relative; z-index: 1; }
+}
+
 /* Phones -------------------------------------------------------------------
  * The portal's registers read as stacked rows rather than a table scrolled
  * sideways, where the status, dates and amounts ended up off screen. Each cell
@@ -2351,3 +2377,23 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-bulk-bar > strong { color: var(--admin-ink); font-size: 13px; font-weight: 650; }
 .kcpl-admin-content .ops-bulk-bar-picker { min-width: 220px; flex: 1 1 240px; max-width: 360px; }
 .kcpl-admin-content .ops-bulk-notice { flex-basis: 100%; margin: 0 0 10px; }
+
+/* Keyboard shortcuts (press ?): one quiet sheet listing every key. It opens
+ * and closes without motion; a keyboard action lands immediately. */
+.ops-shortcuts-overlay { position: fixed; inset: 0; z-index: 90; background: color-mix(in srgb, var(--admin-ink) 28%, transparent); }
+.ops-shortcuts { position: fixed; top: 50%; left: 50%; z-index: 91; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; transform: translate(-50%, -50%); border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); box-shadow: var(--app-float-shadow); color: var(--admin-ink); padding: 16px 18px 14px; }
+.ops-shortcuts-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.ops-shortcuts-head h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.ops-shortcuts-close { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--admin-muted); cursor: pointer; }
+.ops-shortcuts-close:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.ops-shortcuts-close:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
+.ops-shortcuts-list { display: grid; gap: 2px; margin: 0; }
+.ops-shortcuts-list > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 30px; border-bottom: 1px solid var(--admin-line); }
+.ops-shortcuts-list > div:last-child { border-bottom: 0; }
+.ops-shortcuts-list dt { display: flex; gap: 4px; }
+.ops-shortcuts-list dd { margin: 0; color: var(--admin-muted); font-size: 13px; }
+.ops-shortcuts kbd { display: inline-grid; min-width: 22px; height: 22px; place-items: center; border: 1px solid var(--admin-line); border-bottom-width: 2px; border-radius: 5px; background: var(--admin-surface-muted); padding: 0 5px; color: var(--admin-ink); font: 600 11.5px/1 var(--font-mono, ui-monospace, monospace); }
+.ops-shortcuts-foot { margin: 10px 0 0; color: var(--admin-faint); font-size: 12px; }
+/* A row reached with j or k shows where you are. */
+.kcpl-admin-content :is(tbody tr, .alerts-row)[data-kbd-row]:focus-visible { outline: 2px solid var(--app-focus); outline-offset: -2px; background: var(--admin-canvas); }
+

@@ -64,7 +64,7 @@ export function OpsPageHeader({
           {description ? <div className="ops-page-description">{description}</div> : null}
           {meta ? <div className="ops-page-meta">{meta}</div> : null}
         </div>
-        {actions ? <div className="ops-page-actions">{actions}</div> : null}
+        {actions ? <div className="ops-page-actions" data-page-actions>{actions}</div> : null}
       </div>
       {children}
     </header>

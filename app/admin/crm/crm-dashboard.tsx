@@ -164,17 +164,17 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
           <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
             <section className="ops-surface" aria-label="Customer register">
               {filtered.length ? <OpsTableWrap>
-                <table className="ops-table ops-register-table crm-table" data-compact={compact || undefined} aria-label="Customers">
+                <table className="ops-table ops-register-table crm-table ops-stack-table" data-compact={compact || undefined} aria-label="Customers">
                   <thead><tr><th>Customer</th><th>Branch · manager</th><th>Status</th>{compact ? null : <th className="ops-col-num">Quotes</th>}{compact ? null : <th className="ops-col-num">Active jobs</th>}<th className="ops-col-num">Follow-ups</th></tr></thead>
                   <tbody>{filtered.map((customer) => {
                     const chosen = selectedId === customer.id;
                     return <tr key={customer.id} tabIndex={0} data-selected={chosen || undefined} aria-current={chosen || undefined} onClick={() => openCustomer(customer.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openCustomer(customer.id); } }}>
-                      <td><span className="ops-cell-primary ops-cell-clamp" title={customer.display_name}>{customer.display_name}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.primary_email || customer.primary_phone || customer.country}</span></td>
-                      <td><span className="ops-cell-primary">{customer.primary_branch}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.account_manager_name || "Unassigned"}</span></td>
-                      <td><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></td>
-                      {compact ? null : <td className="ops-col-num"><span className="ops-num">{customer.quote_count}</span></td>}
-                      {compact ? null : <td className="ops-col-num"><span className="ops-num">{customer.active_shipment_count}</span></td>}
-                      <td className="ops-col-num">{customer.follow_up_count ? <span className="ops-num crm-follow-ups">{customer.follow_up_count}</span> : <span className="ops-cell-muted">0</span>}</td>
+                      <td data-cell="primary"><span className="ops-cell-primary ops-cell-clamp" title={customer.display_name}>{customer.display_name}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.primary_email || customer.primary_phone || customer.country}</span></td>
+                      <td data-cell="meta"><span className="ops-cell-primary">{customer.primary_branch}</span><span className="ops-cell-secondary ops-cell-clamp">{customer.account_manager_name || "Unassigned"}</span></td>
+                      <td data-cell="status"><OpsBadge tone={statusTone(customer.account_status)}>{crmAccountStatusLabels[customer.account_status]}</OpsBadge></td>
+                      {compact ? null : <td data-cell="meta" data-label="Quotes" className="ops-col-num"><span className="ops-num">{customer.quote_count}</span></td>}
+                      {compact ? null : <td data-cell="meta" data-label="Active jobs" className="ops-col-num"><span className="ops-num">{customer.active_shipment_count}</span></td>}
+                      <td data-cell="meta" data-label="Follow-ups" className="ops-col-num">{customer.follow_up_count ? <span className="ops-num crm-follow-ups">{customer.follow_up_count}</span> : <span className="ops-cell-muted">0</span>}</td>
                     </tr>;
                   })}</tbody>
                 </table>

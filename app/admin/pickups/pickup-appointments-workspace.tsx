@@ -508,7 +508,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
           <section className="ops-surface" aria-label="Pickup register">
             {filtered.length ? (
               <OpsTableWrap>
-                <table className="ops-table ops-register-table pickups-table" data-compact={compact || undefined} aria-label="Pickup appointments">
+                <table className="ops-table ops-register-table pickups-table ops-stack-table" data-compact={compact || undefined} aria-label="Pickup appointments">
                   <thead>
                     <tr>
                       <th>Pickup</th>
@@ -542,31 +542,31 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                           onClick={() => choose(row)}
                           onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(row); } }}
                         >
-                          <td>
+                          <td data-cell="primary">
                             <span className="ops-cell-primary ops-mono ops-cell-id">{row.id}</span>
                             <span className="ops-cell-secondary ops-mono">{row.booking_reference || row.provider_reference || "—"}</span>
                           </td>
-                          <td>
+                          <td data-cell="route">
                             <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>
                             <span className="ops-cell-secondary ops-cell-clamp">{row.pickup_location || row.origin}{row.pickup_location && row.origin && row.pickup_location !== row.origin ? ` · ${row.origin}` : ""}</span>
                           </td>
-                          <td>
+                          <td data-cell="meta">
                             <span className="ops-cell-primary">{windowDayLabel(start, todayKey, tomorrowKey)}</span>
                             <span className="ops-cell-secondary">{start ? `${timeLabel(start)}${end ? `–${timeLabel(end)}` : ""} NPT` : "Awaiting appointment"}</span>
                           </td>
-                          {compact ? null : <td><span className="ops-cell-muted">{row.partner_name || "—"}</span></td>}
-                          {compact ? null : <td>{row.driver_name ? <span className="ops-cell-primary ops-cell-clamp">{row.driver_name}</span> : <span className="ops-cell-muted">—</span>}</td>}
+                          {compact ? null : <td data-cell="meta" data-label="Carrier"><span className="ops-cell-muted">{row.partner_name || "—"}</span></td>}
+                          {compact ? null : <td data-cell="meta" data-label="Driver">{row.driver_name ? <span className="ops-cell-primary ops-cell-clamp">{row.driver_name}</span> : <span className="ops-cell-muted">—</span>}</td>}
                           {compact ? null : (
-                            <td><Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link></td>
+                            <td data-cell="meta"><Link href={`/admin/jobs/${encodeURIComponent(row.shipment_reference)}`} className="ops-cell-ref ops-mono" onClick={(event) => event.stopPropagation()}>{row.shipment_reference}</Link></td>
                           )}
-                          <td>
+                          <td data-cell="status">
                             <span className="pickups-status">
                               <OpsBadge tone={statusTone(row)}>{statusLabel(row.status)}</OpsBadge>
                               {attention ? <span className="pickups-attention" title="Needs attention"><AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/><span className="sr-only">Needs attention</span></span> : null}
                             </span>
                           </td>
-                          {compact ? null : <td><span className="ops-cell-muted">{relativeAge(row.updated_at, nowIso)}</span></td>}
-                          <td className="ops-cell-open">
+                          {compact ? null : <td data-cell="meta" data-label="Updated"><span className="ops-cell-muted">{relativeAge(row.updated_at, nowIso)}</span></td>}
+                          <td data-cell="open" className="ops-cell-open">
                             <button type="button" className="ops-row-open" onClick={(event) => { event.stopPropagation(); choose(row); }} aria-label={`Open pickup ${row.id}`} tabIndex={-1}>
                               <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                             </button>

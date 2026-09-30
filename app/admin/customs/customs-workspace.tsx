@@ -356,7 +356,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
           <section className="ops-surface" aria-label="Customs clearance queue">
             {visible.length ? (
               <OpsTableWrap>
-                <table className="ops-table ops-register-table customs-table" data-compact={compact || undefined} aria-label="Customs clearance desk">
+                <table className="ops-table ops-register-table customs-table ops-stack-table" data-compact={compact || undefined} aria-label="Customs clearance desk">
                   <thead>
                     <tr>
                       <th>Shipment</th>
@@ -382,30 +382,30 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
                         onClick={() => updateSelectedReference(row.reference)}
                         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); updateSelectedReference(row.reference); } }}
                       >
-                        <td>
+                        <td data-cell="primary">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{row.reference}</span>
                           <span className="ops-cell-secondary">{row.mode} · {directionLabel(row.document_direction)}</span>
                         </td>
-                        <td>
+                        <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>
                           <span className="ops-cell-secondary">{row.branch || "Branch repair needed"}</span>
                         </td>
-                        {compact ? null : <td><span className="ops-cell-muted">{row.clearance.entry_point || "—"}</span></td>}
+                        {compact ? null : <td data-cell="meta" data-label="Border"><span className="ops-cell-muted">{row.clearance.entry_point || "—"}</span></td>}
                         {/* One badge per row: where the desk stands. Customs' own status
                             is the line under it; risk is text, and only when raised. */}
-                        <td>
+                        <td data-cell="status">
                           <OpsBadge tone={stateTone(row.state)} dot>{stateLabel(row.state)}</OpsBadge>
                           {row.state === "released" ? null : <span className="ops-cell-secondary">Customs: {customsClearanceStatusLabels[row.clearance.status]}</span>}
                         </td>
-                        <td>{row.risk === "normal" ? null : <span className="customs-risk" data-risk={row.risk}>{row.risk === "critical" ? "High" : "Watch"}</span>}</td>
-                        <td>
+                        <td data-cell="meta">{row.risk === "normal" ? null : <span className="customs-risk" data-risk={row.risk}>{row.risk === "critical" ? "High" : "Watch"}</span>}</td>
+                        <td data-cell="meta" data-label="Checklist">
                           <div className="customs-checklist-cell">
                             <div className="customs-checklist-track"><div className="customs-checklist-fill" data-complete={progress === 1 || undefined} style={{ width: `${Math.round(progress * 100)}%` }}/></div>
                             <span className="ops-cell-muted">{row.customs_completed}/{row.customs_required}</span>
                           </div>
                         </td>
-                        {compact ? null : <td>{row.assigned_to_name || row.assigned_to_email || <span className="customs-unassigned">Unassigned</span>}</td>}
-                        <td className="ops-cell-open">
+                        {compact ? null : <td data-cell="meta">{row.assigned_to_name || row.assigned_to_email || <span className="customs-unassigned">Unassigned</span>}</td>}
+                        <td data-cell="open" className="ops-cell-open">
                           <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open Job File for ${row.reference}`} tabIndex={-1}>
                             <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/>
                           </Link>

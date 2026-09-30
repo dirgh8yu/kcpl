@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Bell, ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KcplBranch } from "./crm/crm-data";
 import { OperationsCommandPalette } from "./operations-command-palette";
+import { StaffShortcuts } from "./staff-shortcuts";
+import { shortcutHubs } from "./staff-shortcuts-policy";
 import { OperationsAccountMenu, type AccountTab } from "./operations-account-menu";
 import { OperationsNotificationCentre } from "./operations-notification-centre";
 import {
@@ -83,6 +85,7 @@ export function OperationsShell({
 
   const workspaces = useMemo(() => visibleWorkspaces(capabilities), [capabilities]);
   const hubs = useMemo(() => visibleHubs(capabilities), [capabilities]);
+  const keyHubs = useMemo(() => shortcutHubs(hubs.map(({ hub, href }) => ({ id: hub.id, label: hub.label, href }))), [hubs]);
   const activeItem = useMemo(() => activeWorkspace(pathname, capabilities), [pathname, capabilities]);
   const currentHub = useMemo(() => activeHub(pathname, capabilities), [pathname, capabilities]);
   const detail = pathname === activeItem?.href ? "" : decodeSegment(pathname.split("/").filter(Boolean).at(-1) || "");
@@ -146,7 +149,7 @@ export function OperationsShell({
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", trap); restoreFocus?.focus(); };
   }, [mobileOpen]);
 
-  function openSearch() { setMobileOpen(false); setPaletteOpen(true); }
+  const openSearch = useCallback(() => { setMobileOpen(false); setPaletteOpen(true); }, []);
   function changeBranch(value: string) {
     const query = new URLSearchParams(searchParams?.toString() ?? "");
     query.set("branch", value);
@@ -211,6 +214,7 @@ export function OperationsShell({
         <OperationsAccountMenu userName={userName} isManagement={capabilities.isManagement} signOutPath={signOutPath} open={accountOpen} tab={accountTab} onTabChange={setAccountTab} onClose={closeAccount} triggerRef={accountTrigger}/>
       </div>
       <OperationsCommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
+      {placeholder ? null : <StaffShortcuts hubs={keyHubs} paletteOpen={paletteOpen} onOpenPalette={openSearch}/>}
     </div>
   );
 }

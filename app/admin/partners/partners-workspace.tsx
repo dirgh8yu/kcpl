@@ -282,7 +282,7 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
         <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
           <section className="ops-surface" aria-label="Partner register">
             {filtered.length ? <OpsTableWrap>
-              <table className="ops-table ops-register-table partners-table" data-compact={compact || undefined} data-financial={financialVisible || undefined} aria-label="Partners and vendors">
+              <table className="ops-table ops-register-table partners-table ops-stack-table" data-compact={compact || undefined} data-financial={financialVisible || undefined} aria-label="Partners and vendors">
                 <thead>
                   <tr>
                     <th>Partner</th>
@@ -301,30 +301,30 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                     const rowSelected = selectedId === p.id;
                     const footprint = footprintLine(p);
                     return <tr key={p.id} data-selected={rowSelected || undefined} aria-current={rowSelected || undefined} tabIndex={0} onClick={() => openRow(p.id)} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openRow(p.id); } }}>
-                      <td>
+                      <td data-cell="primary">
                         <span className="ops-cell-primary partners-name"><span className="ops-cell-clamp" title={p.display_name}>{p.display_name}</span>{p.preferred ? <Star size={12} strokeWidth={1.75} className="partners-preferred" aria-label="Preferred partner"/> : null}</span>
                         <span className="ops-cell-secondary ops-cell-clamp" title={typesText(p)}><span className="ops-mono">{p.id}</span> · {typesText(p)}</span>
                       </td>
-                      <td><OpsBadge tone={statusTone(p.status)}>{partnerStatusLabels[p.status]}</OpsBadge></td>
-                      <td className="partners-col-footprint">
+                      <td data-cell="status"><OpsBadge tone={statusTone(p.status)}>{partnerStatusLabels[p.status]}</OpsBadge></td>
+                      <td data-cell="route" className="partners-col-footprint">
                         <span className="ops-cell-primary">{p.country}</span>
                         {footprint ? <span className="ops-cell-secondary ops-cell-clamp" title={footprint}>{footprint}</span> : null}
                       </td>
-                      {compact ? null : <td className="partners-col-services">{p.modes.length ? <span className="ops-cell-clamp" title={modesText(p)}>{modesText(p)}</span> : <span className="ops-cell-muted">Not set</span>}</td>}
-                      {compact ? null : <td className="partners-col-contact">
+                      {compact ? null : <td data-cell="meta" className="partners-col-services">{p.modes.length ? <span className="ops-cell-clamp" title={modesText(p)}>{modesText(p)}</span> : <span className="ops-cell-muted">Not set</span>}</td>}
+                      {compact ? null : <td data-cell="meta" className="partners-col-contact">
                         {p.primary_contact_name ? <span className="ops-cell-primary ops-cell-clamp">{p.primary_contact_name}</span> : <span className="ops-cell-muted">No primary contact</span>}
                         {p.primary_email || p.primary_phone ? <span className="ops-cell-secondary ops-cell-clamp">{p.primary_email ?? p.primary_phone}</span> : null}
                       </td>}
-                      {compact ? null : <td>
+                      {compact ? null : <td data-cell="meta">
                         {p.owner_branch ? <span className="ops-cell-primary">{p.owner_branch}</span> : <OpsBadge tone="warning">No branch set</OpsBadge>}
                         <span className="ops-cell-secondary">{commercialVisible ? `Terms ${p.payment_terms_days}d · ${p.preferred_currency}` : "Terms restricted"}</span>
                       </td>}
-                      {financialVisible ? <td className="partners-col-money">
+                      {financialVisible ? <td data-cell="meta" className="partners-col-money">
                         {p.payable_open.length ? <span className="ops-cell-primary partners-amount">{p.payable_open.map((amount) => money(amount.amount, amount.currency)).join(" · ")}</span> : <span className="ops-cell-muted">No open payable</span>}
                         <span className="ops-cell-secondary">{p.bill_count} bills · {p.shipment_count} jobs{p.overdue_bill_count ? <span className="partners-overdue"> · {p.overdue_bill_count} overdue</span> : null}</span>
                       </td> : null}
-                      {compact ? null : <td className="partners-col-activity"><span className="ops-cell-muted">{dateLabel(p.last_activity_at)}</span></td>}
-                      {compact ? null : <td className="ops-cell-actions">{canEditRecord(p) ? <OpsButton variant="ghost" size="xs" onClick={(event) => { event.stopPropagation(); startEdit(p); }} aria-label={`Edit ${p.display_name}`}><Pencil size={14} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton> : p.owner_branch === null && canEdit ? <span className="ops-cell-muted">Management repair</span> : null}</td>}
+                      {compact ? null : <td data-cell="meta" data-label="Last activity" className="partners-col-activity"><span className="ops-cell-muted">{dateLabel(p.last_activity_at)}</span></td>}
+                      {compact ? null : <td data-cell="action" className="ops-cell-actions">{canEditRecord(p) ? <OpsButton variant="ghost" size="xs" onClick={(event) => { event.stopPropagation(); startEdit(p); }} aria-label={`Edit ${p.display_name}`}><Pencil size={14} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton> : p.owner_branch === null && canEdit ? <span className="ops-cell-muted">Management repair</span> : null}</td>}
                     </tr>;
                   })}
                 </tbody>

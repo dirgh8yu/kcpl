@@ -817,7 +817,10 @@
 
 @media (max-width: 760px) {
   .kcpl-admin-content .shipments-register { padding-bottom: 24px; }
-  .kcpl-admin-content .shipments-register .shipments-actions { width: 100%; justify-content: flex-start; }
+  /* Export and New shipment share one row, as other pages' header actions do. */
+  .kcpl-admin-content .shipments-register .shipments-actions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kcpl-admin-content .shipments-register .shipments-actions > * { width: 100%; min-width: 0; justify-content: center; }
+  .kcpl-admin-content .shipments-register .shipments-actions > :only-child { grid-column: 1 / -1; }
   .kcpl-admin-content .shipments-register .shipments-view-toggle button span,
   .kcpl-admin-content .shipments-register .shipments-result-count { display: none; }
 }

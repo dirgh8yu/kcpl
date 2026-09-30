@@ -262,7 +262,7 @@ function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, return
       <div className={extras.bulkSlot}><BulkAssignBar references={[...selected]} onClear={() => setSelected(new Set())}/></div>
       {jobs.length ? (
         <div className={styles.tableWrap}>
-          <table className={`${styles.table} ${extras.nextStepsTable}`} aria-label="Shipments with a step due">
+          <table className={`${styles.table} ${extras.nextStepsTable} ops-stack-table`} data-row-link aria-label="Shipments with a step due">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
               <th>Shipment</th><th>Status</th><th>Next step</th><th>Owner</th><th>Updated</th>
@@ -275,15 +275,15 @@ function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, return
                 const tone = statusTone(job.status);
                 return (
                   <tr key={job.reference}>
-                    <td><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
-                    <td>
+                    <td data-cell="tick"><input className={styles.checkbox} type="checkbox" checked={selected.has(job.reference)} onChange={() => toggle(job.reference)} aria-label={`Select ${job.reference}`} /></td>
+                    <td data-cell="primary">
                       <Link className={styles.referenceLink} href={jobHref(job.reference, returnTo)}>{job.reference}</Link>
                       <span className={extras.queueCustomer} title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</span>
                     </td>
-                    <td><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
-                    <td><Link href={withReturn(step.href, returnTo)} className={extras.nextStepLink} data-tone={step.tone}>{step.title}<ArrowRight size={12} strokeWidth={1.8} aria-hidden="true" /></Link></td>
-                    <td><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
-                    <td className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
+                    <td data-cell="status"><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
+                    <td data-cell="action"><Link href={withReturn(step.href, returnTo)} className={extras.nextStepLink} data-tone={step.tone}>{step.title}<ArrowRight size={12} strokeWidth={1.8} aria-hidden="true" /></Link></td>
+                    <td data-cell="meta"><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
+                    <td data-cell="meta" data-label="Updated" className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
                   </tr>
                 );
               })}
@@ -716,7 +716,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
             <span>Updated {formatNepalTime(data.generated_at)} NPT</span>
           </p>
         </div>
-        <div className={styles.pageHeadActions}>
+        <div className={styles.pageHeadActions} data-page-actions>
             <button
               type="button"
               className={styles.secondaryButton}

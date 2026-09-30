@@ -138,6 +138,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
       { key: "action:new-customer", title: "New customer", subtitle: "Create a Customer 360 account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
       ...(allowedIds.has("delivery") ? [{ key: "action:delivery", title: "Work Delivery & POD", subtitle: "Open final-mile attempts and POD review", meta: null, href: "/admin/delivery", kind: "action" as const }] : []),
+      ...(allowedIds.has("receivables") ? [{ key: "action:new-invoice", title: "New invoice", subtitle: "Bill a customer, from a shipment or on its own", meta: null, href: "/admin/finance/new", kind: "action" as const }] : []),
       ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before Freight Audit", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
     ];
     const quickActions = quickActionCandidates.filter((entry) => !needle || `${entry.title} ${entry.subtitle}`.toLowerCase().includes(needle));
@@ -263,7 +264,7 @@ export function OperationsCommandPalette({ open, onClose, workspaces }: { open: 
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--admin-ink)] bg-[var(--admin-surface-muted)] px-4 py-2.5 text-[length:var(--app-label-size)] font-normal text-[var(--admin-muted)] sm:px-5"><span>↑↓ move · Enter open · Esc close</span><span>⌘K / Ctrl+K · KCPL search</span></div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--admin-ink)] bg-[var(--admin-surface-muted)] px-4 py-2.5 text-[length:var(--app-label-size)] font-normal text-[var(--admin-muted)] sm:px-5"><span>↑↓ move · Enter open · Esc close · ? all shortcuts</span><span>⌘K / Ctrl+K · KCPL search</span></div>
       </div>
     </div>
   );

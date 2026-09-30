@@ -399,7 +399,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           <section className="ops-surface overflow-hidden" aria-label="Shipment register">
             <BulkAssignBar references={[...ticked]} onClear={() => setTicked(new Set())}/>
             <OpsTableWrap>
-              <table className="ops-table shipments-register-table" aria-label="Shipments register">
+              <table className="ops-table shipments-register-table ops-stack-table" aria-label="Shipments register">
                 <thead>
                   <tr>
                     <th className="shipments-tick-cell"><input type="checkbox" checked={allPageTicked} onChange={tickPage} aria-label="Select every shipment on this page"/></th>
@@ -431,19 +431,19 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                         className="cursor-pointer"
                         aria-label={`Open ${job.reference}, ${job.customer_name}, ${shipmentStatusLabels[job.status]}`}
                       >
-                        <td className="shipments-tick-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}><input type="checkbox" checked={ticked.has(job.reference)} onChange={() => tick(job.reference)} aria-label={`Select ${job.reference}`}/></td>
+                        <td data-cell="tick" className="shipments-tick-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}><input type="checkbox" checked={ticked.has(job.reference)} onChange={() => tick(job.reference)} aria-label={`Select ${job.reference}`}/></td>
                         {/* The reference opens the Job File in one click; the rest of the row previews it here. */}
-                        <td>
+                        <td data-cell="primary">
                           <Link href={`/admin/jobs/${encodeURIComponent(job.reference)}?returnTo=${encodeURIComponent(returnTo)}`} className="shipments-ref-link ops-mono" onClick={(event) => event.stopPropagation()}>{job.reference}</Link>
                           {liveActivityRefs.has(job.reference) ? <span className="shipments-live-activity" title="New activity in the last 15 minutes" aria-label="New activity in the last 15 minutes"/> : null}
                           {/* Only a raised priority is worth a mark; "standard" on every row was noise. */}
                           {job.priority === "standard" ? null : <span className="shipments-priority" data-priority={job.priority}>{job.priority === "urgent" ? "Urgent" : "High"}</span>}
                         </td>
-                        <td><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="shipments-route-line"><ModeIcon mode={job.mode} size={13}/><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
-                        <td><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge><span className="shipments-updated">{relativeAge(job.updated_at, data.generated_at)}</span></td>
-                        <td><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
-                        <td><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
-                        <td><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
+                        <td data-cell="route"><strong className="block text-sm font-medium text-[var(--admin-ink)]">{job.customer_name || "Customer not linked"}</strong><span className="shipments-route-line"><ModeIcon mode={job.mode} size={13}/><ShipRoute origin={job.origin} destination={job.destination}/></span></td>
+                        <td data-cell="status"><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge><span className="shipments-updated">{relativeAge(job.updated_at, data.generated_at)}</span></td>
+                        <td data-cell="meta"><span className={`text-sm ${jobOwner === "Unassigned" ? "font-medium text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}`}>{jobOwner}</span></td>
+                        <td data-cell="meta" data-label="ETA"><span className="text-sm text-[var(--admin-ink)]">{shortDate(job.eta)}</span></td>
+                        <td data-cell="action"><span className="shipment-next-action-cell" data-tone={nextAction.tone}>{nextAction.title}</span></td>
                       </tr>
                     );
                   })}
