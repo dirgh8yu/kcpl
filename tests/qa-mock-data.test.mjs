@@ -464,3 +464,21 @@ test("QA preview: partners open in Partner 360, invoices open, and jobs make mon
     if (invoice) assert.ok(bill.subtotal * NPR_PER_USD < invoice.subtotal, `${bill.reference} costs more than it earns`);
   }
 });
+
+test("QA preview: batch, supplier bill, Rate Desk and reconciliation pages open", () => {
+  // A migration batch the preview lists opens; an unknown one stays inside the
+  // staff workspace rather than falling through to the public website's 404.
+  const batchPage = source("app/admin/migration/batches/[batchId]/page.tsx");
+  assert.match(batchPage, /mockMigrationBatches\(\)\.batches\.find/);
+  assert.doesNotMatch(batchPage, /notFound\(\)/);
+  assert.match(batchPage, /title="Batch not found"/);
+  assert.match(source("app/admin/payables/bills/[reference]/page.tsx"), /mockPayablesDashboard\(staff\)\.bills\.find/);
+  const rates = source("app/admin/rating/tms-rating.server.ts");
+  const list = rates.slice(rates.indexOf("export async function listPartnerBuyRateCards"));
+  assert.ok(list.indexOf("qaMockDataEnabled()") < list.indexOf("firebaseRuntimeConfigured()"));
+  const reconcile = source("app/admin/partners/reconciliation/supplier-reconciliation.server.ts");
+  const read = reconcile.slice(reconcile.indexOf("export async function listSupplierReconciliation"));
+  // The preview still refuses a role without Accounts Payable authority.
+  assert.ok(read.indexOf("qaMockDataEnabled()") < read.indexOf("canManageFinance"));
+  assert.ok(read.indexOf("canManageFinance") < read.indexOf('kind: "ready"'));
+});

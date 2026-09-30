@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { qaMockDataEnabled } from "../../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
 import { canAccessBranchValue, strictBranchValue } from "../../branch-access-policy";
 import { crmCurrencies, type CrmCurrency } from "../../crm/crm-data";
@@ -60,6 +61,12 @@ function partnerOption(doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFi
 }
 
 export async function listSupplierReconciliation(context: KcplStaffContext) {
+  // QA preview: nothing waits to be relinked, so the page shows its clear state.
+  if (qaMockDataEnabled()) {
+    if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
+    const snapshot: SupplierReconciliationSnapshot = { generated_at: new Date().toISOString(), bills: [], partners: [], unresolved_count: 0, exact_match_count: 0, customer_reference_count: 0, no_suggestion_count: 0 };
+    return { kind: "ready" as const, snapshot };
+  }
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
 

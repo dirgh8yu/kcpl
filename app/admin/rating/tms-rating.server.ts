@@ -193,6 +193,8 @@ export async function createTmsOrder(input: TmsOrderInput, actor: Actor, staff: 
 }
 
 export async function listPartnerBuyRateCards(staff: KcplStaffContext) {
+  // QA preview: no saved buy rates yet, so the Rate Desk opens on its empty state.
+  if (qaMockDataEnabled()) return { kind: "ready" as const, rateCards: [] as PartnerBuyRateCard[] };
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const snapshot = await firebaseAdminDb().collection("partner_rate_cards").orderBy("updated_at", "desc").limit(1500).get();
   const cards = snapshot.docs.map((doc) => cardFromData(doc.id, doc.data() as Record<string, unknown>)).filter((card): card is PartnerBuyRateCard => Boolean(card));

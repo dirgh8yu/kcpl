@@ -14,7 +14,7 @@ function money(amount: number, currency: string) { try { return new Intl.NumberF
 function dateLabel(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
 function statusTone(status: PayableBill["status"]): "neutral" | "info" | "violet" | "success" | "danger" { if (status === "approved") return "info"; if (status === "partially_paid") return "violet"; if (status === "paid") return "success"; if (status === "overdue") return "danger"; return "neutral"; }
 
-export function PayableWorkspace({ bill, roleLabel }: { bill: PayableBill; roleLabel: string }) {
+export function PayableWorkspace({ bill }: { bill: PayableBill }) {
   const router = useRouter();
   const today = nepalOperationalDate();
   const [busy, setBusy] = useState(false);
@@ -54,7 +54,7 @@ export function PayableWorkspace({ bill, roleLabel }: { bill: PayableBill; roleL
   const asOfDate = bill.migration_as_of_date || bill.bill_date;
 
   return <OpsPage>
-    <OpsPageHeader eyebrow={openingBalance ? "Accounts Payable · Opening balance" : "Accounts Payable"} title={<OpsMono>{bill.reference}</OpsMono>} description={`${bill.supplier_name} · ${roleLabel}`} meta={<><OpsBadge tone={statusTone(bill.status)} dot>{payableStatusLabels[bill.status]}</OpsBadge>{openingBalance ? <OpsBadge tone="violet"><Landmark size={10}/>Opening payable</OpsBadge> : null}<span>{openingBalance ? `As at ${dateLabel(asOfDate)}` : `Bill ${dateLabel(bill.bill_date)}`}</span><span>Due {dateLabel(bill.due_date)}</span></>} actions={<><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Back to AP</Link>{bill.status === "draft" && !openingBalance ? <OpsButton variant="primary" disabled={busy} onClick={() => billAction("approve")}>Approve bill</OpsButton> : null}{bill.status !== "void" && bill.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => billAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/>
+    <OpsPageHeader eyebrow={openingBalance ? "Accounts Payable · Opening balance" : "Accounts Payable"} title={<OpsMono>{bill.reference}</OpsMono>} description={bill.supplier_name} meta={<><OpsBadge tone={statusTone(bill.status)} dot>{payableStatusLabels[bill.status]}</OpsBadge>{openingBalance ? <OpsBadge tone="violet"><Landmark size={10}/>Opening payable</OpsBadge> : null}<span>{openingBalance ? `As at ${dateLabel(asOfDate)}` : `Bill ${dateLabel(bill.bill_date)}`}</span><span>Due {dateLabel(bill.due_date)}</span></>} actions={<>{bill.status === "draft" && !openingBalance ? <OpsButton variant="primary" disabled={busy} onClick={() => billAction("approve")}>Approve bill</OpsButton> : null}{bill.status !== "void" && bill.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => billAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.toLowerCase().includes("failed") || notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}

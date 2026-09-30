@@ -1,9 +1,9 @@
 import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
-import { kcplStaffRoleLabels } from "../../../staff-permissions";
 import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { getPayable } from "../../payables.server";
+import { mockPayablesDashboard, qaMockDataEnabled } from "../../../qa-fixtures";
 import { PayableWorkspace } from "./payable-workspace";
 
 export const dynamic = "force-dynamic";
@@ -25,12 +25,16 @@ export default async function PayableBillPage({ params }: { params: Promise<{ re
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Accounts Payable is restricted" detail="Supplier bills are available to Management and Accounts roles only."/></OperationsShell>;
 
   const { reference } = await params;
-  const result = await getPayable(reference, staff);
+  // QA preview: the same bills the Payables register lists.
+  const mockBill = qaMockDataEnabled() ? mockPayablesDashboard(staff).bills.find((item) => item.reference === reference.trim().toUpperCase()) : undefined;
+  const result = qaMockDataEnabled()
+    ? (mockBill ? { kind: "ready" as const, bill: mockBill } : { kind: "missing" as const })
+    : await getPayable(reference, staff);
   if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Supplier bills didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Supplier bill not found" detail="This payable reference does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Outside your branch access" detail="This supplier bill belongs to a branch outside your staff profile."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><PayableWorkspace bill={result.bill} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><PayableWorkspace bill={result.bill}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { AlertTriangle, Archive, CheckCircle2, Clock3, Database, FileSpreadsheet } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
@@ -7,6 +6,7 @@ import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { OpsBadge, OpsEmptyState, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { getStaffContext } from "../../../staff-directory.server";
 import { getMigrationBatch } from "../../migration-batches.server";
+import { mockMigrationBatches, qaMockDataEnabled } from "../../../qa-fixtures";
 import type { MigrationBatchStatus } from "../../migration-batches";
 import { RecoveryPanel } from "../../recovery/recovery-panel";
 
@@ -43,17 +43,21 @@ export default async function MigrationBatchPage({ params }: { params: Promise<{
   if (staff.permissions.role !== "management") return <Gate title="Management access required" detail="Migration batch history is restricted to the Management role."/>;
 
   const { batchId } = await params;
-  const batch = await getMigrationBatch(batchId);
-  if (!batch) notFound();
+  const batch = qaMockDataEnabled()
+    ? mockMigrationBatches().batches.find((item) => item.id === batchId) ?? null
+    : await getMigrationBatch(batchId);
+  const shell = { userName: access.user.displayName, canManageStaff: staff.permissions.canManageStaff, canManageFinance: staff.permissions.canManageFinance, isManagement: true };
+  // Stay inside the staff workspace: the site-wide 404 is the public website's.
+  if (!batch) return <OperationsShell {...shell}><Gate embedded title="Batch not found" detail="No import batch has this reference, or the records service isn't responding. Try again in a minute."/></OperationsShell>;
 
-  return <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement>
+  return <OperationsShell {...shell}>
     <OpsPage>
       <OpsPageHeader
         eyebrow={`Migration Control Centre · ${batch.stage_label}`}
         title={<OpsMono>{batch.id}</OpsMono>}
         description={`${batch.type_label} import batch${batch.source_filename ? ` from ${batch.source_filename}` : ""}. You can preview an undo, and undo records nobody has worked on since the import.`}
         meta={<><OpsBadge tone={tone(batch.status)} dot>{statusLabel(batch.status)}</OpsBadge><span>{batch.imported_count} records imported</span><span>{batch.created_by_name}</span>{batch.rollback_status ? <OpsBadge tone={batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : "info"}>Recovery {batch.rollback_status.replaceAll("_", " ")}</OpsBadge> : null}</>}
-        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link><Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Back to Import old records</Link></div>}
+        actions={<div className="flex flex-wrap gap-2"><Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper Archive</Link><Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Recovery Centre</Link></div>}
       />
 
       <div className="ops-content-wide ops-stack">
@@ -96,6 +100,6 @@ function Safety({ title, detail }: { title: string; detail: string }) {
   return <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><strong className="flex items-center gap-2 text-[length:var(--app-label-size)] text-[var(--admin-ink)]"><AlertTriangle size={12} className="text-[var(--admin-crimson)]"/>{title}</strong><p className="mt-2 text-[length:var(--app-label-size)] leading-4 text-[var(--admin-muted)]">{detail}</p></div>;
 }
 
-function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="KCPL Migration Control Centre" title={title} detail={detail} actions={[{ href: "/admin/command-centre", label: "Operations Home", primary: true }, { href: "/admin/migration", label: "Import old records" }]}/>;
+function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
+  return <V4WorkspaceGate eyebrow="KCPL Migration Control Centre" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/command-centre", label: "Operations Home", primary: true }, { href: "/admin/migration", label: "Import old records" }]}/>;
 }
