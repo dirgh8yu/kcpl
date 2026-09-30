@@ -3,6 +3,7 @@ import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getPartner360Snapshot } from "../partner-360.server";
+import { mockPartner360Snapshot, qaMockDataEnabled } from "../../qa-fixtures";
 import { Partner360Workspace } from "./partner-360-workspace";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,10 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
   if (!/^KCPL-P-[A-Z0-9-]+$/.test(partnerId)) return <OperationsShell {...shellProps}><Gate embedded title="Partner reference is invalid" detail="The requested Partner 360 record does not use a valid KCPL partner reference."/></OperationsShell>;
 
   let result;
-  try { result = await getPartner360Snapshot(partnerId, staff); }
+  try {
+    const mock = qaMockDataEnabled() ? mockPartner360Snapshot(partnerId, staff) : undefined;
+    result = mock === undefined ? await getPartner360Snapshot(partnerId, staff) : mock ? { kind: "ready" as const, snapshot: mock } : { kind: "missing" as const };
+  }
   catch (error) {
     console.error("Failed to load KCPL Partner 360", partnerId, error);
     return <OperationsShell {...shellProps}><Gate embedded title="Partner didn’t load" detail="Something went wrong fetching it. Try again in a minute; the menu and search still work."/></OperationsShell>;
@@ -36,7 +40,7 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Partner not found" detail="This partner or vendor record does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Partner access restricted" detail="This partner belongs to a KCPL branch outside your assigned access."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><Partner360Workspace snapshot={result.snapshot} commercialVisible={staff.permissions.canViewCommercial} financialVisible={staff.permissions.canManageFinance}/></OperationsShell>;
+  return <OperationsShell {...shellProps} detailLabel={result.snapshot.partner.display_name}><Partner360Workspace snapshot={result.snapshot} commercialVisible={staff.permissions.canViewCommercial} financialVisible={staff.permissions.canManageFinance}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

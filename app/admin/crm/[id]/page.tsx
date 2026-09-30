@@ -117,13 +117,15 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
   const reconciledCustomer = reconcileCustomerFinance(safeCustomer, financeSnapshot, permissions);
   const safeHistory = redactHistoryForRole(history, permissions);
 
-  return <OperationsShell {...shellProps}>
+  return <OperationsShell {...shellProps} detailLabel={reconciledCustomer.display_name}>
     <Customer360Workspace initialCustomer={reconciledCustomer} initialFinanceSnapshot={financeSnapshot} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={permissions.canViewCommercial} creditVisible={permissions.canManageCredit}/>
+    <section className="ops-content-wide pb-4 pt-0">
+      <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/>
+    </section>
     <section className="ops-content-wide pb-12 pt-0">
-      <div className="mb-3 border-b border-[var(--admin-line)] pb-3"><p className="ops-eyebrow">Account tools</p><h2 className="mt-1 text-[15px] font-semibold tracking-[-.01em] text-[var(--admin-ink)]">Advanced customer controls</h2><p className="mt-1 max-w-2xl text-[11px] leading-[17px] text-[var(--admin-muted)]">Detailed profile editing, operational history, rate cards, document storage and quote matching stay available without crowding the everyday account view.</p></div>
+      <div className="mb-3 border-b border-[var(--admin-line)] pb-3"><p className="ops-eyebrow">Account tools</p><h2 className="mt-1 text-[15px] font-semibold tracking-[-.01em] text-[var(--admin-ink)]">Advanced customer controls</h2><p className="mt-1 max-w-2xl text-[11px] leading-[17px] text-[var(--admin-muted)]">Profile editing, rate cards, statements, documents and quote matching.</p></div>
       <div className="crm360-tools">
         <Tool title="Master profile" detail="Edit identity, ownership, relationship classification and permitted commercial settings."><CrmCustomerProfileEditor customer={reconciledCustomer} permissions={permissions}/></Tool>
-        <Tool title="Operations history" detail="Review the customer’s quote and shipment trail within your branch access."><CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/></Tool>
         {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific commercial rates and pricing references."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}
         {permissions.canManageFinance ? <Tool title="Statement of account" detail="The customer's statement as a PDF: view it, or email it to their portal owners."><CrmStatementPanel customerId={reconciledCustomer.id}/></Tool> : null}
         {permissions.canManageCustomerDocuments ? <Tool title="Customer documents" detail="Private files for this customer account."><CrmCustomerDocumentsPanel customerId={reconciledCustomer.id} initialDocuments={documents} storageAvailable={documentStorageAvailable} permissions={permissions}/></Tool> : null}

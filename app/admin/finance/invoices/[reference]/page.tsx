@@ -2,9 +2,9 @@ import { listInvoiceRemittancesForStaff } from "../../../../portal/portal-remitt
 import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
-import { kcplStaffRoleLabels } from "../../../staff-permissions";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { getFinanceInvoice } from "../../finance.server";
+import { mockFinanceDashboard, qaMockDataEnabled } from "../../../qa-fixtures";
 import { InvoiceWorkspace } from "./invoice-workspace";
 
 export const dynamic = "force-dynamic";
@@ -26,19 +26,23 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate embedded title="Finance access is restricted" detail="Invoices and Accounts Receivable are available to Management and Accounts roles only."/></OperationsShell>;
 
   const { reference } = await params;
-  const result = await getFinanceInvoice(reference, staff);
+  // QA preview: the same invoices the Receivables register lists.
+  const mockInvoice = qaMockDataEnabled() ? mockFinanceDashboard(staff).invoices.find((item) => item.reference === reference.trim().toUpperCase()) : undefined;
+  const result = qaMockDataEnabled()
+    ? (mockInvoice ? { kind: "ready" as const, invoice: mockInvoice } : { kind: "missing" as const })
+    : await getFinanceInvoice(reference, staff);
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Invoice not found" detail="This invoice reference does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Outside your finance access" detail="This invoice belongs to a branch outside your staff scope."/></OperationsShell>;
   if (result.kind === "relationship_mismatch") return <OperationsShell {...shellProps}><Gate embedded title="This invoice needs fixing" detail="Its customer and shipment belong to different branches. Management needs to fix the link before it can be opened."/></OperationsShell>;
   if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Finance didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
 
   // What the customer sent from the portal or app against this invoice.
-  const remittances = await listInvoiceRemittancesForStaff(result.invoice.reference).catch((error) => {
+  const remittances = qaMockDataEnabled() ? [] : await listInvoiceRemittancesForStaff(result.invoice.reference).catch((error) => {
     console.error("KCPL admin remittance listing failed", error);
     return [];
   });
 
-  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

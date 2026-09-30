@@ -1,6 +1,9 @@
-import { ArrowRight, CalendarDays, CircleDollarSign, MapPin, PackageCheck, Plane, Ship, Truck } from "lucide-react";
-import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
-import type { CrmOperationsHistory, CrmQuoteHistoryItem, CrmShipmentHistoryItem } from "../crm-operations-history.server";
+import Link from "next/link";
+import { Package } from "lucide-react";
+import { shipmentStatusLabels } from "../../../shipment-types";
+import { shipmentStatusTone } from "../../../shipment-status-tone";
+import { OpsBadge, OpsEmptyState, OpsMono, OpsSurface, OpsTableWrap } from "../../operations-ui";
+import type { CrmOperationsHistory } from "../crm-operations-history.server";
 
 const quoteStatusLabels: Record<string, string> = {
   new: "New",
@@ -10,22 +13,12 @@ const quoteStatusLabels: Record<string, string> = {
   lost: "Lost",
 };
 
-const quoteStatusStyles: Record<string, string> = {
-  new: "border-sky-200 bg-sky-50 text-sky-700",
-  reviewing: "border-amber-200 bg-amber-50 text-amber-800",
-  quoted: "border-violet-200 bg-violet-50 text-violet-700",
-  won: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  lost: "border-rose-200 bg-rose-50 text-rose-700",
-};
-
-const shipmentStatusStyles: Record<ShipmentStatus, string> = {
-  booking_confirmed: "border-sky-200 bg-sky-50 text-sky-700",
-  preparing: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  in_transit: "border-violet-200 bg-violet-50 text-violet-700",
-  customs_clearance: "border-amber-200 bg-amber-50 text-amber-800",
-  out_for_delivery: "border-cyan-200 bg-cyan-50 text-cyan-700",
-  delivered: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  exception: "border-rose-200 bg-rose-50 text-rose-700",
+const quoteStatusTones: Record<string, "neutral" | "warning" | "info" | "success" | "danger"> = {
+  new: "neutral",
+  reviewing: "warning",
+  quoted: "info",
+  won: "success",
+  lost: "danger",
 };
 
 function formatDate(value: string | null) {
@@ -46,84 +39,62 @@ function formatMoney(value: string | null, currency: string) {
   }
 }
 
-function ModeIcon({ mode }: { mode: string }) {
-  if (mode === "air") return <Plane size={14} />;
-  if (mode === "sea") return <Ship size={14} />;
-  return <Truck size={14} />;
+function route(origin: string, destination: string) {
+  return `${origin || "Origin"} → ${destination || "Destination"}`;
 }
 
+/** The customer's shipments and quotes as two short registers; each reference
+ *  opens its own record (the Job File, or the enquiry). */
 export function CrmOperationsHistoryPanel({ history, showCommercial }: { history: CrmOperationsHistory; showCommercial: boolean }) {
-  const hasHistory = history.quotes.length > 0 || history.shipments.length > 0;
+  const { quotes, shipments } = history;
   return (
-    <section className="bg-[var(--admin-surface-muted)] px-5 pb-14 lg:px-8">
-      <div className="mx-auto max-w-[1500px] rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface)] shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 p-6 sm:p-8">
-          <div>
-            <p className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.19em] text-[#b78a3e]">Customer journey</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-.035em] text-[var(--admin-ink)]">Quotes & shipments</h2>
-            <p className="mt-2 max-w-2xl text-xs leading-6 text-black/45">The commercial and operational history tied to this CRM account. Confirmed quote ownership now flows into shipment ownership automatically.</p>
-          </div>
-          <div className="flex gap-2 text-xs font-semibold text-black/45">
-            <span className="rounded-full bg-[var(--admin-surface-muted)] px-3 py-2">{history.quotes.length} quotes</span>
-            <span className="rounded-full bg-[var(--admin-surface-muted)] px-3 py-2">{history.shipments.length} shipments</span>
-          </div>
+    <OpsSurface
+      title="Quotes and shipments"
+      description={`${shipments.length === 1 ? "1 shipment" : `${shipments.length} shipments`} · ${quotes.length === 1 ? "1 quote" : `${quotes.length} quotes`}, newest first, within your branch access.`}
+      flush
+    >
+      {!quotes.length && !shipments.length ? (
+        <OpsEmptyState compact icon={<Package size={18}/>} title="No quotes or shipments yet" description="Confirm an enquiry match below and it will appear here."/>
+      ) : (
+        <div className="crm360-history">
+          {shipments.length ? (
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table ops-stack-table" data-row-link="">
+                <thead><tr><th>Shipment</th><th>Route</th><th>Status</th><th>ETA</th><th>Now at</th></tr></thead>
+                <tbody>
+                  {shipments.map((shipment) => (
+                    <tr key={shipment.reference}>
+                      <td data-cell="primary"><Link href={`/admin/jobs/${encodeURIComponent(shipment.reference)}`}><OpsMono>{shipment.reference}</OpsMono></Link></td>
+                      <td data-cell="route">{route(shipment.origin, shipment.destination)}</td>
+                      <td data-cell="status"><OpsBadge tone={shipmentStatusTone(shipment.status)} dot>{shipmentStatusLabels[shipment.status]}</OpsBadge></td>
+                      <td data-cell="meta" data-label="ETA">{formatDate(shipment.eta)}</td>
+                      <td data-cell="meta" data-label="Now at">{shipment.current_location || "Not updated"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : null}
+          {quotes.length ? (
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table ops-stack-table" data-row-link="">
+                <thead><tr><th>Quote</th><th>Route</th><th>Status</th>{showCommercial ? <th>Value</th> : null}<th>Updated</th></tr></thead>
+                <tbody>
+                  {quotes.map((quote) => (
+                    <tr key={quote.reference}>
+                      <td data-cell="primary"><Link href={`/admin/enquiries?enquiry=${encodeURIComponent(quote.reference)}`}><OpsMono>{quote.reference}</OpsMono></Link></td>
+                      <td data-cell="route">{route(quote.origin, quote.destination)}</td>
+                      <td data-cell="status"><OpsBadge tone={quoteStatusTones[quote.status] ?? "neutral"} dot>{quoteStatusLabels[quote.status] ?? quote.status}</OpsBadge></td>
+                      {showCommercial ? <td data-cell="amount" data-label="Value">{formatMoney(quote.quoted_amount, quote.currency)}</td> : null}
+                      <td data-cell="meta" data-label="Updated">{formatDate(quote.updated_at || quote.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          ) : null}
         </div>
-
-        {!hasHistory ? (
-          <div className="p-10 text-center text-sm text-black/45">No confirmed quote or shipment history yet. Confirm an enquiry match and it will appear here.</div>
-        ) : (
-          <div className="grid gap-0 xl:grid-cols-2">
-            <div className="p-6 sm:p-8 xl:border-r xl:border-black/10">
-              <div className="mb-5 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><CircleDollarSign size={17} className="text-[#b78a3e]"/><h3 className="text-sm font-semibold">Quote history</h3></div><span className="text-[length:var(--app-label-size)] font-bold text-black/35">Newest first</span></div>
-              <div className="space-y-3">
-                {history.quotes.map((quote) => <QuoteHistoryRow key={quote.reference} quote={quote} showCommercial={showCommercial} />)}
-              </div>
-            </div>
-
-            <div className="border-t border-black/10 p-6 sm:p-8 xl:border-t-0">
-              <div className="mb-5 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><PackageCheck size={17} className="text-[#b78a3e]"/><h3 className="text-sm font-semibold">Shipment history</h3></div><span className="text-[length:var(--app-label-size)] font-bold text-black/35">Live operational records</span></div>
-              <div className="space-y-3">
-                {history.shipments.length ? history.shipments.map((shipment) => <ShipmentHistoryRow key={shipment.reference} shipment={shipment} />) : <div className="rounded-[var(--app-radius)] border border-dashed border-black/10 p-6 text-xs text-black/40">No shipments have been created for this customer yet.</div>}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function QuoteHistoryRow({ quote, showCommercial }: { quote: CrmQuoteHistoryItem; showCommercial: boolean }) {
-  const style = quoteStatusStyles[quote.status] ?? "border-black/10 bg-stone-50 text-stone-600";
-  return (
-    <article className="rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><strong className="text-xs text-[var(--admin-ink)]">{quote.reference}</strong><div className="mt-2 flex items-center gap-2 text-xs font-bold text-black/55"><ModeIcon mode={quote.mode}/><span>{quote.origin}</span><ArrowRight size={12}/><span>{quote.destination}</span></div></div>
-        <span className={`rounded-full border px-2.5 py-1 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.09em] ${style}`}>{quoteStatusLabels[quote.status] ?? quote.status}</span>
-      </div>
-      <div className={`mt-4 grid gap-3 border-t border-black/10 pt-3 text-[length:var(--app-label-size)] ${showCommercial ? "grid-cols-2" : "grid-cols-1"}`}>
-        {showCommercial ? <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Quote value</p><p className="mt-1 font-bold text-black/65">{formatMoney(quote.quoted_amount, quote.currency)}</p></div> : null}
-        <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Updated</p><p className="mt-1 font-bold text-black/65">{formatDate(quote.updated_at || quote.created_at)}</p></div>
-      </div>
-      {quote.shipment_reference ? <p className="mt-3 rounded-[var(--app-radius)] bg-[var(--admin-surface)] px-3 py-2 text-[length:var(--app-label-size)] font-bold text-black/50">Shipment: <span className="text-[var(--admin-ink)]">{quote.shipment_reference}</span></p> : null}
-    </article>
-  );
-}
-
-function ShipmentHistoryRow({ shipment }: { shipment: CrmShipmentHistoryItem }) {
-  return (
-    <article className="rounded-[var(--app-radius)] border border-black/10 bg-[var(--admin-surface-muted)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><strong className="text-xs text-[var(--admin-ink)]">{shipment.reference}</strong><p className="mt-1 text-[length:var(--app-label-size)] font-bold text-black/35">From {shipment.quote_reference}</p></div>
-        <span className={`rounded-full border px-2.5 py-1 text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.08em] ${shipmentStatusStyles[shipment.status]}`}>{shipmentStatusLabels[shipment.status]}</span>
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-xs font-bold text-black/55"><ModeIcon mode={shipment.mode}/><span>{shipment.origin || "Origin"}</span><ArrowRight size={12}/><span>{shipment.destination || "Destination"}</span></div>
-      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-black/10 pt-3 text-[length:var(--app-label-size)]">
-        <div><p className="flex items-center gap-1 font-semibold uppercase tracking-[.1em] text-black/30"><MapPin size={10}/>Current</p><p className="mt-1 font-bold text-black/65">{shipment.current_location || "Not updated"}</p></div>
-        <div><p className="flex items-center gap-1 font-semibold uppercase tracking-[.1em] text-black/30"><CalendarDays size={10}/>ETA</p><p className="mt-1 font-bold text-black/65">{formatDate(shipment.eta)}</p></div>
-        <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Carrier</p><p className="mt-1 font-bold text-black/65">{shipment.carrier || "Not assigned"}</p></div>
-        <div><p className="font-semibold uppercase tracking-[.1em] text-black/30">Carrier ref</p><p className="mt-1 font-bold text-black/65">{shipment.carrier_reference || "Not assigned"}</p></div>
-      </div>
-    </article>
+      )}
+    </OpsSurface>
   );
 }

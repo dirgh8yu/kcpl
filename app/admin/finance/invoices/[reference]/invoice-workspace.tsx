@@ -16,7 +16,7 @@ function money(amount: number, currency: string) {
 function dateLabel(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
 function statusTone(status: FinanceInvoice["status"]): "neutral" | "info" | "violet" | "success" | "danger" { if (status === "issued") return "info"; if (status === "partially_paid") return "violet"; if (status === "paid") return "success"; if (status === "overdue") return "danger"; return "neutral"; }
 
-export function InvoiceWorkspace({ invoice, remittances, roleLabel }: { invoice: FinanceInvoice; remittances: StaffRemittance[]; roleLabel: string }) {
+export function InvoiceWorkspace({ invoice, remittances }: { invoice: FinanceInvoice; remittances: StaffRemittance[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -70,7 +70,7 @@ export function InvoiceWorkspace({ invoice, remittances, roleLabel }: { invoice:
   const canPay = ["issued", "partially_paid", "overdue"].includes(invoice.status) && invoice.balance_due > 0;
 
   return <OpsPage>
-    <div className="no-print"><OpsPageHeader eyebrow="Customer invoice" title={<OpsMono>{invoice.reference}</OpsMono>} description={`${invoice.customer_name} · ${roleLabel}`} meta={<><OpsBadge tone={statusTone(invoice.status)} dot>{financeInvoiceStatusLabels[invoice.status]}</OpsBadge><span>Issued {dateLabel(invoice.issue_date)}</span><span>Due {dateLabel(invoice.due_date)}</span></>} actions={<><Link href="/admin/finance" className="ops-button" data-variant="secondary" data-size="md">Back to AR</Link><OpsButton variant="secondary" onClick={() => window.print()}><Printer size={13}/>Print</OpsButton>{invoice.status === "draft" ? <OpsButton variant="primary" disabled={busy} onClick={() => invoiceAction("issue")}>Issue invoice</OpsButton> : null}{invoice.status !== "void" && invoice.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => invoiceAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/></div>
+    <div className="no-print"><OpsPageHeader eyebrow="Customer invoice" title={<OpsMono>{invoice.reference}</OpsMono>} description={invoice.customer_name} meta={<OpsBadge tone={statusTone(invoice.status)} dot>{financeInvoiceStatusLabels[invoice.status]}</OpsBadge>} actions={<><OpsButton variant="secondary" onClick={() => window.print()}><Printer size={13}/>Print</OpsButton>{invoice.status === "draft" ? <OpsButton variant="primary" disabled={busy} onClick={() => invoiceAction("issue")}>Issue invoice</OpsButton> : null}{invoice.status !== "void" && invoice.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => invoiceAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/></div>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <div className="no-print"><OpsNotice tone={notice.toLowerCase().includes("failed") || notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}

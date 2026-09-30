@@ -61,11 +61,16 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
       <OpsKpiRail label="Period decisions">
         <OpsRailMetric label="Quote decisions" value={`${analytics.quote_decided}/${analytics.quote_total}`} detail={`${analytics.quote_open} open · ${analytics.quote_decision_rate_percent.toFixed(1)}% decided`}/>
         <OpsRailMetric label="Loss-making jobs" value={analytics.loss_making_jobs.length} tone={analytics.loss_making_jobs.length ? "danger" : "neutral"} detail="Financially touched in period"/>
-        <OpsRailMetric label="Data quality" value={dataQualityCount} tone={dataQualityCount ? "warning" : "neutral"} detail={dataQualityCount ? "Records need cleanup" : "No tracked issues"}/>
       </OpsKpiRail>
 
       {analytics.complete ? null : <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Partial figures:</strong> a read reached its safety limit, so some records are not counted. Treat totals as a lower bound.</OpsInlineAlert></div>}
-      {dataQualityCount ? <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Reporting integrity:</strong> {dataQualityCount} tracked records need cleanup · {quality.excluded_currency_records} unsupported currency · {quality.unassigned_branch_financial_records} unassigned financial · {quality.active_unassigned_branch_shipments} unassigned shipments · {quality.unlinked_invoice_records} unlinked invoices · {quality.orphaned_job_cost_records} orphaned costs.</OpsInlineAlert></div> : null}
+      {dataQualityCount ? <div className="org-notice"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>{dataQualityCount === 1 ? "1 record needs" : `${dataQualityCount} records need`} cleanup:</strong> {[
+        [quality.excluded_currency_records, "unsupported currency"],
+        [quality.unassigned_branch_financial_records, "financial with no branch"],
+        [quality.active_unassigned_branch_shipments, "shipments with no branch"],
+        [quality.unlinked_invoice_records, "unlinked invoices"],
+        [quality.orphaned_job_cost_records, "orphaned costs"],
+      ].filter(([count]) => Number(count) > 0).map(([count, label]) => `${count} ${label}`).join(" · ")}.</OpsInlineAlert></div> : null}
 
       <SectionHead title="Period P&L and live working capital" detail="Revenue and recognised job cost follow the selected range. AR and AP are current open balances."/>
       <div className="mgmt-cards">{analytics.financials.length ? analytics.financials.map((item) => <OpsSurface key={item.currency} density="compact" title={`${item.currency} · ${money(item.profit, item.currency)} gross profit`} description={`${item.invoice_count} invoices · ${item.cost_item_count} recognised costs`} action={<OpsBadge tone={item.profit >= 0 ? "success" : "danger"}>{percentage(item.margin_percent)} margin</OpsBadge>}>

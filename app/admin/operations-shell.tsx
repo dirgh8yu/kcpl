@@ -36,8 +36,11 @@ export function OperationsShell({
   branches, selectedBranch, canAccessAllBranches = false,
   signOutPath = "/api/admin/session?logout=1",
   placeholder = false,
+  detailLabel,
 }: {
   children: React.ReactNode;
+  /** The record's name for the breadcrumb, when its address is an opaque id. */
+  detailLabel?: string;
   userName: string;
   canManageStaff?: boolean;
   canManageFinance?: boolean;
@@ -189,7 +192,7 @@ export function OperationsShell({
       </aside>
       <header className="app-topbar">
         <button ref={menuButton} type="button" className="app-icon-button app-menu-toggle" onClick={() => setMobileOpen((current) => !current)} aria-label="Toggle navigation" aria-expanded={mobileOpen}>{mobileOpen ? <X size={18} strokeWidth={1.75}/> : <Menu size={18} strokeWidth={1.75}/>}</button>
-        <nav className="app-breadcrumb" aria-label="Breadcrumb">{currentHub?.hub.label === activeItem?.label ? null : <><span>{currentHub?.hub.label || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/></>}<Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className="ops-mono">{detail}</span></> : null}</nav>
+        <nav className="app-breadcrumb" aria-label="Breadcrumb">{currentHub?.hub.label === activeItem?.label ? null : <><span>{currentHub?.hub.label || "KCPL"}</span><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/></>}<Link href={activeItem?.href || "/admin/command-centre"} aria-current={!detail ? "page" : undefined}>{activeItem?.label || "Workspace"}</Link>{detail ? <><ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/><span aria-current="page" className={detailLabel ? undefined : "ops-mono"}>{detailLabel || detail}</span></> : null}</nav>
         {branches && branches.length ? (
           <label className="app-branch">
             <span className="app-branch-mark" aria-hidden="true">▥</span>

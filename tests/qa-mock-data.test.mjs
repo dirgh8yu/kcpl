@@ -16,7 +16,9 @@ import {
   mockFreightAuditQueue,
   mockFreightDocumentWorkspace,
   mockManagementAnalytics,
+  mockPartner360Snapshot,
   mockPartnerDashboard,
+  mockPayablesDashboard,
   mockPickupWorkspace,
   mockQuoteSummaries,
   mockShipmentDocuments,
@@ -436,4 +438,29 @@ test("QA preview: the Job File's documents agree with its checklist and nothing 
   const get = route.slice(route.indexOf("export async function GET"), route.indexOf("async function handlePOST"));
   assert.ok(get.indexOf("qaMockDataEnabled()") < get.indexOf("listShipmentDocuments("));
   assert.match(get, /mockShipmentDocuments\(reference, auth\.staff\) \?\? \[\], storageAvailable: false/);
+});
+
+test("QA preview: partners open in Partner 360, invoices open, and jobs make money", () => {
+  const staff = { can_access_all_branches: true, branches: [] };
+  const now = Date.parse("2026-09-29T06:00:00Z");
+  const partners = mockPartnerDashboard(staff, now).partners;
+  // The page refuses anything but a real KCPL partner reference.
+  assert.ok(partners.length && partners.every((partner) => /^KCPL-P-[A-Z0-9-]+$/.test(partner.id)));
+  const snapshot = mockPartner360Snapshot(partners[0].id, staff, now);
+  assert.equal(snapshot.partner.id, partners[0].id);
+  assert.ok(snapshot.jobs.length && snapshot.jobs.every((job) => /^KCPL-/.test(job.reference)));
+  assert.equal(mockPartner360Snapshot("KCPL-P-NOPE", staff, now), null);
+  const page = source("app/admin/partners/[id]/page.tsx");
+  assert.ok(page.indexOf("mockPartner360Snapshot(") < page.indexOf("await getPartner360Snapshot("));
+  // The Receivables register's invoices are the ones the invoice page opens.
+  assert.match(source("app/admin/finance/invoices/[reference]/page.tsx"), /mockFinanceDashboard\(staff\)\.invoices\.find/);
+  assert.ok(mockFinanceDashboard(staff, now).invoices.length > 0);
+  // A supplier bill is a fraction of what the shipment is invoiced for, so
+  // Reports shows margins rather than losses on every job.
+  const NPR_PER_USD = 133;
+  const invoices = new Map(mockFinanceDashboard(staff, now).invoices.map((invoice) => [invoice.shipment_reference, invoice]));
+  for (const bill of mockPayablesDashboard(staff, now).bills) {
+    const invoice = invoices.get(bill.shipment_reference);
+    if (invoice) assert.ok(bill.subtotal * NPR_PER_USD < invoice.subtotal, `${bill.reference} costs more than it earns`);
+  }
 });

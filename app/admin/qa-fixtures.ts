@@ -22,6 +22,7 @@
 import type { KcplBranch } from "./crm/crm-data";
 import type { KcplStaffContext } from "./staff-directory.server";
 import type { ShipmentMessageView } from "../shipment-messages";
+import type { Partner360Snapshot } from "./partners/partner-360";
 import { qaAuthBypassEnabled } from "./qa-auth-bypass.ts";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre/command-centre-data";
 import type { OperationalNote } from "./command-centre/operational-notes.server";
@@ -1113,6 +1114,11 @@ const PARTNER_TYPE: Record<string, PartnerType> = {
 
 /* Partners are the carriers already moving the shipments, so the partner
  * directory and the shipment register name the same companies. */
+/** Partner ids in the real "KCPL-P-" form, so Partner 360 opens them. */
+function mockPartnerId(index: number) {
+  return `KCPL-P-QA${String(index + 1).padStart(3, "0")}`;
+}
+
 export function mockPartnerDashboard(staff: KcplStaffContext, now = Date.now()): PartnerDashboard {
   const jobs = mockCommandCentre(staff, now).jobs;
   const carriers = [...new Set(jobs.map((job) => job.carrier).filter((name): name is string => Boolean(name)))];
@@ -1121,7 +1127,7 @@ export function mockPartnerDashboard(staff: KcplStaffContext, now = Date.now()):
     const mode = mine[0].mode;
     const openAmount = 180_000 + index * 42_000;
     return {
-      id: `partner-${index + 1}`,
+      id: mockPartnerId(index),
       display_name: name,
       legal_name: null,
       normalized_name: name.toLowerCase().replace(/\s+/g, " "),
@@ -1445,6 +1451,65 @@ import type {
 
 /* The active partners as selectable options, so the payables form offers the
  * same suppliers the partner directory lists. */
+/** Partner 360 for a mock partner: its jobs are the ones it carries, its
+ *  bills the mock payables in its name. */
+export function mockPartner360Snapshot(partnerId: string, staff: KcplStaffContext, now = Date.now()): Partner360Snapshot | null {
+  const partner = mockPartnerDashboard(staff, now).partners.find((item) => item.id === partnerId.trim().toUpperCase());
+  if (!partner) return null;
+  const jobs = mockCommandCentre(staff, now).jobs.filter((job) => job.carrier === partner.display_name);
+  const bills = mockPayablesDashboard(staff, now).bills.filter((bill) => bill.supplier_name === partner.display_name);
+  const today = nepalDay(now, 0);
+  const open = bills.filter((bill) => bill.balance_due > 0);
+  const overdue = open.filter((bill) => bill.due_date < today);
+  return {
+    generated_at: iso(now, 0),
+    partner,
+    finance_summaries: bills.length ? [{
+      currency: "USD",
+      billed: bills.reduce((sum, bill) => sum + bill.total, 0),
+      paid: bills.reduce((sum, bill) => sum + bill.amount_paid, 0),
+      outstanding: open.reduce((sum, bill) => sum + bill.balance_due, 0),
+      overdue: overdue.reduce((sum, bill) => sum + bill.balance_due, 0),
+      bill_count: bills.length,
+      open_bill_count: open.length,
+      overdue_bill_count: overdue.length,
+    }] : [],
+    bills: bills.map((bill) => ({
+      reference: bill.reference,
+      supplier_bill_reference: bill.supplier_bill_reference,
+      shipment_reference: bill.shipment_reference,
+      branch: bill.branch,
+      status: bill.status,
+      bill_date: bill.bill_date,
+      due_date: bill.due_date,
+      currency: bill.currency,
+      total: bill.total,
+      amount_paid: bill.amount_paid,
+      balance_due: bill.balance_due,
+      description: bill.description,
+      updated_at: bill.updated_at,
+      legacy_name_link: false,
+    })),
+    jobs: jobs.map((job) => ({
+      reference: job.reference,
+      quote_reference: job.quote_reference,
+      status: job.status,
+      primary_branch: job.primary_branch,
+      handling_branches: job.handling_branches,
+      customer_id: job.customer_id,
+      origin: job.origin,
+      destination: job.destination,
+      mode: job.mode,
+      current_location: job.current_location,
+      eta: job.eta,
+      updated_at: job.updated_at,
+    })),
+    activity: [],
+    legacy_name_linked_bill_count: 0,
+    finance_integrity_warning_count: 0,
+  };
+}
+
 export function mockPartnerOptions(staff: KcplStaffContext, now = Date.now()): PartnerOption[] {
   return mockPartnerDashboard(staff, now).partners
     .filter((partner) => partner.status === "active")
@@ -1467,7 +1532,9 @@ export function mockPayablesDashboard(staff: KcplStaffContext, now = Date.now())
     .filter((job) => job.carrier)
     .map((job, index) => {
       const status = PAYABLE_STATUS[index % PAYABLE_STATUS.length];
-      const subtotal = 42_000 + index * 3_500;
+      // USD for one shipment's freight: about a quarter to a half of what
+      // the matching invoice bills in rupees, so Reports shows real margins.
+      const subtotal = 1_300 + index * 150;
       const tax = 0;
       const total = subtotal + tax;
       const paid = status === "paid" ? total : status === "partially_paid" ? Math.round(total * 0.5) : 0;
@@ -1673,7 +1740,7 @@ export function mockTmsTenders(staff: KcplStaffContext, now = Date.now()) {
         tender_reference: `TND-${job.reference.slice(5)}`,
         status,
         channel,
-        partner_id: `partner-${index + 1}`,
+        partner_id: mockPartnerId(index),
         partner_name: job.carrier ?? "Unknown carrier",
         recipient_name: "Partner desk",
         recipient_email: `ops@${job.carrier?.toLowerCase().replace(/[^a-z]+/g, "")}.com`,
@@ -1737,7 +1804,7 @@ export function mockTmsOrders(staff: KcplStaffContext, now = Date.now()) {
       notes: null,
       status,
       selected_rate_card_id: selected ? `rc-${index + 1}` : null,
-      selected_partner_id: selected ? `partner-${index + 1}` : null,
+      selected_partner_id: selected ? mockPartnerId(index) : null,
       selected_cost: selected ? 42_000 + index * 3_500 : null,
       selected_currency: selected ? "USD" : null,
       created_at: iso(now, -(index + 8) * DAY),
@@ -1799,7 +1866,7 @@ export function mockConsolidationLoads(staff: KcplStaffContext, now = Date.now()
       master_order_id: status === "booked" ? `TO-MASTER-${index + 1}` : null,
       master_tender_id: status === "booked" ? `tender-master-${index + 1}` : null,
       master_booking_reference: status === "booked" ? `BK-LD-${100 + index}` : null,
-      procurement_partner_id: status === "booked" ? "partner-1" : null,
+      procurement_partner_id: status === "booked" ? mockPartnerId(0) : null,
       procurement_partner_name: status === "booked" ? "Maersk" : null,
       procurement_cost: status === "booked" ? 96_000 : null,
       procurement_currency: status === "booked" ? "USD" : null,

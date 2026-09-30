@@ -36,3 +36,6 @@
 .crm360-tool-body [class*="text-black/50"] { color: #737373; }
 
 }
+
+/* Quotes and shipments: two short registers, one under the other. */
+.crm360-history > * + * { border-top: 1px solid var(--admin-line); }
