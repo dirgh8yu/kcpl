@@ -65,7 +65,7 @@ class JourneyGraphic extends StatelessWidget {
                   style: RouteMapStyle.page(p),
                 ),
               )
-            else
+            else if (s.status != 'exception')
               Padding(
                 padding: const EdgeInsets.fromLTRB(kGutter, 18, kGutter, 2),
                 child: JourneyBar(status: s.status),

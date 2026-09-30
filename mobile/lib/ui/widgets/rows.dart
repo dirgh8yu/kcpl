@@ -75,7 +75,7 @@ class ShipmentRow extends StatelessWidget {
         ),
         accessory: Text(date == null ? '—' : formatShortDate(date)),
         // Under the text, clear of the icon.
-        below: shipment.delivered ? null : JourneyBar(status: shipment.status),
+        below: journeyShowsBar(shipment.status) ? JourneyBar(status: shipment.status) : null,
       ),
     );
   }

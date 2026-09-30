@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Where a shipment is on its way: booked, moving, customs, out for
-/// delivery, delivered. An exception keeps the stage it was reached at; the
-/// status line says what went wrong.
+/// delivery, delivered.
+///
+/// The record keeps only the current status, so a held shipment's stage is
+/// not known. The bar claims none for it (as the web portal's track does);
+/// the map still needs somewhere to put the marker, and takes the moving
+/// stage for that alone.
 int journeyStage(String status) => switch (status) {
   'in_transit' || 'exception' => 1,
   'customs_clearance' => 2,
@@ -14,6 +18,10 @@ int journeyStage(String status) => switch (status) {
 };
 
 const journeyStageCount = 5;
+
+/// Whether the bar has a stage to show: not once delivered (the tick says
+/// it), and not while held (the status line says what went wrong).
+bool journeyShowsBar(String status) => status != 'delivered' && status != 'exception';
 
 /// Fraction of the bar filled. A booked shipment shows a sliver, not
 /// nothing, so it reads as started.
@@ -40,17 +48,18 @@ IconData modeSolidIcon(String mode) => switch (mode) {
   _ => KIcons.courierSolid,
 };
 
-/// The journey as a slim capsule, filled in ink up to where the cargo is
-/// (crimson when the journey has gone wrong). It is drawn where it stands:
-/// progress is data, and data does not animate for style.
+/// The journey as a slim capsule, filled in ink up to where the cargo is.
+/// It is drawn where it stands: progress is data, and data does not animate
+/// for style. A held shipment has no stage to fill to, so it draws nothing.
 class JourneyBar extends StatelessWidget {
   const JourneyBar({super.key, required this.status});
   final String status;
 
   @override
   Widget build(BuildContext context) {
+    if (status == 'exception') return const SizedBox.shrink();
     final p = context.palette;
-    final fill = status == 'exception' ? p.accent : p.ink;
+    final fill = p.ink;
     return Semantics(
       value: '${journeyStage(status) + 1} / $journeyStageCount',
       child: ClipRRect(

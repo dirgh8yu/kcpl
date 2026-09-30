@@ -89,7 +89,7 @@ class JobRow extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        below: job.status == 'delivered' ? null : JourneyBar(status: job.status),
+        below: journeyShowsBar(job.status) ? JourneyBar(status: job.status) : null,
       ),
     );
   }
