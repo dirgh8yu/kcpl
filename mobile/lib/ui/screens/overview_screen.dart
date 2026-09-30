@@ -239,10 +239,14 @@ class _Sheet extends StatelessWidget {
     final overview = bundle.overview;
     final session = bundle.session;
     final finance = session.canViewFinance ? overview.finance : null;
-    // Payments only for someone who can see the account.
+    // Payments only for someone who can see the account, and as one row: when
+    // something is overdue, the "to pay" row would count the same money again.
+    final hasOverdue = overview.thingsToDo.any((need) => need.kind == CustomerNeedKind.payOverdue);
     final needs = [
       for (final need in overview.thingsToDo)
-        if (session.canViewFinance || (need.kind != CustomerNeedKind.payOverdue && need.kind != CustomerNeedKind.payOpen)) need,
+        if ((session.canViewFinance || (need.kind != CustomerNeedKind.payOverdue && need.kind != CustomerNeedKind.payOpen)) &&
+            !(hasOverdue && need.kind == CustomerNeedKind.payOpen))
+          need,
     ];
     final needsYou = needs.isNotEmpty;
 
@@ -254,7 +258,7 @@ class _Sheet extends StatelessWidget {
         SectionHeader(l.homeNeedsYou, top: 20),
         RowGroup(
           indent: RowGroup.iconIndent,
-          children: [for (final need in needs) _NeedRow(need: need, onNavigate: onNavigate)],
+          children: [for (final need in needs) _NeedRow(need: need, finance: finance, onNavigate: onNavigate)],
         ),
       ],
       PushPrimer(copy: customerPushCopy(l)),
@@ -274,10 +278,6 @@ class _Sheet extends StatelessWidget {
         )
       else
         RowGroup(indent: RowGroup.iconIndent, children: [for (final shipment in active.take(8)) ShipmentRow(shipment)]),
-      if (finance != null && finance.balances.isNotEmpty) ...[
-        SectionHeader(l.overviewAccountTitle, actionLabel: l.overviewViewInvoices, onAction: () => onNavigate(HomeTab.invoices)),
-        RowGroup(children: [for (final balance in finance.balances) BalanceFigure(balance: balance)]),
-      ],
       SectionHeader(l.overviewPaperworkTitle, actionLabel: l.overviewAllDocuments, onAction: () => onNavigate(HomeTab.documents)),
       if (overview.documents.isEmpty)
         GroupCard(
@@ -291,8 +291,11 @@ class _Sheet extends StatelessWidget {
 
 /// One thing KCPL needs from the customer, with the one place to do it.
 class _NeedRow extends StatelessWidget {
-  const _NeedRow({required this.need, required this.onNavigate});
+  const _NeedRow({required this.need, required this.finance, required this.onNavigate});
   final CustomerNeed need;
+
+  /// What is owed, shown on the pay row; Home has no separate account box.
+  final FinanceSummary? finance;
   final ValueChanged<HomeTab> onNavigate;
 
   @override
@@ -312,11 +315,23 @@ class _NeedRow extends StatelessWidget {
       case CustomerNeedKind.payOverdue:
       case CustomerNeedKind.payOpen:
         final overdue = need.kind == CustomerNeedKind.payOverdue;
+        final owed = [
+          for (final balance in finance?.balances ?? const <CurrencyBalance>[])
+            if (balance.outstanding > 0) formatMoney(balance.outstanding, balance.currency),
+        ].join(' · ');
+        final open = finance?.openInvoices ?? 0;
         return RowTile(
           onTap: () => onNavigate(HomeTab.invoices),
           leading: IconTile(icon: KIcons.wallet, attention: overdue),
           title: Text(overdue ? l.needsPayOverdue(need.count) : l.needsPayOpen(need.count)),
-          subtitle: detail(l.needsPayDetail),
+          // "2 open invoices · NPR 210,180 · USD 1,040 outstanding"
+          subtitle: Text(
+            owed.isEmpty
+                ? l.needsPayDetail
+                : '${open == 1 ? l.overviewOpenInvoicesOne : l.overviewOpenInvoices('$open')} · ${l.overviewCurrencyOutstanding(owed)}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           chevron: true,
         );
       case CustomerNeedKind.quote:

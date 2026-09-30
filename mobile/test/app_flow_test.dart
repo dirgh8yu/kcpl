@@ -180,6 +180,20 @@ void main() {
     expect(ref('KCPL-S-24103'), findsWidgets);
   });
 
+  testWidgets('home asks for payment once, with what is owed on that row', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.byKey(const ValueKey('home-sheet-grabber')));
+    await settle(tester);
+    await scrollTo(tester, find.text('Pay 1 overdue invoice'));
+    expect(find.text('Pay 1 overdue invoice'), findsOneWidget);
+    expect(find.textContaining('2 open invoices'), findsOneWidget);
+    expect(find.textContaining('USD\u00a01,040.00'), findsWidgets);
+    // The open invoice is the same money: no second row, no separate account box.
+    expect(find.text('1 invoice to pay'), findsNothing);
+    expect(find.text('Outstanding with KCPL'), findsNothing);
+  });
+
   testWidgets('a shipment opens with its milestones and free time', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
