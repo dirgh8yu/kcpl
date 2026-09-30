@@ -19,7 +19,9 @@ import {
   mockPartnerDashboard,
   mockPickupWorkspace,
   mockQuoteSummaries,
+  mockShipmentDocuments,
   mockShipmentMessages,
+  mockShipmentWorkflowReadiness,
   mockTmsOrders,
   mockVisibilityWorkspace,
   mockWorkflowOverview,
@@ -416,4 +418,22 @@ test("the Job File conversation fixture belongs to a real mock job and stores no
   const post = server.slice(server.indexOf("export async function staffPostsMessage"));
   assert.ok(post.indexOf("qaMockDataEnabled()") < post.indexOf("await write("));
   assert.ok(post.indexOf("qaMockDataEnabled()") < post.indexOf("tellCustomer("));
+});
+
+test("QA preview: the Job File's documents agree with its checklist and nothing is uploaded", () => {
+  const staff = { can_access_all_branches: true, branches: [] };
+  const now = Date.parse("2026-09-29T06:00:00Z");
+  const reference = mockCommandCentre(staff, now).jobs[0].reference;
+  const documents = mockShipmentDocuments(reference, staff, now);
+  const readiness = mockShipmentWorkflowReadiness(reference, staff, now);
+  assert.equal(readiness.kind, "ready");
+  const present = readiness.readiness.documents.filter((item) => item.present).map((item) => item.document_type).sort();
+  assert.deepEqual(documents.map((document) => document.document_type).sort(), present);
+  assert.ok(documents.every((document) => document.review_status === "verified" && document.shipment_reference === reference));
+  assert.equal(mockShipmentDocuments("KCPL-NOPE", staff, now), null);
+  // The route answers before it reads storage, and turns uploads off.
+  const route = source("app/api/admin/shipments/[reference]/documents/route.ts");
+  const get = route.slice(route.indexOf("export async function GET"), route.indexOf("async function handlePOST"));
+  assert.ok(get.indexOf("qaMockDataEnabled()") < get.indexOf("listShipmentDocuments("));
+  assert.match(get, /mockShipmentDocuments\(reference, auth\.staff\) \?\? \[\], storageAvailable: false/);
 });

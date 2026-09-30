@@ -466,7 +466,7 @@ import {
   type GeneratedFreightDocumentRow,
 } from "./freight-documents/freight-documents.ts";
 import { summarizeDelivery, type DeliveryAttemptStatus, type DeliveryPodState, type DeliveryQueueRow } from "./delivery/delivery-control.ts";
-import type { ShipmentDocumentType } from "../shipment-document-types";
+import type { ShipmentDocument, ShipmentDocumentType } from "../shipment-document-types";
 
 const DOCUMENT_TYPE: Record<GeneratedFreightDocumentKind, ShipmentDocumentType> = {
   house_bill_of_lading: "bill_of_lading",
@@ -2203,6 +2203,30 @@ function mockWorkflowDocuments(job: CommandCentreJob): WorkflowDocumentState[] {
     verified_count: present ? 1 : 0,
     reason,
     source,
+  }));
+}
+
+/** The Job File's document list: one checked file for each document the
+ *  workflow counts as present, so the list agrees with the step checklist.
+ *  Nothing is stored; uploads stay off in QA preview. */
+export function mockShipmentDocuments(reference: string, staff: KcplStaffContext, now = Date.now()): ShipmentDocument[] | null {
+  const job = mockJob(reference, staff, now);
+  if (!job) return null;
+  const present = mockWorkflowDocuments(job).filter((document) => document.present);
+  return present.map((document, index) => ({
+    id: 9000 + index,
+    shipment_reference: job.reference,
+    filename: `${job.reference}-${document.document_type.replace(/_/g, "-")}.pdf`,
+    content_type: "application/pdf",
+    size_bytes: 180_000 + index * 42_000,
+    document_type: document.document_type as ShipmentDocumentType,
+    uploaded_at: iso(now, -(72 - index * 12) * HOUR),
+    uploaded_by: JOB_OWNER.name,
+    uploaded_by_email: JOB_OWNER.email,
+    uploaded_by_source: "staff",
+    review_status: "verified",
+    verified_at: iso(now, -(60 - index * 12) * HOUR),
+    verified_by: "Sunita Shrestha",
   }));
 }
 

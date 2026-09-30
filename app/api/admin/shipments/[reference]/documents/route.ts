@@ -6,6 +6,7 @@ import { isTrustedSameOriginRequest } from "../../../../../request-security";
 import { validateShipmentDocumentBytes } from "../../../../../shipment-document-policy";
 import { shipmentDocumentTypes, type ShipmentDocumentType } from "../../../../../shipment-document-types";
 import { listShipmentDocuments, uploadShipmentDocument } from "../../../../../shipment-documents.server";
+import { mockShipmentDocuments, qaMockDataEnabled } from "../../../../../admin/qa-fixtures";
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
@@ -60,6 +61,8 @@ export async function GET(_request: Request, context: { params: Promise<{ refere
   const { reference } = await context.params;
   const accessError = await guard(reference, auth.staff);
   if (accessError) return accessError;
+  // QA preview: a fixed, checked list; uploads stay off because nothing is stored.
+  if (qaMockDataEnabled()) return json({ ok: true, documents: mockShipmentDocuments(reference, auth.staff) ?? [], storageAvailable: false });
   try {
     const result = await listShipmentDocuments(reference);
     if (result.kind === "unavailable") return json({ ok: false, error: "Documents aren’t responding right now. Try again in a minute." }, 503);

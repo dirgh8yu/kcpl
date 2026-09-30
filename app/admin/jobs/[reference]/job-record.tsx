@@ -161,7 +161,7 @@ export function JobRecord({
               <span className="job-step-icon"><StepIcon state={step.state}/></span>
               <span className="job-step-text">
                 <span className="job-step-label">{step.label}</span>
-                {step.state === "current" || step.state === "blocked" ? <span className="job-step-summary">{step.summary}</span> : null}
+                {(step.state === "current" || step.state === "blocked") && panel !== step.id ? <span className="job-step-summary">{step.summary}</span> : null}
               </span>
             </button>
           </li>)}
@@ -228,12 +228,11 @@ export function JobRecord({
 }
 
 function StepHead({ step, current, onOpen }: { step: JobStep; current: JobStep | null; onOpen: (panel: JobPanel) => void }) {
+  // One line: the step's name is already the selected item in the list and
+  // the panel's own title, so only its state and what it needs are said here.
   return <header className="job-step-head" data-state={step.state}>
-    <div>
-      <p className="job-step-head-state">{stateLabels[step.state]}</p>
-      <h2>{step.label}</h2>
-      <p>{step.summary}</p>
-    </div>
+    <h2 className="sr-only">{step.label}</h2>
+    <p><span className="job-step-head-state">{stateLabels[step.state]}</span>{step.summary}</p>
     {current && current.id !== step.id ? <button type="button" className="job-panel-link" onClick={() => onOpen(current.id)}>Go to next step: {current.label}<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></button> : null}
   </header>;
 }

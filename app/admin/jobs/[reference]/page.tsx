@@ -10,6 +10,7 @@ import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.ser
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { readShipmentFreeTime } from "../../../shipment-free-time.server";
+import { qaMockDataEnabled } from "../../qa-fixtures";
 import { shipmentCustomerAccessView } from "../../../portal/portal-access-log.server";
 import { CustomerAccessPanel } from "./customer-access-panel";
 import { DeliveryPodControl } from "./delivery-pod-control";
@@ -62,7 +63,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     getShipmentActivityTimeline(result.job.reference, staff),
     getShipmentExceptions(result.job.reference, staff),
     getDeliveryControl(result.job.reference, staff),
-    shipmentCustomerAccessView(result.job.reference),
+    qaMockDataEnabled() ? Promise.resolve({ kind: "ready" as const, summaries: [], pending: [], releasedCount: 0 }) : shipmentCustomerAccessView(result.job.reference),
     getJobStepContext(result.job.reference).catch(() => ({ clearance: null, pickupStatus: null, pickup: null })),
     listPartnerOptions(staff).catch(() => null),
   ]);

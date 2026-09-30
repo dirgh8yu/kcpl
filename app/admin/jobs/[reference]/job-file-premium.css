@@ -54,10 +54,9 @@
 .kcpl-admin-content .job-extras button { min-height: 32px; align-items: center; justify-content: space-between; padding: 6px 10px; font-size: 12.5px; font-weight: 550; }
 
 /* The open step's heading: what the step is and what is true now. */
-.kcpl-admin-content .job-step-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; padding: 2px 0 4px; }
-.kcpl-admin-content .job-step-head h2 { margin: 0; color: var(--admin-ink); font-size: 20px; font-weight: 650; letter-spacing: -0.015em; line-height: 26px; }
-.kcpl-admin-content .job-step-head p { margin: 2px 0 0; max-width: 720px; color: var(--admin-muted); font-size: 13.5px; line-height: 20px; }
-.kcpl-admin-content .job-step-head .job-step-head-state { margin: 0 0 2px; color: var(--admin-faint); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; line-height: 16px; text-transform: uppercase; }
+.kcpl-admin-content .job-step-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; padding: 0 0 2px; }
+.kcpl-admin-content .job-step-head p { margin: 0; max-width: 760px; color: var(--admin-ink); font-size: 14px; font-weight: 500; line-height: 20px; }
+.kcpl-admin-content .job-step-head .job-step-head-state { margin-right: 8px; color: var(--admin-faint); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; line-height: 16px; text-transform: uppercase; }
 .kcpl-admin-content .job-step-head[data-state="current"] .job-step-head-state { color: var(--admin-crimson); }
 .kcpl-admin-content .job-step-head[data-state="blocked"] .job-step-head-state { color: var(--admin-danger); }
 .kcpl-admin-content .job-step-head[data-state="done"] .job-step-head-state { color: var(--admin-success); }
