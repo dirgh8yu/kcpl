@@ -21,9 +21,15 @@ import { PortalUnavailable, PortalWorkspaceUnavailable } from "../../portal-fram
 import { portalDate, portalInvoiceStatusLabel, portalInvoiceTone, portalMoney } from "../../portal-format";
 import { PortalRemittancePanel } from "./portal-remittance-panel";
 import { portalTranslator } from "../../portal-i18n";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Invoice · KCPL Customer Portal", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ reference: string }> }) {
+  const name = recordTitle((await params).reference);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 export default async function PortalInvoicePage({ params }: { params: Promise<{ reference: string }> }) {
   const access = await getPortalAccess();

@@ -399,6 +399,9 @@
 .kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="warning"] { border-color: var(--admin-warning-line); }
 .kcpl-admin-content :is(.ops-notice, .ops-error-state)[data-tone="danger"] { border-color: var(--admin-danger-line); }
 .kcpl-admin-content :where(table tbody tr:focus-visible) { outline: 2px solid var(--app-focus); outline-offset: -2px; }
+/* A focus ring answers a key press, so it appears at once rather than fading
+ * in with the hover colours; it still fades out as focus moves on. */
+.kcpl-admin-route :focus-visible { transition-duration: 0s; }
 .kcpl-admin-shell :where(a,button,input,select,textarea):focus-visible { outline: 2px solid var(--app-focus); outline-offset: 2px; }
 .kcpl-admin-content .ops-badge { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; padding: 3px 8px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--admin-surface-soft); color: var(--admin-muted); font-size: 12px; font-weight: 500; line-height: 16px; letter-spacing: normal; }
 .kcpl-admin-content .ops-badge[data-tone="neutral"] { color: var(--admin-ink); border-color: var(--admin-line); background: var(--admin-surface-muted); }

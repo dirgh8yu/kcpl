@@ -6,7 +6,7 @@ import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { StaffManager } from "./staff-manager";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Staff | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "People & Branches", robots: { index: false, follow: false } };
 
 export default async function StaffPage() {
   const access = await getAdminAccess();

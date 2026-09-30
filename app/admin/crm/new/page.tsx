@@ -6,7 +6,7 @@ import type { CrmCustomerSummary } from "../crm-data";
 import { CrmDashboard } from "../crm-dashboard";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "New Customer | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "New customer", robots: { index: false, follow: false } };
 
 export default async function NewCustomerPage() {
   const access = await getAdminAccess();

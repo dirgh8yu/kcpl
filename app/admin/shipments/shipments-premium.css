@@ -14,7 +14,8 @@
   --ship-surface: var(--admin-surface);
   --ship-canvas: var(--admin-canvas);
   --ship-line: var(--admin-line);
-  --ship-focus: 0 0 0 3px color-mix(in srgb, var(--admin-crimson) 18%, transparent);
+  /* The app's focus ring, not a faint crimson halo: it has to be seen (3:1). */
+  --ship-focus: 0 0 0 2px var(--app-focus);
 }
 
 .kcpl-admin-content .shipments-register {
@@ -194,6 +195,9 @@
   color: var(--admin-ink);
   font-weight: 550;
 }
+/* The selected view wears a shadow from operations-system.css, which would
+ * hide a box-shadow ring, so its focus is an outline. */
+.kcpl-admin-content .shipments-register .shipments-view-toggle button:focus-visible { outline: 2px solid var(--app-focus); outline-offset: 1px; }
 
 .kcpl-admin-content .shipments-register .shipments-result-count {
   display: inline-flex;

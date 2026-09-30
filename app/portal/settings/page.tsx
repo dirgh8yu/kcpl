@@ -12,7 +12,7 @@ import { PortalSettingsWorkspace } from "./portal-settings-workspace";
 import { portalPushConfigured, portalPushPublicKey } from "../portal-push.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Account settings · KCPL Customer Portal", robots: { index: false, follow: false } };
+export const metadata = { title: "Account settings", robots: { index: false, follow: false } };
 
 export default async function PortalSettingsPage() {
   const access = await getPortalAccess();

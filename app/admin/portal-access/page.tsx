@@ -9,7 +9,7 @@ import { listPortalAccounts } from "../../portal/portal-accounts.server";
 import { PortalAccessWorkspace } from "./portal-access-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Customer portal logins · KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Customer portal logins", robots: { index: false, follow: false } };
 
 export default async function PortalAccessPage() {
   const access = await getAdminAccess();

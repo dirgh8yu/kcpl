@@ -5,9 +5,15 @@ import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getPartner360Snapshot } from "../partner-360.server";
 import { mockPartner360Snapshot, qaMockDataEnabled } from "../../qa-fixtures";
 import { Partner360Workspace } from "./partner-360-workspace";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Partner 360 | KCPL Operations", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const name = recordTitle((await params).id);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 export default async function Partner360Page({ params }: { params: Promise<{ id: string }> }) {
   const access = await getAdminAccess();

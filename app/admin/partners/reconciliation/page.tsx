@@ -7,7 +7,7 @@ import { SupplierReconciliationWorkspace } from "./supplier-reconciliation-works
 import { listSupplierReconciliation } from "./supplier-reconciliation.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Supplier records | KCPL Finance", robots: { index: false, follow: false } };
+export const metadata = { title: "Supplier records", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

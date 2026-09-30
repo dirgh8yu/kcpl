@@ -9,7 +9,7 @@ import { ManagementWorkspace } from "./management-workspace";
 import { RuntimeReadinessPanel } from "./runtime-readiness-panel";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Executive Dashboard | KCPL", robots: { index: false, follow: false } };
+export const metadata = { title: "Management", robots: { index: false, follow: false } };
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type StaffResult =

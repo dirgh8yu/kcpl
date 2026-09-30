@@ -8,7 +8,7 @@ import { FinanceWorkspace } from "./finance-workspace";
 import { listFinanceDashboard } from "./finance.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Finance & Accounts Receivable | KCPL", robots: { index: false, follow: false } };
+export const metadata = { title: "Receivables", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

@@ -11,7 +11,7 @@ import type { MigrationBatchStatus } from "../../migration-batches";
 import { RecoveryPanel } from "../../recovery/recovery-panel";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Migration Batch | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Import batch", robots: { index: false, follow: false } };
 
 function dateTime(value: string | null) {
   if (!value) return "Not completed";

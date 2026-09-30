@@ -9,7 +9,7 @@ import { TmsRatingWorkspace } from "./tms-rating-workspace";
 import { V4TransportOrdersWorkspace } from "./v4-transport-orders-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Transport Orders | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Buy rates", robots: { index: false, follow: false } };
 
 export default async function RatingPage({ searchParams }: { searchParams: Promise<{ order?: string; view?: string }> }) {
   const access = await getAdminAccess();

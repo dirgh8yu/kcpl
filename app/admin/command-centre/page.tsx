@@ -15,7 +15,7 @@ import { loadWorkflowOverview, type WorkflowOverview } from "./workflow-overview
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Overview | KCPL Operations",
+  title: "Overview",
   robots: { index: false, follow: false },
 };
 

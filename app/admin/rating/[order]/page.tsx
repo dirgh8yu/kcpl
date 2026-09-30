@@ -6,9 +6,15 @@ import { listTmsTenders } from "../../tenders/tms-tendering.server";
 import type { TmsTender } from "../../tenders/tms-tendering";
 import { listTmsOrders } from "../tms-rating.server";
 import type { TmsOrder, TmsOrderStatus } from "../tms-rating";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Transport Order Detail | KCPL Operations", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ order: string }> }) {
+  const name = recordTitle((await params).order);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 const statusLabels: Record<TmsOrderStatus, string> = {
   draft: "Draft",

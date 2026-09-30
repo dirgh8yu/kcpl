@@ -38,9 +38,15 @@ import {
 } from "../../portal-format";
 import { PortalShipmentTrack } from "../../portal-shipment-track";
 import { portalTrackPosition } from "../../portal-track";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Shipment · KCPL Customer Portal", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ reference: string }> }) {
+  const name = recordTitle((await params).reference);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 export default async function PortalShipmentPage({
   params,

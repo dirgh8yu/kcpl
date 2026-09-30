@@ -36,7 +36,7 @@ import { getStaffContext, listStaffProfiles } from "../../staff-directory.server
 import { kcplStaffRoleLabels } from "../../staff-permissions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Staff Workload | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Workload", robots: { index: false, follow: false } };
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 type Tone = "neutral" | "info" | "success" | "warning" | "danger";

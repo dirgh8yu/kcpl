@@ -7,7 +7,7 @@ import type { PartnerOwnerBranch } from "../partners-data";
 import { NewPartnerWorkspace } from "./new-partner-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "New Partner | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "New partner", robots: { index: false, follow: false } };
 
 export default async function NewPartnerPage() {
   const access = await getAdminAccess();

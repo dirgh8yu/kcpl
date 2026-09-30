@@ -9,7 +9,7 @@ import { PartnersWorkspace } from "./partners-workspace";
 import { listPartnerDashboard } from "./partners.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Partners | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Partners", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

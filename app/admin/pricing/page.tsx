@@ -8,7 +8,7 @@ import { TmsPricingWorkspace } from "./tms-pricing-workspace";
 import { listPricingWorkspace } from "./tms-pricing.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pricing | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Pricing", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

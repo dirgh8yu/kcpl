@@ -33,7 +33,9 @@ async function layoutDisplayPreferences(): Promise<DisplayPreferences | null> {
 
 /* Root layout for the operations console: English only, so it takes the
  * document's default language. */
-export const metadata = baseMetadata;
+/* Staff tabs read "Shipments · KCPL Operations": the public site's
+ * "| Kapileshwor Cargo" suffix is for search results, not a staff tab. */
+export const metadata = { ...baseMetadata, title: { default: "KCPL Operations", template: "%s · KCPL Operations" } };
 export const viewport = productViewport;
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

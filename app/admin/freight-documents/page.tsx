@@ -6,7 +6,7 @@ import { listFreightDocumentWorkspace } from "./freight-documents.server";
 import { FreightDocumentsWorkspace } from "./freight-documents-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Freight Documents | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Freight Documents", robots: { index: false, follow: false } };
 
 export default async function FreightDocumentsPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();

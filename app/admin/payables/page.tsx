@@ -9,7 +9,7 @@ import { listPayablesDashboard } from "./payables.server";
 import { PayablesWorkspace } from "./payables-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Accounts Payable | KCPL Finance", robots: { index: false, follow: false } };
+export const metadata = { title: "Payables", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

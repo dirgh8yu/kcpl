@@ -7,7 +7,7 @@ import { listPaperArchive } from "./archive.server";
 import { PaperArchiveWorkspace } from "./archive-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Paper Archive | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Paper Archive", robots: { index: false, follow: false } };
 
 export default async function PaperArchivePage() {
   const access = await getAdminAccess();

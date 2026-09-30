@@ -10,7 +10,7 @@ import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { MarketEstimateWorkspace } from "./market-estimate-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Market rates | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Market rates", robots: { index: false, follow: false } };
 
 type StaffResult =
   | { kind: "ready"; staff: Awaited<ReturnType<typeof getStaffContext>> }

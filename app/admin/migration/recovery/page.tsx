@@ -9,7 +9,7 @@ import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { listMigrationBatches } from "../migration-batches.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Undo an import | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Undo an import", robots: { index: false, follow: false } };
 
 export default async function RecoveryPage() {
   const access = await getAdminAccess();

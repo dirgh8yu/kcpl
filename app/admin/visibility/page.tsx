@@ -7,7 +7,7 @@ import { listTrackingVisibility } from "./tracking-visibility.server";
 import { TrackingVisibilityWorkspace } from "./tracking-visibility-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tracking | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Tracking", robots: { index: false, follow: false } };
 
 export default async function VisibilityPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();

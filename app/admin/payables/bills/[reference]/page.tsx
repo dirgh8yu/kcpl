@@ -5,9 +5,15 @@ import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { getPayable } from "../../payables.server";
 import { mockPayablesDashboard, qaMockDataEnabled } from "../../../qa-fixtures";
 import { PayableWorkspace } from "./payable-workspace";
+import { recordTitle } from "../../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Supplier Bill | KCPL Accounts Payable", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ reference: string }> }) {
+  const name = recordTitle((await params).reference);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 export default async function PayableBillPage({ params }: { params: Promise<{ reference: string }> }) {
   const access = await getAdminAccess();

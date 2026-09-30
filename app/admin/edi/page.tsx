@@ -9,7 +9,7 @@ import { listEdiGatewayDashboard } from "./edi-gateway.server";
 import { EdiWorkspace } from "./edi-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "EDI messages | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "EDI messages", robots: { index: false, follow: false } };
 
 export default async function EdiGatewayPage() {
   const access = await getAdminAccess();

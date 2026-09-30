@@ -10,7 +10,7 @@ import type { CrmCustomerSummary } from "./crm-data";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Customers | KCPL Operations",
+  title: "Customers",
   robots: { index: false, follow: false },
 };
 

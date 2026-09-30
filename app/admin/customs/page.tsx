@@ -7,7 +7,7 @@ import { listCustomsDeskRows } from "./customs-data.server";
 import { CustomsWorkspace } from "./customs-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Customs | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Customs", robots: { index: false, follow: false } };
 
 export default async function CustomsPage() {
   const access = await getAdminAccess();

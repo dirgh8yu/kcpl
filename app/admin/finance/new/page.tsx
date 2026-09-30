@@ -5,7 +5,7 @@ import { getStaffContext } from "../../staff-directory.server";
 import { NewReceivableWorkspace } from "./new-receivable-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "New Receivable | KCPL Finance", robots: { index: false, follow: false } };
+export const metadata = { title: "New invoice", robots: { index: false, follow: false } };
 
 export default async function NewReceivablePage() {
   const access = await getAdminAccess();

@@ -9,9 +9,15 @@ import { OpsBadge, OpsEmptyState, OpsKpiCard, OpsKpiStrip, OpsMono, OpsPage, Ops
 import { listPayablesDashboard } from "../../../payables/payables.server";
 import { payableStatusLabels } from "../../../payables/payables-data";
 import { getStaffContext } from "../../../staff-directory.server";
+import { recordTitle } from "../../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Job Profitability | KCPL", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ reference: string }> }) {
+  const name = recordTitle((await params).reference);
+  return { title: `${name} profitability`, robots: { index: false, follow: false } };
+}
 
 function money(amount: number, currency: string) { try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); } catch { return `${currency} ${amount.toLocaleString("en-AU")}`; } }
 

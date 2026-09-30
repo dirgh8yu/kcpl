@@ -8,7 +8,7 @@ import { AlertsWorkspace } from "./alerts-workspace";
 import { evaluateFreightAutomation } from "./freight-automation.server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tasks & Alerts | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Tasks & alerts", robots: { index: false, follow: false } };
 
 type StaffUser = { uid: string; email: string; displayName: string };
 type ShellState = {

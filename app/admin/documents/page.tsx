@@ -6,7 +6,7 @@ import { listDocumentVault } from "./documents-data.server";
 import { DocumentsWorkspace } from "./documents-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Documents | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Documents", robots: { index: false, follow: false } };
 
 export default async function DocumentsPage() {
   const access = await getAdminAccess();

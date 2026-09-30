@@ -7,7 +7,7 @@ import { listFreightAuditQueue } from "./freight-audit.server";
 import { FreightAuditWorkspace } from "./freight-audit-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Supplier bill checks | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Supplier bill checks", robots: { index: false, follow: false } };
 
 export default async function FreightAuditPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const access = await getAdminAccess();

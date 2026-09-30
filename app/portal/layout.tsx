@@ -18,6 +18,8 @@ const portalFont = Geist({
  */
 export const metadata: Metadata = {
   ...baseMetadata,
+  // Customer tabs read "Shipments · KCPL Customer Portal", not the public site's suffix.
+  title: { default: "KCPL Customer Portal", template: "%s · KCPL Customer Portal" },
   manifest: "/portal.webmanifest",
   appleWebApp: { capable: true, title: "KCPL Portal", statusBarStyle: "default" },
 };

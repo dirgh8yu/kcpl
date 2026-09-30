@@ -8,7 +8,7 @@ import { listCarrierIntegrationDashboard } from "./carrier-integrations.server";
 import { CarrierIntegrationsWorkspace } from "./carrier-integrations-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Carrier connections | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Carrier connections", robots: { index: false, follow: false } };
 
 export default async function CarrierIntegrationsPage() {
   const access = await getAdminAccess();

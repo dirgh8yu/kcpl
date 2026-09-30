@@ -33,7 +33,7 @@ import { loadCommandCentre } from "../../command-centre/command-centre.server";
 import type { CommandCentreJob } from "../../command-centre/command-centre-data";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Branch Operations | KCPL", robots: { index: false, follow: false } };
+export const metadata = { title: "Branch", robots: { index: false, follow: false } };
 
 const NEPAL_TIME_ZONE = "Asia/Kathmandu";
 

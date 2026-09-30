@@ -7,7 +7,7 @@ import { listMigrationBatches } from "./migration-batches.server";
 import { MigrationWorkspace } from "./migration-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Import old records | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Import old records", robots: { index: false, follow: false } };
 
 export default async function MigrationPage() {
   const access = await getAdminAccess();

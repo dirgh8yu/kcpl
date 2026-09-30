@@ -24,7 +24,7 @@ import { CrmStatementPanel } from "./crm-statement-panel";
 import "./customer-360.css";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Customer 360 | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Customer", robots: { index: false, follow: false } };
 
 function redactCustomerForRole(customer: CrmCustomerDetail, permissions: StaffCapabilities): CrmCustomerDetail {
   const commercial = permissions.canViewCommercial

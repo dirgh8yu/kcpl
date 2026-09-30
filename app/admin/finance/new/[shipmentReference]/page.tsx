@@ -3,9 +3,15 @@ import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { resolveInvoiceCustomerFromShipment } from "../../finance-linking.server";
 import { ShipmentInvoiceForm } from "./shipment-invoice-form";
+import { recordTitle } from "../../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Create Invoice | KCPL Finance", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ shipmentReference: string }> }) {
+  const name = recordTitle((await params).shipmentReference);
+  return { title: `New invoice for ${name}`, robots: { index: false, follow: false } };
+}
 
 export default async function NewShipmentInvoicePage({ params }: { params: Promise<{ shipmentReference: string }> }) {
   const access = await getAdminAccess();

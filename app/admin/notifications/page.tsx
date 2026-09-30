@@ -5,7 +5,7 @@ import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { NotificationsWorkspace } from "./notifications-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Notification Centre | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Notifications", robots: { index: false, follow: false } };
 
 export default async function NotificationsPage() {
   const access = await getAdminAccess();

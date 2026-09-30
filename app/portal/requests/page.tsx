@@ -7,7 +7,7 @@ import { PortalUnavailable, PortalWorkspaceUnavailable } from "../portal-frame";
 import { PortalRequestsWorkspace } from "./portal-requests-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Quotes & requests · KCPL Customer Portal", robots: { index: false, follow: false } };
+export const metadata = { title: "Quotes & requests", robots: { index: false, follow: false } };
 
 export default async function PortalRequestsPage() {
   const access = await getPortalAccess();

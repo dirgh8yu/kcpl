@@ -20,9 +20,15 @@ import { ShipmentExceptionControl } from "./shipment-exception-control";
 import { JobRecord } from "./job-record";
 import { getJobStepContext } from "./job-step-context.server";
 import { listPartnerOptions } from "../../partners/partners.server";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Shipment | KCPL Operations", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ reference: string }> }) {
+  const name = recordTitle((await params).reference);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 export default async function JobFilePage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ returnTo?: string | string[]; a?: string | string[]; step?: string | string[] }> }) {
   const access = await getAdminAccess();

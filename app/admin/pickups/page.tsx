@@ -6,7 +6,7 @@ import { listPickupWorkspace } from "./pickup-appointments.server";
 import { PickupAppointmentsWorkspace } from "./pickup-appointments-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pickups | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Pickups", robots: { index: false, follow: false } };
 
 export default async function PickupPage({ searchParams }: { searchParams: Promise<{ shipment?: string }> }) {
   const access = await getAdminAccess();

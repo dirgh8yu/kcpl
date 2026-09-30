@@ -10,7 +10,7 @@ import { listConsolidationLoads } from "./tms-consolidation.server";
 import { TmsConsolidationWorkspace } from "./tms-consolidation-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Load planning | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Load planning", robots: { index: false, follow: false } };
 
 export default async function ConsolidationPage() {
   const access = await getAdminAccess();

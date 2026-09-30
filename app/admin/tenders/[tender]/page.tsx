@@ -6,9 +6,15 @@ import type { TmsOrder } from "../../rating/tms-rating";
 import { getStaffContext } from "../../staff-directory.server";
 import { listTmsTenders } from "../tms-tendering.server";
 import type { TmsTender } from "../tms-tendering";
+import { recordTitle } from "../../../record-title";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Booking Confirmation | KCPL Operations", robots: { index: false, follow: false } };
+/** The tab names the record, so a row of open tabs and the history read as
+ *  a list of shipments and invoices rather than the same word repeated. */
+export async function generateMetadata({ params }: { params: Promise<{ tender: string }> }) {
+  const name = recordTitle((await params).tender);
+  return { title: name, robots: { index: false, follow: false } };
+}
 
 function money(value: number | null, currency: string | null) {
   if (value === null || !currency) return "Not recorded";

@@ -9,7 +9,7 @@ import { WallboardView } from "./wallboard-view";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Office wall screen | KCPL Operations",
+  title: "Office wall screen",
   robots: { index: false, follow: false },
 };
 

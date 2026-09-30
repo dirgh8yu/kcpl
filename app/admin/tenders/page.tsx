@@ -12,7 +12,7 @@ import { listTmsTenders } from "./tms-tendering.server";
 import { V4TenderWorkspace } from "./v4-tender-workspace";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tender Workspace | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Carrier booking", robots: { index: false, follow: false } };
 
 export default async function TenderDeskPage({ searchParams }: { searchParams: Promise<{ tender?: string; state?: string }> }) {
   const access = await getAdminAccess();

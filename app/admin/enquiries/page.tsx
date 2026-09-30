@@ -8,7 +8,7 @@ import { getStaffContext, type KcplStaffContext } from "../staff-directory.serve
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Enquiries | KCPL Operations", robots: { index: false, follow: false } };
+export const metadata = { title: "Enquiries", robots: { index: false, follow: false } };
 
 type QuoteLoadResult = { kind: "ready"; quotes: QuoteSummary[] } | { kind: "unavailable" } | { kind: "error" };
 
