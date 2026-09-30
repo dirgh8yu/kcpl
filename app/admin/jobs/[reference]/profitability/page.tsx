@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, WalletCards } from "lucide-react";
+import { CircleDollarSign, FileText, WalletCards } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
 import { getDigitalJobFile } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
@@ -53,7 +53,7 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
             const profit = job.profit_totals[currency as keyof typeof job.profit_totals] ?? revenue - cost;
             const margin = job.margin_percent[currency as keyof typeof job.margin_percent];
             return <div key={currency} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-5"><div className="flex items-center justify-between gap-3"><strong className="text-[13px] text-[var(--admin-ink)]">{currency}</strong><OpsBadge tone={profit >= 0 ? "success" : "danger"}>{margin === undefined ? "Margin N/A" : `${margin.toFixed(1)}% margin`}</OpsBadge></div><div className="mt-4 grid gap-2 sm:grid-cols-3"><MoneyCell label="Revenue" value={money(revenue,currency)}/><MoneyCell label="Cost" value={money(cost,currency)}/><MoneyCell label="Gross profit" value={money(profit,currency)} positive={profit >= 0}/></div></div>;
-          })}</div> : <OpsEmptyState title="No financial activity yet" description="Revenue appears after invoicing and costs appear after manual Job File costs or approved supplier bills."/>}
+          })}</div> : <OpsEmptyState compact icon={<CircleDollarSign size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No financial activity yet" description="Revenue appears after invoicing and costs appear after manual Job File costs or approved supplier bills."/>}
         </OpsSurface>
 
         <div className="ops-grid-2">
@@ -62,7 +62,7 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
           </OpsSurface>
 
           <OpsSurface eyebrow="Payables" title="Supplier bills for this job" description={staff.permissions.canManageFinance ? "Open AP records linked to the shipment." : "Supplier payment detail is restricted to Management and Accounts."}>
-            {staff.permissions.canManageFinance ? bills.length ? <div className="divide-y divide-[var(--admin-line)]">{bills.map((bill) => <Link key={bill.reference} href={`/admin/payables/bills/${encodeURIComponent(bill.reference)}`} className="flex items-start justify-between gap-4 py-3.5"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{bill.supplier_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><OpsMono>{bill.reference}</OpsMono> · {payableStatusLabels[bill.status]}</p></div><div className="text-right"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(bill.total,bill.currency)}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{money(bill.balance_due,bill.currency)} due</p></div></Link>)}</div> : <OpsEmptyState title="No supplier bills linked" description="Create a payable from this job when a carrier, agent or supplier cost arrives."/> : <div className="rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] p-4 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">The operational job remains available, but supplier settlements are not exposed to this role.</div>}
+            {staff.permissions.canManageFinance ? bills.length ? <div className="divide-y divide-[var(--admin-line)]">{bills.map((bill) => <Link key={bill.reference} href={`/admin/payables/bills/${encodeURIComponent(bill.reference)}`} className="flex items-start justify-between gap-4 py-3.5"><div><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{bill.supplier_name}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]"><OpsMono>{bill.reference}</OpsMono> · {payableStatusLabels[bill.status]}</p></div><div className="text-right"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(bill.total,bill.currency)}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{money(bill.balance_due,bill.currency)} due</p></div></Link>)}</div> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No supplier bills linked" description="Create a payable from this job when a carrier, agent or supplier cost arrives."/> : <div className="rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] p-4 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">The operational job remains available, but supplier settlements are not exposed to this role.</div>}
           </OpsSurface>
         </div>
       </div>

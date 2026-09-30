@@ -1,3 +1,4 @@
+import { Send } from "lucide-react";
 import Link from "next/link";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
@@ -131,7 +132,7 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
                 <td><OpsBadge tone={tenderTone(tender.status)} dot>{tmsTenderStatusLabels[tender.status]}</OpsBadge></td>
               </tr>)}</tbody>
             </table>
-          </OpsTableWrap> : <OpsEmptyState compact title="No carrier requests yet" description="Requests sent to carriers for this order will appear here."/>}
+          </OpsTableWrap> : <OpsEmptyState icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No carrier requests yet" description="Requests sent to carriers for this order will appear here."/>}
         </OpsSurface>
         {order.notes ? <OpsSurface title="Notes"><p className="whitespace-pre-wrap">{order.notes}</p></OpsSurface> : null}
         <OpsSurface title="Ownership and records">

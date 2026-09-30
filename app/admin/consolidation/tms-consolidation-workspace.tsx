@@ -3,8 +3,8 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, PackagePlus, Trash2, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { Package, ArrowDown, ArrowRight, ArrowUp, PackagePlus, Trash2, X } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
   consolidationSavings,
@@ -277,7 +277,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                       </tr>;
                     })}</tbody>
                   </table>
-                </OpsTableWrap></div> : <OpsEmptyState compact title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
+                </OpsTableWrap></div> : <OpsEmptyState icon={<Package size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No eligible orders" description="Create transport orders or resolve their current tender/booking state before consolidating."/>}
               </div>
               <div className="ops-form-actions">
                 <OpsButton type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>Cancel</OpsButton>
@@ -312,7 +312,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                 </tr>;
               })}</tbody>
             </table>
-          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No loads match" : "No consolidation loads"} description={filtersActive ? "Change or reset the filters." : "Create a load from compatible transport orders to begin multi-stop planning."}/>}
+          </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="loads" onClear={() => { setQuery(""); setScope("all"); }}/> : <OpsEmptyState compact icon={<PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No loads yet" description="Create a load from compatible transport orders to begin multi-stop planning."/>)}
         </section>
 
         {selectedLoad ? <section ref={detailRef} className="load-detail" aria-label={`Load ${selectedLoad.reference}`}>

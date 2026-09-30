@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TriangleAlert } from "lucide-react";
+import { CheckCircle2, TriangleAlert } from "lucide-react";
 import { payableStatusLabels } from "../../payables/payables-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsMono, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface } from "../../operations-ui";
 import type { SupplierReconciliationBill, SupplierReconciliationSnapshot } from "./supplier-reconciliation";
 
 function money(amount: number, currency: string) {
@@ -136,7 +136,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
               </tr>
               {confirming === bill.reference && selectedPartner ? <tr><td colSpan={7} className="bg-[var(--admin-surface-soft)] p-0"><div className="m-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><p className="text-[11px] font-bold text-[var(--admin-ink)]">Confirm accounting identity change</p><div className="mt-3 grid gap-3 md:grid-cols-3"><Review label="Before" value={`${bill.supplier_name}${bill.supplier_id ? ` · ${bill.supplier_id}` : " · no supplier ID"}`}/><Review label="After" value={`${selectedPartner.name} · ${selectedPartner.id}`}/><Review label="Bill values" value={`${money(bill.total, bill.currency)} · ${payableStatusLabels[bill.status]} · amounts unchanged`}/></div><p className="mt-3 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">This writes the Partner ID to the supplier bill and updates the linked Job File cost identity if one exists. It does not change the bill amount, payments, status, currency or due date.</p><div className="mt-4 flex gap-2"><OpsButton variant="primary" size="sm" disabled={busy} onClick={() => void confirmLink(bill)}>{busy ? "Linking…" : "Confirm Partner link"}</OpsButton><OpsButton variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(null)}>Cancel</OpsButton></div></div></td></tr> : null}
             </Fragment>;
-          }) : <tr><td colSpan={7}><OpsEmptyState title={snapshot.bills.length ? "No reconciliation records match" : "Supplier identities are reconciled"} description={snapshot.bills.length ? "Change the search or filter to see other unresolved supplier bills." : "There are no accessible non-void supplier bills with legacy or broken Partner identities."}/></td></tr>}
+          }) : <tr><td colSpan={7}>{snapshot.bills.length ? <OpsNoMatches noun="supplier bills" onClear={() => { setQuery(""); setFilter("all"); }}/> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Supplier identities are reconciled" description="No supplier bill carries an old or broken partner identity."/>}</td></tr>}
         </tbody></table></div>
       </OpsSurface>
     </div>

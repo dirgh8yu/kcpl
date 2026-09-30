@@ -8,6 +8,7 @@ import {
   OpsEmptyState,
   OpsField,
   OpsKpiRail,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -249,7 +250,7 @@ export function PortalAccessWorkspace({
               </table>
             </OpsTableWrap>
           ) : (
-            <OpsEmptyState compact kind={query ? "search" : "setup"} icon={<Users2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query ? "No matching portal accounts" : "No customer portal accounts yet"} description={query ? "Try a different email or customer name." : "Grant access above to let a customer contact track their own shipments without calling the operations team."}/>
+            (query ? <OpsNoMatches noun="portal logins" onClear={() => setQuery("")}/> : <OpsEmptyState compact kind="setup" icon={<Users2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customer portal logins yet" description="Grant access above to let a customer contact track their own shipments without calling the operations team."/>)
           )}
         </OpsSurface>
       </div>

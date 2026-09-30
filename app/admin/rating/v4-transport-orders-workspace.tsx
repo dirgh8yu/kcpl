@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
-import { ChevronRight } from "lucide-react";
+import { Package, ChevronRight } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
 import { freightModeLabel } from "../freight-mode";
 
@@ -242,12 +242,12 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
               </table>
             </OpsTableWrap>
           ) : (
-            <OpsEmptyState compact kind="search" title="No transport orders match this view" description="Change the filters or reset the workspace." action={<button type="button" className="ops-button" data-variant="secondary" data-size="sm" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }}>Reset</button>}/>
+            <OpsNoMatches noun="transport orders" onClear={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }}/>
           )}
         </section>
 
         <aside className="ops-surface ops-order-peek" aria-label="Selected order">
-          {selected ? <OrderPeek order={selected}/> : <OpsEmptyState compact title="No order selected" description="Choose a row to inspect the planning record."/>}
+          {selected ? <OrderPeek order={selected}/> : <OpsEmptyState icon={<Package size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No order selected" description="Choose a row to inspect the planning record."/>}
         </aside>
       </div>
       </div>

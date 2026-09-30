@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Check, UserPlus, UsersRound, X } from "lucide-react";
+import { Check, UserPlus, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { kcplStaffRoleLabels, kcplStaffRoles, type KcplStaffRole } from "../staff-permissions";
 import type { KcplStaffProfile } from "../staff-directory";
-import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsSearch, OpsTableWrap } from "../operations-ui";
 
 type Draft = {
   email: string;
@@ -133,7 +133,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
                 </tr>;
               })}</tbody>
             </table>
-          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<UsersRound size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No staff match" description="Change the search or role filter. Existing bootstrap admins still work until staff profiles are added."/>}
+          </OpsTableWrap> : <OpsNoMatches noun="people" onClear={() => { setQuery(""); setRoleFilter("all"); }}/>}
           {filtered.length ? <footer className="ops-register-footer"><span>Select a person to edit role, branch scope or suspend access.</span></footer> : null}
         </section>
 

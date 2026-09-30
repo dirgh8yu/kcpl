@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, CSSProperties, ReactNod
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { Search } from "lucide-react";
+import { Search, SearchX } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
 export {
@@ -181,6 +181,12 @@ export function OpsEmptyState({
   return <div className="ops-empty" data-kind={kind} data-compact={compact || undefined}>{icon ? <div className="ops-empty-icon">{icon}</div> : null}<h3>{title}</h3>{description ? <p>{description}</p> : null}{action ? <div className="ops-empty-action">{action}</div> : null}</div>;
 }
 
+/** The one empty state for a search or filter that found nothing: the same
+ *  words, icon and way back on every list. */
+export function OpsNoMatches({ noun, onClear, action }: { noun: string; onClear?: () => void; action?: ReactNode }) {
+  return <OpsEmptyState compact kind="search" icon={<SearchX size={16} strokeWidth={1.75} aria-hidden="true"/>} title={`No ${noun} match`} description={onClear ? "Try another search, or clear the filters." : "Try another search."} action={action ?? (onClear ? <OpsButton size="sm" variant="secondary" onClick={onClear}>Clear filters</OpsButton> : undefined)}/>;
+}
+
 export function OpsErrorState({ title, detail, action, tone = "warning" }: { title: ReactNode; detail?: ReactNode; action?: ReactNode; tone?: "warning" | "danger" | "neutral" }) {
   return <div className="ops-error-state" data-tone={tone} role={tone === "danger" ? "alert" : "status"}>
     <strong>{title}</strong>
@@ -337,11 +343,14 @@ export function OpsActionMenuItem({ children, onSelect, tone = "neutral" }: { ch
   return <button type="button" role="menuitem" className="ops-action-menu-item" data-tone={tone} onClick={onSelect}>{children}</button>;
 }
 
-export function OpsSkeleton({ lines = 3, className }: { lines?: number; className?: string }) {
+/** The one in-panel loading state: grey lines where the content will be,
+ *  announced once to screen readers. */
+export function OpsSkeleton({ lines = 3, label = "Loading", className }: { lines?: number; label?: string; className?: string }) {
   return (
-    <div className={cx("ops-skeleton", className)} aria-hidden="true">
+    <div className={cx("ops-skeleton", className)} role="status">
+      <span className="sr-only">{label}…</span>
       {Array.from({ length: Math.max(1, lines) }).map((_, index) => (
-        <span key={index} className="ops-skeleton-line"/>
+        <span key={index} className="ops-skeleton-line" aria-hidden="true"/>
       ))}
     </div>
   );

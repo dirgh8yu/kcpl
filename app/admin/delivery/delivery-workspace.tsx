@@ -11,7 +11,7 @@ import {
   OpsInlineAlert,
   OpsInspectorHeader,
   OpsInspectorSection,
-  OpsButton,
+  OpsNoMatches,
   OpsPage,
   OpsPageHeader,
   OpsScopeTabs,
@@ -259,7 +259,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                   </tbody>
                 </table>
               </OpsTableWrap>
-            ) : <OpsEmptyState compact kind="search" icon={<Truck size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No results" : "No final-mile movements"} description={filtersActive ? "Try changing or resetting the current filters." : "No accessible shipments are currently in the final-mile queue."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton> : undefined}/>}
+            ) : (filtersActive ? <OpsNoMatches noun="shipments" onClear={reset}/> : <OpsEmptyState compact icon={<Truck size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No final-mile movements" description="No accessible shipments are currently in the final-mile queue."/>)}
             {rows.length ? <footer className="ops-register-footer"><span>{rows.length} deliver{rows.length === 1 ? "y" : "ies"} in this view</span></footer> : null}
           </section>
 

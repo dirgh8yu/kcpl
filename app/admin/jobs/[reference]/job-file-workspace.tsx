@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
+import { Receipt, ListTodo, ShieldCheck,
   AlertTriangle,
   BriefcaseBusiness,
   Check,
@@ -33,7 +33,7 @@ import { workflowBlockerFix, type ShipmentWorkflowReadiness } from "../../workfl
 import { openJobPanel } from "./job-record";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSkeleton, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
 import { ShipmentThread } from "../../../shipment-thread";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments, canVerifyOwnShipmentDocument } from "../../../shipment-document-policy";
@@ -407,7 +407,7 @@ export function JobFileWorkspace({
               <label className="job-form-check job-form-span-all"><input type="checkbox" checked={customs.required} onChange={(event) => setCustoms({ ...customs, required: event.target.checked })}/> Must be done before release</label>
               <div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Add step</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCustomsOpen(false)}>Cancel</OpsButton></div>
             </form> : null}
-            {job.customs_steps.length ? <ul className="job-rows">{job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState compact title="No customs steps yet" description="Add the steps customs needs for this shipment."/>}
+            {job.customs_steps.length ? <ul className="job-rows">{job.customs_steps.map((item) => <CustomsRow key={item.id} item={item} busy={busy} onToggle={() => action({ action: "toggle_customs", stepId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState icon={<ShieldCheck size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No customs steps yet" description="Add the steps customs needs for this shipment."/>}
           </OpsSurface>
         </div>
 
@@ -421,7 +421,7 @@ export function JobFileWorkspace({
               <OpsField label="File"><input required name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"/></OpsField>
               <OpsButton type="submit" variant="secondary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{documentBusy ? "Uploading…" : "Upload"}</OpsButton>
             </form>
-            {documentsLoading ? <div className="ops-skeleton-rows mt-3" aria-label="Loading documents"><span/><span/></div> : documents.length ? <ul className="job-rows mt-2">{documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)} onReview={(status, note) => reviewDocument(document, status, note)}/>)}</ul> : <OpsEmptyState compact title="No documents yet" description="Upload the AWB or BL, invoice, packing list and customs papers here."/>}
+            {documentsLoading ? <OpsSkeleton lines={2} label="Loading documents" className="mt-3"/> : documents.length ? <ul className="job-rows mt-2">{documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)} onReview={(status, note) => reviewDocument(document, status, note)}/>)}</ul> : <OpsEmptyState icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No documents yet" description="Upload the AWB or BL, invoice, packing list and customs papers here."/>}
           </OpsSurface>
         </div>
 
@@ -437,7 +437,7 @@ export function JobFileWorkspace({
               <OpsField label="Detail" className="job-form-span-all"><textarea value={task.detail} onChange={(event) => setTask({ ...task, detail: event.target.value })}/></OpsField>
               <div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Add task</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setTaskOpen(false)}>Cancel</OpsButton></div>
             </form> : null}
-            {job.tasks.length ? <ul className="job-rows">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState compact title="No tasks" description="Add one when something needs an owner or a due time."/>}
+            {job.tasks.length ? <ul className="job-rows">{job.tasks.map((item) => <TaskRow key={item.id} item={item} busy={busy} nowMs={nowMs} onToggle={() => action({ action: "toggle_task", taskId: item.id, completed: !item.completed })}/>)}</ul> : <OpsEmptyState icon={<ListTodo size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No tasks" description="Add one when something needs an owner or a due time."/>}
           </OpsSurface>
         </div>
 
@@ -463,7 +463,7 @@ export function JobFileWorkspace({
         {job.can_view_costs ? <div data-panel="costs">
           <OpsSurface id="shipment-commercial" title="Costs" description="Only staff with cost access see this." action={<OpsButton variant="secondary" size="xs" onClick={() => setCostOpen((value) => !value)} aria-expanded={costOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
             {costOpen ? <form onSubmit={addCost} className="job-form job-form-grid job-form-grid-2 mt-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Supplier"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="job-form-money"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes" className="job-form-span-all"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCostOpen(false)}>Cancel</OpsButton></div></form> : null}
-            {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row"><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState compact title="No costs yet" description="Add freight, customs, transport and handling costs here."/>}
+            {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row"><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState icon={<Receipt size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No costs yet" description="Add freight, customs, transport and handling costs here."/>}
           </OpsSurface>
         </div> : null}
 

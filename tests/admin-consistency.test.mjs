@@ -181,3 +181,29 @@ test("a stacked cell takes its column heading; the first names the row, a namele
   labelStackedCells(node("div", { children: [table] }));
   assert.deepEqual(cells.map((cell) => cell.attrs), [{}, { "data-label": "Partner" }, { "data-cell": "status" }, { "data-stack": "action" }, {}]);
 });
+
+test("an empty list says so one way: an icon, and the shared no-match state for a search", async () => {
+  const noMatchTitles = [];
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    for (const [element] of source.matchAll(/<OpsEmptyState\b[\s\S]*?\/>/g)) {
+      if (path.endsWith("operations-ui.tsx")) continue;
+      assert.match(element, /icon=\{/, `${path}: an empty state without an icon: ${element.slice(0, 120)}`);
+      if (/title=[^>]*\b(match|No results)\b/.test(element)) noMatchTitles.push(`${path}: ${element.slice(0, 120)}`);
+    }
+  }
+  assert.deepEqual(noMatchTitles, [], "a search that finds nothing uses OpsNoMatches");
+  const ui = await readFile(repo("app/admin/operations-ui.tsx"), "utf8");
+  assert.match(ui, /title=\{`No \$\{noun\} match`\} description=\{onClear \? "Try another search, or clear the filters\." : "Try another search\."\}/);
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  assert.match(css, /\.ops-empty h3 \{ font-size: 14px; font-weight: 600;/);
+});
+
+test("content loading inside a page is the shared skeleton, announced once", async () => {
+  const ui = await readFile(repo("app/admin/operations-ui.tsx"), "utf8");
+  assert.match(ui, /<div className=\{cx\("ops-skeleton", className\)\} role="status">\s*<span className="sr-only">\{label\}…<\/span>/);
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /title="Loading|>Loading…<|ops-skeleton-rows/, path);
+  }
+});

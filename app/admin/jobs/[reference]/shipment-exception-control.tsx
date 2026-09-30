@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { CheckCircle2, Plus, RefreshCw } from "lucide-react";
 import type { KcplBranch } from "../../crm/crm-data";
 import {
   shipmentExceptionCategories,
@@ -209,7 +209,7 @@ export function ShipmentExceptionControl({
           </form>
         ) : null}
 
-        {!ordered.length ? <OpsEmptyState title="No exception cases" description="This shipment has no recorded operational incident cases." kind="healthy" compact/> : (
+        {!ordered.length ? <OpsEmptyState icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No exception cases" description="This shipment has no recorded operational incident cases." kind="healthy" compact/> : (
           <div className="job-cases">
             {ordered.map((item) => {
               const overdue = shipmentExceptionIsOverdue(item, nowIso);

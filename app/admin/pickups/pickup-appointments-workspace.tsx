@@ -3,7 +3,7 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
+import { CheckCircle2,
   AlertTriangle,
   ArrowDown,
   ArrowUp,
@@ -34,6 +34,7 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -579,9 +580,9 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 </table>
               </OpsTableWrap>
             ) : rows.length === 0 ? (
-              <OpsEmptyState compact kind="healthy" title="No pickups yet" description="Pickups appear here once a shipment reaches a stage that needs collection from origin. Nothing is waiting on a pickup right now."/>
+              <OpsEmptyState icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} compact kind="healthy" title="No pickups yet" description="Pickups appear here once a shipment reaches a stage that needs collection from origin. Nothing is waiting on a pickup right now."/>
             ) : (
-              <OpsEmptyState compact kind="search" title="No pickups" description="No pickups match the current search and filters." action={<OpsButton type="button" variant="secondary" size="sm" onClick={resetFilters}>Clear filters</OpsButton>}/>
+              <OpsNoMatches noun="pickups" onClear={resetFilters}/>
             )}
 
             <footer className="ops-register-footer">

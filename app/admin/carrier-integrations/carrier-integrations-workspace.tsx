@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Cable, Check, RefreshCw, Route, Ship } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsKpiRail, OpsNoMatches, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
 import type { CarrierProviderDashboard, CarrierShipmentCandidate } from "./carrier-integrations.server";
 import { readable } from "../readable";
@@ -202,7 +202,7 @@ export function CarrierIntegrationsWorkspace({
               <td className="ops-cell-actions">{row.provider === "dhl_express" && row.carrier_reference ? <OpsButton variant="secondary" size="xs" disabled={busy === row.reference} onClick={() => syncDhl(row.reference)}><RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>{busy === row.reference ? "Syncing…" : "Sync DHL"}</OpsButton> : row.provider === "maersk_ocean" ? <Link href={`/admin/visibility?shipment=${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">View feed</Link> : <span className="ops-cell-muted">—</span>}</td>
             </tr>)}</tbody>
           </table>
-        </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Route size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query.trim() ? "No results" : "No carrier-linked shipments"} description={query.trim() ? "No carrier-linked shipments match this search." : "No carrier-linked shipments match this view."}/>}
+        </OpsTableWrap> : (query.trim() ? <OpsNoMatches noun="shipments" onClear={() => setQuery("")}/> : <OpsEmptyState compact icon={<Route size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No carrier-linked shipments" description="Shipments appear here once a carrier is linked to them."/>)}
       </OpsSurface>
 
       {canViewCommercial ? <OpsSurface className="network-section" density="compact" title="Maersk commercial schedules" description="Use five-character UN/LOCODEs. Results are live planning data and are not persisted into KCPL rate history.">

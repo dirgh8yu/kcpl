@@ -20,6 +20,7 @@ import {
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
+  OpsSkeleton,
 } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 
@@ -273,7 +274,7 @@ export function NotificationsWorkspace() {
         </section> : null}
 
         <section className="ops-surface" aria-label="Notification history">
-          {loading && !data ? <OpsEmptyState compact icon={<Bell size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Loading notifications" description="Retrieving retained operational signals."/> : filtered.length ? filtered.map((item) => {
+          {loading && !data ? <OpsSkeleton label="Loading notifications" className="p-4"/> : filtered.length ? filtered.map((item) => {
             const unread = !item.read_at && !item.resolved;
             return <button key={item.id} type="button" onClick={() => void openNotification(item)} className="notifications-row" data-unread={unread || undefined} data-severity={item.severity}>
               <span className="notifications-row-icon"><TypeIcon category={item.category} severity={item.severity}/></span>

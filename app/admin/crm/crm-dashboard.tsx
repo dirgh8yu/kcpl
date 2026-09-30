@@ -18,7 +18,7 @@ import {
   type CrmCustomerSummary,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 import { readable } from "../readable";
@@ -179,7 +179,7 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
                     </tr>;
                   })}</tbody>
                 </table>
-              </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Users size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customers match" description="Change the filter or create a customer account." action={<OpsButton variant="secondary" size="sm" onClick={() => { setQuery(""); setStatusFilter("all"); }}>Reset filters</OpsButton>}/>}
+              </OpsTableWrap> : <OpsNoMatches noun="customers" onClear={() => { setQuery(""); setStatusFilter("all"); }}/>}
               {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} customer{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
             </section>
 

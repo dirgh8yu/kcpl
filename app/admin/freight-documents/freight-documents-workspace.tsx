@@ -13,6 +13,7 @@ import {
   OpsField,
   OpsInspectorHeader,
   OpsInspectorNote,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -373,13 +374,7 @@ export function FreightDocumentsWorkspace({
               </table>
             </OpsTableWrap>
           ) : (
-            <OpsEmptyState
-              compact
-              kind={hasFilters ? "search" : "neutral"}
-              title={hasFilters ? "No Job Files match this view" : "No eligible Job Files"}
-              description={hasFilters ? "Change the document filter or search terms." : "Booked and active shipments will appear here when document generation is available."}
-              action={hasFilters ? <OpsButton size="sm" onClick={() => update({ q: null, view: null, page: null })}>Clear filters</OpsButton> : undefined}
-            />
+            hasFilters ? <OpsNoMatches noun="Job Files" onClear={() => update({ q: null, view: null, page: null })}/> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No Job Files ready for documents" description="Booked and active shipments will appear here when document generation is available."/>
           )}
           {filtered.length ? (
             <footer className="ops-register-footer">
@@ -518,7 +513,7 @@ function FreightDocumentPanel({
               <PanelSection title="PDF preview" description={latest ? `${latest.filename} · revision ${latest.revision}` : "Generate a controlled draft to preview it here."}>
                 {latest ? <div className="freight-document-preview">
                   {previewUrl ? <iframe title={`PDF preview for ${row.reference}`} src={previewUrl}/> : <div className="freight-document-preview-empty"><FileText size={20} strokeWidth={1.75} aria-hidden="true"/><p>Preview the current controlled PDF without leaving this Job File.</p><OpsButton type="button" size="sm" variant="secondary" disabled={previewBusy} onClick={() => void loadPreview()}>{previewBusy ? "Loading preview…" : "Load PDF preview"}</OpsButton></div>}
-                </div> : <OpsEmptyState compact title="No PDF to preview" description="Use Generate to create the first controlled revision." action={<OpsButton type="button" size="sm" onClick={() => setTab("generate")}>Generate document</OpsButton>}/>}
+                </div> : <OpsEmptyState icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No PDF to preview" description="Use Generate to create the first controlled revision." action={<OpsButton type="button" size="sm" onClick={() => setTab("generate")}>Generate document</OpsButton>}/>}
               </PanelSection>
             ) : null}
             {tab === "details" ? (

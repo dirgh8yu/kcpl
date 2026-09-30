@@ -449,7 +449,7 @@
 }
 .kcpl-admin-content .ops-empty { min-height: 176px; padding: 28px 24px; }
 .kcpl-admin-content .ops-empty[data-compact="true"] { min-height: 132px; padding: 22px; }
-.kcpl-admin-content .ops-empty h3 { font-size: 14px; line-height: 20px; }
+.kcpl-admin-content .ops-empty h3 { font-size: 14px; font-weight: 600; line-height: 20px; }
 .kcpl-admin-content .ops-empty p { font-size: 13px; line-height: 20px; }
 .kcpl-admin-content .ops-empty-icon { background: transparent; }
 .kcpl-admin-content .shipments-toolbar {
@@ -2396,17 +2396,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .shipment-status-control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kcpl-admin-content .shipment-status-control-error { margin: 0; color: var(--admin-danger); font-size: 12.5px; line-height: 18px; }
 
-/* ---- Loading placeholders --------------------------------------------------------
- * Grey bars where rows will be, so a page keeps its shape while data arrives. */
-.kcpl-admin-content .ops-skeleton-rows { display: grid; gap: 10px; padding: 6px 0; }
-.kcpl-admin-content .ops-skeleton-rows > span,
-.kcpl-admin-content .ops-skeleton-block { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--admin-surface-muted) 0%, var(--admin-canvas) 50%, var(--admin-surface-muted) 100%); background-size: 200% 100%; animation: ops-skeleton 1.4s linear infinite; }
-.kcpl-admin-content .ops-skeleton-rows > span:nth-child(2n) { width: 72%; }
-.kcpl-admin-content .ops-skeleton-rows > span:nth-child(3n) { width: 86%; }
-@keyframes ops-skeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-content :is(.ops-skeleton-rows > span, .ops-skeleton-block) { animation: none; }
-}
 
 /* "Assigned to me": one toggle on each work list, beside its filters. */
 .kcpl-admin-content .ops-mine-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }

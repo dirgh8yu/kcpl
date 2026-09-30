@@ -7,7 +7,7 @@ import { Plus, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
-import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
 import {
   tenderCanBook,
   tenderCanCancel,
@@ -406,7 +406,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
                   })}
                 </tbody>
               </table>
-            </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No tenders match this view" : "No tenders yet"} description={filtersActive ? "Change or reset the filters." : "Create a tender from an eligible transport order."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}>Reset filters</OpsButton> : undefined}/>}
+            </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="carrier bookings" onClear={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}/> : <OpsEmptyState compact icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No carrier bookings yet" description="Send one from an eligible transport order."/>)}
             {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} tender{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 

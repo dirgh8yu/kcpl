@@ -2,7 +2,7 @@
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
-import {
+import { Radio, Radar,
   Activity,
   AlertTriangle,
   CheckCircle2,
@@ -25,12 +25,14 @@ import {
   OpsInspectorNote,
   OpsInspectorSection,
   OpsMono,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
   OpsScopeTabs,
   OpsSearch,
+  OpsSkeleton,
   OpsSurface,
   OpsTableWrap,
   useAdminPortalContainer,
@@ -561,7 +563,7 @@ export function TrackingVisibilityWorkspace({
               </footer>
             </>
           ) : (
-            <OpsEmptyState compact kind={hasFilters ? "search" : "neutral"} title="No visible shipments" description={hasFilters ? "No shipments match the current visibility filters." : "Tracking feeds will appear when active shipments produce visibility events."} action={hasFilters ? <OpsButton size="sm" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
+            hasFilters ? <OpsNoMatches noun="shipments" onClear={resetFilters}/> : <OpsEmptyState compact icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No tracking yet" description="Tracking feeds will appear when active shipments produce visibility events."/>
           )}
         </section>
 
@@ -587,7 +589,7 @@ export function TrackingVisibilityWorkspace({
                   <OpsFact label="Provider">{featured.last_provider || sourceLabel(featured.last_source) || "Not reported"}</OpsFact>
                 </OpsFacts>
               </>
-            ) : <OpsEmptyState compact title="No active movement" description="Tracking movement will appear here when shipment visibility becomes available."/>}
+            ) : <OpsEmptyState icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No active movement" description="Tracking movement will appear here when shipment visibility becomes available."/>}
           </OpsSurface>
 
           <OpsSurface density="compact" title="Feed health" description="Providers currently represented in shipment feeds." action={<Link href="/admin/carrier-integrations" className="ops-button" data-variant="ghost" data-size="xs">Manage integrations</Link>}>
@@ -606,7 +608,7 @@ export function TrackingVisibilityWorkspace({
                   );
                 })}
               </ul>
-            ) : <OpsEmptyState compact title="No provider signals yet" description="Feeds appear here once a carrier, EDI or counterpart update is received."/>}
+            ) : <OpsEmptyState icon={<Radio size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No provider signals yet" description="Feeds appear here once a carrier, EDI or counterpart update is received."/>}
             <div className="visibility-links"><Link href="/admin/edi">EDI 214 Gateway</Link><Link href="/admin/carrier-integrations">Carrier integrations</Link></div>
           </OpsSurface>
 
@@ -626,7 +628,7 @@ export function TrackingVisibilityWorkspace({
                   </li>
                 ))}
               </ul>
-            ) : <OpsEmptyState compact title="No recent tracking signals" description="Signals appear as carriers and counterparts report movement."/>}
+            ) : <OpsEmptyState icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No recent tracking signals" description="Signals appear as carriers and counterparts report movement."/>}
           </OpsSurface>
         </div>
       </div>
@@ -834,7 +836,7 @@ function TrackingVisibilityPanel({
               </OpsInspectorSection>
 
               <OpsInspectorSection title="Event timeline">
-                {loadingEvents ? <p className="ops-inspector-hint">Loading tracking history…</p> : events.length ? (
+                {loadingEvents ? <OpsSkeleton lines={2} label="Loading tracking history"/> : events.length ? (
                   <ol className="visibility-events">
                     {events.map((event) => (
                       <li key={event.id} data-tone={event.milestone === "delivery_refused" || event.milestone === "exception" ? "danger" : event.milestone === "delivered" ? "success" : "info"}>

@@ -3,8 +3,8 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Cable, Search, Send, ShieldAlert } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { ArrowDownLeft, ArrowUpRight, Cable, Send, ShieldAlert } from "lucide-react";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNoMatches, OpsNotice, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { TmsTender } from "../tenders/tms-tendering";
 import type { EdiLedgerRow } from "./edi-gateway.server";
 
@@ -154,7 +154,7 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
               <td>{row.message ? <span className="ops-cell-muted ops-cell-clamp edi-message" title={row.message}>{row.message}</span> : <span className="ops-cell-muted">—</span>}</td>
             </tr>)}</tbody>
           </table>
-        </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Search size={16} strokeWidth={1.75} aria-hidden="true"/>} title={query.trim() ? "No results" : "No EDI transactions"} description={query.trim() ? "No EDI transactions match this search." : "No EDI transactions match this view."}/>}
+        </OpsTableWrap> : (query.trim() ? <OpsNoMatches noun="EDI messages" onClear={() => setQuery("")}/> : <OpsEmptyState compact icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No EDI messages yet" description="Messages appear here once a tender is sent by EDI."/>)}
       </OpsSurface>
     </div>
   </>;

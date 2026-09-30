@@ -10,6 +10,7 @@ import {
   OpsEmptyState,
   OpsFilterSelect,
   OpsMono,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -243,7 +244,7 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
                 {alert.status === "acknowledged" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12} strokeWidth={1.75}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
               </div>
             </div>;
-          }) : <OpsEmptyState compact kind={counts.active === 0 && status === "active" && !filtersActive ? "healthy" : "search"} icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={counts.active === 0 && status === "active" && !filtersActive ? "No active alerts" : "No alerts match this view"} description={counts.active === 0 && status === "active" && !filtersActive ? "The operational exception queue is clear. Resolved history remains available." : "Change the search or filters to widen the view."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset view</OpsButton> : counts.resolved ? <OpsButton size="sm" variant="secondary" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : undefined}/>}
+          }) : (counts.active === 0 && status === "active" && !filtersActive ? <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No active alerts" description="The exception queue is clear. Resolved history stays available." action={counts.resolved ? <OpsButton size="sm" variant="secondary" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : undefined}/> : <OpsNoMatches noun="alerts" onClear={filtersActive ? reset : undefined}/>)}
         </section>
 
         <p className="alerts-footnote">Acknowledge says someone has seen it; the alert stays open until it’s resolved. A resolved alert comes back if the problem is still there at the next check.</p>

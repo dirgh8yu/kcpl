@@ -15,7 +15,7 @@ import {
 import { quoteCurrencies } from "./admin-data";
 import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSummary } from "./admin-data";
 import { AdminShipmentPanel } from "./admin-shipment-panel";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsScopeTabs, OpsSearch, OpsSurface } from "./operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsScopeTabs, OpsSearch, OpsSkeleton, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
 import { StaffAssignmentPicker } from "./staff-assignment-picker";
 import { freightModeLabel } from "./freight-mode";
@@ -456,13 +456,13 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                     <span className="enq-row-signals">{quote.email_count ? <span title={`${quote.email_count} customer email${quote.email_count === 1 ? "" : "s"}`}><Mail size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.email_count}</span> : null}{quote.note_count ? <span title={`${quote.note_count} internal note${quote.note_count === 1 ? "" : "s"}`}><MessageSquareText size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.note_count}</span> : null}</span>
                   </span>
                 </button>;
-              }) : quotes.length ? <OpsEmptyState compact kind="search" title="No enquiries match" description="Change the search terms or the status filter above."/> : <OpsEmptyState compact kind="healthy" title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
+              }) : quotes.length ? <OpsNoMatches noun="enquiries" onClear={() => { setQuery(""); setStatusFilter("open"); }}/> : <OpsEmptyState icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} compact kind="healthy" title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
             </div>
           </aside>
 
           <section className="enq-detail" aria-label="Enquiry detail">
             {!selectedReference ? <section className="ops-surface" data-density="compact"><div className="ops-surface-body"><OpsEmptyState compact kind={quotes.length ? "neutral" : "healthy"} icon={quotes.length ? <Package size={16} strokeWidth={1.75} aria-hidden="true"/> : <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title={quotes.length ? "Choose an enquiry" : "No enquiries waiting"} description={quotes.length ? "Select a freight enquiry to review the request, customer relationship, pricing and shipment handoff." : "The website enquiry inbox is currently clear."}/></div></section> : null}
-            {loading ? <p className="enq-loading" role="status">Loading enquiry…</p> : null}
+            {loading ? <OpsSkeleton label="Loading enquiry"/> : null}
             {!loading && selectedReference && !detail ? <OpsNotice tone="danger">{notice?.message || "This enquiry could not be loaded."}</OpsNotice> : null}
 
             {!loading && detail ? <>

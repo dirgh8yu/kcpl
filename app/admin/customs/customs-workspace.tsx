@@ -15,6 +15,7 @@ import {
   OpsInlineAlert,
   OpsInspectorHeader,
   OpsInspectorSection,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -415,7 +416,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
                   </tbody>
                 </table>
               </OpsTableWrap>
-            ) : <OpsEmptyState compact kind="search" icon={<ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No results" : "No customs entries"} description={filtersActive ? "Try changing or resetting the current filters." : "No shipments are currently in Customs clearance."} action={filtersActive ? <OpsButton size="sm" variant="secondary" onClick={reset}>Reset filters</OpsButton> : undefined}/>}
+            ) : (filtersActive ? <OpsNoMatches noun="customs entries" onClear={reset}/> : <OpsEmptyState compact icon={<ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customs entries" description="No shipments are currently in customs clearance."/>)}
             {visible.length ? <footer className="ops-register-footer"><span>{visible.length} shipment{visible.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 

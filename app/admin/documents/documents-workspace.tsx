@@ -21,6 +21,7 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -366,7 +367,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
                 </tbody>
               </table>
             </OpsTableWrap>
-          ) : <OpsEmptyState compact kind="search" icon={<Folder size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No results" : "No documents"} description={filtersActive ? "Try changing or resetting the current filters." : "No documents are available in the vault."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>}
+          ) : (filtersActive ? <OpsNoMatches noun="documents" onClear={reset}/> : <OpsEmptyState compact icon={<Folder size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No documents yet" description="No documents are in the vault yet."/>)}
           {visible.length ? <footer className="ops-register-footer"><span>{visible.length} document{visible.length === 1 ? "" : "s"} in this view</span></footer> : null}
         </section>
 

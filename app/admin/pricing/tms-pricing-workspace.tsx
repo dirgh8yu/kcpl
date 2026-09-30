@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Calculator, CheckCircle2, CircleAlert, FilePlus2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import {
   deriveNrbMidpointFxRate,
@@ -272,7 +272,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
                 </tr>;
               })}</tbody>
             </table>
-          </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title={filtersActive ? "No orders match" : "No orders ready for sell pricing"} description={filtersActive ? "Change or reset the filters." : "Select a partner buy rate on the rate desk first. Only non-master orders with a selected procurement cost appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={resetFilters}>Reset filters</OpsButton> : undefined}/>}
+          </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="orders" onClear={resetFilters}/> : <OpsEmptyState compact icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No orders ready for sell pricing" description="Select a partner buy rate on the rate desk first. Only non-master orders with a selected procurement cost appear here."/>)}
           {visible.length ? <footer className="ops-register-footer"><span>Only non-master orders with a selected procurement cost appear here.</span></footer> : null}
         </section>
 
@@ -355,7 +355,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
               <td data-cell="status"><OpsBadge tone={rule.active ? "success" : "neutral"}>{rule.active ? "Active" : "Inactive"}</OpsBadge></td>
             </tr>)}</tbody>
           </table>
-        </OpsTableWrap> : <OpsEmptyState compact title="No custom pricing rules" description="KCPL uses each customer's markup percentage, then the system defaults."/>}
+        </OpsTableWrap> : <OpsEmptyState icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No custom pricing rules" description="KCPL uses each customer's markup percentage, then the system defaults."/>}
       </OpsSurface>
     </div>
   </OpsPage>;

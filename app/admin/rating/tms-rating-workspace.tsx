@@ -3,7 +3,7 @@ import { useWorkspaceRefresh } from "../use-workspace-refresh";
 
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Calculator, PackagePlus, Plus, Route, X } from "lucide-react";
+import { Package, ArrowLeft, Calculator, PackagePlus, Plus, Route, X } from "lucide-react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSurface, OpsTableWrap } from "../operations-ui";
 import {
@@ -248,7 +248,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
             action={selectedOrder ? <OpsButton size="sm" variant="primary" onClick={() => rateSelectedOrder()} disabled={busy}><Calculator size={14} strokeWidth={1.75} aria-hidden="true"/>Rate order</OpsButton> : undefined}
             flush
           >
-            {!selectedOrder ? <OpsEmptyState compact title="No order selected" description="Choose an order to compare Partner procurement rates."/> : results.length ? <OpsTableWrap>
+            {!selectedOrder ? <OpsEmptyState icon={<Package size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No order selected" description="Choose an order to compare Partner procurement rates."/> : results.length ? <OpsTableWrap>
               <table className="ops-table ops-register-table ops-stack-table rate-results-table" aria-label="Compatible Partner buy rates">
                 <thead><tr><th>Partner</th><th>Service</th><th>Basis</th><th className="ops-col-num">Linehaul</th><th className="ops-col-num">Fuel</th><th className="ops-col-num">Accessorials</th><th className="ops-col-num">Total</th><th>Transit</th><th><span className="sr-only">Action</span></th></tr></thead>
                 <tbody>{results.map((result) => {

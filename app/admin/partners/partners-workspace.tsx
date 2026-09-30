@@ -31,6 +31,7 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
+  OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
@@ -329,7 +330,7 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                   })}
                 </tbody>
               </table>
-            </OpsTableWrap> : <OpsEmptyState compact kind="search" icon={<Handshake size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No partners match" description="Try a partner name, identifier, country, city, port, service, contact or relationship type, or change the filters." action={<OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton>}/>}
+            </OpsTableWrap> : <OpsNoMatches noun="partners" onClear={reset}/>}
             {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} partner{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 

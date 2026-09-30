@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BellRing, CheckCircle2, ClipboardCheck, FileText, Landmark, RefreshCw, Route, UserRound, WalletCards } from "lucide-react";
 import { shipmentActivityCategories, shipmentActivityCategoryLabels, type ShipmentActivityCategory, type ShipmentActivityItem, type ShipmentActivityTimeline } from "../../shipment-activity";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsNotice, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTimeline, type OpsTimelineEntry } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsNoMatches, OpsNotice, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTimeline, type OpsTimelineEntry } from "../../operations-ui";
 
 function dateTime(value: string) {
   const date = new Date(value);
@@ -176,7 +176,7 @@ export function ShipmentActivityTimeline({ initialTimeline, highlightId }: { ini
           tabs={<OpsScopeTabs label="Activity categories" items={[{ value: "all" as const, label: "All", count: timeline.items.length }, ...shipmentActivityCategories.filter((value) => counts[value]).map((value) => ({ value, label: shipmentActivityCategoryLabels[value], count: counts[value] }))]} value={category} onChange={setCategory}/>}
         />
 
-        <OpsTimeline entries={entries} empty={<OpsEmptyState compact kind="search" title="No activity matches this view" description="Try another category or clear the search." action={<OpsButton variant="secondary" size="sm" onClick={() => { setCategory("all"); setQuery(""); }}>Reset view</OpsButton>}/>}/>
+        <OpsTimeline entries={entries} empty={<OpsNoMatches noun="activity entries" onClear={() => { setCategory("all"); setQuery(""); }}/>}/>
       </OpsSurface>
     </div>
   );

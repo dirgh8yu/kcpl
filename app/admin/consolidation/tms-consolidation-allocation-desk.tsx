@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
+import { PackagePlus, ArrowRight, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsInspectorNote, OpsNotice, OpsSurface, OpsTableWrap } from "../operations-ui";
 import type { ConsolidationAllocationView } from "./tms-consolidation-allocation";
 import type { TmsConsolidationLoad } from "./tms-consolidation";
@@ -151,6 +151,6 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
           </OpsInspectorNote></div> : null}
         </>}
       </div> : null}
-    </div> : <OpsEmptyState compact title="No released consolidation loads" description="Release a draft load to procurement before preparing its commercial allocation."/>}
+    </div> : <OpsEmptyState icon={<PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No released consolidation loads" description="Release a draft load to procurement before preparing its commercial allocation."/>}
   </OpsSurface>;
 }

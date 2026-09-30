@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { RECENT_DELIVERED_WINDOW } from "../operational-shipments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
+import { Package, AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
 import { shipmentStatusLabels, shipmentStatuses, type ShipmentStatus } from "../../shipment-types";
 import type { ShipmentActivityItem, ShipmentActivityTimeline } from "../shipment-activity";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
@@ -15,7 +15,7 @@ import { compareWorkQueueImpact, type ReceivableExposure } from "../command-cent
 import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
 import { useFreshnessLabel, useRegisterSnapshot } from "../use-register-poll";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsTableWrap, useAdminPortalContainer } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsSkeleton, OpsTableWrap, useAdminPortalContainer } from "../operations-ui";
 import {
   ModeIcon,
   ShipmentCards,
@@ -389,7 +389,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
 
         {!filtered.length ? (
           <section className="ops-surface p-4" aria-label="Shipment register">
-            <OpsEmptyState compact kind="search" title="No shipments" description={hasFilters ? "No shipments match the current filters." : "No shipment records are available in this scope."} action={olderReference ? <Link href={`/admin/jobs/${encodeURIComponent(olderReference)}`} className="ops-button" data-variant="secondary" data-size="md">Open Job File {olderReference}</Link> : hasFilters ? <OpsButton type="button" variant="secondary" onClick={resetFilters}>Clear filters</OpsButton> : undefined}/>
+            {hasFilters || olderReference ? <OpsNoMatches noun="shipments" onClear={hasFilters ? resetFilters : undefined} action={olderReference ? <Link href={`/admin/jobs/${encodeURIComponent(olderReference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File {olderReference}</Link> : undefined}/> : <OpsEmptyState compact icon={<Package size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No shipments yet" description="No shipment records are available in this scope."/>}
           </section>
         ) : view === "cards" ? (
           <ShipmentCards jobs={pageRows} selectedReference={selected?.reference ?? null} onSelect={setSelectedReference} liveActivityRefs={liveActivityRefs}/>
@@ -724,7 +724,7 @@ function ShipmentInspectorActivity({ reference, highlightId, update, generatedAt
   return (
     <section className="shipment-sheet-section shipment-sheet-activity" data-flash={flash || undefined}>
       <h3>{flash ? "Updated just now" : "Recent activity"}</h3>
-      {state.kind === "loading" ? <p className="shipment-sheet-activity-note">Loading…</p> : null}
+      {state.kind === "loading" ? <OpsSkeleton lines={2} label="Loading activity"/> : null}
       {state.kind === "error" ? (
         <p className="shipment-sheet-activity-note">
           Activity is unavailable here. <Link className="shipment-sheet-activity-more" href={`/admin/jobs/${encodeURIComponent(reference)}?step=history`}>Open the Job File</Link>
