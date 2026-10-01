@@ -1,4 +1,4 @@
-import { mockQuoteSummaries, qaMockDataEnabled } from "./qa-fixtures";
+import { mockQuoteDetail, mockQuoteSummaries, qaMockDataEnabled } from "./qa-fixtures";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
 import {
@@ -194,6 +194,7 @@ export async function listQuoteSummaries(context: KcplStaffContext): Promise<Quo
 }
 
 export async function getQuoteDetail(reference: string): Promise<QuoteDetail | null | undefined> {
+  if (qaMockDataEnabled()) return mockQuoteDetail(reference);
   if (!configured()) return undefined;
   const db = firebaseAdminDb();
   const normalized = reference.trim().toUpperCase();

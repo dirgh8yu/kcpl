@@ -1,5 +1,6 @@
 "use client";
 import { nepalOperationalDate } from "../../invoice-effective-status";
+import { freightModeLabel } from "../freight-mode";
 
 import { ArrowRight, Package, Plane, Ship, Train, Truck } from "lucide-react";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../shipment-types";
@@ -178,7 +179,7 @@ export function ShipmentCards({ jobs, selectedReference, onSelect, liveActivityR
               <strong className="ship-card-customer">{job.customer_name || "Customer not linked"}</strong>
               <ShipRoute origin={job.origin} destination={job.destination} />
               <span className="ship-card-meta">
-                <span className="ship-card-mode"><ModeIcon mode={job.mode} size={14} />{job.mode || "—"}</span>
+                <span className="ship-card-mode"><ModeIcon mode={job.mode} size={14} />{job.mode ? freightModeLabel(job.mode) : "—"}</span>
                 <span>ETA {shortDate(job.eta)}</span>
                 <span className={owner === "Unassigned" ? "ship-card-warn" : undefined}>{owner}</span>
               </span>

@@ -22,6 +22,7 @@
 import type { KcplBranch } from "./crm/crm-data";
 import type { KcplStaffContext } from "./staff-directory.server";
 import type { ShipmentMessageView } from "../shipment-messages";
+import type { QuoteDetail } from "./admin-data";
 import type { FinanceCustomerResolution } from "./finance/finance-customer-resolution";
 import type { Partner360Snapshot } from "./partners/partner-360";
 import { qaAuthBypassEnabled } from "./qa-auth-bypass.ts";
@@ -3045,4 +3046,33 @@ export function mockInvoiceCustomerResolution(reference: string, now = Date.now(
     return { kind: "unlinked", quoteReference: job.quote_reference, suggestions: [{ id: job.customer_id ?? "cust-1", display_name: job.customer_name, reason: "the same company name on the quote" }] };
   }
   return { kind: "resolved", customerId: job.customer_id ?? "cust-1", customerName: job.customer_name };
+}
+
+/** A preview enquiry opened in full: the list row plus the request details,
+ *  one internal note and the email it was quoted by. */
+export function mockQuoteDetail(reference: string, now = Date.now()): QuoteDetail | null {
+  const summary = mockQuoteSummaries(ALL_BRANCH_CONTEXT, now).find((quote) => quote.reference === reference.trim().toUpperCase());
+  if (!summary) return null;
+  const quoted = ["quoted", "won", "lost"].includes(summary.status);
+  return {
+    ...summary,
+    weight: summary.mode === "air" ? "420" : "8600",
+    weight_unit: "kg",
+    length: "120",
+    width: "100",
+    height: "110",
+    dimension_unit: "cm",
+    timing: "Ready to ship within two weeks",
+    requirements: summary.mode === "ocean" ? "One 20GP; customs clearance at Birgunj" : "Door delivery in Kathmandu",
+    quote_currency: "USD",
+    quoted_amount: quoted ? "4200" : null,
+    internal_cost: quoted ? "3450" : null,
+    valid_until: quoted ? iso(now, 14 * DAY).slice(0, 10) : null,
+    customer_quote_note: quoted ? "Rate includes origin handling and Birgunj clearance." : null,
+    crm_match_state: summary.customer_id ? "linked" : null,
+    crm_matches: [],
+    shipment: null,
+    notes: [{ id: 1, quote_reference: summary.reference, note: "Customer asked for door delivery; confirm the truck size.", author_name: "Meera Karki", author_email: "meera.karki@kcpl.com.np", created_at: iso(now, -20 * HOUR) }],
+    communications: [],
+  };
 }

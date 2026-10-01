@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../freight-mode";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ChevronRight, Circle, ShieldAlert, Sparkles, X } from "lucide-react";
@@ -143,7 +144,7 @@ function Inspector({
     <OpsInspectorHeader
       kicker={row.reference}
       title={row.customer_name}
-      subtitle={`${row.branch || "Branch repair needed"} · ${row.mode} · ${row.assigned_to_name || row.assigned_to_email || "Unassigned"}`}
+      subtitle={`${row.branch || "Branch repair needed"} · ${freightModeLabel(row.mode)} · ${row.assigned_to_name || row.assigned_to_email || "Unassigned"}`}
       actions={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close clearance inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
     />
 
@@ -385,7 +386,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
                       >
                         <td data-cell="primary">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{row.reference}</span>
-                          <span className="ops-cell-secondary">{row.mode} · {directionLabel(row.document_direction)}</span>
+                          <span className="ops-cell-secondary">{freightModeLabel(row.mode)} · {directionLabel(row.document_direction)}</span>
                         </td>
                         <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>

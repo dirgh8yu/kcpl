@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { freightModeLabel } from "../freight-mode";
 import { Calculator, Copy, ExternalLink, MapPin, ShieldCheck } from "lucide-react";
 import { quoteCurrencies, type QuoteCurrency } from "../admin-data";
 import { OpsButton, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsNotice, OpsSurface } from "../operations-ui";
@@ -316,7 +317,7 @@ export function MarketEstimateWorkspace() {
       {error ? <div role="alert"><OpsNotice tone="danger"><strong>Estimate unavailable.</strong> {error}</OpsNotice></div> : null}
       {notice ? <OpsInlineAlert tone="success" icon={<Copy size={14} strokeWidth={1.75} aria-hidden="true"/>}>{notice}</OpsInlineAlert> : null}
 
-      {estimate ? <OpsSurface density="compact" title={<span className="market-route">{estimate.origin} → {estimate.destination}</span>} description={<>{estimate.mode} · {estimate.load_type} × {estimate.quantity}</>}>
+      {estimate ? <OpsSurface density="compact" title={<span className="market-route">{estimate.origin} → {estimate.destination}</span>} description={<>{freightModeLabel(estimate.mode)} · {estimate.load_type} × {estimate.quantity}</>}>
         <p className="market-range-label">Estimated freight range</p>
         <p className="plan-result">{money(estimate.min, estimate.currency)} – {money(estimate.max, estimate.currency)}</p>
         <OpsFacts>

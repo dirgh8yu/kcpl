@@ -269,3 +269,16 @@ test("an order's details open beside the Buy rates list, not under it", async ()
   assert.match(source, /<div className="ops-register-layout" data-inspector=\{selected \? "open" : undefined\}>/);
   assert.match(source, /<aside className="ops-inspector" aria-label=\{`Order \$\{selected\.id\}`\}>/);
 });
+
+test("a list row's reference, status badge and freight mode read the same on every page", async () => {
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  assert.match(css, /\.ops-register-table tbody td:is\(\[data-cell="primary"\], :first-child\) :is\(\.ops-mono, \.ops-cell-id, \.ops-cell-ref\):not\(\.ops-cell-secondary\) \{ color: var\(--admin-ink\); font-size: var\(--app-text-sm\); font-weight: 600; \}/);
+  assert.match(css, /\.kcpl-admin-content \.ops-cell-ref \{ color: var\(--admin-ink\);/);
+  assert.match(css, /\.kcpl-admin-content table \.ops-badge > i \{ display: none; \}/);
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    // A mode printed for people goes through freightModeLabel ("Sea freight", not "sea").
+    assert.doesNotMatch(source, /(?<![=\w(])\{\w+(?:\.\w+)*\.mode(?: \|\| "[^"]*")?\}/, `${path}: use freightModeLabel`);
+    assert.doesNotMatch(source, /\$\{\w+(?:\.\w+)*\.mode\}/, `${path}: use freightModeLabel`);
+  }
+});

@@ -1,5 +1,6 @@
 "use client";
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
+import { freightModeLabel } from "../freight-mode";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -376,7 +377,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
                     <th>Tender</th>
                     <th>Route</th>
                     {compact ? null : <th>Partner</th>}
-                    <th className="ops-col-num">Commercial</th>
+                    <th className="ops-col-num">Offer</th>
                     <th>State</th>
                     {compact ? null : <th>Deadline</th>}
                   </tr>
@@ -392,7 +393,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
                         </td>
                         <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp" title={`${tender.origin} → ${tender.destination}`}>{tender.origin} → {tender.destination}</span>
-                          <span className="ops-cell-secondary">{compact ? tender.partner_name : tender.mode}</span>
+                          <span className="ops-cell-secondary">{compact ? tender.partner_name : freightModeLabel(tender.mode)}</span>
                         </td>
                         {compact ? null : <td data-cell="meta" data-label="Partner">
                           <span className="ops-cell-primary ops-cell-clamp" title={tender.partner_name}>{tender.partner_name}</span>
@@ -454,7 +455,7 @@ function TenderInspector({ tender, order, inspectorRef, onClose, canManage, busy
       <OpsInspectorHeader
         kicker={tender.tender_reference}
         title={tender.partner_name}
-        subtitle={`${tender.origin} → ${tender.destination} · ${tender.mode}`}
+        subtitle={`${tender.origin} → ${tender.destination} · ${freightModeLabel(tender.mode)}`}
         actions={<>
           <OpsBadge tone={stateTone(tender.status)}>{tmsTenderStatusLabels[tender.status]}</OpsBadge>
           <button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close tender inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>

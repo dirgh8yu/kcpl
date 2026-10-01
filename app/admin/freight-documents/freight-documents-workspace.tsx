@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../freight-mode";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -336,7 +337,7 @@ export function FreightDocumentsWorkspace({
                         </td>
                         <td data-cell="route">
                           <span className="ops-cell-primary freight-documents-route" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span>
-                          <span className="ops-cell-secondary freight-documents-route">{row.mode || "Mode not set"}{row.carrier_name ? ` · ${row.carrier_name}` : ""}</span>
+                          <span className="ops-cell-secondary freight-documents-route">{freightModeLabel(row.mode)}{row.carrier_name ? ` · ${row.carrier_name}` : ""}</span>
                         </td>
                         <td data-cell="meta" data-label="Document">
                           {latest ? <span className="ops-cell-primary freight-documents-doc" title={latest.label}>{latest.label}</span> : <span className="ops-cell-primary freight-documents-none">Not generated</span>}
@@ -484,7 +485,7 @@ function FreightDocumentPanel({
           <OpsInspectorHeader
             kicker={`${row.reference}${row.booking_reference ? ` · Booking ${row.booking_reference}` : ""}`}
             title="Document production"
-            subtitle={`${row.customer_name} · ${row.origin} → ${row.destination} · ${row.mode || "Mode not set"}`}
+            subtitle={`${row.customer_name} · ${row.origin} → ${row.destination} · ${freightModeLabel(row.mode)}`}
             actions={(
               <>
                 <OpsBadge tone={status.tone}>{status.label}</OpsBadge>

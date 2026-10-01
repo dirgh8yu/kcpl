@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../freight-mode";
 import { FormEvent, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Download, Folder, ShieldCheck, Trash2, X } from "lucide-react";
@@ -156,7 +157,7 @@ function Inspector({
           <OpsFacts>
             <OpsFact label="Document">{row.filename}</OpsFact>
             <OpsFact label="Customer">{row.customer_name}</OpsFact>
-            <OpsFact label="Route">{`${row.origin} → ${row.destination} · ${row.mode}`}</OpsFact>
+            <OpsFact label="Route">{`${row.origin} → ${row.destination} · ${freightModeLabel(row.mode)}`}</OpsFact>
             <OpsFact label="File size">{bytes(row.size_bytes)}</OpsFact>
             <OpsFact label="Uploaded">{`${dateTime(row.uploaded_at)} · ${row.uploaded_by}`}</OpsFact>
             <OpsFact label="Reviewed by">{row.reviewed_by || row.reviewed_by_email || "Not reviewed"}</OpsFact>

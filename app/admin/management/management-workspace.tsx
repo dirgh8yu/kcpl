@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { freightModeLabel } from "../freight-mode";
 import { AlertTriangle, Download } from "lucide-react";
 import type { CrmCurrency } from "../crm/crm-data";
 import type { ManagementAnalytics, ManagementRangeKey, TrendPoint } from "./management-data";
@@ -121,8 +122,8 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No customer P&L in this period."/>}
         </OpsSurface>
         <OpsSurface density="compact" title="Route economics" description="Selected-period route performance." flush>
-          {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${row.mode}-${row.currency}-${index}`}>
-            <td><span className="ops-cell-primary ops-cell-clamp" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span><span className="ops-cell-secondary">{row.mode} · {row.currency}</span></td>
+          {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${freightModeLabel(row.mode)}-${row.currency}-${index}`}>
+            <td><span className="ops-cell-primary ops-cell-clamp" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span><span className="ops-cell-secondary">{freightModeLabel(row.mode)} · {row.currency}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.jobs}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>

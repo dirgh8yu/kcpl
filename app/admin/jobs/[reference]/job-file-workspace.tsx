@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../../freight-mode";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Receipt, ListTodo, ShieldCheck,
@@ -386,7 +387,7 @@ export function JobFileWorkspace({
             <OpsFacts columns={2}>
               <OpsFact label="Customer">{job.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(job.customer_id)}`}>{job.customer_name || job.customer_id}</Link> : "Not linked"}</OpsFact>
               <OpsFact label="Quote"><OpsMono>{job.quote_reference}</OpsMono></OpsFact>
-              <OpsFact label="Mode">{job.mode || "Not set"}</OpsFact>
+              <OpsFact label="Mode">{job.mode ? freightModeLabel(job.mode) : "Not set"}</OpsFact>
               <OpsFact label="Carrier" warning={!job.carrier}>{job.carrier || "Not chosen"}{job.carrier_reference ? <> · <OpsMono>{job.carrier_reference}</OpsMono></> : null}</OpsFact>
               <OpsFact label="Owner" warning={!job.assigned_to_uid && !job.assigned_to_name && !job.assigned_to_email}>{job.assigned_to_uid ? <Link href={`/admin/workload/${encodeURIComponent(job.assigned_to_uid)}`}>{job.assigned_to_name || job.assigned_to_email || "Assigned"}</Link> : job.assigned_to_name || job.assigned_to_email || "Nobody yet"}</OpsFact>
               <OpsFact label="Owner contact">{job.assigned_to_phone ? <a href={`tel:${job.assigned_to_phone}`}>{job.assigned_to_phone}</a> : job.assigned_to_email ? <a href={`mailto:${job.assigned_to_email}`}>{job.assigned_to_email}</a> : "Not set"}</OpsFact>

@@ -495,7 +495,7 @@
 .kcpl-admin-content .shipments-register .shipments-priority[data-priority="urgent"] { color: var(--admin-danger); }
 
 /* The reference is the one-click way into the Job File. */
-.kcpl-admin-content .shipments-register .shipments-ref-link { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; }
+.kcpl-admin-content .shipments-register .shipments-ref-link { color: var(--admin-ink); font-size: var(--app-text-sm); font-weight: 600; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .shipments-register .shipments-ref-link:hover { text-decoration: underline; text-underline-offset: 2px; } }
 /* Mode rides on the route line instead of taking a column. */
 .kcpl-admin-content .shipments-register .shipments-route-line { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--admin-muted); }

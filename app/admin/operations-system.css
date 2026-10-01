@@ -606,7 +606,7 @@
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ship-card:hover { border-color: var(--admin-line-strong); box-shadow: var(--app-surface-shadow); } }
 .kcpl-admin-content .ship-card[data-selected="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
 .kcpl-admin-content .ship-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.kcpl-admin-content .ship-card-ref { font-size: 12px; font-weight: 500; color: var(--admin-info); }
+.kcpl-admin-content .ship-card-ref { font-size: var(--app-text-sm); font-weight: 600; color: var(--admin-ink); }
 .kcpl-admin-content .ship-card-customer { font-size: 14px; font-weight: 600; color: var(--admin-ink); line-height: 18px; }
 .kcpl-admin-content .ship-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: var(--admin-muted); font-size: 12px; line-height: 16px; }
 .kcpl-admin-content .ship-card-mode { display: inline-flex; align-items: center; gap: 5px; }
@@ -620,7 +620,7 @@
 .kcpl-admin-content .ship-lane { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 16px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface); padding: 12px 16px; text-align: left; cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ship-lane:hover { border-color: var(--admin-line-strong); box-shadow: var(--app-surface-shadow); } }
 .kcpl-admin-content .ship-lane[data-selected="true"] { border-color: var(--admin-crimson); box-shadow: inset 0 0 0 1px var(--admin-crimson); }
-.kcpl-admin-content .ship-lane-ref { font-size: 12px; font-weight: 500; color: var(--admin-info); }
+.kcpl-admin-content .ship-lane-ref { font-size: var(--app-text-sm); font-weight: 600; color: var(--admin-ink); }
 .kcpl-admin-content .ship-lane-track { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .kcpl-admin-content .ship-lane-end { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--admin-ink); font-size: 13px; font-weight: 500; }
 .kcpl-admin-content .ship-lane-end .loc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2026,7 +2026,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-cell-id { color: var(--admin-ink); font-size: 12px; font-weight: 600; }
 .kcpl-admin-content .ops-cell-secondary.ops-mono { font-size: 11.5px; }
 .kcpl-admin-content .ops-cell-clamp { display: block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kcpl-admin-content .ops-cell-ref { color: var(--admin-info); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.kcpl-admin-content .ops-cell-ref { color: var(--admin-ink); font-size: var(--app-text-sm); font-weight: 600; text-decoration: none; white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content a.ops-cell-ref:hover { text-decoration: underline; text-underline-offset: 3px; } }
 .kcpl-admin-content .ops-cell-muted { color: var(--admin-muted); font-size: 12.5px; white-space: nowrap; }
 .kcpl-admin-content .ops-cell-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap; }
@@ -2531,3 +2531,13 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 @media (prefers-reduced-motion: reduce) {
   .kcpl-admin-content .crm360-tool > summary, .kcpl-admin-content .crm360-tool > summary > svg { transition: none; }
 }
+
+/* A list row's own reference reads one way on every page: ink, semibold,
+ * 12px mono. The row opens the record, so a reference that is also a link
+ * shows it only on hover. References to other records stay muted. */
+.kcpl-admin-content .ops-register-table tbody td:is([data-cell="primary"], :first-child) :is(.ops-mono, .ops-cell-id, .ops-cell-ref):not(.ops-cell-secondary) { color: var(--admin-ink); font-size: var(--app-text-sm); font-weight: 600; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content :is(.ops-cell-ref, .shipments-ref-link, .ship-card-ref, .ship-lane-ref):hover { text-decoration: underline; text-underline-offset: 3px; } }
+
+/* In a list the badge's colour carries the state, and rows of dots read as
+ * noise; the dot is kept for the one status beside a record's title. */
+.kcpl-admin-content table .ops-badge > i { display: none; }

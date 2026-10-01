@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../freight-mode";
 import { useEffect, useMemo, useRef } from "react";
 import { AlertTriangle, CheckCircle2, ChevronRight, Truck, X } from "lucide-react";
 import {
@@ -80,7 +81,7 @@ function Inspector({ row, onClose, inspectorRef }: { row: DeliveryQueueRow; onCl
     <OpsInspectorHeader
       kicker={row.reference}
       title={row.customer_name}
-      subtitle={`${row.origin} → ${row.destination} · ${row.mode}`}
+      subtitle={`${row.origin} → ${row.destination} · ${freightModeLabel(row.mode)}`}
       actions={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close delivery inspector"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
     />
 
@@ -228,7 +229,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                       >
                         <td data-cell="primary">
                           <span className="ops-cell-primary ops-mono ops-cell-id">{row.reference}</span>
-                          <span className="ops-cell-secondary">{row.mode}</span>
+                          <span className="ops-cell-secondary">{freightModeLabel(row.mode)}</span>
                         </td>
                         <td data-cell="route">
                           <span className="ops-cell-primary ops-cell-clamp">{row.customer_name}</span>

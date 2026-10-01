@@ -1,5 +1,6 @@
 "use client";
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
+import { freightModeLabel } from "../freight-mode";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -147,7 +148,7 @@ export function CarrierIntegrationsWorkspace({
                 <strong>{provider.label}</strong>
                 <OpsBadge tone={stateTone(provider.state)}>{stateLabel(provider.state)}</OpsBadge>
               </div>
-              <p className="network-provider-meta">{provider.modes.join(" / ")} · {provider.auth}</p>
+              <p className="network-provider-meta">{provider.modes.map((mode) => freightModeLabel(mode)).join(" / ")} · {provider.auth}</p>
               <p className="network-provider-note">{provider.docs_note}</p>
               {provider.last_message ? <p className="network-provider-message"><span>Last message</span>{provider.last_message}</p> : null}
               {provider.id === "maersk_ocean" ? <p className="network-provider-message"><span>Webhook endpoint</span><code className="ops-mono">/api/integrations/carriers/maersk</code></p> : null}
@@ -189,7 +190,7 @@ export function CarrierIntegrationsWorkspace({
             <tbody>{filtered.map((row) => <tr key={row.reference}>
               <td>
                 <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`} className="ops-cell-primary ops-mono ops-cell-id network-link">{row.reference}</Link>
-                <span className="ops-cell-secondary">{row.branch} · {row.mode || "mode not set"}</span>
+                <span className="ops-cell-secondary">{row.branch} · {freightModeLabel(row.mode)}</span>
               </td>
               <td className="network-nowrap">{providerLabel(row)}</td>
               <td>{row.carrier_reference || row.booking_reference ? <span className="ops-mono ops-cell-muted network-nowrap">{row.carrier_reference || row.booking_reference}</span> : <span className="ops-cell-muted">—</span>}</td>

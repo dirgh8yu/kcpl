@@ -2,12 +2,14 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.se
 import { canAccessBranchValue } from "./branch-access-policy";
 import { checkShipmentBranchAccess } from "./shipment-access.server";
 import type { KcplStaffContext } from "./staff-directory.server";
+import { mockQuoteDetail, qaMockDataEnabled } from "./qa-fixtures";
 
 function nullable(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 export async function checkQuoteBranchAccess(reference: string, staff: KcplStaffContext) {
+  if (qaMockDataEnabled()) return mockQuoteDetail(reference) ? { kind: "allowed" as const, scope: "unlinked" as const } : { kind: "missing" as const };
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   const db = firebaseAdminDb();
   const normalized = reference.trim().toUpperCase();

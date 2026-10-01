@@ -129,6 +129,7 @@ test("every loader gates its fixture behind qaMockDataEnabled", () => {
     "app/admin/crm/crm-customer-documents.server.ts",
     "app/admin/crm/crm-customer-finance.server.ts",
     "app/admin/finance/finance-linking.server.ts",
+    "app/admin/quote-access.server.ts",
     // Workload and Website gallery
     "app/admin/workload/[key]/page.tsx",
     "app/admin/gallery/page.tsx",

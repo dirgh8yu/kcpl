@@ -1,5 +1,6 @@
 "use client";
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
+import { freightModeLabel } from "../freight-mode";
 
 import Link from "next/link";
 import { Radio, Radar,
@@ -524,7 +525,7 @@ export function TrackingVisibilityWorkspace({
                             <span className="ops-cell-primary ops-cell-clamp">{row.customer_name || "Customer not linked"}</span>
                             <span className="ops-cell-secondary ops-cell-clamp">{row.origin} → {row.destination}</span>
                           </td>
-                          <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{row.mode || "Not set"}</span></td>
+                          <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{row.mode ? freightModeLabel(row.mode) : "Not set"}</span></td>
                           <td data-cell="meta" data-label="Last signal">
                             <span className="ops-cell-primary">{shortDateTime(row.last_event_at)}</span>
                             <span className="ops-cell-secondary ops-cell-clamp">{row.current_location || "Location unknown"}</span>
@@ -804,7 +805,7 @@ function TrackingVisibilityPanel({
           <OpsInspectorHeader
             kicker={`${row.reference}${row.carrier_reference ? ` · ${row.carrier_reference}` : ""}`}
             title={row.customer_name || "Customer not linked"}
-            subtitle={`${row.origin} → ${row.destination} · ${row.mode || "Mode not set"}`}
+            subtitle={`${row.origin} → ${row.destination} · ${freightModeLabel(row.mode)}`}
             actions={(
               <>
                 <OpsBadge tone={shipmentStatusTone(row.status)}>{shipmentStatusLabels[row.status]}</OpsBadge>

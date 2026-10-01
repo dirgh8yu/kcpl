@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { freightModeLabel } from "../freight-mode";
 import { RECENT_DELIVERED_WINDOW } from "../operational-shipments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Package, AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Download, LayoutGrid, Link2, Map as MapIcon, Plus, RefreshCw, SlidersHorizontal, Table as TableIcon, X } from "lucide-react";
@@ -503,7 +504,7 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update,
               <div className="min-w-0">
                 <p className="ops-mono m-0 text-xs text-[var(--admin-muted)]">{job.reference} · {job.quote_reference}</p>
                 <h2 className="mt-1 text-lg font-semibold leading-6">{job.customer_name || "Customer not linked"}</h2>
-                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {job.mode || "Mode not set"}</p>
+                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{route(job)} · {freightModeLabel(job.mode)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge>
@@ -533,7 +534,7 @@ function ShipmentPanel({ job, returnTo, container, onClose, highlightId, update,
                   <div><dt>Origin</dt><dd>{job.origin || "—"}</dd></div>
                   <div><dt>Destination</dt><dd>{job.destination || "—"}</dd></div>
                   <div><dt>Current location</dt><dd>{job.current_location || "—"}</dd></div>
-                  <div><dt>Mode</dt><dd>{job.mode || "—"}</dd></div>
+                  <div><dt>Mode</dt><dd>{job.mode ? freightModeLabel(job.mode) : "—"}</dd></div>
                   <div><dt>Carrier</dt><dd data-warning={!job.carrier || undefined}>{job.carrier || "Not assigned"}</dd></div>
                   <div><dt>ETA</dt><dd>{shortDate(job.eta)}</dd></div>
                 </dl>
