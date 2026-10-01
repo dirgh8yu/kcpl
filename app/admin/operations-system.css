@@ -22,6 +22,8 @@
   --admin-navy-steel: #173650;
   /* Text/icon colour on any dark brand surface (navy or ink). */
   --admin-on-dark: #FFFFFF;
+  /* Crimson that stays legible on the dark sign-in panel. */
+  --admin-crimson-on-dark: #FF8BA2;
   /* Brand-pinned by tests/admin-ui-system.test.mjs -- the Figma identity black.
    * Not ours to soften. */
   --admin-ink: #101010;
@@ -2214,9 +2216,9 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .finance-table td { padding-block: 6px; }
 /* Transport Orders register. */
 .kcpl-admin-content .rating-orders-table { min-width: 880px; }
+/* With the order panel open the table drops Mode and Pickup, so it fits beside it. */
+.kcpl-admin-content .ops-register-layout[data-inspector="open"] .rating-orders-table { min-width: 0; }
 .kcpl-admin-content .rating-orders-table td { padding-block: 5px; }
-.kcpl-admin-content .ops-order-peek { min-height: 480px; }
-.kcpl-admin-content .ops-order-peek > div { height: 100%; }
 .kcpl-admin-content .pickups-table td { padding-block: 5px; }
 .kcpl-admin-content .pickups-table .ops-cell-clamp { max-width: 240px; }
 .kcpl-admin-content .pickups-table[data-compact="true"] { min-width: 540px; }

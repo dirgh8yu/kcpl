@@ -184,7 +184,7 @@ export function Customer360Workspace({ initialCustomer, initialFinanceSnapshot, 
 }
 
 function Fact({ label, value, wide = false }: { label: string; value: React.ReactNode; wide?: boolean }) { return <div className={wide ? "col-span-2" : undefined}><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">{label}</p><div className="mt-1.5 break-words text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">{value}</div></div>; }
-function MoneyLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="flex items-center justify-between gap-4 py-3 text-[length:var(--app-label-size)]"><span className="text-[var(--admin-muted)]">{label}</span><strong className={strong ? "text-[11px] text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}>{value}</strong></div>; }
+function MoneyLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="flex items-center justify-between gap-4 py-3 text-[length:var(--app-label-size)]"><span className="text-[var(--admin-muted)]">{label}</span><strong className={strong ? "text-[length:var(--app-label-size)] text-[var(--admin-success)]" : "text-[var(--admin-ink)]"}>{value}</strong></div>; }
 function FollowUpRow({ item, busy, onToggle }: { item: CrmTask; busy: boolean; onToggle: () => void }) {
   const overdue = !item.completed && Boolean(item.due_at) && new Date(item.due_at!).getTime() < Date.now();
   const assignee = item.assigned_to_name || item.assigned_to_email || "Unassigned";

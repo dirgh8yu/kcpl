@@ -254,3 +254,18 @@ test("messages use the shared notice; no page paints its own palette", async () 
     assert.doesNotMatch(source, /\{\w*[eE]rror \? <(?:div|p) className="[^"]*admin-danger/, `${path}: use OpsNotice`);
   }
 });
+
+test("staff text sizes come from the type tokens, not pixel literals", async () => {
+  for (const path of await files("app/admin")) {
+    if (path.includes("/wallboard/")) continue;
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /text-\[1\dpx\]/, `${path}: use --app-label-size / --app-text-sm / --app-text-base / --app-font-size / --app-text-lg`);
+    assert.doesNotMatch(source, /font-\[[5-9]\d\d\]/, `${path}: use font-medium / font-semibold`);
+  }
+});
+
+test("an order's details open beside the Buy rates list, not under it", async () => {
+  const source = await readFile(repo("app/admin/rating/v4-transport-orders-workspace.tsx"), "utf8");
+  assert.match(source, /<div className="ops-register-layout" data-inspector=\{selected \? "open" : undefined\}>/);
+  assert.match(source, /<aside className="ops-inspector" aria-label=\{`Order \$\{selected\.id\}`\}>/);
+});

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
-import { Package, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, X } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsEmptyState, OpsFilterSelect, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
 import { freightModeLabel } from "../freight-mode";
 
@@ -66,7 +66,7 @@ function nextAction(order: TmsOrder) {
 export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initialOrders: TmsOrder[]; branches: KcplBranch[] }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
-  const [selectedOrderId, setSelectedOrderId] = useState(initialOrders[0]?.id ?? "");
+  const [selectedOrderId, setSelectedOrderId] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("active");
   const [branch, setBranch] = useState<"all" | KcplBranch>("all");
@@ -101,7 +101,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
     }).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }, [branch, modeFilter, orders, query, status]);
 
-  const selected = orders.find((order) => order.id === selectedOrderId) ?? filtered[0] ?? null;
+  const selected = orders.find((order) => order.id === selectedOrderId) ?? null;
   const statusCounts = useMemo(() => {
     const byStatus = Object.fromEntries(Object.keys(statusLabels).map((key) => [key, orders.filter((order) => order.status === key).length])) as Record<TmsOrderStatus, number>;
     return { ...byStatus, active: orders.filter((order) => !["booked", "cancelled"].includes(order.status)).length, all: orders.length } as Record<StatusFilter, number>;
@@ -166,29 +166,26 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
 
       {notice ? <div className="mt-4"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-      {createdOrderId ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div><p className="text-[11px] font-semibold uppercase tracking-[.04em] text-[var(--admin-success)]">Order Created</p><p className="mt-1 text-[14px] font-semibold">{createdOrderId}</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">The planning record is ready for rating and procurement.</p></div>
-          <div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Open order</Link><Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Continue to rating</Link><button type="button" onClick={() => setCreatedOrderId(null)} className="inline-flex h-8 items-center rounded-[var(--app-radius)] px-3 text-[12px] font-semibold text-[var(--admin-muted)]">Return to list</button></div>
-        </div>
-      </section> : null}
+      {createdOrderId ? <div className="mt-4"><OpsNotice tone="success" onDismiss={() => setCreatedOrderId(null)}>
+        <strong>Order <span className="ops-mono">{createdOrderId}</span> created.</strong> It’s ready to rate.{" "}
+        <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="font-semibold underline">Rate it now</Link> or <Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="font-semibold underline">open the order</Link>.
+      </OpsNotice></div> : null}
 
-      {showCreate ? <section className="mt-4 border-y border-[var(--admin-line)] bg-[var(--admin-surface)] px-4 py-5">
-        <div className="mb-4"><p className="text-[14px] font-semibold">Create transport order</p><p className="mt-1 text-[12px] text-[var(--admin-muted)]">Create the planning record first. Rating, tender and booking authority remain separate downstream steps.</p></div>
+      {showCreate ? <div className="px-4 pt-4 md:px-6"><OpsSurface title="New transport order" description="The planning record comes first; rating, carrier booking and confirmation follow as their own steps.">
         <form onSubmit={createOrder} className="grid gap-x-4 gap-y-3 md:grid-cols-4">
-          <Field label="Branch"><select value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
-          <Field label="Mode"><select value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></Field>
-          <Field label="Origin"><input required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal"/></Field>
-          <Field label="Destination"><input required value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Melbourne / MEL / Australia"/></Field>
-          <Field label="Pickup date"><input type="date" value={pickupDate} onChange={(event) => setPickupDate(event.target.value)}/></Field>
-          <Field label="Weight (kg)"><input type="number" min="0" step="0.01" value={weightKg} onChange={(event) => setWeightKg(event.target.value)}/></Field>
-          <Field label="Volume (CBM)"><input type="number" min="0" step="0.001" value={volumeCbm} onChange={(event) => setVolumeCbm(event.target.value)}/></Field>
-          <Field label="Pieces"><input type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)}/></Field>
-          <Field label="Containers"><input type="number" min="0" step="1" value={containers} onChange={(event) => setContainers(event.target.value)}/></Field>
-          <Field label="Equipment"><input value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="20GP, 40HC, reefer, truck…"/></Field>
-          <div className="flex items-end justify-end gap-2 md:col-span-2"><button type="button" onClick={() => setShowCreate(false)} className="h-8 rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Cancel</button><button type="submit" disabled={busy} className="h-8 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-4 text-[12px] font-semibold text-[var(--admin-on-crimson)] disabled:opacity-50">{busy ? "Creating…" : "Create order"}</button></div>
+          <Field label="Branch"><select className="ops-select" value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
+          <Field label="Mode"><select className="ops-select" value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></Field>
+          <Field label="Origin"><input className="ops-input" required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal"/></Field>
+          <Field label="Destination"><input className="ops-input" required value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Melbourne / MEL / Australia"/></Field>
+          <Field label="Pickup date"><input className="ops-input" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.target.value)}/></Field>
+          <Field label="Weight (kg)"><input className="ops-input" type="number" min="0" step="0.01" value={weightKg} onChange={(event) => setWeightKg(event.target.value)}/></Field>
+          <Field label="Volume (CBM)"><input className="ops-input" type="number" min="0" step="0.001" value={volumeCbm} onChange={(event) => setVolumeCbm(event.target.value)}/></Field>
+          <Field label="Pieces"><input className="ops-input" type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)}/></Field>
+          <Field label="Containers"><input className="ops-input" type="number" min="0" step="1" value={containers} onChange={(event) => setContainers(event.target.value)}/></Field>
+          <Field label="Equipment"><input className="ops-input" value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="20GP, 40HC, reefer, truck…"/></Field>
+          <div className="flex items-end justify-end gap-2 md:col-span-2"><OpsButton variant="ghost" onClick={() => setShowCreate(false)}>Cancel</OpsButton><OpsButton type="submit" variant="primary" disabled={busy}>{busy ? "Creating…" : "Create order"}</OpsButton></div>
         </form>
-      </section> : null}
+      </OpsSurface></div> : null}
 
       <div className="px-4 pb-8 pt-4 md:px-6">
       <OpsRegisterToolbar
@@ -205,7 +202,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         tabs={<OpsScopeTabs label="Order status views" items={STATUS_TABS.map((tab) => ({ ...tab, count: statusCounts[tab.value] }))} value={status} onChange={(value) => setStatus(value)}/>}
       />
 
-      <div className="ops-register-layout">
+      <div className="ops-register-layout" data-inspector={selected ? "open" : undefined}>
         <section className="ops-surface" aria-label="Transport order register">
           {filtered.length ? (
             <OpsTableWrap>
@@ -215,10 +212,10 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
                     <th>Order</th>
                     <th>Route</th>
                     <th>Customer</th>
-                    <th>Mode</th>
+                    {selected ? null : <th>Mode</th>}
                     <th>State</th>
-                    <th>Pickup</th>
-                    <th className="ops-cell-actions">Procurement</th>
+                    {selected ? null : <th>Pickup</th>}
+                    <th className="ops-cell-actions">Buy rate</th>
                     <th className="ops-cell-open"><span className="sr-only">Open</span></th>
                   </tr>
                 </thead>
@@ -228,9 +225,9 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
                     <td data-cell="primary"><span className="ops-cell-primary ops-mono ops-cell-id">{order.id}</span></td>
                     <td data-cell="route"><span className="ops-cell-primary ops-cell-clamp">{order.origin} → {order.destination}</span></td>
                     <td data-cell="meta" data-label="Customer"><span className="ops-cell-muted ops-cell-clamp">{order.customer_name || "Not linked"}</span></td>
-                    <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{modeLabel(order.mode)}</span></td>
+                    {selected ? null : <td data-cell="meta" data-label="Mode"><span className="ops-cell-muted">{modeLabel(order.mode)}</span></td>}
                     <td data-cell="status"><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></td>
-                    <td data-cell="meta" data-label="Pickup"><span className="ops-cell-muted">{shortDate(order.pickup_date)}</span></td>
+                    {selected ? null : <td data-cell="meta" data-label="Pickup"><span className="ops-cell-muted">{shortDate(order.pickup_date)}</span></td>}
                     <td data-cell="amount" className="ops-cell-actions"><span className="ops-cell-primary tabular-nums">{money(order.selected_cost, order.selected_currency)}</span></td>
                     <td data-cell="open" className="ops-cell-open">
                       <Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open order ${order.id}`} tabIndex={-1}>
@@ -246,30 +243,48 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
           )}
         </section>
 
-        <aside className="ops-surface ops-order-peek" aria-label="Selected order">
-          {selected ? <OrderPeek order={selected}/> : <OpsEmptyState icon={<Package size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No order selected" description="Choose a row to inspect the planning record."/>}
-        </aside>
+        {selected ? <aside className="ops-inspector" aria-label={`Order ${selected.id}`}><OrderPeek order={selected} onClose={() => setSelectedOrderId("")}/></aside> : null}
       </div>
       </div>
   </OpsPage>;
 }
 
-function OrderPeek({ order }: { order: TmsOrder }) {
+function OrderPeek({ order, onClose }: { order: TmsOrder; onClose: () => void }) {
   const action = nextAction(order);
-  return <div className="flex h-full flex-col">
-    <div className="min-h-[108px]"><p className="text-[11px] font-medium leading-[15px] text-[var(--admin-muted)]"><span className="ops-mono">{order.id}</span></p><h2 className="mt-1 text-[18px] font-semibold leading-[26px]">{order.origin} → {order.destination}</h2><p className="mt-1 text-[12px] font-medium leading-[17px] text-[var(--admin-muted)]">{order.customer_name || "Customer not linked"} · {order.branch} · {modeLabel(order.mode)}</p><span className="mt-2 inline-flex"><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></span></div>
-    <div className="border-t border-[var(--admin-line)] py-4"><p className="text-[11px] font-medium text-[var(--admin-muted)]">NEXT ACTION</p><p className="mt-1 text-[13px] font-semibold">{action.title}</p><p className="mt-1 text-[12px] leading-[18px] text-[var(--admin-muted)]">{action.detail}</p></div>
-    <dl className="border-t border-[var(--admin-line)] py-4 text-[12px]">
-      <Row label="Pickup" value={shortDate(order.pickup_date)}/><Row label="Weight" value={`${order.weight_kg.toLocaleString()} kg`}/><Row label="Volume" value={`${order.volume_cbm.toLocaleString()} CBM`}/><Row label="Pieces" value={order.pieces.toLocaleString()}/><Row label="Equipment" value={order.equipment || "Not set"}/><Row label="Procurement" value={money(order.selected_cost, order.selected_currency)}/>
-    </dl>
-    <div className="mt-auto border-t border-[var(--admin-line)] pt-4"><div className="flex flex-wrap gap-2"><Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-3 text-[12px] font-semibold text-[var(--admin-on-crimson)]">Open order</Link>{["draft", "rated"].includes(order.status) ? <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(order.id)}`} className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Rate order</Link> : null}{["selected", "tendering"].includes(order.status) ? <Link href="/admin/tenders" className="inline-flex h-8 items-center rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] px-3 text-[12px] font-semibold">Tender workspace</Link> : null}</div></div>
-  </div>;
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return <div className="grid grid-cols-[92px_1fr] gap-3 py-[5px]"><dt className="text-[var(--admin-muted)]">{label}</dt><dd className="min-w-0 break-words font-medium text-[var(--admin-ink)]">{value}</dd></div>;
+  return <>
+    <OpsInspectorHeader
+      kicker={<span className="ops-mono">{order.id}</span>}
+      title={<span className="ops-route"><span>{order.origin}</span><ArrowRight size={13} className="ops-route-arrow" aria-hidden="true"/><span>{order.destination}</span></span>}
+      subtitle={`${order.customer_name || "Customer not linked"} · ${order.branch} · ${modeLabel(order.mode)}`}
+      actions={<>
+        <OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge>
+        <button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close order details"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>
+      </>}
+    />
+    <div className="ops-inspector-scroll"><div className="ops-inspector-body">
+      <OpsInspectorSection title="Next step" tinted>
+        <p className="m-0 font-semibold text-[var(--admin-ink)]">{action.title}</p>
+        <p className="m-0 mt-1 text-[length:var(--app-text-sm)] text-[var(--admin-muted)]">{action.detail}</p>
+      </OpsInspectorSection>
+      <OpsInspectorSection title="Load">
+        <OpsFacts>
+          <OpsFact label="Pickup">{shortDate(order.pickup_date)}</OpsFact>
+          <OpsFact label="Weight">{`${order.weight_kg.toLocaleString()} kg`}</OpsFact>
+          <OpsFact label="Volume">{`${order.volume_cbm.toLocaleString()} CBM`}</OpsFact>
+          <OpsFact label="Pieces">{order.pieces.toLocaleString()}</OpsFact>
+          <OpsFact label="Equipment" warning={!order.equipment}>{order.equipment || "Not set"}</OpsFact>
+          <OpsFact label="Buy rate">{money(order.selected_cost, order.selected_currency)}</OpsFact>
+        </OpsFacts>
+      </OpsInspectorSection>
+      <div className="flex flex-wrap gap-2">
+        <Link href={`/admin/rating/${encodeURIComponent(order.id)}`} className="ops-button" data-variant="primary" data-size="md">Open order</Link>
+        {["draft", "rated"].includes(order.status) ? <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(order.id)}`} className="ops-button" data-variant="secondary" data-size="md">Rate order</Link> : null}
+        {["selected", "tendering"].includes(order.status) ? <Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Carrier booking</Link> : null}
+      </div>
+    </div></div>
+  </>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block text-[11px] font-medium text-[var(--admin-muted)]"><span className="mb-1.5 block">{label}</span><span className="block [&_input]:h-8 [&_input]:w-full [&_input]:rounded-[var(--app-radius)] [&_input]:border [&_input]:border-[var(--admin-line)] [&_input]:bg-[var(--admin-surface)] [&_input]:px-3 [&_input]:text-[12px] [&_input]:font-medium [&_input]:outline-none [&_select]:h-8 [&_select]:w-full [&_select]:rounded-[var(--app-radius)] [&_select]:border [&_select]:border-[var(--admin-line)] [&_select]:bg-[var(--admin-surface)] [&_select]:px-3 [&_select]:text-[12px] [&_select]:font-medium [&_select]:outline-none">{children}</span></label>;
+  return <OpsField label={label}>{children}</OpsField>;
 }
