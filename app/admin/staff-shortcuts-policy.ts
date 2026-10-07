@@ -20,7 +20,7 @@ export const GO_WINDOW_MS = 1500;
 export type ShortcutAction =
   | { kind: "none"; pendingGo: number }
   | { kind: "go"; href: string; pendingGo: number }
-  | { kind: "search" | "help" | "next" | "previous" | "new"; pendingGo: number };
+  | { kind: "search" | "help" | "next" | "previous" | "new" | "sidebar"; pendingGo: number };
 
 /** The sections this person can open, each with its "g" letter when it has one. */
 export function shortcutHubs(hubs: Array<{ id: WorkspaceHubId; label: string; href: string }>): ShortcutHub[] {
@@ -44,6 +44,7 @@ export function shortcutAction(key: string, pendingGo: number, now: number, hubs
     case "j": return { kind: "next", pendingGo: 0 };
     case "k": return { kind: "previous", pendingGo: 0 };
     case "n": return { kind: "new", pendingGo: 0 };
+    case "[": return { kind: "sidebar", pendingGo: 0 };
     default: return { kind: "none", pendingGo: 0 };
   }
 }

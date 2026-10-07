@@ -291,3 +291,36 @@ test("dimmed rows stay readable and half-width tables fit their column", async (
   // A table that scrolls sideways with nothing to focus fails keyboard users.
   assert.match(css, /\.kcpl-admin-content \.ops-grid-2 \.ops-table \{ min-width: 0; \}/);
 });
+
+test("the sidebar folds to an icon rail that keeps its width between pages and reloads", async () => {
+  const { sidebarRailCookie, isRailCookie, SIDEBAR_RAIL_COOKIE } = await import("../app/admin/sidebar-rail.ts");
+  assert.equal(SIDEBAR_RAIL_COOKIE, "kcpl_admin_sidebar");
+  assert.equal(sidebarRailCookie(true, true), "kcpl_admin_sidebar=rail; Path=/admin; Max-Age=31536000; SameSite=Lax; Secure");
+  assert.equal(sidebarRailCookie(false, false), "kcpl_admin_sidebar=; Path=/admin; Max-Age=0; SameSite=Lax");
+  assert.equal(isRailCookie("rail"), true);
+  assert.equal(isRailCookie(undefined), false);
+
+  const [layout, shell, loading, css] = await Promise.all([
+    readFile(repo("app/admin/layout.tsx"), "utf8"),
+    readFile(repo("app/admin/operations-shell.tsx"), "utf8"),
+    readFile(repo("app/admin/loading.tsx"), "utf8"),
+    readFile(repo("app/admin/operations-system.css"), "utf8"),
+  ]);
+  // Read on the server, held by the layout: the first paint has the right width.
+  assert.match(layout, /\(await cookies\(\)\)\.get\(SIDEBAR_RAIL_COOKIE\)/);
+  assert.match(layout, /<SidebarRailProvider initialRail=\{rail\}>\{children\}<\/SidebarRailProvider>/);
+  for (const source of [shell, loading]) assert.match(source, /data-sidebar=\{rail \? "rail" : undefined\}/);
+  // One toggle in the bar, named for what it does next.
+  assert.match(shell, /className="app-icon-button app-rail-toggle" onClick=\{toggleRail\} aria-label=\{rail \? "Expand sidebar" : "Collapse sidebar"\}/);
+  // Every rail control names itself in a tooltip.
+  for (const label of ["\\{hub\\.label\\}", '"Find anything"', '"Account and settings"', '"Sign out"']) {
+    assert.match(shell, new RegExp(`data-rail-label=${label}`));
+  }
+  // Folded names leave the screen but stay in the link for screen readers.
+  assert.match(css, /\[data-sidebar="rail"\] :is\(\.app-nav-item-main > span, \.app-nav-search > span, \.app-account-name\) \{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset\(50%\);/);
+  assert.doesNotMatch(css, /\[data-sidebar="rail"\][^{]*\.app-nav-item-main > span[^{]*\{ display: none/);
+  // Only where the sidebar stays on screen; a phone's drawer keeps its names.
+  // The bar's icon-button rule comes later, so the hide needs the extra class.
+  assert.match(css, /\.app-topbar \.app-rail-toggle \{ display: none; \}\n@media \(min-width: 1024px\) \{\n {2}\.app-topbar \.app-rail-toggle \{ display: inline-grid;/);
+  assert.match(css, /\.app-rail-tip\[data-instant\] \{ transition: none; \}/);
+});

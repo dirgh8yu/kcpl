@@ -2,6 +2,7 @@
 
 import { OperationsShell } from "./operations-shell";
 import { useRememberedShell } from "./remembered-shell";
+import { useSidebarRail } from "./sidebar-rail-provider";
 
 /**
  * Instant loading state for every /admin route.
@@ -17,9 +18,10 @@ import { useRememberedShell } from "./remembered-shell";
  */
 export default function AdminWorkspaceLoading() {
   const remembered = useRememberedShell();
+  const { rail } = useSidebarRail();
   if (remembered) return <OperationsShell placeholder {...remembered}><WorkspaceBodySkeleton/></OperationsShell>;
   return (
-    <div className="kcpl-admin-shell">
+    <div className="kcpl-admin-shell" data-sidebar={rail ? "rail" : undefined}>
       <aside className="app-sidebar" aria-hidden="true">
         <div className="app-brand ops-boot-brand">
           <span className="ops-boot-block ops-boot-brand-mark" />

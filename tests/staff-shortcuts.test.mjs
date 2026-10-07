@@ -52,3 +52,10 @@ test("the palette opens without motion from the keyboard and with its entrance f
   const css = await read("app/admin/operations-system.css");
   assert.match(css, /:is\(\.app-command-backdrop, \.app-command-dialog\)\[data-instant\] \{ transition: none; \}/);
 });
+
+test("[ collapses or expands the sidebar, and the shortcuts list says so", () => {
+  assert.equal(shortcutAction("[", 0, 0, hubs).kind, "sidebar");
+  const source = readFileSync(new URL("../app/admin/staff-shortcuts.tsx", import.meta.url), "utf8");
+  assert.match(source, /action\.kind === "sidebar"\) onToggleSidebar\(\)/);
+  assert.match(source, /<kbd>\[<\/kbd><\/dt><dd>Collapse or expand the sidebar<\/dd>/);
+});

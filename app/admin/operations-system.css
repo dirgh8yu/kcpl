@@ -245,6 +245,45 @@
   .app-nav-group { margin-bottom: 6px; }
   .app-nav-group a { min-height: 34px; }
 }
+
+/* Sidebar rail: the sidebar folded down to its icons, from the top bar's
+ * first button or "[", for a screen that wants the room. Only where the
+ * sidebar stays on screen; below 1024px it is a drawer and always shows its
+ * names. Each name stays in its link for screen readers and comes back beside
+ * the icon as a tooltip. The width snaps rather than animates: the page
+ * reflows under it, and a reflow drawn over frames stutters. */
+.app-topbar .app-rail-toggle { display: none; }
+@media (min-width: 1024px) {
+  .app-topbar .app-rail-toggle { display: inline-grid; flex: none; margin: 0 -4px 0 -12px; }
+  .kcpl-admin-shell[data-sidebar="rail"] { --app-sidebar-width: 60px; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-brand { justify-content: center; padding: 0; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-brand > span:not(.ops-boot-brand-mark),
+  .kcpl-admin-shell[data-sidebar="rail"] .app-scope,
+  .kcpl-admin-shell[data-sidebar="rail"] .app-nav-search kbd,
+  .kcpl-admin-shell[data-sidebar="rail"] .app-account-chevron { display: none; }
+  .kcpl-admin-shell[data-sidebar="rail"] :is(.app-nav-item-main > span, .app-nav-search > span, .app-account-name) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-workspaces { padding-inline: 10px; scrollbar-width: none; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-nav-group a { justify-content: center; min-height: 36px; padding: 0; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-nav-item-main > svg { width: 18px; height: 18px; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-sidebar-footer { align-items: center; padding-inline: 10px; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-nav-search { position: relative; justify-content: center; width: 40px; padding: 0; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-account { flex-direction: column; gap: 4px; padding: 0; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-account-trigger { position: relative; flex: none; justify-content: center; width: 40px; min-height: 36px; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-account a { width: 40px; height: 36px; }
+  .kcpl-admin-shell[data-sidebar="rail"] .app-account-panel { bottom: 12px; left: calc(var(--app-sidebar-width) + 8px); }
+  .kcpl-admin-shell[data-sidebar="rail"] .ops-boot-nav-group { justify-items: center; }
+  .kcpl-admin-shell[data-sidebar="rail"] .ops-boot-nav-item { width: 18px; height: 18px; }
+}
+/* The rail's names: dark, beside the icon, never in the pointer's way. */
+.app-rail-tip { position: fixed; left: calc(var(--app-sidebar-width) + 8px); z-index: 70; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: var(--admin-ink); color: #FFFFFF; font-size: var(--app-text-sm); font-weight: 500; line-height: 16px; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgb(16 16 16 / 16%); opacity: 1; transform: translateY(-50%); transition: opacity var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
+.app-rail-tip kbd { color: rgb(255 255 255 / 64%); font-family: inherit; font-size: var(--app-label-size); }
+.app-rail-tip[data-instant] { transition: none; }
+@starting-style {
+  .app-rail-tip { opacity: 0; transform: translate(-4px, -50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-rail-tip { transition: none; }
+}
 .app-sidebar-footer { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--admin-line); padding: 12px; background: var(--admin-surface); }
 .app-nav-search { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface-muted); color: var(--admin-muted); font-size: 12.5px; font-weight: 400; cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
 @media (hover: hover) and (pointer: fine) { .app-nav-search:hover { border-color: var(--admin-line-strong); background: var(--admin-surface-soft); color: var(--admin-ink); } }
@@ -874,6 +913,8 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .app-sidebar[data-open="true"] { visibility: visible; transform: translateX(0); transition: transform var(--app-duration-slow) var(--app-ease-drawer); }
   .app-nav-backdrop { opacity: 0; transition: opacity var(--app-duration-base) var(--app-ease-out); }
   .app-nav-backdrop[data-open="true"] { opacity: 1; }
+  /* The scrim mounts with the drawer, so it fades in from nothing. */
+  @starting-style { .app-nav-backdrop[data-open="true"] { opacity: 0; } }
 }
 
 /* The blanket `.kcpl-admin-shell *` reduced-motion reset above is a single class

@@ -65,7 +65,7 @@ function pressNewButton() {
   return Boolean(button);
 }
 
-export function StaffShortcuts({ hubs, paletteOpen, onOpenPalette }: { hubs: ShortcutHub[]; paletteOpen: boolean; onOpenPalette: () => void }) {
+export function StaffShortcuts({ hubs, paletteOpen, onOpenPalette, onToggleSidebar }: { hubs: ShortcutHub[]; paletteOpen: boolean; onOpenPalette: () => void; onToggleSidebar: () => void }) {
   const router = useRouter();
   const [helpOpen, setHelpOpen] = useState(false);
   const pendingGo = useRef(0);
@@ -98,10 +98,11 @@ export function StaffShortcuts({ hubs, paletteOpen, onOpenPalette }: { hubs: Sho
       else if (action.kind === "next") moveRow(1);
       else if (action.kind === "previous") moveRow(-1);
       else if (action.kind === "new") pressNewButton();
+      else if (action.kind === "sidebar") onToggleSidebar();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [helpOpen, hubs, onOpenPalette, paletteOpen, router]);
+  }, [helpOpen, hubs, onOpenPalette, onToggleSidebar, paletteOpen, router]);
 
   const goRows = hubs.filter((hub) => hub.key);
   return (
@@ -119,6 +120,7 @@ export function StaffShortcuts({ hubs, paletteOpen, onOpenPalette }: { hubs: Sho
             <div><dt><kbd>j</kbd><kbd>k</kbd></dt><dd>Next or previous row</dd></div>
             <div><dt><kbd>Enter</kbd></dt><dd>Open that row</dd></div>
             <div><dt><kbd>n</kbd></dt><dd>This page’s New button</dd></div>
+            <div><dt><kbd>[</kbd></dt><dd>Collapse or expand the sidebar</dd></div>
             {goRows.map((hub) => <div key={hub.id}><dt><kbd>g</kbd><kbd>{hub.key}</kbd></dt><dd>Go to {hub.label}</dd></div>)}
             <div><dt><kbd>?</kbd></dt><dd>Show this list</dd></div>
           </dl>

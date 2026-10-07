@@ -1,4 +1,5 @@
 import { Geist } from "next/font/google";
+import { cookies } from "next/headers";
 import "../product.css";
 import type { ReactNode } from "react";
 import { getAdminAccess } from "./admin-auth";
@@ -7,6 +8,8 @@ import type { DisplayPreferences } from "./notifications/display-preferences";
 import { OperationsDisplayPreferences } from "./operations-display-preferences";
 import { SiteDocument, baseMetadata } from "../site-document";
 import { productViewport } from "../product-viewport";
+import { SIDEBAR_RAIL_COOKIE, isRailCookie } from "./sidebar-rail";
+import { SidebarRailProvider } from "./sidebar-rail-provider";
 
 const adminFont = Geist({
   subsets: ["latin"],
@@ -43,6 +46,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   let motion: DisplayPreferences["motion"] | undefined;
   const preferences = await layoutDisplayPreferences();
   if (preferences) { density = preferences.density; motion = preferences.motion; }
+  const rail = isRailCookie((await cookies()).get(SIDEBAR_RAIL_COOKIE)?.value);
 
   return (
     <SiteDocument>
@@ -51,7 +55,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         data-density={density}
         data-motion={motion}
       >
-        {children}
+        <SidebarRailProvider initialRail={rail}>{children}</SidebarRailProvider>
         <OperationsDisplayPreferences/>
       </div>
     </SiteDocument>
