@@ -282,3 +282,12 @@ test("a list row's reference, status badge and freight mode read the same on eve
     assert.doesNotMatch(source, /\$\{\w+(?:\.\w+)*\.mode\}/, `${path}: use freightModeLabel`);
   }
 });
+
+test("dimmed rows stay readable and half-width tables fit their column", async () => {
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  // Opacity took superseded documents below 4.5:1; they recede by colour instead.
+  assert.doesNotMatch(css, /tr\[data-inactive="true"\] td \{ opacity/);
+  assert.match(css, /\.document-vault-table tbody tr\[data-inactive="true"\] td :is\(\.ops-cell-primary, \.ops-cell-secondary, a\) \{ color: var\(--admin-muted\); \}/);
+  // A table that scrolls sideways with nothing to focus fails keyboard users.
+  assert.match(css, /\.kcpl-admin-content \.ops-grid-2 \.ops-table \{ min-width: 0; \}/);
+});

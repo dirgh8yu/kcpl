@@ -1240,7 +1240,10 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .document-vault-table .ops-cell-clamp { max-width: 200px; }
 .kcpl-admin-content .document-vault-table[data-compact="true"] .ops-cell-clamp { max-width: 160px; }
 .kcpl-admin-content .document-vault-table[data-compact="true"] :is(.document-vault-type, .document-vault-customer) { max-width: 116px; }
-.kcpl-admin-content .document-vault-table tbody tr[data-inactive="true"] td { opacity: 0.55; }
+/* Superseded and deleted documents recede by colour, not opacity, so they
+ * stay readable (opacity took the text below 4.5:1). */
+.kcpl-admin-content .document-vault-table tbody tr[data-inactive="true"] td,
+.kcpl-admin-content .document-vault-table tbody tr[data-inactive="true"] td :is(.ops-cell-primary, .ops-cell-secondary, a) { color: var(--admin-muted); }
 .kcpl-admin-content .document-vault-type { max-width: 130px; font-weight: 450; }
 .kcpl-admin-content .document-vault-customer { max-width: 150px; }
 .kcpl-admin-content .document-vault-source { color: var(--admin-info); font-weight: 500; }
@@ -2541,3 +2544,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 /* In a list the badge's colour carries the state, and rows of dots read as
  * noise; the dot is kept for the one status beside a record's title. */
 .kcpl-admin-content table .ops-badge > i { display: none; }
+
+/* A table in a half-width column (ops-grid-2) is a short summary; it fits
+ * its column instead of scrolling sideways with nothing to focus. */
+.kcpl-admin-content .ops-grid-2 .ops-table { min-width: 0; }
