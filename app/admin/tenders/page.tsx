@@ -98,5 +98,5 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Carrier booking" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/rating", label: "Buy rates", primary: true }, { href: "/admin/partners", label: "Partners" }]}/>;
+  return <V4WorkspaceGate eyebrow="Carrier booking" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/rating", label: "Buy rates", primary: true }]}/>;
 }

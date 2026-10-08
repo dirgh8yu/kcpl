@@ -128,9 +128,13 @@ test("one badge: no screen resizes it", async () => {
 test("record pages read the same way: type, reference with status, route", async () => {
   const job = await readFile(repo("app/admin/jobs/[reference]/job-record.tsx"), "utf8");
   assert.match(job, /eyebrow="Shipment"/);
-  assert.match(job, /title=\{<span className="job-record-title"><span className="ops-mono">\{job\.reference\}<\/span><OpsBadge/);
+  // The reference, a button that copies it, then the status.
+  assert.match(job, /title=\{<span className="job-record-title"><span className="ops-mono">\{job\.reference\}<\/span><OpsCopyButton value=\{job\.reference\}[^>]*\/><OpsBadge/);
   const invoice = await readFile(repo("app/admin/finance/invoices/[reference]/invoice-workspace.tsx"), "utf8");
-  assert.match(invoice, /eyebrow="Invoice" title=\{<span[^>]*><OpsMono>\{invoice\.reference\}<\/OpsMono><OpsBadge/);
+  assert.match(invoice, /eyebrow="Invoice" title=\{<span[^>]*><OpsMono>\{invoice\.reference\}<\/OpsMono><OpsCopyButton value=\{invoice\.reference\}[^>]*\/><OpsBadge/);
+  for (const path of ["app/admin/rating/[order]/page.tsx", "app/admin/tenders/[tender]/page.tsx", "app/admin/payables/bills/[reference]/payable-workspace.tsx"]) {
+    assert.match(await readFile(repo(path), "utf8"), /<\/OpsMono><OpsCopyButton value=/, path);
+  }
   for (const path of ["app/admin/crm/[id]/customer-360-workspace.tsx", "app/admin/partners/[id]/partner-360-workspace.tsx"]) {
     assert.match(await readFile(repo(path), "utf8"), /title=\{<span className="inline-flex flex-wrap items-center gap-2">\{(customer|partner)\.display_name\}<OpsBadge/, path);
   }
@@ -373,4 +377,39 @@ test("staff screens open panels and controls only when asked or useful", async (
   const overview = await readFile(repo("app/admin/command-centre/v4-operations-overview.tsx"), "utf8");
   assert.doesNotMatch(overview, /<th>Updated<\/th>|styles\.headCount/);
   assert.match(overview, /No update in \{age\.label\}/);
+});
+
+test("registers page one way, fifty rows at a time, and only when they must", async () => {
+  // Pickups, Tracking and Freight documents paged at ten rows with three pager
+  // designs between them; a day's work was page after page. One pager now,
+  // drawn only when the rows do not fit.
+  const register = await readFile(repo("app/admin/ops-register.tsx"), "utf8");
+  assert.match(register, /export const REGISTER_PAGE_SIZE = 50;/);
+  assert.match(register, /if \(pageCount <= 1\) return null;/);
+  for (const path of ["app/admin/pickups/pickup-appointments-workspace.tsx", "app/admin/visibility/tracking-visibility-workspace.tsx", "app/admin/freight-documents/freight-documents-workspace.tsx", "app/admin/shipments/shipments-workspace.tsx"]) {
+    const source = await readFile(repo(path), "utf8");
+    assert.match(source, /<OpsRegisterPager /, path);
+    assert.match(source, /registerPage\(requestedPage, filtered\.length\)/, path);
+    assert.doesNotMatch(source, /PAGE_SIZE = 10|pageSize = 10|\/ page`|ops-pagination/, path);
+  }
+});
+
+test("an error or not-found screen offers one button", async () => {
+  const gate = await readFile(repo("app/admin/v4-workspace-gate.tsx"), "utf8");
+  assert.match(gate, /const way = retry \? null : actions\.find\(\(action\) => action\.primary\) \?\? actions\[0\] \?\? null;/);
+  assert.doesNotMatch(gate, /actions\.map\(/);
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    assert.doesNotMatch(source, /actions=\{\[\{[^\]]*\}, \{/, `${path}: one way back, not a menu of destinations`);
+  }
+});
+
+test("a register row has one way in, and a create page is titled for what it makes", async () => {
+  const partners = await readFile(repo("app/admin/partners/partners-workspace.tsx"), "utf8");
+  // Editing is in the partner's panel ("Edit partner"), not a button on every row.
+  assert.doesNotMatch(partners, /aria-label=\{`Edit \$\{p\.display_name\}`\}/);
+  assert.match(partners, /Edit partner/);
+  const crm = await readFile(repo("app/admin/crm/crm-dashboard.tsx"), "utf8");
+  assert.match(crm, /title=\{newOnly \? "New customer" : "Customers"\}/);
+  assert.match(await readFile(repo("app/admin/crm/new/page.tsx"), "utf8"), / newOnly\/>/);
 });

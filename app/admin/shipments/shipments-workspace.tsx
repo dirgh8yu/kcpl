@@ -16,7 +16,7 @@ import { compareWorkQueueImpact, type ReceivableExposure } from "../command-cent
 import { suggestOwner, laneKey, type OwnerCandidateEvidence, type OwnerSuggestion } from "../command-centre/owner-recommender";
 import { useFreshnessLabel, useRegisterSnapshot } from "../use-register-poll";
 import { useWorkspaceQuery } from "../use-workspace-query";
-import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsSearch, OpsSkeleton, OpsTableWrap, useAdminPortalContainer } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsDialog, OpsEmptyState, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsPopover, OpsRegisterPager, OpsSearch, OpsSkeleton, OpsTableWrap, registerPage, useAdminPortalContainer } from "../operations-ui";
 import {
   ModeIcon,
   ShipmentCards,
@@ -95,7 +95,6 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const requestedView = params.get("view");
   const view: RegisterView = requestedView === "cards" || requestedView === "map" ? requestedView : "table";
   const selectedReference = params.get("selected");
-  const pageSize = 50;
   const requestedPage = Number(params.get("page") || "1");
   const setFilters = (values: Record<string, string | null>) => update({ ...values, page: null, selected: null });
   const setQuery = (value: string) => setFilters({ q: value || null });
@@ -164,9 +163,8 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
       : (a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) || a.reference.localeCompare(b.reference));
   }, [attention, branch, currentStaff, data.jobs, impactContext, live, liveActivityRefs, mine, mode, overdue, ownerFilter, query, sort, status]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const page = Math.min(pageCount, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const { page, start: pageStart, end: pageEnd } = registerPage(requestedPage, filtered.length);
+  const pageRows = filtered.slice(pageStart, pageEnd);
   // Ticked rows, for giving several shipments one owner at once.
   const [ticked, setTicked] = useState<Set<string>>(new Set());
   const allPageTicked = pageRows.length > 0 && pageRows.every((job) => ticked.has(job.reference));
@@ -256,7 +254,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
               <Download size={16} strokeWidth={1.75} aria-hidden="true"/> Export
             </OpsButton>
             {canStartShipment ? (
-              <Link href="/admin/tenders" className="ops-button" data-variant="primary" data-size="md" title="Start a shipment through Carrier booking">
+              <Link href="/admin/rating?create=1" className="ops-button" data-variant="primary" data-size="md">
                 <Plus size={16} strokeWidth={1.75} aria-hidden="true"/> New shipment
               </Link>
             ) : null}
@@ -457,12 +455,7 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
           </section>
         )}
 
-        {filtered.length > pageSize ? (
-          <div className="ops-pagination mt-3" aria-label="Shipment pages">
-            <span aria-live="polite">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}</span>
-            <div className="ops-pagination-actions"><OpsButton size="sm" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null }, "push")}>Previous</OpsButton><span>Page {page} of {pageCount}</span><OpsButton size="sm" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null }, "push")}>Next</OpsButton></div>
-          </div>
-        ) : null}
+        <OpsRegisterPager page={page} total={filtered.length} noun="shipments" label="Shipment pages" onPage={(next) => update({ page: String(next), selected: null }, "push")}/>
       </div>
 
       {selected ? <ShipmentPanel job={selected} returnTo={returnTo} container={portalContainer} onClose={() => setSelectedReference(null)} highlightId={activityHighlightId} update={update} generatedAt={data.generated_at} laneCompletionsByStaff={laneCompletionsByStaff} staffDirectory={data.staff_load}/> : null}

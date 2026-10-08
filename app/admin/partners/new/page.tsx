@@ -33,5 +33,5 @@ export default async function NewPartnerPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+  return <V4WorkspaceGate eyebrow="Partners" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }]}/>;
 }

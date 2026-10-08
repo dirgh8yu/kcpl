@@ -16,10 +16,7 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
     eyebrow="KCPL Operations"
     title="This page didn’t load"
     detail="Something went wrong while opening it. Nothing was changed. Try again, or go back to the Overview."
-    actions={[
-      { href: "/admin/command-centre", label: "Overview" },
-      { href: "/admin/shipments", label: "Shipments" },
-    ]}
+    actions={[{ href: "/admin/command-centre", label: "Overview" }]}
   >
     <OpsButton variant="primary" size="md" onClick={reset}><RefreshCw size={13}/>Try again</OpsButton>
   </V4WorkspaceGate>;

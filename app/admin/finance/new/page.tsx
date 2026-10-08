@@ -21,5 +21,5 @@ export default async function NewReceivablePage() {
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }]}/>;
 }

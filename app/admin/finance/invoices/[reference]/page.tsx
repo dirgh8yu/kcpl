@@ -52,5 +52,5 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Invoice" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/payables", label: "Payables" }]}/>;
+  return <V4WorkspaceGate eyebrow="Invoice" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }]}/>;
 }

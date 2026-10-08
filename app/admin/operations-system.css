@@ -739,8 +739,6 @@
     background: rgb(16 16 16 / 24%);
   }
 }
-.ops-pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 10px; border: 1px solid var(--admin-line); border-top: 0; padding: 10px 12px; background: var(--admin-surface); color: var(--admin-muted); font-size: 12px; line-height: 16px; }
-.ops-pagination-actions { display: flex; align-items: center; gap: 8px; }
 
 
 @media (max-width: 1023px) {
@@ -1862,6 +1860,14 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-admin-content .portal-toggle { min-height: var(--app-control-height-touch); }
 }
 
+/* Copy a reference: a quiet icon beside the number it copies. */
+.kcpl-admin-content .ops-copy { position: relative; display: inline-grid; width: 24px; height: 24px; flex: none; place-items: center; border: 0; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-faint); cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), color var(--app-duration-fast) var(--app-ease-out), transform var(--app-duration-fast) var(--app-ease-out); }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-copy:hover { background: var(--admin-surface-muted); color: var(--admin-ink); } }
+.kcpl-admin-content .ops-copy:active { transform: scale(0.94); }
+.kcpl-admin-content .ops-copy[data-copied] { color: var(--admin-success); }
+.kcpl-admin-content .ops-copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .kcpl-admin-content .ops-copy { transition: none; } }
+
 /* Customer portal -- printable invoice.
  * `portal-print-only` is the line a filed copy needs and the screen does not:
  * who issued the invoice to whom. */
@@ -2100,9 +2106,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-pager { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .kcpl-admin-content .ops-pager-button { display: inline-grid; min-width: 28px; height: 28px; place-items: center; padding: 0 6px; border: 1px solid transparent; border-radius: var(--app-radius-sm); background: transparent; color: var(--admin-muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { .kcpl-admin-content .ops-pager-button:hover:not(:disabled) { background: var(--admin-surface-muted); color: var(--admin-ink); } }
-.kcpl-admin-content .ops-pager-button[aria-current="page"] { border-color: var(--admin-line); background: var(--admin-surface-muted); color: var(--admin-ink); font-weight: 600; }
 .kcpl-admin-content .ops-pager-button:disabled { color: var(--admin-line-strong); cursor: not-allowed; }
-.kcpl-admin-content .ops-pager .ops-filter-trigger { min-height: 28px; margin-left: 4px; }
 
 /* Record inspector: compact header, hairline sections, fact rows, sticky footer.
  * Mirrors the Shipments inspector (.shipment-sheet-*). */

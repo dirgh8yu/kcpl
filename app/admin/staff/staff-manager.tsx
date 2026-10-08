@@ -133,7 +133,6 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
               })}</tbody>
             </table>
           </OpsTableWrap> : <OpsNoMatches noun="people" onClear={() => { setQuery(""); setRoleFilter("all"); }}/>}
-          {filtered.length ? <footer className="ops-register-footer"><span>Select a person to edit role, branch scope or suspend access.</span></footer> : null}
         </section>
 
         {panelOpen ? <aside ref={panelRef} className="ops-inspector" aria-label={draft.email ? `Edit ${draft.displayName || draft.email}` : "Add staff"}>

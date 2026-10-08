@@ -50,5 +50,5 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Partner" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }, { href: "/admin/carrier-integrations", label: "Carrier connections" }]}/>;
+  return <V4WorkspaceGate eyebrow="Partner" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/partners", label: "Partners", primary: true }]}/>;
 }

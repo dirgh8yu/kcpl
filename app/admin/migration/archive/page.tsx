@@ -33,5 +33,5 @@ export default async function PaperArchivePage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Paper archive" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/archive", label: "Paper archive", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/recovery", label: "Recovery" }]}/>;
+  return <V4WorkspaceGate eyebrow="Paper archive" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/archive", label: "Paper archive", primary: true }]}/>;
 }

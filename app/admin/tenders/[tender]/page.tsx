@@ -6,7 +6,7 @@ import type { TmsOrder } from "../../rating/tms-rating";
 import { getStaffContext } from "../../staff-directory.server";
 import { listTmsTenders } from "../tms-tendering.server";
 import { tmsTenderStatusLabels, type TmsTender } from "../tms-tendering";
-import { OpsBadge, OpsDetailGrid, OpsDetailItem, OpsMono, OpsPage, OpsPageHeader, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsCopyButton, OpsDetailGrid, OpsDetailItem, OpsMono, OpsPage, OpsPageHeader, OpsSurface } from "../../operations-ui";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { recordTitle } from "../../../record-title";
 import { freightModeLabel } from "../../freight-mode";
@@ -76,7 +76,7 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
   return <OpsPage>
     <OpsPageHeader
       eyebrow="Carrier booking"
-      title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{tender.booking_reference || tender.tender_reference}</OpsMono><OpsBadge tone="success" dot>Booked</OpsBadge></span>}
+      title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{tender.booking_reference || tender.tender_reference}</OpsMono><OpsCopyButton value={tender.booking_reference || tender.tender_reference} label={tender.booking_reference || tender.tender_reference}/><OpsBadge tone="success" dot>Booked</OpsBadge></span>}
       description={`${tender.origin} → ${tender.destination}`}
       meta={<><span>{order?.customer_name || "Customer not linked"}</span><span>{tender.partner_name}</span><span>{freightModeLabel(tender.mode)}</span><span>Booked {dateTime(tender.booked_at)}</span></>}
       actions={shipment ? <Link href={`/admin/jobs/${encodeURIComponent(shipment)}`} className="ops-button" data-variant="primary" data-size="md">Open Job File</Link> : null}
@@ -147,10 +147,10 @@ function NotBooked({ tender }: { tender: TmsTender }) {
     title="Not booked yet"
     detail={`${tender.tender_reference} is ${tmsTenderStatusLabels[tender.status].toLowerCase()}. Only an accepted offer or counter-offer can be booked.`}
     embedded
-    actions={[{ href: `/admin/tenders?tender=${encodeURIComponent(tender.tender_reference)}`, label: "Open carrier request", primary: true }, { href: `/admin/rating/${encodeURIComponent(tender.order_id)}`, label: "Open transport order" }]}
+    actions={[{ href: `/admin/tenders?tender=${encodeURIComponent(tender.tender_reference)}`, label: "Open carrier request", primary: true }]}
   />;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Carrier booking" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/tenders", label: "Carrier booking", primary: true }, { href: "/admin/rating", label: "Buy rates" }]}/>;
+  return <V4WorkspaceGate eyebrow="Carrier booking" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/tenders", label: "Carrier booking", primary: true }]}/>;
 }

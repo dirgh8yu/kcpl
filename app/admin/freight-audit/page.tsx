@@ -33,5 +33,5 @@ export default async function FreightAuditPage({ searchParams }: { searchParams:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Supplier bill checks" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/freight-audit", label: "Supplier bill checks", primary: true }, { href: "/admin/payables", label: "Payables" }, { href: "/admin/finance", label: "Receivables" }]}/>;
+  return <V4WorkspaceGate eyebrow="Supplier bill checks" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/freight-audit", label: "Supplier bill checks", primary: true }]}/>;
 }

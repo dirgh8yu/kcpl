@@ -60,5 +60,5 @@ function sentence(value: string) {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Undo an import" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Recovery", primary: true }, { href: "/admin/migration", label: "Import old records" }, { href: "/admin/migration/archive", label: "Paper archive" }]}/>;
+  return <V4WorkspaceGate eyebrow="Undo an import" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/migration/recovery", label: "Undo an import", primary: true }]}/>;
 }

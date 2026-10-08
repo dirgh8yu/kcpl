@@ -68,9 +68,6 @@ function EnquiryGate({ title, detail }: { title: string; detail: string }) {
     title={title}
     detail={detail}
     embedded
-    actions={[
-      { href: "/admin/command-centre", label: "Overview", primary: true },
-      { href: "/admin/shipments", label: "Shipments" },
-    ]}
+    actions={[{ href: "/admin/command-centre", label: "Overview", primary: true }]}
   />;
 }

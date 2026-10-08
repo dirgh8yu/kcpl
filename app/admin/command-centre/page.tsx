@@ -180,7 +180,6 @@ export default async function CommandCentrePage({ searchParams }: { searchParams
           exposureByCustomer={overview.exposureByCustomer}
           userName={userName}
           selectedBranch={selectedBranch}
-          branches={accessibleBranches}
           canViewCommercial={staff.permissions.canViewCommercial}
           canPostNotes={staff.permissions.canManageJobFile}
           role={staff.permissions.role}
@@ -201,6 +200,6 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
     title={title}
     detail={detail}
     embedded={embedded}
-    actions={[{ href: "/admin/enquiries", label: "Open Enquiries", primary: true }, { href: "/", label: "KCPL website" }]}
+    actions={[{ href: "/admin/enquiries", label: "Enquiries", primary: true }]}
   />;
 }

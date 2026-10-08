@@ -11,7 +11,7 @@ import { V4TransportOrdersWorkspace } from "./v4-transport-orders-workspace";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Buy rates", robots: { index: false, follow: false } };
 
-export default async function RatingPage({ searchParams }: { searchParams: Promise<{ order?: string; view?: string }> }) {
+export default async function RatingPage({ searchParams }: { searchParams: Promise<{ order?: string; view?: string; create?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in required" detail="Buy rates are available only to authorised staff."/>;
   const staff = await getStaffContext(access.user);
@@ -25,7 +25,7 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Buy rates are restricted to Commercial, Accounts and Management users." embedded/></OperationsShell>;
 
-  const { order, view } = await searchParams;
+  const { order, view, create } = await searchParams;
 
   let orders: Awaited<ReturnType<typeof listTmsOrders>>;
   try {
@@ -69,7 +69,7 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
   }
 
   return <OperationsShell {...shellProps}>
-    <V4TransportOrdersWorkspace initialOrders={orderedOrders} branches={staff.branches}/>
+    <V4TransportOrdersWorkspace initialOrders={orderedOrders} branches={staff.branches} initialCreate={create === "1"}/>
   </OperationsShell>;
 }
 

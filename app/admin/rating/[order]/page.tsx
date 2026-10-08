@@ -8,7 +8,7 @@ import { tenderTone, tmsTenderStatusLabels, type TmsTender } from "../../tenders
 import { listTmsOrders } from "../tms-rating.server";
 import type { TmsOrder, TmsOrderStatus } from "../tms-rating";
 import { recordTitle } from "../../../record-title";
-import { OpsBadge, OpsDetailGrid, OpsDetailItem, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
+import { OpsBadge, OpsCopyButton, OpsDetailGrid, OpsDetailItem, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { freightModeLabel } from "../../freight-mode";
 
@@ -85,7 +85,7 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
   return <OpsPage>
     <OpsPageHeader
       eyebrow="Transport order"
-      title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{order.id}</OpsMono><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></span>}
+      title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{order.id}</OpsMono><OpsCopyButton value={order.id} label={order.id}/><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></span>}
       description={`${order.origin} → ${order.destination}`}
       meta={<><span>{order.customer_name || "Customer not linked"}</span><span>{order.branch}</span><span>{freightModeLabel(order.mode)}</span></>}
       actions={action}
@@ -166,5 +166,5 @@ function nextAction(order: TmsOrder, liveTender: TmsTender | null, bookedTender:
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Transport order" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/rating", label: "Buy rates", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+  return <V4WorkspaceGate eyebrow="Transport order" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/rating", label: "Buy rates", primary: true }]}/>;
 }

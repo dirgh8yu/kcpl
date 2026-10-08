@@ -52,9 +52,6 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
     title={title}
     detail={detail}
     embedded={embedded}
-    actions={[
-      { href: "/admin/command-centre", label: "Operations Overview", primary: true },
-      { href: "/admin/shipments", label: "Shipments" },
-    ]}
+    actions={[{ href: "/admin/command-centre", label: "Overview", primary: true }]}
   />;
 }

@@ -10,7 +10,7 @@ import type { CustomsAgentOption, CustomsClearanceRecord } from "../../customs/c
 import { CustomsClearanceEditor } from "../../customs/customs-clearance-editor";
 import { shipmentStatusLabels } from "../../../shipment-types";
 import type { PickupAppointmentStatus } from "../../pickups/pickup-appointments";
-import { OpsBadge, OpsNotice, OpsPageHeader, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsCopyButton, OpsNotice, OpsPageHeader, OpsSurface } from "../../operations-ui";
 import { ShipmentStatusControl } from "../../shipment-status-control";
 import { statusTone } from "../../shipments/shipments-views";
 import { MovementControl, POST_UPDATE_EVENT } from "./movement-control";
@@ -150,7 +150,7 @@ export function JobRecord({
       // Every record page reads the same way: the kind of record, then its
       // reference and status, then the route, then the facts.
       eyebrow="Shipment"
-      title={<span className="job-record-title"><span className="ops-mono">{job.reference}</span><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
+      title={<span className="job-record-title"><span className="ops-mono">{job.reference}</span><OpsCopyButton value={job.reference} label={job.reference}/><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></span>}
       description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`}
       meta={<><span>{job.customer_name || "No customer linked"}</span><span>{freightModeLabel(job.mode)}{job.carrier ? ` · ${job.carrier}` : ""}</span><span>ETA {shortDate(job.eta)}</span><span>Owner {job.assigned_to_name || job.assigned_to_email || "nobody yet"}</span></>}
       // Tells the customer where the shipment is: the "Post update" form under

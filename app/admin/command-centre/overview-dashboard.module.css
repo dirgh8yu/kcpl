@@ -1,4 +1,3 @@
-.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* Aliased to the shared --admin-* tokens (operations-system.css) so this page
  * can't drift from the rest of /admin. Brand crimson/ink stay pinned there;
@@ -36,22 +35,17 @@
 .pageHeadCopy { min-width: 0; }
 .pageHeadCopy h1 { margin: 0; color: var(--overview-ink); font-size: var(--app-title-size); font-weight: 600; letter-spacing: -0.02em; line-height: 32px; } /* every page title */
 .pageHeadMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 3px 0 0; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
-.metaDot { width: 3px; height: 3px; flex: none; border-radius: 50%; background: var(--overview-faint); }
 .pageHeadActions { display: flex; flex: none; align-items: center; gap: 8px; }
 
 /* ── Compact controls: 34px, 6px radius, no chrome beyond the border ─────── */
 
 /* The app's small button: same height, radius, size and weight as .ops-button[data-size="sm"]. */
-.blackButton, .secondaryButton, .iconButton, .textButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: var(--app-radius); padding: 0 11px; font: inherit; font-size: 13px; font-weight: 500; line-height: 18px; white-space: nowrap; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+.blackButton, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border-radius: var(--app-radius); padding: 0 11px; font: inherit; font-size: 13px; font-weight: 500; line-height: 18px; white-space: nowrap; text-decoration: none; cursor: pointer; transition: background-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), border-color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), color var(--app-duration-fast, 120ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
 .blackButton { border: 1px solid var(--overview-action); background: var(--overview-action); color: var(--overview-surface); }
 @media (hover: hover) and (pointer: fine) { .blackButton:hover { border-color: var(--overview-action-hover); background: var(--overview-action-hover); } }
 .blackButton:disabled { cursor: default; opacity: 0.45; }
 .secondaryButton { border: 1px solid var(--overview-line); background: var(--overview-surface); color: var(--overview-ink); }
 @media (hover: hover) and (pointer: fine) { .secondaryButton:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); } }
-.iconButton { width: 32px; min-height: 32px; padding: 0; border: 1px solid var(--overview-line); background: var(--overview-surface); color: var(--overview-muted); }
-@media (hover: hover) and (pointer: fine) { .iconButton:hover { color: var(--overview-ink); background: var(--overview-canvas); } }
-.textButton { min-height: 28px; border: 0; background: transparent; color: var(--overview-muted); padding: 0 6px; font-size: 12.5px; }
-@media (hover: hover) and (pointer: fine) { .textButton:hover { color: var(--overview-ink); } }
 
 .warningBanner { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; border: 1px solid var(--admin-warning-line); border-radius: 6px; background: var(--overview-warning-soft); padding: 9px 12px; color: var(--overview-warning); font-size: 12px; line-height: 17px; }
 .warningBanner svg { flex: none; margin-top: 1px; }
@@ -62,8 +56,6 @@
 
 /* ── Grids ────────────────────────────────────────────────────────────────── */
 
-.primaryGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 0.86fr); gap: 12px; align-items: start; margin-bottom: 12px; }
-.lowerGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 
 /* ── Shared surface: 8px panel, hairline border, no shadow ───────────────── */
 
@@ -71,7 +63,6 @@
 .cardHead { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 8px 12px; border-bottom: 1px solid var(--overview-line); padding: 5px 12px 5px 14px; }
 .cardHead h2 { margin: 0; font-size: 13px; font-weight: 620; letter-spacing: -0.01em; white-space: nowrap; }
 .cardTitleRow { display: flex; min-width: 0; align-items: center; gap: 8px; }
-.headMeta { color: var(--overview-faint); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .headAction { display: inline-flex; flex: none; align-items: center; gap: 4px; border-radius: 4px; color: var(--overview-muted); font-size: 12px; font-weight: 600; text-decoration: none; transition: color var(--app-duration-fast) var(--app-ease-out); }
 .headAction svg { color: var(--overview-faint); }
 @media (hover: hover) and (pointer: fine) { .headAction:hover { color: var(--overview-ink); } }
@@ -241,50 +232,21 @@
 .noteEditor textarea:focus { border-color: var(--overview-ink); box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06); }
 .noteEditorActions { display: flex; align-items: end; gap: 6px; }
 
-/* ── New shipment launcher (true floating UI keeps its shadow) ───────────── */
-/* The form is ~870px tall. With no max-height a phone (≈660px of viewport)
- * clipped the bottom of it -- Pieces, Containers and the Create button -- and
- * the fixed backdrop does not scroll, so there was no way to reach them. The
- * dialog now fits the screen (dvh, so mobile browser chrome is accounted for)
- * and scrolls inside itself; overscroll-behavior stops the page behind it
- * scrolling instead. */
-
-.launcherBackdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(16, 17, 20, 0.36); padding: 20px; opacity: 1; transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
-@starting-style { .launcherBackdrop { opacity: 0; } }
-.launcher { width: min(520px, 100%); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--overview-line); border-radius: 10px; background: var(--overview-surface); box-shadow: 0 20px 50px rgba(16, 24, 40, 0.18); opacity: 1; transform: scale(1); transition: opacity var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), transform var(--app-duration-base, 180ms) var(--app-ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
-@starting-style { .launcher { opacity: 0; transform: scale(.98) translateY(-8px); } }
-/* Exit mirrors the entrance and runs faster -- the decision to leave is already made. */
-.launcherBackdrop[data-closing] { opacity: 0; transition-duration: var(--app-duration-fast, 120ms); }
-.launcher[data-closing] { opacity: 0; transform: scale(.98) translateY(-8px); transition-duration: var(--app-duration-fast, 120ms); }
-.launcherHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--overview-line); padding: 14px 16px; }
-.launcherHeader h2 { margin: 0; font-size: 15px; font-weight: 650; }
-.launcherHeader p { margin: 5px 0 0; color: var(--overview-muted); font-size: 12px; line-height: 17px; }
-.launcherBody { display: grid; gap: 8px; padding: 14px 16px 16px; }
-.launcherChoice { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--overview-line); border-radius: 6px; padding: 11px 12px; color: inherit; text-decoration: none; transition: border-color var(--app-duration-fast) var(--app-ease-out), background-color var(--app-duration-fast) var(--app-ease-out); }
-@media (hover: hover) and (pointer: fine) { .launcherChoice:hover { border-color: var(--overview-line-strong); background: var(--overview-canvas); } }
-.launcherChoice strong { display: block; font-size: 13px; }
-.launcherChoice span { display: block; margin-top: 3px; color: var(--overview-muted); font-size: 12px; line-height: 16px; }
-
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 /* These queries read the viewport, but the admin shell parks a fixed sidebar
  * beside this page and clips what spills past it (operations-system.css,
  * .kcpl-admin-content), so the viewport overstates the room by the sidebar
  * width plus this page's padding. */
-@media (max-width: 1360px) {
-}
-
 /* Below this width a side-by-side queue + Today row leaves the queue card
  * (~750px at best) too narrow for its fixed columns plus a readable customer
  * track, so Today drops under the queue instead. */
 @media (max-width: 1400px) {
-  .primaryGrid { grid-template-columns: 1fr; }
   .todayCard { min-height: auto; }
 }
 
 @media (max-width: 900px) {
   .dashboard { padding: 14px 16px 24px; }
-  .lowerGrid { grid-template-columns: 1fr; }
   .pageHead { align-items: flex-start; }
   .pageHeadActions { flex-wrap: wrap; }
 }
@@ -305,13 +267,11 @@
 @media (pointer: coarse) {
   .rowAction { width: 44px; height: 44px; }
   .workloadRow,
-  .todayItem,
-  .textButton { min-height: 44px; }
+  .todayItem { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blackButton, .secondaryButton, .iconButton, .textButton { transition-property: background-color, border-color, color; }
-  .launcherBackdrop, .launcher { transition: none; }
+  .blackButton, .secondaryButton { transition-property: background-color, border-color, color; }
 }
 
 /* ── Custom arrangement ─────────────────────────────────────────────── */

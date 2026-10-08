@@ -79,9 +79,6 @@ function CrmGate({ title, detail, signIn = false, embedded = false }: { title: s
     title={title}
     detail={detail}
     embedded={embedded}
-    actions={[
-      { href: signIn ? "/admin" : "/admin/enquiries", label: signIn ? "Go to staff sign in" : "Enquiries", primary: true },
-      { href: "/", label: "Public website" },
-    ]}
+    actions={[{ href: signIn ? "/admin" : "/admin/enquiries", label: signIn ? "Go to staff sign in" : "Enquiries", primary: true }]}
   />;
 }

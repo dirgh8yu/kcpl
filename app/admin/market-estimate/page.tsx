@@ -82,9 +82,6 @@ function Gate({ title, detail, embedded = false }: { title: string; detail: stri
     title={title}
     detail={detail}
     embedded={embedded}
-    actions={[
-      { href: "/admin/enquiries", label: "Enquiries", primary: true },
-      { href: "/admin/rating", label: "Rate desk" },
-    ]}
+    actions={[{ href: "/admin/enquiries", label: "Enquiries", primary: true }]}
   />;
 }

@@ -95,19 +95,25 @@ test("Overview preserves server authority, branch scope and return context with 
   assert.match(notes, /canManageJobFile/);
 });
 
-// The New shipment modal posts create_order, which validates mode against
-// tmsModes. The modal once hand-rolled its own list and offered "ocean", which
-// the server has never accepted (sea freight is "sea"), so every ocean shipment
-// failed with a validation error even with every field filled in. The modal
-// must offer exactly the server's list, not a copy of it.
-test("the New shipment modal offers only modes create_order accepts", async () => {
+// Every "New shipment" opens the one form that starts one: the transport order
+// form on Buy rates, which posts create_order. The Overview once had its own
+// copy of that form in a dialog, and the Shipments page sent people to Carrier
+// booking instead, so the same button did three different things. The form
+// must also offer exactly the server's modes: a hand-rolled list once offered
+// "ocean", which create_order has never accepted (sea freight is "sea").
+test("every New shipment opens the one form, and it offers only modes create_order accepts", async () => {
   const overview = await readFile(overviewPath, "utf8");
+  const shipments = await readFile(new URL("../app/admin/shipments/shipments-workspace.tsx", import.meta.url), "utf8");
+  const form = await readFile(new URL("../app/admin/rating/v4-transport-orders-workspace.tsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../app/admin/rating/page.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/admin/rating/route.ts", import.meta.url), "utf8");
   const { tmsModes } = await import("../app/admin/rating/tms-rating.ts");
 
+  for (const source of [overview, shipments]) assert.match(source, /href="\/admin\/rating\?create=1"[^>]*>\s*<Plus[^>]*\/> New shipment/);
+  assert.doesNotMatch(overview, /create_order|NewShipmentLauncher/, "the Overview keeps no second copy of the form");
+  assert.match(page, /initialCreate=\{create === "1"\}/);
+  assert.match(form, /useState\(initialCreate\)/);
   assert.match(route, /tmsModes\.includes\(mode\)/, "create_order must validate mode against tmsModes");
-  assert.match(overview, /from "\.\.\/rating\/tms-rating"/, "the modal must import the server's mode list");
-  assert.match(overview, /const creationModes = tmsModes;/, "the modal must offer tmsModes, not its own copy");
-  assert.ok(!/const creationModes = \[/.test(overview), "a hand-rolled mode list must not come back");
+  assert.match(form, /tmsModes\.map\(\(value\) => <option key=\{value\} value=\{value\}>/, "the form must offer tmsModes, not its own copy");
   assert.ok(tmsModes.includes("sea") && !tmsModes.includes("ocean"), "sea freight is 'sea' on the server");
 });

@@ -9,7 +9,6 @@ import { CheckCircle2,
   ArrowUp,
   CalendarClock,
   Check,
-  ChevronLeft,
   ChevronRight,
   ExternalLink,
   MoreHorizontal,
@@ -38,12 +37,14 @@ import {
   OpsNotice,
   OpsPage,
   OpsPageHeader,
+  OpsRegisterPager,
   OpsRegisterToolbar,
   OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
   type OpsActiveFilter,
+  registerPage,
 } from "../operations-ui";
 import { nepalInputToIso } from "../nepal-time";
 import { useWorkspaceQuery } from "../use-workspace-query";
@@ -88,7 +89,6 @@ const DRIVER_OPTIONS: Array<{ value: DriverFilter; label: string }> = [
   { value: "unassigned", label: "Unassigned" },
 ];
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50].map((size) => ({ value: String(size), label: `${size} / page` }));
 
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
@@ -257,8 +257,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
   const driverFilter = validDriverFilter(params.get("driver"));
   const sortDirection: SortDirection = params.get("sort") === "asc" ? "asc" : "desc";
   const requestedPage = Math.max(1, Number.parseInt(params.get("page") ?? "1", 10) || 1);
-  const requestedPageSize = Number.parseInt(params.get("pageSize") ?? "10", 10);
-  const pageSize = [10, 20, 50].includes(requestedPageSize) ? requestedPageSize : 10;
   const shipmentParam = (params.get("shipment") ?? "").trim().toUpperCase();
   const selectedReference = shipmentParam && rows.some((row) => row.shipment_reference === shipmentParam) ? shipmentParam : selectedReferenceState;
   const nowIso = new Date().toISOString();
@@ -316,14 +314,9 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
     });
   })();
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const page = Math.min(requestedPage, pageCount);
-  const pageStart = (page - 1) * pageSize;
-  const visibleRows = filtered.slice(pageStart, pageStart + pageSize);
+  const { page, pageCount, start: pageStart, end: pageEnd } = registerPage(requestedPage, filtered.length);
+  const visibleRows = filtered.slice(pageStart, pageEnd);
   const menuFilterCount = [statusFilter, driverFilter].filter((value) => value !== "all").length;
-  // Up to three page numbers, windowed around the current page.
-  const pageWindowStart = Math.max(1, Math.min(page - 1, pageCount - 2));
-  const pageWindow = Array.from({ length: Math.min(pageCount, 3) }, (_, index) => pageWindowStart + index);
   const activeFilters: OpsActiveFilter[] = [];
   if (originFilter !== "all") activeFilters.push({ key: "origin", label: originFilter, title: `Origin: ${originFilter}`, onRemove: () => updateFilters({ origin: null }) });
   if (dateFilter !== "all") activeFilters.push({ key: "date", label: DATE_OPTIONS.find((option) => option.value === dateFilter)?.label ?? dateFilter, title: `Date: ${dateFilter}`, onRemove: () => updateFilters({ date: null }) });
@@ -588,17 +581,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
               <OpsNoMatches noun="pickups" onClear={resetFilters}/>
             )}
 
-            <footer className="ops-register-footer">
-              <span>{filtered.length ? `${pageStart + 1}–${Math.min(pageStart + pageSize, filtered.length)} of ${filtered.length} pickups` : "No pickups to show"}</span>
-              <nav className="ops-pager" aria-label="Pickup pages">
-                <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => workspace.update({ page: page - 1 <= 1 ? null : String(page - 1) })} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                {pageWindow.map((pageNumber) => (
-                  <button key={pageNumber} type="button" className="ops-pager-button" onClick={() => workspace.update({ page: pageNumber === 1 ? null : String(pageNumber) })} aria-current={pageNumber === page ? "page" : undefined} aria-label={`Page ${pageNumber}`}>{pageNumber}</button>
-                ))}
-                <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => workspace.update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                <OpsFilterSelect label="Rows per page" value={String(pageSize)} allValue={null} showValue align="end" options={PAGE_SIZE_OPTIONS} onChange={(value) => workspace.update({ pageSize: value === "10" ? null : value, page: null })}/>
-              </nav>
-            </footer>
+            <OpsRegisterPager page={page} total={filtered.length} noun="pickups" label="Pickup pages" onPage={(next) => workspace.update({ page: next <= 1 ? null : String(next) })}/>
           </section>
 
           {selected ? (

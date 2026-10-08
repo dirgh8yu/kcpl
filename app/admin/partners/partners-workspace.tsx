@@ -294,7 +294,6 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                     {compact ? null : <th>KCPL owner</th>}
                     {financialVisible ? <th className="partners-col-money">Supplier exposure</th> : null}
                     {compact ? null : <th className="partners-col-activity">Activity</th>}
-                    {compact ? null : <th><span className="sr-only">Actions</span></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -325,7 +324,6 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                         <span className="ops-cell-secondary">{p.bill_count} bills · {p.shipment_count} jobs{p.overdue_bill_count ? <span className="partners-overdue"> · {p.overdue_bill_count} overdue</span> : null}</span>
                       </td> : null}
                       {compact ? null : <td data-cell="meta" data-label="Last activity" className="partners-col-activity"><span className="ops-cell-muted">{dateLabel(p.last_activity_at)}</span></td>}
-                      {compact ? null : <td data-cell="action" className="ops-cell-actions">{canEditRecord(p) ? <OpsButton variant="ghost" size="xs" onClick={(event) => { event.stopPropagation(); startEdit(p); }} aria-label={`Edit ${p.display_name}`}><Pencil size={14} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton> : p.owner_branch === null && canEdit ? <span className="ops-cell-muted">Management repair</span> : null}</td>}
                     </tr>;
                   })}
                 </tbody>

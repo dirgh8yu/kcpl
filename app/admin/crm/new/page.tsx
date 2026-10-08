@@ -17,11 +17,11 @@ export default async function NewCustomerPage() {
   const customers: CrmCustomerSummary[] = [];
   return (
     <OperationsShell userName={access.user.displayName} canManageStaff={staff.permissions.canManageStaff} canManageFinance={staff.permissions.canManageFinance} isManagement={staff.permissions.role === "management"} detailLabel="New customer">
-      <CrmDashboard initialCustomers={customers} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial}/>
+      <CrmDashboard initialCustomers={customers} userName={access.user.displayName} userEmail={access.user.email} commercialVisible={staff.permissions.canViewCommercial} newOnly/>
     </OperationsShell>
   );
 }
 
 function Gate({ title, detail }: { title: string; detail: string }) {
-  return <V4WorkspaceGate eyebrow="Customers" title={title} detail={detail} actions={[{ href: "/admin/crm", label: "Customers", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+  return <V4WorkspaceGate eyebrow="Customers" title={title} detail={detail} actions={[{ href: "/admin/crm", label: "Customers", primary: true }]}/>;
 }

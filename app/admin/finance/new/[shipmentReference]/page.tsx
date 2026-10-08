@@ -44,5 +44,5 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }, { href: "/admin/command-centre", label: "Overview" }]}/>;
+  return <V4WorkspaceGate eyebrow="Receivables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/finance", label: "Receivables", primary: true }]}/>;
 }

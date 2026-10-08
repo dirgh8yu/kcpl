@@ -30,5 +30,5 @@ export default async function StaffPage() {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="People & branches" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/staff", label: "People & Branches", primary: true }, { href: "/admin/management", label: "Management" }, { href: "/admin/notifications", label: "Notifications" }]}/>;
+  return <V4WorkspaceGate eyebrow="People & branches" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/staff", label: "People & branches", primary: true }]}/>;
 }

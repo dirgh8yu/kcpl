@@ -218,6 +218,10 @@ test("command palette only advertises quick actions with real destinations", () 
   const source = readFileSync(repoFile("app/admin/operations-command-palette.tsx"), "utf8");
   assert.match(source, /href: "\/admin\/crm\/new"/);
   assert.match(source, /href: "\/admin\/payables\?create=1"/);
+  // "New shipment" opens the Buy rates form already open, the one way to start one.
+  assert.match(source, /title: "New shipment", subtitle: "[^"]+", meta: null, href: "\/admin\/rating\?create=1"/);
+  // A section is a place to go, listed under the actions, never one of them.
+  assert.doesNotMatch(source, /key: "action:delivery"/);
   assert.doesNotMatch(source, /title: "New enquiry \/ quote"/);
   assert.doesNotMatch(source, /title: "New transport order"/);
 });

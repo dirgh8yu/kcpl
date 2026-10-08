@@ -6,6 +6,7 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { Search, SearchX } from "lucide-react";
 
 export { OpsNotice } from "./ops-notice";
+export { OpsCopyButton } from "./ops-copy";
 export { OpsFileDrop } from "./ops-file-drop";
 export {
   OpsActiveFilters,
@@ -21,9 +22,12 @@ export {
   OpsJumpMenu,
   OpsKpiRail,
   OpsRailMetric,
+  OpsRegisterPager,
   OpsRegisterToolbar,
   OpsResultCount,
   OpsScopeTabs,
+  REGISTER_PAGE_SIZE,
+  registerPage,
   type OpsActiveFilter,
   type OpsFilterOption,
   type OpsJumpOption,

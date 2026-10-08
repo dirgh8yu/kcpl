@@ -66,5 +66,5 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Payables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/payables", label: "Payables", primary: true }, { href: "/admin/freight-audit", label: "Supplier bill checks" }, { href: "/admin/finance", label: "Receivables" }]}/>;
+  return <V4WorkspaceGate eyebrow="Payables" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/payables", label: "Payables", primary: true }]}/>;
 }

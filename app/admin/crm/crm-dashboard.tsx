@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronDown, Plus, Users, X } from "lucide-react";
 import {
   crmAccountStatusLabels,
@@ -45,7 +46,8 @@ function csv(value: string) { return [...new Set(value.split(",").map((item) => 
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
-export function CrmDashboard({ initialCustomers, userName, userEmail, commercialVisible, jump }: { initialCustomers: CrmCustomerSummary[]; userName: string; userEmail: string; commercialVisible: boolean; /** Header control for opening a Customer 360 directly. */ jump?: ReactNode }) {
+export function CrmDashboard({ initialCustomers, userName, userEmail, commercialVisible, jump, newOnly = false }: { initialCustomers: CrmCustomerSummary[]; userName: string; userEmail: string; commercialVisible: boolean; /** Header control for opening a Customer 360 directly. */ jump?: ReactNode; /** The New customer page: the form alone, titled for what it does, as New partner is. */ newOnly?: boolean }) {
+  const router = useRouter();
   const buyerCustomers = initialCustomers.filter((customer) => customer.relationship_types.includes("customer"));
   const [customers, setCustomers] = useState(buyerCustomers);
   const [selectedId, setSelectedId] = useState("");
@@ -94,6 +96,8 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
         setDuplicates(data.duplicates ?? []); setNotice("Possible duplicate found. Review the existing record before creating another one."); return;
       }
       if (!response.ok || !data.customer) throw new Error(data.error || "Could not create the customer record.");
+      // From the New customer page, the next thing to do is on the record itself.
+      if (newOnly) { router.push(`/admin/crm/${encodeURIComponent(data.customer.id)}`); return; }
       const next = [data.customer, ...customers];
       setCustomers(next); setSelectedId(data.customer.id); setShowCreate(false); resetForm(); setNotice(`${data.customer.display_name} added to Customers.`);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Could not create the customer record."); }
@@ -138,9 +142,9 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
   return (
     <OpsPage>
       <OpsPageHeader
-        title="Customers"
-        description="Accounts that buy from KCPL. Carriers and suppliers are in Partners."
-        actions={<>
+        title={newOnly ? "New customer" : "Customers"}
+        description={newOnly ? "Start with the name and contact. Add contracts and rates on the customer’s page afterwards." : "Accounts that buy from KCPL. Carriers and suppliers are in Partners."}
+        actions={newOnly ? undefined : <>
           {jump}
           {showCreate ? null : <OpsButton variant="primary" onClick={openNew}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New customer</OpsButton>}
         </>}
@@ -149,7 +153,7 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
       <div className="px-4 pb-8 pt-4 md:px-6">
         {notice ? <div className="plan-notice"><OpsNotice tone={duplicates.length ? "warning" : notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
 
-        {showCreate ? <div ref={createRef} className="plan-panel crm-create"><CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { setShowCreate(false); setDuplicates([]); }}/></div> : null}
+        {showCreate ? <div ref={createRef} className="plan-panel crm-create"><CreateCustomerForm form={form} setField={setField} tagDraft={tagDraft} setTagDraft={setTagDraft} carrierDraft={carrierDraft} setCarrierDraft={setCarrierDraft} transportDraft={transportDraft} setTransportDraft={setTransportDraft} saving={saving} duplicates={duplicates} advancedOpen={advancedOpen} setAdvancedOpen={setAdvancedOpen} onSubmit={createCustomer} onCancel={() => { if (newOnly) { router.push("/admin/crm"); return; } setShowCreate(false); setDuplicates([]); }}/></div> : null}
 
         {customers.length ? <>
           <OpsRegisterToolbar

@@ -2,7 +2,7 @@
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { Check, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { useAdminPortalContainer } from "./use-admin-portal-container";
 
 /*
@@ -385,5 +385,40 @@ export function OpsInspectorNote({ tone = "danger", icon, title, children }: { t
       {icon}
       <div><strong>{title}</strong>{children ? <span>{children}</span> : null}</div>
     </div>
+  );
+}
+
+/** Rows a register shows at once: enough that paging is the exception, so a
+ *  day's work is one scroll and one search box rather than page after page. */
+export const REGISTER_PAGE_SIZE = 50;
+
+/** The page a register is on, kept inside the pages that exist. */
+export function registerPage(requested: number, total: number, pageSize = REGISTER_PAGE_SIZE) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), pageCount) : 1;
+  return { page, pageCount, start: (page - 1) * pageSize, end: Math.min(page * pageSize, total) };
+}
+
+/** One pager for every register, drawn only when the rows need more than one
+ *  page. A list that fits says nothing about pages at all. */
+export function OpsRegisterPager({ page, total, noun, label, onPage, pageSize = REGISTER_PAGE_SIZE }: {
+  page: number;
+  total: number;
+  noun: string;
+  label: string;
+  onPage: (page: number) => void;
+  pageSize?: number;
+}) {
+  const { pageCount, start, end } = registerPage(page, total, pageSize);
+  if (pageCount <= 1) return null;
+  return (
+    <footer className="ops-register-footer">
+      <span aria-live="polite">{start + 1}–{end} of {total} {noun}</span>
+      <nav className="ops-pager" aria-label={label}>
+        <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+        <span className="px-1">Page {page} of {pageCount}</span>
+        <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => onPage(page + 1)} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
+      </nav>
+    </footer>
   );
 }

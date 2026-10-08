@@ -148,9 +148,6 @@ function CustomerGate({ title, detail, embedded = false }: { title: string; deta
     title={title}
     detail={detail}
     embedded={embedded}
-    actions={[
-      { href: "/admin/crm", label: "Back to Customers", primary: true },
-      { href: "/admin", label: "Enquiries" },
-    ]}
+    actions={[{ href: "/admin/crm", label: "Customers", primary: true }]}
   />;
 }

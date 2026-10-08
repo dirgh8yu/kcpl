@@ -1,8 +1,7 @@
 "use client";
 
-import { OpsNotice } from "../ops-notice";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -19,7 +18,6 @@ import {
   ShieldCheck,
   RotateCcw,
   UserRoundX,
-  X,
 } from "lucide-react";
 import { shipmentStatusLabels } from "../../shipment-types";
 import { statusTone } from "../shipments/shipments-views";
@@ -43,7 +41,6 @@ import {
   type OverviewSectionId,
 } from "../operations-arrangeable";
 import { useStaffArrangement } from "../use-staff-arrangement";
-import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import type { CommandCentreData, CommandCentreJob } from "./command-centre-data";
 import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
@@ -55,13 +52,6 @@ import styles from "./overview-dashboard.module.css";
 import extras from "./overview-dashboard-extras.module.css";
 
 const DAY_MS = 86_400_000;
-// Mirrors --app-duration-fast in overview-dashboard.module.css; keep the two in step.
-const LAUNCHER_EXIT_MS = 120;
-// Must be the server's own list. A hand-rolled copy here once offered "ocean",
-// which create_order has never accepted (sea freight is "sea"), so every
-// ocean shipment failed with "Choose a valid branch and transport mode".
-const creationModes = tmsModes;
-type CreationMode = TmsMode;
 type Tone = "danger" | "warning" | "success" | "info" | "neutral" | "violet";
 
 type DashboardProps = {
@@ -72,19 +62,12 @@ type DashboardProps = {
   exposureByCustomer: Map<string, ReceivableExposure>;
   userName: string;
   selectedBranch: string;
-  branches: string[];
   canViewCommercial: boolean;
   canPostNotes: boolean;
   /** Picks the Overview this person starts on until they arrange their own. */
   role: KcplStaffRole;
   /** Who is signed in, so "Next steps" can open on their own work. */
   currentStaff: CurrentStaff;
-};
-
-type CreateOrderResponse = {
-  ok?: boolean;
-  error?: string;
-  order?: { id: string };
 };
 
 
@@ -533,123 +516,7 @@ function OperationalNotes({ note, selectedBranch, canPostNotes, generatedAt }: {
   );
 }
 
-function NewShipmentLauncher({ canViewCommercial, selectedBranch, branches, closing, onClose }: { canViewCommercial: boolean; selectedBranch: string; branches: string[]; closing: boolean; onClose: () => void }) {
-  const router = useRouter();
-  const defaultBranch = selectedBranch !== "all" && branches.includes(selectedBranch)
-    ? selectedBranch
-    : branches.includes("Kathmandu")
-      ? "Kathmandu"
-      : branches[0] ?? "Kathmandu";
-  const [branch, setBranch] = useState(defaultBranch);
-  const [mode, setMode] = useState<CreationMode>("road");
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
-  const [weightKg, setWeightKg] = useState("0");
-  const [volumeCbm, setVolumeCbm] = useState("0");
-  const [pieces, setPieces] = useState("0");
-  const [containerCount, setContainerCount] = useState("0");
-  const [equipment, setEquipment] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const response = await fetch("/api/admin/rating", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          action: "create_order",
-          branch,
-          origin,
-          destination,
-          mode,
-          pickupDate,
-          weightKg: Number(weightKg),
-          volumeCbm: Number(volumeCbm),
-          pieces: Number(pieces),
-          containerCount: Number(containerCount),
-          equipment,
-        }),
-      });
-      const result = await response.json() as CreateOrderResponse;
-      if (!response.ok || !result.ok || !result.order?.id) throw new Error(result.error || "The shipment planning record could not be created.");
-      router.push(`/admin/rating/${encodeURIComponent(result.order.id)}`);
-      onClose();
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "The shipment planning record could not be created.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className={styles.launcherBackdrop} data-closing={closing ? "true" : undefined} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className={styles.launcher} data-closing={closing ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="new-shipment-title">
-        <div className={styles.launcherHeader}>
-          <div><h2 id="new-shipment-title">New shipment</h2><p>Start a new movement through KCPL’s controlled transport-order, tender and booking chain. The shipment record is still created only by the existing server-authoritative workflow.</p></div>
-          <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close new shipment"><X size={14} strokeWidth={1.8} /></button>
-        </div>
-        {canViewCommercial ? (
-          <form className={extras.createForm} onSubmit={create}>
-            <div className={extras.createGrid}>
-              <div className={extras.createField}><label htmlFor="overview-new-branch">Branch</label><select id="overview-new-branch" value={branch} onChange={(event) => setBranch(event.target.value)}>{branches.map((value) => <option key={value} value={value}>{value}</option>)}</select></div>
-              <div className={extras.createField}><label htmlFor="overview-new-mode">Mode</label><select id="overview-new-mode" value={mode} onChange={(event) => setMode(event.target.value as CreationMode)}>{creationModes.map((value) => <option key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</option>)}</select></div>
-              <div className={extras.createField}><label htmlFor="overview-new-origin">Origin</label><input id="overview-new-origin" required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal" /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-destination">Destination</label><input id="overview-new-destination" required value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Dubai / DXB / UAE" /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-pickup">Pickup date</label><input id="overview-new-pickup" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.target.value)} /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-equipment">Equipment</label><input id="overview-new-equipment" value={equipment} onChange={(event) => setEquipment(event.target.value)} placeholder="20GP, 40HC, reefer, truck…" /></div>
-            </div>
-            <div className={extras.createMetrics}>
-              <div className={extras.createField}><label htmlFor="overview-new-weight">Weight (kg)</label><input id="overview-new-weight" type="number" min="0" step="0.01" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-volume">Volume (CBM)</label><input id="overview-new-volume" type="number" min="0" step="0.001" value={volumeCbm} onChange={(event) => setVolumeCbm(event.target.value)} /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-pieces">Pieces</label><input id="overview-new-pieces" type="number" min="0" step="1" value={pieces} onChange={(event) => setPieces(event.target.value)} /></div>
-              <div className={extras.createField}><label htmlFor="overview-new-containers">Containers</label><input id="overview-new-containers" type="number" min="0" step="1" value={containerCount} onChange={(event) => setContainerCount(event.target.value)} /></div>
-            </div>
-            {error ? <OpsNotice tone="danger">{error}</OpsNotice> : null}
-            <div className={extras.createActions}><Link href="/admin/rating" className={styles.textButton}>Open rate desk</Link><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancel</button><button type="submit" className={styles.blackButton} disabled={busy}>{busy ? "Creating…" : "Create planning record"}</button></div>
-          </form>
-        ) : (
-          <div className={styles.launcherBody}>
-            <Link href="/admin/enquiries" className={styles.launcherChoice}><span><strong>Open enquiries</strong><span>Your Operations role cannot originate a commercial transport order. Continue from an authorised enquiry or commercial handoff.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
-            <Link href="/admin/shipments" className={styles.launcherChoice}><span><strong>Open shipment register</strong><span>Find an existing active or delivered shipment and its shipment record.</span></span><ArrowRight size={14} strokeWidth={1.8} /></Link>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, branches, canViewCommercial, canPostNotes, role, currentStaff }: DashboardProps) {
-  const [launcherOpen, setLauncherOpen] = useState(false);
-  const [launcherClosing, setLauncherClosing] = useState(false);
-  // The unmount is deferred until the exit has played, so the timer has to be
-  // cancellable: reopening inside that window must not be closed by the old timer.
-  const launcherTimer = useRef<number | null>(null);
-  const clearLauncherTimer = useCallback(() => {
-    if (launcherTimer.current === null) return;
-    window.clearTimeout(launcherTimer.current);
-    launcherTimer.current = null;
-  }, []);
-  // Exit is shorter than the entrance: the user has already decided to leave.
-  const closeLauncher = useCallback(() => {
-    clearLauncherTimer();
-    setLauncherClosing(true);
-    launcherTimer.current = window.setTimeout(() => {
-      launcherTimer.current = null;
-      setLauncherOpen(false);
-      setLauncherClosing(false);
-    }, LAUNCHER_EXIT_MS);
-  }, [clearLauncherTimer]);
-  const openLauncher = useCallback(() => {
-    clearLauncherTimer();
-    setLauncherClosing(false);
-    setLauncherOpen(true);
-  }, [clearLauncherTimer]);
-  useEffect(() => clearLauncherTimer, [clearLauncherTimer]);
+export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, canViewCommercial, canPostNotes, role, currentStaff }: DashboardProps) {
   const { search } = useWorkspaceQuery();
   const returnTo = `/admin/command-centre${search}`;
   const activeShipments = useMemo(() => data.jobs.filter((job) => job.status !== "delivered"), [data.jobs]);
@@ -734,9 +601,12 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
               <GripVertical size={14} strokeWidth={1.8} />
               {arranging ? "Done" : "Customise"}
             </button>
-          <button type="button" className={styles.blackButton} onClick={openLauncher}>
-            <Plus size={14} strokeWidth={2} /> New shipment
-          </button>
+          {/* The one way to start a shipment: the transport order form on Buy rates. */}
+          {canViewCommercial ? (
+            <Link href="/admin/rating?create=1" className={styles.blackButton}>
+              <Plus size={14} strokeWidth={2} /> New shipment
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -834,7 +704,6 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
         }}
       </ArrangeableGrid>
 
-      {launcherOpen ? <NewShipmentLauncher canViewCommercial={canViewCommercial} selectedBranch={selectedBranch} branches={branches} closing={launcherClosing} onClose={closeLauncher} /> : null}
     </div>
   );
 }

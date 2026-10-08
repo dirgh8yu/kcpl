@@ -135,10 +135,12 @@ export function OperationsCommandPalette({ open, instant = false, onClose, works
   const allowedIds = useMemo(() => new Set(workspaces.map((workspace) => workspace.id)), [workspaces]);
   const entries = useMemo<PaletteEntry[]>(() => {
     const needle = query.trim().toLowerCase();
+    // Things to start. Places to go are the sections listed below them, so a
+    // section never appears here as well.
     const quickActionCandidates: PaletteEntry[] = [
+      ...(allowedIds.has("rating") ? [{ key: "action:new-shipment", title: "New shipment", subtitle: "Start a transport order and get carrier rates", meta: null, href: "/admin/rating?create=1", kind: "action" as const }] : []),
       { key: "action:new-customer", title: "New customer", subtitle: "Create a customer account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
-      ...(allowedIds.has("delivery") ? [{ key: "action:delivery", title: "Work Delivery & POD", subtitle: "Open final-mile attempts and POD review", meta: null, href: "/admin/delivery", kind: "action" as const }] : []),
       ...(allowedIds.has("receivables") ? [{ key: "action:new-invoice", title: "New invoice", subtitle: "Bill a customer, from a shipment or on its own", meta: null, href: "/admin/finance/new", kind: "action" as const }] : []),
       ...(allowedIds.has("payables") ? [{ key: "action:new-payable", title: "New supplier bill", subtitle: "Record a payable before its bill check", meta: null, href: "/admin/payables?create=1", kind: "action" as const }] : []),
     ];

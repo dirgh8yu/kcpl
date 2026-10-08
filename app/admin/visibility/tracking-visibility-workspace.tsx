@@ -7,7 +7,6 @@ import { Radio, Radar,
   Activity,
   AlertTriangle,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   X,
 } from "lucide-react";
@@ -38,6 +37,8 @@ import {
   OpsTableWrap,
   useAdminPortalContainer,
   type OpsActiveFilter,
+  OpsRegisterPager,
+  registerPage,
 } from "../operations-ui";
 import { statusTone as shipmentStatusTone } from "../shipments/shipments-views";
 import { nepalInputToIso } from "../nepal-time";
@@ -164,7 +165,6 @@ export function TrackingVisibilityWorkspace({
   const destinationFilter = params.get("destination") ?? "all";
   const requestedPage = Number(params.get("page") || "1");
 
-  const pageSize = 10;
   const [allowInitialSelection, setAllowInitialSelection] = useState(
     Boolean(initialShipment),
   );
@@ -293,14 +293,8 @@ export function TrackingVisibilityWorkspace({
       .slice(0, 5);
   }, [rows]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const page = Math.min(
-    pageCount,
-    Number.isSafeInteger(requestedPage) && requestedPage > 0
-      ? requestedPage
-      : 1,
-  );
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const { page, start: pageStart, end: pageEnd } = registerPage(requestedPage, filtered.length);
+  const pageRows = filtered.slice(pageStart, pageEnd);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -513,16 +507,7 @@ export function TrackingVisibilityWorkspace({
                   </tbody>
                 </table>
               </OpsTableWrap>
-              <footer className="ops-register-footer">
-                <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length} shipments</span>
-                {pageCount > 1 ? (
-                  <nav className="ops-pager" aria-label="Live visibility pages">
-                    <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => update({ page: String(page - 1), selected: null })} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                    <span className="px-1">Page {page} of {pageCount}</span>
-                    <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1), selected: null })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                  </nav>
-                ) : null}
-              </footer>
+              <OpsRegisterPager page={page} total={filtered.length} noun="shipments" label="Tracking pages" onPage={(next) => update({ page: String(next), selected: null })}/>
             </>
           ) : (
             hasFilters ? <OpsNoMatches noun="shipments" onClear={resetFilters}/> : <OpsEmptyState compact icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No tracking yet" description="Tracking feeds will appear when active shipments produce visibility events."/>

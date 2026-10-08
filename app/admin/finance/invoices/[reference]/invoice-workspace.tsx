@@ -7,7 +7,7 @@ import { Banknote, CheckCircle2, FileDown, Printer, ReceiptText, Trash2 } from "
 import { nepalOperationalDate } from "../../../../invoice-effective-status";
 import type { StaffRemittance } from "../../../../portal/portal-remittance.server";
 import { financeInvoiceStatusLabels, financePaymentMethodLabels, financePaymentMethods, type FinanceInvoice, type FinancePaymentMethod } from "../../finance-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
+import { OpsBadge, OpsCopyButton, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 
 function money(amount: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
@@ -70,7 +70,7 @@ export function InvoiceWorkspace({ invoice, remittances }: { invoice: FinanceInv
   const canPay = ["issued", "partially_paid", "overdue"].includes(invoice.status) && invoice.balance_due > 0;
 
   return <OpsPage>
-    <div className="no-print"><OpsPageHeader eyebrow="Invoice" title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{invoice.reference}</OpsMono><OpsBadge tone={statusTone(invoice.status)} dot>{financeInvoiceStatusLabels[invoice.status]}</OpsBadge></span>} description={invoice.customer_name} actions={<><OpsButton variant="secondary" onClick={() => window.print()}><Printer size={13}/>Print</OpsButton>{invoice.status === "draft" ? <OpsButton variant="primary" disabled={busy} onClick={() => invoiceAction("issue")}>Issue invoice</OpsButton> : null}{invoice.status !== "void" && invoice.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => invoiceAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/></div>
+    <div className="no-print"><OpsPageHeader eyebrow="Invoice" title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{invoice.reference}</OpsMono><OpsCopyButton value={invoice.reference} label={invoice.reference}/><OpsBadge tone={statusTone(invoice.status)} dot>{financeInvoiceStatusLabels[invoice.status]}</OpsBadge></span>} description={invoice.customer_name} actions={<><OpsButton variant="secondary" onClick={() => window.print()}><Printer size={13}/>Print</OpsButton>{invoice.status === "draft" ? <OpsButton variant="primary" disabled={busy} onClick={() => invoiceAction("issue")}>Issue invoice</OpsButton> : null}{invoice.status !== "void" && invoice.amount_paid === 0 ? <OpsButton variant="danger" disabled={busy} onClick={() => invoiceAction("void")}><Trash2 size={12}/>Void</OpsButton> : null}</>}/></div>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <div className="no-print"><OpsNotice tone={notice.toLowerCase().includes("failed") || notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}

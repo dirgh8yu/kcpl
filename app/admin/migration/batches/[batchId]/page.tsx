@@ -102,5 +102,5 @@ function Safety({ title, detail }: { title: string; detail: string }) {
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {
-  return <V4WorkspaceGate eyebrow="Import batch" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/command-centre", label: "Overview", primary: true }, { href: "/admin/migration", label: "Import old records" }]}/>;
+  return <V4WorkspaceGate eyebrow="Import batch" title={title} detail={detail} embedded={embedded} actions={[{ href: "/admin/command-centre", label: "Overview", primary: true }]}/>;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ChevronRight, X } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
 import { OpsBadge, OpsButton, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
@@ -63,7 +63,9 @@ function nextAction(order: TmsOrder) {
   return { title: "Review record", detail: "This transport order is not currently progressing through procurement." };
 }
 
-export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initialOrders: TmsOrder[]; branches: KcplBranch[] }) {
+/** `initialCreate` opens the form straight away: every "New shipment" in the
+ *  app lands here, on the one form that starts one. */
+export function V4TransportOrdersWorkspace({ initialOrders, branches, initialCreate = false }: { initialOrders: TmsOrder[]; branches: KcplBranch[]; initialCreate?: boolean }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -71,7 +73,11 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
   const [status, setStatus] = useState<StatusFilter>("active");
   const [branch, setBranch] = useState<"all" | KcplBranch>("all");
   const [modeFilter, setModeFilter] = useState<"all" | TmsMode>("all");
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(initialCreate);
+  // Opening the form puts the cursor where the typing starts; branch and mode
+  // already hold sensible defaults.
+  const originRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (showCreate) originRef.current?.focus(); }, [showCreate]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
@@ -158,7 +164,8 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
       actions={(
         <>
           <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate desk</Link>
-          <button type="button" onClick={() => setShowCreate((value) => !value)} className="ops-button" data-variant="primary" data-size="md">New transport order</button>
+          {/* The form has its own Cancel; while it is open the button that opened it steps aside. */}
+          {showCreate ? null : <button type="button" onClick={() => setShowCreate(true)} className="ops-button" data-variant="primary" data-size="md">New transport order</button>}
         </>
       )}
     />
@@ -175,7 +182,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         <form onSubmit={createOrder} className="grid gap-x-4 gap-y-3 md:grid-cols-4">
           <Field label="Branch"><select className="ops-select" value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
           <Field label="Mode"><select className="ops-select" value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></Field>
-          <Field label="Origin"><input className="ops-input" required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal"/></Field>
+          <Field label="Origin"><input ref={originRef} className="ops-input" required value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Kathmandu / KTM / Nepal"/></Field>
           <Field label="Destination"><input className="ops-input" required value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Melbourne / MEL / Australia"/></Field>
           <Field label="Pickup date"><input className="ops-input" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.target.value)}/></Field>
           <Field label="Weight (kg)"><input className="ops-input" type="number" min="0" step="0.01" value={weightKg} onChange={(event) => setWeightKg(event.target.value)}/></Field>

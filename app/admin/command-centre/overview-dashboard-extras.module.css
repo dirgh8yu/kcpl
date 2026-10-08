@@ -1,74 +1,3 @@
-.createForm {
-  display: grid;
-  gap: 12px;
-  padding: 14px 16px 16px;
-}
-
-.createGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.createField {
-  display: grid;
-  gap: 5px;
-}
-
-.createField label {
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.createField input,
-.createField select {
-  width: 100%;
-  min-height: 34px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-radius);
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  padding: 0 10px;
-  font: inherit;
-  font-size: 13px;
-  outline: none;
-}
-
-.createField input:focus,
-.createField select:focus {
-  border-color: var(--admin-ink);
-  box-shadow: 0 0 0 2px rgba(16, 17, 20, 0.06);
-}
-
-.createField input::placeholder {
-  color: var(--admin-faint);
-}
-
-.createMetrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.createActions {
-  /* Pinned to the bottom of the scrolling dialog, so Create is reachable on a
-   * phone without scrolling past every field first. The negative margin and
-   * matching padding carry the surface to the dialog edges and cover the
-   * form's own bottom padding, so fields do not show through underneath. */
-  position: sticky;
-  bottom: -16px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 0 -16px -16px;
-  border-top: 1px solid var(--admin-line);
-  padding: 12px 16px 16px;
-  background: var(--admin-surface);
-}
-
-
 /* Holds the bulk-assign bar under the work queue heading when rows are ticked. */
 .bulkSlot {
   padding: 0 14px;
@@ -76,13 +5,6 @@
 
 .bulkSlot:empty {
   display: none;
-}
-
-@media (max-width: 640px) {
-  .createGrid,
-  .createMetrics {
-    grid-template-columns: 1fr;
-  }
 }
 
 

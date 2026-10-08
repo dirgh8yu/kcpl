@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { freightModeLabel } from "../freight-mode";
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Eye, FilePlus2, FileText, History, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   OpsBadge,
@@ -24,6 +24,8 @@ import {
   OpsSearch,
   OpsTableWrap,
   useAdminPortalContainer,
+  OpsRegisterPager,
+  registerPage,
 } from "../operations-ui";
 import { useWorkspaceQuery } from "../use-workspace-query";
 import {
@@ -81,7 +83,6 @@ const FOCUS_OPTIONS: Array<{ value: Focus; label: string }> = [
   { value: "review", label: "Needs checking" },
   { value: "generated", label: "Created" },
 ];
-const PAGE_SIZE = 10;
 
 function formFor(row: FreightDocumentQueueRow): FormState {
   const primary = primaryCarriageDocumentKind(row.mode);
@@ -199,9 +200,8 @@ export function FreightDocumentsWorkspace({
     review: rows.filter(hasPendingReview).length,
   }), [rows]);
   const requestedPage = Number(params.get("page") ?? "1");
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(Math.floor(requestedPage), pageCount) : 1;
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { page, start: pageStart, end: pageEnd } = registerPage(requestedPage, filtered.length);
+  const pageRows = filtered.slice(pageStart, pageEnd);
 
   useEffect(() => {
     if (!selected) return;
@@ -378,17 +378,7 @@ export function FreightDocumentsWorkspace({
           ) : (
             hasFilters ? <OpsNoMatches noun="Job Files" onClear={() => update({ q: null, view: null, page: null })}/> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No Job Files ready for documents" description="Booked and active shipments will appear here when document generation is available."/>
           )}
-          {filtered.length ? (
-            <footer className="ops-register-footer">
-              <span>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} Job File{filtered.length === 1 ? "" : "s"}</span>
-              {pageCount > 1 ? (
-                <nav className="ops-pager" aria-label="Freight document pages">
-                  <button type="button" className="ops-pager-button" disabled={page <= 1} onClick={() => update({ page: String(page - 1) })} aria-label="Previous page"><ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                  <span className="px-1">Page {page} of {pageCount}</span>
-                  <button type="button" className="ops-pager-button" disabled={page >= pageCount} onClick={() => update({ page: String(page + 1) })} aria-label="Next page"><ChevronRight size={14} strokeWidth={1.75} aria-hidden="true"/></button>
-                </nav>
-              ) : null}
-            </footer>          ) : null}
+          <OpsRegisterPager page={page} total={filtered.length} noun="Job Files" label="Freight document pages" onPage={(next) => update({ page: String(next) })}/>
         </section>
       </div>
 
