@@ -4,7 +4,6 @@ import { smsConfigured } from "../../integrations/sms.server";
 import { whatsappConfigured } from "../../integrations/whatsapp.server";
 import { PortalTextNoticesPanel } from "./portal-text-notices-panel";
 import { portalNotificationPreferences, portalNotificationTopicsFor } from "../portal-notifications";
-import { transactionalEmailConfigured } from "../../integrations/sendgrid-email.server";
 import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
 import { PortalUnavailable } from "../portal-frame";
@@ -32,11 +31,9 @@ export default async function PortalSettingsPage() {
     >
       <PortalSettingsWorkspace
         email={access.session.email}
-        customerName={access.session.customerName}
         role={access.session.role}
         topics={portalNotificationTopicsFor(access.session.capabilities.canViewFinance)}
         initialPreferences={stored ?? portalNotificationPreferences(null)}
-        emailConfigured={transactionalEmailConfigured()}
         team={team}
         locale={access.session.locale}
         pushPublicKey={portalPushConfigured() ? portalPushPublicKey() : ""}

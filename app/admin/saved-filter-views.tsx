@@ -38,10 +38,14 @@ export function SavedFilterViews<TStatus extends string>({ storageKey, query, st
     setEditing(false);
   }
   if (readyKey !== storageKey) return null;
+  // A view is a search worth keeping; a status alone is already one tab away.
+  // With nothing saved and nothing typed, the row is not drawn at all.
+  const canSave = Boolean(query.trim());
+  if (!views.length && !canSave && !editing && !error) return null;
   return <div className="ops-saved-views">
     <div className="ops-saved-view-list" role="group" aria-label="Saved filter views">
       {views.map((view) => <span key={view.id} className="ops-saved-view"><button type="button" aria-pressed={view.query === query && view.status === status} onClick={() => onApply(view)}>{view.name}</button><button type="button" onClick={() => persist(views.filter((item) => item.id !== view.id))} aria-label={`Delete saved view ${view.name}`}><X size={12}/></button></span>)}
-      <OpsButton size="sm" variant="ghost" onClick={() => { setName(query.trim() ? `Search: ${query.trim()}` : status === "all" ? "All records" : status); setEditing(true); }}><BookmarkPlus size={13}/>Save view</OpsButton>
+      {canSave && !editing ? <OpsButton size="sm" variant="ghost" onClick={() => { setName(`Search: ${query.trim()}`); setEditing(true); }}><BookmarkPlus size={13}/>Save view</OpsButton> : null}
     </div>
     {editing ? <div className="ops-save-view-editor"><label>View name<input className="ops-input" value={name} maxLength={48} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); saveCurrent(); } if (event.key === "Escape") { event.preventDefault(); setEditing(false); } }}/></label><OpsButton size="sm" variant="primary" disabled={!name.trim()} onClick={saveCurrent}>Save</OpsButton><OpsButton size="sm" onClick={() => setEditing(false)}>Cancel</OpsButton></div> : null}
     {error ? <OpsNotice tone="warning" onDismiss={() => setError("")}>{error}</OpsNotice> : null}

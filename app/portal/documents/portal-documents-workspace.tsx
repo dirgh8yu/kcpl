@@ -59,15 +59,14 @@ export function PortalDocumentsWorkspace({
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow={t("overview.eyebrow")}
         title={t("docs.title")}
-        description={t("docs.description")}
         meta={total > scanned ? <span>{t("docs.coverage", { scanned, total })}</span> : undefined}
       />
       <div className="ops-content">
         {/* The Document Vault's operating row: direction as scopes with
-            counts, the paper type as a filter, as staff see it. */}
-        <OpsRegisterToolbar
+            counts, the paper type as a filter, as staff see it. Until there is
+            a document there is nothing to search or filter. */}
+        {documents.length ? <OpsRegisterToolbar
           search={(
             <OpsSearch
               value={query}
@@ -90,7 +89,7 @@ export function PortalDocumentsWorkspace({
               {filtered ? (
                 <OpsButton size="sm" variant="ghost" onClick={() => { setDocumentType("all"); setDirection("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
               ) : null}
-              <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
+              <span className="portal-toolbar-count" aria-live="polite">{query.trim() ? t("ships.shown", { count: rows.length }) : ""}</span>
             </>
           )}
           tabs={(
@@ -105,7 +104,7 @@ export function PortalDocumentsWorkspace({
               ]}
             />
           )}
-        />
+        /> : null}
         <OpsSurface flush>
 
           {rows.length ? (

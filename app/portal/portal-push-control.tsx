@@ -111,11 +111,7 @@ export function PortalPushControl({ publicKey, locale }: { publicKey: string; lo
   if (state === "checking") return null;
 
   return (
-    <OpsSurface
-      eyebrow={t("push.eyebrow")}
-      title={t("push.title")}
-      description={t("push.description")}
-    >
+    <OpsSurface title={t("push.title")}>
       <div className="portal-push-control">
         {state === "unsupported" ? (
           <p className="portal-footnote">{t("push.unsupported")}</p>

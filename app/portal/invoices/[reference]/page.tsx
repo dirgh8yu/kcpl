@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Printer, Receipt } from "lucide-react";
+import { Receipt } from "lucide-react";
 import {
   OpsBadge,
   OpsDetailGrid,
@@ -53,15 +53,20 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
           <OpsPageHeader
             eyebrow={t("invd.eyebrow")}
             title={<OpsMono>{result.invoice.external_invoice_number ?? result.invoice.reference}</OpsMono>}
-            description={t("invd.issued_to", { customer: access.session.customerName, company: company.name })}
+            // Who issued it to whom is for the printed copy; on screen the
+            // reader is the customer, who knows.
+            description={<span className="portal-print-only">{t("invd.issued_to", { customer: access.session.customerName, company: company.name })}</span>}
             meta={<>
               <span>{t("invd.issued_on", { date: portalDate(result.invoice.issue_date) })}</span>
               <span>{t("invd.due_on", { date: portalDate(result.invoice.due_date) })}</span>
+              {result.invoice.shipment_reference ? (
+                <Link href={`/portal/shipments/${encodeURIComponent(result.invoice.shipment_reference)}`} className="portal-row-link">
+                  <OpsMono>{result.invoice.shipment_reference}</OpsMono>
+                </Link>
+              ) : null}
             </>}
-            actions={<>
-              <OpsBadge tone={portalInvoiceTone(result.invoice.status)}>{portalInvoiceStatusLabel(result.invoice.status, locale)}</OpsBadge>
-              <Link href="/portal/invoices" className="ops-button" data-variant="secondary" data-size="sm">{t("invd.all_invoices")}</Link>
-            </>}
+            // The way back to the list is the Invoices tab, lit above.
+            actions={<OpsBadge tone={portalInvoiceTone(result.invoice.status)}>{portalInvoiceStatusLabel(result.invoice.status, locale)}</OpsBadge>}
           />
 
           <div className="ops-content">
@@ -70,22 +75,9 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
                   browser print, so a customer can file or forward a copy
                   without KCPL generating a PDF server-side. */}
               <section className="portal-print-sheet">
-                <OpsSurface eyebrow={t("invd.statement")} title={t("invd.detail_title")}>
-                  <OpsDetailGrid columns={4}>
-                    <OpsDetailItem label={t("invd.eyebrow")}>
-                      <OpsMono>{result.invoice.external_invoice_number ?? result.invoice.reference}</OpsMono>
-                    </OpsDetailItem>
-                    <OpsDetailItem label={t("inv.col_issued")}>{portalDate(result.invoice.issue_date)}</OpsDetailItem>
-                    <OpsDetailItem label={t("inv.col_due")}>{portalDate(result.invoice.due_date)}</OpsDetailItem>
-                    <OpsDetailItem label={t("common.shipment")}>
-                      {result.invoice.shipment_reference ? (
-                        <Link href={`/portal/shipments/${encodeURIComponent(result.invoice.shipment_reference)}`} className="portal-row-link">
-                          <OpsMono>{result.invoice.shipment_reference}</OpsMono>
-                        </Link>
-                      ) : t("common.none")}
-                    </OpsDetailItem>
-                  </OpsDetailGrid>
-
+                {/* The number, dates and shipment are the header's; this is
+                    the charges and what they add up to. */}
+                <OpsSurface>
                   {result.invoice.line_items.length ? (
                     <OpsTableWrap>
                       <table className="ops-table ops-register-table portal-stack-table">
@@ -119,28 +111,37 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
                     />
                   )}
 
+                  {/* Each sum once: a subtotal only beside the tax that makes
+                      it differ from the total, and a balance only once
+                      something has been receipted against it. */}
                   <OpsDetailGrid columns={4}>
-                    <OpsDetailItem label={t("invd.subtotal")}>{portalMoney(result.invoice.subtotal, result.invoice.currency)}</OpsDetailItem>
-                    <OpsDetailItem label={t("invd.tax")}>{portalMoney(result.invoice.tax_total, result.invoice.currency)}</OpsDetailItem>
-                    <OpsDetailItem label={t("inv.col_total")}>{portalMoney(result.invoice.total, result.invoice.currency)}</OpsDetailItem>
-                    <OpsDetailItem label={t("invd.receipted")}>{portalMoney(result.invoice.amount_paid, result.invoice.currency)}</OpsDetailItem>
-                    <OpsDetailItem label={t("invd.balance_due")} wide>
-                      <strong>{portalMoney(result.invoice.balance_due, result.invoice.currency)}</strong>
+                    {result.invoice.tax_total ? <>
+                      <OpsDetailItem label={t("invd.subtotal")}>{portalMoney(result.invoice.subtotal, result.invoice.currency)}</OpsDetailItem>
+                      <OpsDetailItem label={t("invd.tax")}>{portalMoney(result.invoice.tax_total, result.invoice.currency)}</OpsDetailItem>
+                    </> : null}
+                    <OpsDetailItem label={t("inv.col_total")}>
+                      {result.invoice.amount_paid ? portalMoney(result.invoice.total, result.invoice.currency) : <strong>{portalMoney(result.invoice.total, result.invoice.currency)}</strong>}
                     </OpsDetailItem>
+                    {result.invoice.amount_paid ? <>
+                      <OpsDetailItem label={t("invd.receipted")}>{portalMoney(result.invoice.amount_paid, result.invoice.currency)}</OpsDetailItem>
+                      <OpsDetailItem label={t("invd.balance_due")}>
+                        <strong>{portalMoney(result.invoice.balance_due, result.invoice.currency)}</strong>
+                      </OpsDetailItem>
+                    </> : null}
                   </OpsDetailGrid>
-
-                  <p className="portal-footnote portal-print-note">
-                    <Printer size={14} aria-hidden="true"/> {t("invd.print_note")}
-                  </p>
                 </OpsSurface>
               </section>
 
-              <PortalRemittancePanel
-                locale={locale}
-                reference={result.invoice.reference}
-                initialRemittances={remittances.kind === "ready" ? remittances.remittances : []}
-                currency={result.invoice.currency}
-              />
+              {/* A settled invoice has nothing to report a payment against,
+                  unless receipts were already sent for it. */}
+              {result.invoice.balance_due > 0 || (remittances.kind === "ready" && remittances.remittances.length) ? (
+                <PortalRemittancePanel
+                  locale={locale}
+                  reference={result.invoice.reference}
+                  initialRemittances={remittances.kind === "ready" ? remittances.remittances : []}
+                  currency={result.invoice.currency}
+                />
+              ) : null}
             </div>
           </div>
         </OpsPage>
@@ -176,7 +177,7 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
       ) : null}
 
       {result.kind === "unavailable" ? (
-        <PortalWorkspaceUnavailable eyebrow={t("invd.eyebrow")} title={t("invd.eyebrow")} icon={<Receipt size={18}/>} locale={locale}/>
+        <PortalWorkspaceUnavailable title={t("invd.eyebrow")} icon={<Receipt size={18}/>} locale={locale}/>
       ) : null}
     </PortalShell>
   );

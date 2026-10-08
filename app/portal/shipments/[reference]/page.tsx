@@ -83,7 +83,7 @@ export default async function PortalShipmentPage({
         : null}
       {result.kind === "missing" ? (
         <OpsPage>
-          <OpsPageHeader eyebrow={t("overview.eyebrow")} title={t("ship.not_found_title")}/>
+          <OpsPageHeader title={t("ship.not_found_title")}/>
           <div className="ops-content">
             <OpsEmptyState
               kind="search"
@@ -96,7 +96,7 @@ export default async function PortalShipmentPage({
         </OpsPage>
       ) : null}
       {result.kind === "unavailable" ? (
-        <PortalWorkspaceUnavailable eyebrow={t("overview.eyebrow")} title={t("common.shipment")} icon={<Package size={18}/>}/>
+        <PortalWorkspaceUnavailable title={t("common.shipment")} icon={<Package size={18}/>} locale={access.session.locale}/>
       ) : null}
     </PortalShell>
   );
@@ -105,7 +105,9 @@ export default async function PortalShipmentPage({
 function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale; requested: string | null }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
-  const waiting = checklist.some((row) => row.state === "needed" || row.state === "resend");
+  // Only paper the customer can send counts: a bill of lading KCPL prepares
+  // is not something asked of them.
+  const waiting = checklist.some((row) => row.uploadable && (row.state === "needed" || row.state === "resend"));
   const exception = portalTrackPosition(shipment.status) < 0;
   const exchange = <PortalDocumentExchange reference={shipment.reference} checklist={checklist} canSend={canSend} locale={locale} requested={requested}/>;
 
@@ -136,33 +138,28 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
           />
 
           {freeTime ? (
+            // The title says how many days are left and where; the facts
+            // below are only what it does not.
             <OpsSurface
-              eyebrow={t("free_time.label")}
               title={freeTimeSummary(freeTime.freeTime, freeTime.status, locale)}
-              description={freeTime.status.state === "expired"
-                ? t("ship.free_time_expired_description")
-                : t("ship.free_time_description")}
               priority={freeTime.status.state === "expired" ? "danger" : freeTime.status.state === "last_day" ? "warning" : "info"}
             >
-              <OpsDetailGrid columns={3}>
-                <OpsDetailItem label={t("ship.location")}>{freeTime.freeTime.location ?? t("ship.as_advised")}</OpsDetailItem>
+              <OpsDetailGrid columns={4}>
                 <OpsDetailItem label={t("free_time.deadline")}>{portalDate(freeTime.status.deadline)}</OpsDetailItem>
-                <OpsDetailItem label={freeTime.status.state === "expired" ? t("ship.days_overdue") : t("ship.days_remaining")}>
-                  <strong>{freeTime.status.state === "expired" ? freeTime.status.daysOverdue : freeTime.status.daysRemaining}</strong>
-                </OpsDetailItem>
                 {freeTime.freeTime.daily_charge !== null ? (
                   <OpsDetailItem label={t("ship.charge_after_expiry")}>
                     {t("ship.per_day", { currency: freeTime.freeTime.charge_currency ?? "", amount: freeTime.freeTime.daily_charge })}
                   </OpsDetailItem>
                 ) : null}
-                {freeTime.status.projectedCharge !== null ? (
+                {freeTime.status.projectedCharge ? (
                   <OpsDetailItem label={t("ship.accrued")}>
                     {freeTime.freeTime.charge_currency ?? ""} {freeTime.status.projectedCharge}
                   </OpsDetailItem>
                 ) : null}
-                <OpsDetailItem label={t("ship.allowance")}>{t("ship.allowance_days", { days: freeTime.freeTime.days ?? 0 })}</OpsDetailItem>
+                {freeTime.freeTime.days ? (
+                  <OpsDetailItem label={t("ship.allowance")}>{t("ship.allowance_days", { days: freeTime.freeTime.days })}</OpsDetailItem>
+                ) : null}
               </OpsDetailGrid>
-              <p className="portal-footnote">{t("ship.free_time_footnote")}</p>
             </OpsSurface>
           ) : null}
 
@@ -175,22 +172,20 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
           {/* What the customer owes KCPL comes before what KCPL reports. */}
           {waiting ? exchange : null}
 
-          {/* Route, mode, status and the opening date are in the header. */}
-          <OpsSurface title={t("ship.movement_title")}>
-            <OpsDetailGrid columns={4}>
-              <OpsDetailItem label={t("ship.current_location")}>{shipment.current_location || t("ship.not_reported")}</OpsDetailItem>
-              <OpsDetailItem label={t("ship.eta")}>{portalDate(shipment.eta)}</OpsDetailItem>
-              <OpsDetailItem label={t("ships.col_carrier")}>{shipment.carrier || t("ship.to_be_confirmed")}</OpsDetailItem>
-              <OpsDetailItem label={t("ship.carrier_reference")}>
-                {shipment.carrier_reference ? <OpsMono>{shipment.carrier_reference}</OpsMono> : t("common.none")}
-              </OpsDetailItem>
-            </OpsDetailGrid>
-          </OpsSurface>
+          {/* Route, mode, status and the opening date are in the header. Only
+              what KCPL has recorded is listed; nothing reads "not reported". */}
+          {shipment.current_location || shipment.eta || shipment.carrier || shipment.carrier_reference ? (
+            <OpsSurface title={t("ship.movement_title")}>
+              <OpsDetailGrid columns={4}>
+                {shipment.current_location ? <OpsDetailItem label={t("ship.current_location")}>{shipment.current_location}</OpsDetailItem> : null}
+                {shipment.eta ? <OpsDetailItem label={t("ship.eta")}>{portalDate(shipment.eta)}</OpsDetailItem> : null}
+                {shipment.carrier ? <OpsDetailItem label={t("ships.col_carrier")}>{shipment.carrier}</OpsDetailItem> : null}
+                {shipment.carrier_reference ? <OpsDetailItem label={t("ship.carrier_reference")}><OpsMono>{shipment.carrier_reference}</OpsMono></OpsDetailItem> : null}
+              </OpsDetailGrid>
+            </OpsSurface>
+          ) : null}
 
-          <OpsSurface
-            title={t("ship.milestones_title")}
-            description={t("ship.milestones_description")}
-          >
+          <OpsSurface title={t("ship.milestones_title")}>
             <OpsTimeline
               entries={events.map((event) => ({
                 id: event.id,
@@ -220,25 +215,19 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
             endpoint={`/api/portal/shipments/${encodeURIComponent(shipment.reference)}/messages`}
             viewer="customer"
             labels={{
-              eyebrow: t("msg.eyebrow"),
               title: t("msg.title"),
-              description: t("msg.description"),
               placeholder: t("msg.placeholder"),
               send: t("msg.send"),
               sending: t("msg.sending"),
-              empty: t("msg.empty"),
-              emptyDescription: t("msg.empty_description"),
               failed: t("msg.failed"),
               loadFailed: t("msg.load_failed"),
             }}
           />
 
-
-          <OpsSurface
-            title={t("docs.title")}
-            description={t("ship.documents_description")}
-          >
-            {documents.length ? (
+          {/* Released and sent paperwork, once there is some. Until then the
+              request list above is where documents come up. */}
+          {documents.length ? (
+            <OpsSurface title={t("docs.title")}>
               <ul className="portal-document-list">
                 {documents.map((document) => (
                   <li key={document.id}>
@@ -266,16 +255,8 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
                   </li>
                 ))}
               </ul>
-            ) : (
-              <OpsEmptyState
-                compact
-                kind="neutral"
-                icon={<FileText size={18}/>}
-                title={t("ship.no_documents_title")}
-                description={t("ship.no_documents_description")}
-              />
-            )}
-          </OpsSurface>
+            </OpsSurface>
+          ) : null}
 
           {waiting ? null : exchange}
         </div>

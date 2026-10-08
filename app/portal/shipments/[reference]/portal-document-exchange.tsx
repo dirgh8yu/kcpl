@@ -6,7 +6,6 @@ import { CheckCircle2, Clock3, FileUp, RotateCcw } from "lucide-react";
 import {
   OpsBadge,
   OpsButton,
-  OpsEmptyState,
   OpsField,
   OpsNotice,
   OpsSurface,
@@ -61,6 +60,7 @@ export function PortalDocumentExchange({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [freeType, setFreeType] = useState<string>("commercial_invoice");
+  const [another, setAnother] = useState(false);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function send(documentType: string, file: File) {
@@ -88,18 +88,45 @@ export function PortalDocumentExchange({
     inputs.current[documentType]?.click();
   }
 
-  const outstanding = checklist.filter((row) => row.state === "needed" || row.state === "resend");
-  // A confirmed document is already in the Documents list with its badge;
-  // this list is what is still open.
-  const rows = checklist.filter((row) => row.state !== "confirmed" || row.document_type === requested);
+  // What is asked of the customer is paper they send. Paper KCPL prepares
+  // (a bill of lading) arrives under Documents once released, and a confirmed
+  // document is already there with its badge; this list is what is still open.
+  const rows = checklist.filter((row) => row.uploadable && (row.state !== "confirmed" || row.document_type === requested));
+  const outstanding = rows.filter((row) => row.state === "needed" || row.state === "resend");
+  if (!rows.length && !canSend) return null;
+
+  const freeForm = (
+    <div className="portal-exchange-free">
+      <OpsField label={t("common.document")} hint={t("xchg.free_hint")}>
+        <select value={freeType} onChange={(event) => setFreeType(event.target.value)} disabled={Boolean(busy)}>
+          {customerUploadableDocumentTypes.map((type) => (
+            <option key={type} value={type}>{portalDocumentLabel(type, locale)}</option>
+          ))}
+        </select>
+      </OpsField>
+      <input
+        ref={(node) => { inputs.current.__free = node; }}
+        type="file"
+        className="portal-file-input"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
+        aria-label={t("xchg.choose_aria")}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void send(freeType, file);
+        }}
+      />
+      <OpsButton size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => pick("__free")}>
+        <FileUp size={14} strokeWidth={1.75} aria-hidden="true"/>
+        <span>{busy === freeType ? t("xchg.sending") : t("xchg.choose_file")}</span>
+      </OpsButton>
+    </div>
+  );
 
   return (
     <OpsSurface
       id="documents"
-      title={t("xchg.title")}
-      description={outstanding.length
-        ? t("xchg.description_outstanding")
-        : t("xchg.description_clear")}
+      title={rows.length ? t("xchg.title") : t("xchg.send_title")}
       priority={outstanding.some((row) => row.required) ? "warning" : "normal"}
     >
       <div className="portal-exchange">
@@ -108,85 +135,64 @@ export function PortalDocumentExchange({
 
         {rows.length ? (
           <ul className="portal-checklist">
-            {rows.map((row) => (
-              <li key={row.document_type} data-state={row.state} data-requested={row.document_type === requested ? "" : undefined}>
-                <span className="portal-checklist-mark" aria-hidden="true"><StateIcon state={row.state}/></span>
-                <span className="portal-checklist-main">
-                  <strong>{portalDocumentLabel(row.document_type, locale)}</strong>
-                  <span>
-                    {row.required ? t("xchg.required") : t("xchg.if_available")}
-                    {row.last_submitted_at ? t("xchg.last_sent", { date: portalDate(row.last_submitted_at) }) : ""}
-                    {row.state === "resend" ? t("xchg.asked_again") : ""}
-                    {!row.uploadable && row.state !== "confirmed" ? t("xchg.kcpl_prepares") : ""}
+            {rows.map((row) => {
+              const detail = [
+                row.required ? "" : t("xchg.if_available"),
+                row.last_submitted_at ? t("xchg.last_sent", { date: portalDate(row.last_submitted_at) }) : "",
+                row.state === "resend" ? t("xchg.asked_again") : "",
+              ].filter(Boolean).join(" · ");
+              const sendable = canSend && row.state !== "confirmed";
+              return (
+                <li key={row.document_type} data-state={row.state} data-requested={row.document_type === requested ? "" : undefined}>
+                  <span className="portal-checklist-mark" aria-hidden="true"><StateIcon state={row.state}/></span>
+                  <span className="portal-checklist-main">
+                    <strong>{portalDocumentLabel(row.document_type, locale)}</strong>
+                    {detail ? <span>{detail}</span> : null}
                   </span>
-                </span>
-                <OpsBadge tone={stateTones[row.state]} dot>{t(stateKeys[row.state])}</OpsBadge>
-                {canSend && row.uploadable && row.state !== "confirmed" ? (
-                  <>
-                    <input
-                      ref={(node) => { inputs.current[row.document_type] = node; }}
-                      type="file"
-                      className="portal-file-input"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp"
-                      aria-label={t("xchg.send_aria", { document: portalDocumentLabel(row.document_type, locale) })}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (file) void send(row.document_type, file);
-                      }}
-                    />
-                    <OpsButton
-                      size="sm"
-                      variant={row.state === "needed" || row.state === "resend" ? "primary" : "secondary"}
-                      disabled={busy === row.document_type}
-                      onClick={() => pick(row.document_type)}
-                    >
-                      {busy === row.document_type ? t("xchg.sending") : t("xchg.send_file")}
-                    </OpsButton>
-                  </>
-                ) : null}
-              </li>
-            ))}
+                  {/* "Needed" beside a Send button says the same thing twice. */}
+                  {row.state !== "needed" || !sendable ? <OpsBadge tone={stateTones[row.state]} dot>{t(stateKeys[row.state])}</OpsBadge> : null}
+                  {sendable ? (
+                    <>
+                      <input
+                        ref={(node) => { inputs.current[row.document_type] = node; }}
+                        type="file"
+                        className="portal-file-input"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        aria-label={t("xchg.send_aria", { document: portalDocumentLabel(row.document_type, locale) })}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) void send(row.document_type, file);
+                        }}
+                      />
+                      <OpsButton
+                        size="sm"
+                        variant={row.state === "needed" || row.state === "resend" ? "primary" : "secondary"}
+                        disabled={busy === row.document_type}
+                        onClick={() => pick(row.document_type)}
+                      >
+                        {busy === row.document_type ? t("xchg.sending") : t("xchg.send_file")}
+                      </OpsButton>
+                    </>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
-        ) : checklist.length ? null : (
-          <OpsEmptyState
-            compact
-            kind="healthy"
-            icon={<FileUp size={18}/>}
-            title={t("xchg.no_checklist_title")}
-            description={t("xchg.no_checklist_description")}
-          />
-        )}
+        ) : null}
 
-        {canSend ? (
-          <div className="portal-exchange-free">
-            <OpsField label={t("xchg.free_label")} hint={t("xchg.free_hint")}>
-              <select value={freeType} onChange={(event) => setFreeType(event.target.value)} disabled={Boolean(busy)}>
-                {customerUploadableDocumentTypes.map((type) => (
-                  <option key={type} value={type}>{portalDocumentLabel(type, locale)}</option>
-                ))}
-              </select>
-            </OpsField>
-            <input
-              ref={(node) => { inputs.current.__free = node; }}
-              type="file"
-              className="portal-file-input"
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
-              aria-label={t("xchg.choose_aria")}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (file) void send(freeType, file);
-              }}
-            />
-            <OpsButton size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => pick("__free")}>
+        {/* Anything not on the list waits behind one quiet button, so the
+            list stays the page's question. With no list it is the panel. */}
+        {!canSend ? (
+          <p className="portal-footnote">{t("xchg.read_only")}</p>
+        ) : rows.length && !another ? (
+          <div className="portal-exchange-more">
+            <OpsButton size="sm" variant="ghost" onClick={() => setAnother(true)}>
               <FileUp size={14} strokeWidth={1.75} aria-hidden="true"/>
-              <span>{busy === freeType ? t("xchg.sending") : t("xchg.choose_file")}</span>
+              <span>{t("xchg.free_label")}</span>
             </OpsButton>
           </div>
-        ) : (
-          <p className="portal-footnote">{t("xchg.read_only")}</p>
-        )}
+        ) : freeForm}
       </div>
     </OpsSurface>
   );

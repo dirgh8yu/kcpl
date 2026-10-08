@@ -88,7 +88,6 @@ export function FreeTimeControl({
     <OpsSurface
       id="shipment-free-time"
       title="Free time"
-      description="What the carrier or terminal granted. The customer sees this as a countdown."
       priority={status?.state === "expired" ? "danger" : status?.state === "last_day" ? "warning" : "normal"}
       action={canEdit ? <OpsButton variant="secondary" size="xs" onClick={() => setOpen((value) => !value)}>{open ? "Close" : freeTime?.days === null ? "Record" : "Edit"}</OpsButton> : undefined}
     >

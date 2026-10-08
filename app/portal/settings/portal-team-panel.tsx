@@ -68,9 +68,9 @@ export function PortalTeamPanel({
       if (data.warning) {
         setNotice(data.warning);
       } else if (data.delivered) {
-        setNotice(`An invitation has been emailed to ${email.trim().toLowerCase()}.`);
+        setNotice(t("team.invited", { email: email.trim().toLowerCase() }));
       } else {
-        setNotice(`Send this one-time link to ${email.trim().toLowerCase()} so they can set a password.`);
+        setNotice(t("team.link_ready", { email: email.trim().toLowerCase() }));
         setInviteLink(data.link ?? "");
       }
       setEmail("");
@@ -99,11 +99,7 @@ export function PortalTeamPanel({
   }
 
   return (
-    <OpsSurface
-      eyebrow={t("team.eyebrow")}
-      title={t("team.title")}
-      description={t("team.description", { limit: PORTAL_TEAM_MEMBER_LIMIT })}
-    >
+    <OpsSurface title={t("team.title")} description={t("team.description")}>
       <div className="portal-exchange">
         {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
         {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
@@ -154,9 +150,12 @@ export function PortalTeamPanel({
                       <td data-cell="meta" data-label={t("team.col_access")}>{t(`role.${member.role}`)}</td>
                       <td data-cell="status">
                         <OpsBadge tone={member.active ? "success" : "neutral"} dot>{member.active ? t("team.active") : t("team.disabled")}</OpsBadge>
-                        <span className="portal-cell-detail">{member.bound ? t("team.signed_in_before") : t("team.never_signed_in")}</span>
                       </td>
-                      <td data-cell="meta" data-label={t("team.col_last_signed_in")}>{member.last_sign_in_at ? portalDate(member.last_sign_in_at) : t("common.none")}</td>
+                      {/* One answer to "have they signed in": the date when it
+                          is known, "not yet" when it never happened. */}
+                      <td data-cell="meta" data-label={t("team.col_last_signed_in")}>
+                        {member.last_sign_in_at ? portalDate(member.last_sign_in_at) : member.bound ? t("common.none") : t("team.never_signed_in")}
+                      </td>
                       <td data-cell="action">
                         {member.role === "member" && !isYou && !member.linked ? (
                           <OpsButton
@@ -167,7 +166,7 @@ export function PortalTeamPanel({
                           >
                             {member.active ? t("team.disable") : t("team.enable")}
                           </OpsButton>
-                        ) : (
+                        ) : isYou ? null : (
                           <span className="portal-cell-detail">{t("team.managed_by_kcpl")}</span>
                         )}
                       </td>

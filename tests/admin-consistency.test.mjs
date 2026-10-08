@@ -354,3 +354,23 @@ test("header buttons don't repeat the hub's own tabs", async () => {
   ];
   for (const [path, pattern] of pairs) assert.doesNotMatch(await readFile(repo(path), "utf8"), pattern, path);
 });
+
+test("staff screens open panels and controls only when asked or useful", async () => {
+  // The pickups inspector opens on the pickup a link names, not on row one.
+  const pickups = await readFile(repo("app/admin/pickups/pickup-appointments-workspace.tsx"), "utf8");
+  assert.doesNotMatch(pickups, /initialRows\[0\]/);
+  // "Save view" is offered for a search; with nothing saved and nothing typed
+  // the row is not drawn.
+  const views = await readFile(repo("app/admin/saved-filter-views.tsx"), "utf8");
+  assert.match(views, /if \(!views\.length && !canSave && !editing && !error\) return null;/);
+  // A gallery image's Save appears with an edit, not as a disabled button.
+  const gallery = await readFile(repo("app/admin/gallery/gallery-workspace.tsx"), "utf8");
+  assert.match(gallery, /\{changed \? <OpsButton[\s\S]*?>Save details<\/OpsButton> : null\}/);
+  // Proof of delivery is not reported before there is a delivery.
+  const delivery = await readFile(repo("app/admin/delivery/delivery-workspace.tsx"), "utf8");
+  assert.match(delivery, /if \(row\.pod_status === "not_received"\) return row\.delivery_state === "delivered_pod_pending";/);
+  // The overview's next steps have no age column; a quiet shipment says so in place.
+  const overview = await readFile(repo("app/admin/command-centre/v4-operations-overview.tsx"), "utf8");
+  assert.doesNotMatch(overview, /<th>Updated<\/th>|styles\.headCount/);
+  assert.match(overview, /No update in \{age\.label\}/);
+});

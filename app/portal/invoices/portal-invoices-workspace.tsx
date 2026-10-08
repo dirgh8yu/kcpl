@@ -29,19 +29,16 @@ export function PortalInvoicesWorkspace({
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow={t("overview.eyebrow")}
         title={t("inv.title")}
-        description={t("inv.description")}
-        meta={<span>{t("inv.open_overdue", { open: summary.openInvoices, overdue: summary.overdueInvoices })}</span>}
-        // What is owed, how overdue, and what was paid, as a PDF.
-        actions={<a className="ops-button" data-variant="secondary" data-size="sm" href="/api/portal/statement">{t("inv.statement")}</a>}
+        // What is owed, how overdue, and what was paid, as a PDF. The status
+        // column already says which invoices are open and overdue.
+        actions={invoices.length ? <a className="ops-button" data-variant="secondary" data-size="sm" href="/api/portal/statement">{t("inv.statement")}</a> : undefined}
       />
       <div className="ops-content">
         <div className="ops-stack portal-stack">
           {summary.balances.length ? (
             <OpsSurface
               title={t("inv.position_title")}
-              description={t("inv.position_description")}
               priority={summary.overdueInvoices > 0 ? "warning" : "normal"}
             >
               <OpsMetricStrip columns={Math.min(4, Math.max(1, summary.balances.length))}>
@@ -51,14 +48,13 @@ export function PortalInvoicesWorkspace({
                     icon={<Receipt size={14} strokeWidth={1.75}/>}
                     label={t("overview.currency_outstanding", { currency: balance.currency })}
                     value={portalMoney(balance.outstanding, balance.currency)}
-                    detail={t("inv.invoiced_receipted", { invoiced: portalMoney(balance.invoiced, balance.currency), paid: portalMoney(balance.paid, balance.currency) })}
                   />
                 ))}
               </OpsMetricStrip>
             </OpsSurface>
           ) : null}
 
-          <OpsSurface title={t("inv.billing_title")} flush>
+          <OpsSurface title={invoices.length ? t("inv.billing_title") : undefined} flush>
             {invoices.length ? (
               <OpsTableWrap>
                 <table className="ops-table ops-register-table portal-stack-table" data-row-link="">
@@ -114,8 +110,6 @@ export function PortalInvoicesWorkspace({
               </div>
             )}
           </OpsSurface>
-
-          <p className="portal-footnote">{t("inv.footnote")}</p>
         </div>
       </div>
     </OpsPage>

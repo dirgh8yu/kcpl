@@ -37,7 +37,7 @@ export function PortalDeliveryRating({ reference, locale }: { reference: string;
 
   if (done) {
     return (
-      <OpsSurface eyebrow={t("rate.eyebrow")} title={t("rate.done")} priority="success">
+      <OpsSurface title={t("rate.done")} priority="success">
         <p className="portal-footnote">{done.message}</p>
         {done.reviewUrl ? (
           <p><a className="ops-button" data-variant="secondary" data-size="sm" href={done.reviewUrl} target="_blank" rel="noopener noreferrer">{t("rate.review")}</a></p>
@@ -47,7 +47,7 @@ export function PortalDeliveryRating({ reference, locale }: { reference: string;
   }
 
   return (
-    <OpsSurface eyebrow={t("rate.eyebrow")} title={t("rate.title")} description={t("rate.description")}>
+    <OpsSurface title={t("rate.title")}>
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
       <div className="delivery-rating" role="radiogroup" aria-label={t("rate.title")}>
         {[1, 2, 3, 4, 5].map((value) => (

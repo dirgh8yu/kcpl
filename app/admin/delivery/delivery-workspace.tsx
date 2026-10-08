@@ -67,6 +67,11 @@ function podLabel(row: DeliveryQueueRow) {
   return "Not received";
 }
 
+function podBadgeShown(row: DeliveryQueueRow) {
+  if (row.pod_status === "not_received") return row.delivery_state === "delivered_pod_pending";
+  return !(row.pod_status === "verified" && row.delivery_state === "pod_verified");
+}
+
 function podTone(row: DeliveryQueueRow): "success" | "warning" | "danger" | "neutral" {
   if (row.pod_status === "verified") return "success";
   if (row.pod_status === "received") return "warning";
@@ -247,8 +252,11 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                             {row.delivery_state === "pod_verified" ? <CheckCircle2 size={14} strokeWidth={1.75} className="delivery-state-icon" aria-hidden="true"/> : exception ? <AlertTriangle size={14} strokeWidth={1.75} className="delivery-state-icon" data-danger={row.delivery_state === "delivery_failed" || undefined} aria-hidden="true"/> : null}
                           </span>
                         </td>
+                        {/* Proof speaks once there is something to say: not before
+                            the cargo is delivered, and not "Verified" again
+                            beside a "POD verified" state. */}
                         <td data-cell="meta" data-label="Proof">
-                          <span className="ops-cell-primary"><OpsBadge tone={podTone(row)} dot>{podLabel(row)}</OpsBadge></span>
+                          {podBadgeShown(row) ? <span className="ops-cell-primary"><OpsBadge tone={podTone(row)} dot>{podLabel(row)}</OpsBadge></span> : null}
                           {row.pod_evidence_count ? <span className="ops-cell-secondary">{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</span> : null}
                         </td>
                         <td data-cell="open" className="ops-cell-open">

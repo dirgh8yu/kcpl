@@ -54,7 +54,7 @@ export function PortalDeliveryConfirmation({
 
   if (confirmedAt) {
     return (
-      <OpsSurface eyebrow={t("confirm.eyebrow")} title={t("confirm.done_title")} priority="success">
+      <OpsSurface title={t("confirm.done_title")} priority="success">
         <p className="portal-footnote">
           <CheckCircle2 size={14} aria-hidden="true"/> {t("confirm.done_at", { when: portalDateTime(confirmedAt) })}
           {confirmedBy ? t("confirm.done_by", { name: confirmedBy }) : ""}. {t("confirm.done_note")}
@@ -67,9 +67,8 @@ export function PortalDeliveryConfirmation({
 
   return (
     <OpsSurface
-      eyebrow={t("confirm.eyebrow")}
+     
       title={t("confirm.title")}
-      description={t("confirm.description")}
       action={<OpsButton variant="primary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? t("common.cancel") : t("confirm.open")}</OpsButton>}
     >
       {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}

@@ -11,7 +11,7 @@ export function PortalProofOfDeliveryCard({ reference, proof, locale }: { refere
   const src = (id: string) => `/api/portal/shipments/${encodeURIComponent(reference)}/pod/${encodeURIComponent(id)}`;
   const label = (kind: string) => t(kind === "signature" ? "pod.signature" : kind === "photo" ? "pod.photo" : "pod.document");
   return (
-    <OpsSurface eyebrow={t("pod.eyebrow")} title={t("pod.title")} description={t("pod.description")}>
+    <OpsSurface title={t("pod.title")}>
       <OpsDetailGrid>
         <OpsDetailItem label={t("pod.received_by")}>
           {[proof.recipient_name, proof.recipient_relation].filter(Boolean).join(" · ") || "—"}

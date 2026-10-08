@@ -5,6 +5,7 @@ import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../portal-frame";
 import { PortalDocumentsWorkspace } from "./portal-documents-workspace";
+import { portalText } from "../portal-i18n";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Documents", robots: { index: false, follow: false } };
@@ -21,7 +22,7 @@ export default async function PortalDocumentsPage() {
     >
       {result.kind === "ready"
         ? <PortalDocumentsWorkspace locale={access.session.locale} documents={result.documents} scanned={result.scanned} total={result.total}/>
-        : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Documents" icon={<FileText size={18}/>}/>}
+        : <PortalWorkspaceUnavailable title={portalText(access.session.locale, "docs.title")} icon={<FileText size={18}/>} locale={access.session.locale}/>}
     </PortalShell>
   );
 }

@@ -4,11 +4,10 @@ import { nepalOperationalDate } from "../../invoice-effective-status";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Send, Tag } from "lucide-react";
+import { Send } from "lucide-react";
 import {
   OpsBadge,
   OpsButton,
-  OpsEmptyState,
   OpsField,
   OpsMono,
   OpsNotice,
@@ -141,11 +140,7 @@ export function PortalRequestsWorkspace({
 
   return (
     <OpsPage>
-      <OpsPageHeader
-        eyebrow={t("overview.eyebrow")}
-        title={t("req.title")}
-        description={t("req.description")}
-      />
+      <OpsPageHeader title={t("req.title")}/>
 
       <div className="ops-content">
         <div className="ops-stack portal-stack">
@@ -153,10 +148,7 @@ export function PortalRequestsWorkspace({
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
 
           {capabilities.canSubmitRequests ? (
-            <OpsSurface
-              title={t("req.new_title")}
-              description={t("req.new_description")}
-            >
+            <OpsSurface title={t("req.new_title")}>
               <form onSubmit={submitRequest} className="portal-form" aria-busy={busy}>
                 <div className="portal-form-grid">
                   <OpsField label={t("overview.origin")} hint={fieldErrors.origin}>
@@ -208,70 +200,71 @@ export function PortalRequestsWorkspace({
             </OpsSurface>
           ) : null}
 
-          <OpsSurface
+          {/* Quotes and open requests show once there are some; an empty
+              table under the form only says "nothing yet" twice. */}
+          {quotes.length ? <OpsSurface
             id="quotes"
             title={t("req.quotes_title")}
-            description={t("req.quotes_description")}
             flush
           >
-            {quotes.length ? (
-              <OpsTableWrap>
-                <table className="ops-table ops-register-table portal-stack-table">
-                  <thead>
-                    <tr>
-                      <th>{t("req.col_quote")}</th>
-                      <th>{t("common.route")}</th>
-                      <th>{t("req.col_price")}</th>
-                      <th>{t("req.col_valid")}</th>
-                      <th>{t("common.shipment")}</th>
-                      <th><span className="portal-sr-only">{t("req.col_action")}</span></th>
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table portal-stack-table">
+                <thead>
+                  <tr>
+                    <th>{t("req.col_quote")}</th>
+                    <th>{t("common.route")}</th>
+                    <th>{t("req.col_price")}</th>
+                    <th>{t("req.col_valid")}</th>
+                    <th>{t("common.shipment")}</th>
+                    <th><span className="portal-sr-only">{t("req.col_action")}</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quotes.map((quote) => (
+                    <tr key={quote.reference}>
+                      <td data-cell="primary">
+                        <OpsMono>{quote.reference}</OpsMono>
+                        <span className="portal-cell-detail">{t("req.raised_on", { date: portalDate(quote.created_at) })}</span>
+                      </td>
+                      <td data-cell="route">
+                        <span className="portal-lane">{quote.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{quote.destination}</span>
+                        {quote.cargo_type ? <span className="portal-cell-detail">{quote.cargo_type}</span> : null}
+                      </td>
+                      <td data-cell="amount" data-label={t("req.col_price")}>
+                        <strong>{quote.quoted_amount === null ? t("common.none") : portalMoney(quote.quoted_amount, quote.quote_currency)}</strong>
+                        {quote.customer_quote_note ? <span className="portal-cell-detail">{quote.customer_quote_note}</span> : null}
+                      </td>
+                      <td data-cell="meta" data-label={t("req.col_valid")}>{portalDate(quote.valid_until)}</td>
+                      <td data-cell="status">
+                        {quote.shipment_reference ? (
+                          <Link href={`/portal/shipments/${encodeURIComponent(quote.shipment_reference)}`} className="portal-row-link">
+                            <OpsMono>{quote.shipment_reference}</OpsMono>
+                          </Link>
+                        ) : quote.booking_requested_at ? (
+                          <OpsBadge tone="info">{t("req.asked")}</OpsBadge>
+                        ) : portalQuoteExpired(quote.valid_until) ? (
+                          <OpsBadge tone="warning">{t("req.expired")}</OpsBadge>
+                        ) : null}
+                        {/* An open quote says nothing here: "Ask to proceed"
+                            beside it already says it is not booked. */}
+                      </td>
+                      <td data-cell="action">
+                        {!portalQuoteBookingBlock(quote) && capabilities.canSubmitRequests ? (
+                          <OpsButton
+                            size="sm"
+                            variant="secondary"
+                            disabled={bookingBusy === quote.reference}
+                            onClick={() => startBooking(quote)}
+                          >
+                            {bookingBusy === quote.reference ? t("req.sending") : t("req.ask_to_proceed")}
+                          </OpsButton>
+                        ) : null}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {quotes.map((quote) => (
-                      <tr key={quote.reference}>
-                        <td data-cell="primary">
-                          <OpsMono>{quote.reference}</OpsMono>
-                          <span className="portal-cell-detail">{t("req.raised_on", { date: portalDate(quote.created_at) })}</span>
-                        </td>
-                        <td data-cell="route">
-                          <span className="portal-lane">{quote.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{quote.destination}</span>
-                          {quote.cargo_type ? <span className="portal-cell-detail">{quote.cargo_type}</span> : null}
-                        </td>
-                        <td data-cell="amount" data-label={t("req.col_price")}>
-                          <strong>{quote.quoted_amount === null ? t("common.none") : portalMoney(quote.quoted_amount, quote.quote_currency)}</strong>
-                          {quote.customer_quote_note ? <span className="portal-cell-detail">{quote.customer_quote_note}</span> : null}
-                        </td>
-                        <td data-cell="meta" data-label={t("req.col_valid")}>{portalDate(quote.valid_until)}</td>
-                        <td data-cell="status">
-                          {quote.shipment_reference ? (
-                            <Link href={`/portal/shipments/${encodeURIComponent(quote.shipment_reference)}`} className="portal-row-link">
-                              <OpsMono>{quote.shipment_reference}</OpsMono>
-                            </Link>
-                          ) : quote.booking_requested_at ? (
-                            <OpsBadge tone="info">{t("req.asked")}</OpsBadge>
-                          ) : portalQuoteExpired(quote.valid_until) ? (
-                            <OpsBadge tone="warning">{t("req.expired")}</OpsBadge>
-                          ) : <OpsBadge tone="neutral">{t("req.not_booked")}</OpsBadge>}
-                        </td>
-                        <td data-cell="action">
-                          {!portalQuoteBookingBlock(quote) && capabilities.canSubmitRequests ? (
-                            <OpsButton
-                              size="sm"
-                              variant="secondary"
-                              disabled={bookingBusy === quote.reference}
-                              onClick={() => startBooking(quote)}
-                            >
-                              {bookingBusy === quote.reference ? t("req.sending") : t("req.ask_to_proceed")}
-                            </OpsButton>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </OpsTableWrap>
-            ) : null}
+                  ))}
+                </tbody>
+              </table>
+            </OpsTableWrap>
             {proceeding ? (
               <form
                 className="portal-pickup-form"
@@ -320,60 +313,34 @@ export function PortalRequestsWorkspace({
                 </div>
               </form>
             ) : null}
-            {quotes.length ? null : (
-              <div className="portal-empty-wrap">
-                <OpsEmptyState
-                  kind="neutral"
-                  icon={<Tag size={18}/>}
-                  title={t("req.no_quotes_title")}
-                  description={t("req.no_quotes_description")}
-                />
-              </div>
-            )}
-          </OpsSurface>
+          </OpsSurface> : null}
 
-          <OpsSurface
-            title={t("req.progress_title")}
-            description={t("req.progress_description")}
-            flush
-          >
-            {requests.length ? (
-              <OpsTableWrap>
-                <table className="ops-table ops-register-table portal-stack-table">
-                  <thead>
-                    <tr>
-                      <th>{t("overview.col_reference")}</th>
-                      <th>{t("common.route")}</th>
-                      <th>{t("req.commodity")}</th>
-                      <th>{t("req.col_raised")}</th>
+          {requests.length ? <OpsSurface title={t("req.progress_title")} flush>
+            <OpsTableWrap>
+              <table className="ops-table ops-register-table portal-stack-table">
+                <thead>
+                  <tr>
+                    <th>{t("overview.col_reference")}</th>
+                    <th>{t("common.route")}</th>
+                    <th>{t("req.commodity")}</th>
+                    <th>{t("req.col_raised")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((request) => (
+                    <tr key={request.reference}>
+                      <td data-cell="primary"><OpsMono>{request.reference}</OpsMono></td>
+                      <td data-cell="route">
+                        <span className="portal-lane">{request.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{request.destination}</span>
+                      </td>
+                      <td data-cell="meta" data-label={t("req.commodity")}>{request.cargo_type ?? t("common.none")}</td>
+                      <td data-cell="meta" data-label={t("req.col_raised")}>{portalDate(request.created_at)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {requests.map((request) => (
-                      <tr key={request.reference}>
-                        <td data-cell="primary"><OpsMono>{request.reference}</OpsMono></td>
-                        <td data-cell="route">
-                          <span className="portal-lane">{request.origin}<span className="portal-lane-arrow" aria-hidden="true">→</span>{request.destination}</span>
-                        </td>
-                        <td data-cell="meta" data-label={t("req.commodity")}>{request.cargo_type ?? t("common.none")}</td>
-                        <td data-cell="meta" data-label={t("req.col_raised")}>{portalDate(request.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </OpsTableWrap>
-            ) : (
-              <div className="portal-empty-wrap">
-                <OpsEmptyState
-                  compact
-                  kind="healthy"
-                  icon={<Send size={18}/>}
-                  title={t("req.nothing_waiting_title")}
-                  description={t("req.nothing_waiting_description")}
-                />
-              </div>
-            )}
-          </OpsSurface>
+                  ))}
+                </tbody>
+              </table>
+            </OpsTableWrap>
+          </OpsSurface> : null}
         </div>
       </div>
     </OpsPage>

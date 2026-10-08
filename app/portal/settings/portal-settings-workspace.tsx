@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, Languages, Mail, ShieldCheck } from "lucide-react";
+import { Languages } from "lucide-react";
 import {
   OpsDetailGrid,
   OpsDetailItem,
@@ -30,23 +30,19 @@ import { PortalTeamPanel } from "./portal-team-panel";
 
 export function PortalSettingsWorkspace({
   email,
-  customerName,
   role,
   initialPreferences,
   topics,
-  emailConfigured,
   team,
   locale,
   pushPublicKey,
   textNotices,
 }: {
   email: string;
-  customerName: string;
   role: PortalRole;
   initialPreferences: PortalNotificationPreferences;
   /** The topics this login is offered; invoices only with finance access. */
   topics?: readonly PortalNotificationTopic[];
-  emailConfigured: boolean;
   /** Null for anyone who is not an account owner. */
   team: PortalTeamMember[] | null;
   locale: PortalLocale;
@@ -110,25 +106,13 @@ export function PortalSettingsWorkspace({
 
   return (
     <OpsPage>
-      <OpsPageHeader
-        eyebrow={t("settings.eyebrow")}
-        title={t("settings.title")}
-        description={t("settings.description")}
-      />
+      <OpsPageHeader title={t("settings.title")}/>
       <div className="ops-content">
         <div className="ops-stack portal-stack">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
 
-          {!emailConfigured ? (
-            <OpsNotice tone="warning">{t("settings.email_unconfigured")}</OpsNotice>
-          ) : null}
-
-          <OpsSurface
-            eyebrow={t("settings.language")}
-            title={t("settings.language")}
-            description={t("settings.language_hint")}
-          >
+          <OpsSurface title={t("settings.language")}>
             <div className="portal-language-choice" role="group" aria-label={t("settings.language")}>
               <Languages size={16} strokeWidth={1.75} aria-hidden="true"/>
               {portalLocales.map((option) => (
@@ -147,27 +131,27 @@ export function PortalSettingsWorkspace({
             </div>
           </OpsSurface>
 
-          <OpsSurface
-            eyebrow={t("settings.email_eyebrow")}
-            title={t("settings.email_title")}
-            description={t("settings.email_description")}
-          >
+          <OpsSurface title={t("settings.email_title")}>
             <ul className="portal-toggle-list">
               {(topics ?? portalNotificationTopics).map((topic) => (
                 <li key={topic}>
-                  <span className="portal-toggle-main">
-                    <strong>{portalNotificationTopicLabel(topic, locale)}</strong>
-                    <span>{portalNotificationTopicHint(topic, locale)}</span>
-                  </span>
+                  {/* The topic's own name labels its checkbox, and the whole
+                      row toggles it; an "On" beside a ticked box only repeats
+                      the tick. */}
+                  <label className="portal-toggle-main" htmlFor={`topic-${topic}`}>
+                    <strong id={`topic-${topic}-label`}>{portalNotificationTopicLabel(topic, locale)}</strong>
+                    <span id={`topic-${topic}-hint`}>{portalNotificationTopicHint(topic, locale)}</span>
+                  </label>
                   <label className="portal-toggle" htmlFor={`topic-${topic}`}>
                     <input
                       id={`topic-${topic}`}
                       type="checkbox"
+                      aria-labelledby={`topic-${topic}-label`}
+                      aria-describedby={`topic-${topic}-hint`}
                       checked={preferences[topic]}
                       disabled={busy}
                       onChange={(event) => void save({ ...preferences, [topic]: event.target.checked })}
                     />
-                    <span>{preferences[topic] ? t("settings.on") : t("settings.off")}</span>
                   </label>
                 </li>
               ))}
@@ -180,21 +164,17 @@ export function PortalSettingsWorkspace({
 
           {team ? <PortalTeamPanel initialTeam={team} currentEmail={email} locale={locale}/> : null}
 
-          <OpsSurface eyebrow={t("settings.login_eyebrow")} title={t("settings.login_title")}>
-            <OpsDetailGrid columns={3}>
-              <OpsDetailItem label={t("settings.signed_in_as")}>{email}</OpsDetailItem>
-              <OpsDetailItem label={t("settings.account")}>{customerName}</OpsDetailItem>
-              <OpsDetailItem label={t("settings.access_level")}>{t(`role.${role}`)}</OpsDetailItem>
-            </OpsDetailGrid>
-            <p className="portal-footnote">
-              <ShieldCheck size={14} aria-hidden="true"/> {t("settings.provisioning_note")}
-            </p>
-          </OpsSurface>
-
-          <p className="portal-footnote">
-            <Mail size={14} aria-hidden="true"/> {t("settings.footnote_email")}
-            <BellRing size={14} aria-hidden="true"/> {t("settings.footnote_topics")}
-          </p>
+          {/* An owner sees their own row, and its access, in the team list.
+              Anyone else is told what this login can do and who changes it;
+              the name and email are already in the header. */}
+          {team ? null : (
+            <OpsSurface title={t("settings.login_title")}>
+              <OpsDetailGrid columns={3}>
+                <OpsDetailItem label={t("settings.access_level")}>{t(`role.${role}`)}</OpsDetailItem>
+              </OpsDetailGrid>
+              <p className="portal-footnote">{t("settings.provisioning_note")}</p>
+            </OpsSurface>
+          )}
         </div>
       </div>
     </OpsPage>

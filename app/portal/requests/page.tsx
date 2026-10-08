@@ -5,6 +5,7 @@ import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../portal-frame";
 import { PortalRequestsWorkspace } from "./portal-requests-workspace";
+import { portalText } from "../portal-i18n";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Quotes & requests", robots: { index: false, follow: false } };
@@ -21,7 +22,7 @@ export default async function PortalRequestsPage() {
     >
       {result.kind === "ready"
         ? <PortalRequestsWorkspace locale={access.session.locale} quotes={result.quotes} requests={result.requests} capabilities={access.session.capabilities}/>
-        : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Quotes & requests" icon={<Send size={18}/>}/>}
+        : <PortalWorkspaceUnavailable title={portalText(access.session.locale, "req.title")} icon={<Send size={18}/>} locale={access.session.locale}/>}
     </PortalShell>
   );
 }

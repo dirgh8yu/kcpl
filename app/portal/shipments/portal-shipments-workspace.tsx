@@ -58,14 +58,13 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
   return (
     <OpsPage>
       <OpsPageHeader
-        eyebrow={t("overview.eyebrow")}
         title={t("ships.title")}
-        description={t("ships.description")}
       />
       <div className="ops-content">
         {/* The staff registers' operating row: search left, the count and a
-            reset right, status scopes with their counts beneath. */}
-        <OpsRegisterToolbar
+            reset right, status scopes with their counts beneath. An account
+            with no shipments yet sees the empty state alone. */}
+        {shipments.length ? <OpsRegisterToolbar
           search={(
             <OpsSearch
               value={query}
@@ -79,7 +78,8 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
               {filtered ? (
                 <OpsButton size="sm" variant="ghost" onClick={() => { setFocus("all"); setQuery(""); }}>{t("ships.reset")}</OpsButton>
               ) : null}
-              <span className="portal-toolbar-count">{t("ships.shown", { count: rows.length })}</span>
+              {/* The scope tabs carry the counts; this line speaks only for a search. */}
+              <span className="portal-toolbar-count" aria-live="polite">{query.trim() ? t("ships.shown", { count: rows.length }) : ""}</span>
             </>
           )}
           tabs={(
@@ -94,7 +94,7 @@ export function PortalShipmentsWorkspace({ shipments, locale }: { shipments: Por
               }))}
             />
           )}
-        />
+        /> : null}
         <OpsSurface flush>
 
           {rows.length ? (

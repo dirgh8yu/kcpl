@@ -102,11 +102,12 @@ test("the portal is built from the admin's register kit, not a look of its own",
   }
   const overview = code(await readFile(repo("app/portal/portal-overview.tsx"), "utf8"));
   // Each number once: what is owed sits on the one "pay" row of the needs
-  // list, and the shipment counts are the table's own line, not a rail.
+  // list, and the shipment table's rows are its own count, with no rail or
+  // count line restating them.
   assert.doesNotMatch(overview, /<OpsKpiRail|<OpsMetricStrip/);
   assert.match(overview, /need\.kind !== "pay_open" \|\| !all\.some\(\(other\) => other\.kind === "pay_overdue"\)/);
   assert.match(overview, /t\("needs\.pay_owed", \{ amounts: owed \}\)/);
-  assert.match(overview, /t\("overview\.movements_counts"/);
+  assert.doesNotMatch(overview, /t\("overview\.movements_counts"|t\("needs\.count/);
   // A shipment page asks for the missing paperwork before it reports, and
   // does not repeat the route, mode, status or opening date from its header.
   const detail = code(await readFile(repo("app/portal/shipments/[reference]/page.tsx"), "utf8"));
@@ -120,4 +121,64 @@ test("the portal is built from the admin's register kit, not a look of its own",
   // Popovers from the kit open inside the portal's token scope too.
   const hook = await readFile(repo("app/admin/use-admin-portal-container.ts"), "utf8");
   assert.match(hook, /getElementById\("portal-content"\)/);
+});
+
+test("portal pages carry no kicker, and no panel explains itself", async () => {
+  // The title says where the customer is; a "Kapileshwor Cargo" line above it
+  // on every page, or a sentence under each panel's title, is reading with
+  // nothing in it. Detail pages keep their record type ("Shipment · Sea
+  // freight", "Invoice") because that line is information.
+  for (const path of await tsxFiles("app/portal")) {
+    const source = code(await readFile(repo(path), "utf8"));
+    assert.doesNotMatch(source, /eyebrow="Kapileshwor Cargo"|t\("overview\.eyebrow"\)|t\("settings\.eyebrow"\)/, `${path}: no brand kicker`);
+    for (const surface of source.match(/<OpsSurface\b[^>]*>/g) ?? []) {
+      assert.doesNotMatch(surface, /\beyebrow=/, `${path}: ${surface.slice(0, 80)} has a kicker`);
+    }
+  }
+  const thread = code(await readFile(repo("app/shipment-thread.tsx"), "utf8"));
+  assert.doesNotMatch(thread, /labels\.(eyebrow|description|emptyDescription)/);
+});
+
+test("a portal list counts only while searching, and an empty list is its empty state", async () => {
+  for (const path of ["app/portal/shipments/portal-shipments-workspace.tsx", "app/portal/documents/portal-documents-workspace.tsx"]) {
+    const source = code(await readFile(repo(path), "utf8"));
+    assert.match(source, /query\.trim\(\) \? t\("ships\.shown"/, path);
+    assert.match(source, /\{(shipments|documents)\.length \? <OpsRegisterToolbar/, path);
+  }
+  const css = await readFile(repo("app/admin/operations-system.css"), "utf8");
+  assert.match(css, /\.portal-toolbar-count\):empty/);
+});
+
+test("the shipment page asks only for paper the customer sends", async () => {
+  const exchange = code(await readFile(repo("app/portal/shipments/[reference]/portal-document-exchange.tsx"), "utf8"));
+  // A bill of lading KCPL prepares is not a request to the customer, and a
+  // "Needed" pill beside a Send button says the same thing twice.
+  assert.match(exchange, /checklist\.filter\(\(row\) => row\.uploadable &&/);
+  assert.match(exchange, /row\.state !== "needed" \|\| !sendable \? <OpsBadge/);
+  const detail = code(await readFile(repo("app/portal/shipments/[reference]/page.tsx"), "utf8"));
+  assert.match(detail, /row\.uploadable && \(row\.state === "needed" \|\| row\.state === "resend"\)/);
+  assert.doesNotMatch(detail, /t\("ship\.(not_reported|to_be_confirmed|as_advised)"\)/);
+});
+
+test("every portal string is used, in both languages", async () => {
+  // Wording the portal no longer shows is removed from the dictionary, so a
+  // translator is never asked to keep text no customer reads. Families looked
+  // up by a computed key are exempt.
+  const dictionary = await readFile(repo("app/portal/portal-i18n.ts"), "utf8");
+  const en = dictionary.slice(dictionary.indexOf("const en = {"), dictionary.indexOf("const ne:"));
+  const keys = [...en.matchAll(/^ {2}"([a-z_0-9]+\.[a-z_0-9.]+)":/gm)].map((match) => match[1]);
+  const sources = [];
+  async function collect(dir) {
+    for (const entry of await readdir(repo(dir), { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) await collect(path);
+      else if (/\.(ts|tsx)$/.test(entry.name) && path !== "app/portal/portal-i18n.ts") sources.push(await readFile(repo(path), "utf8"));
+    }
+  }
+  await collect("app");
+  sources.push(dictionary.slice(dictionary.indexOf("const dictionaries")));
+  const corpus = sources.join("\n");
+  const computed = new Set(["status", "mode", "invoice", "fts", "topic", "role", "doc", "mail"]);
+  const unused = keys.filter((key) => !computed.has(key.split(".")[0]) && !corpus.includes(`"${key}"`));
+  assert.deepEqual(unused, []);
 });

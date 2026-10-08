@@ -6,7 +6,6 @@ import { Banknote, Receipt } from "lucide-react";
 import {
   OpsBadge,
   OpsButton,
-  OpsEmptyState,
   OpsField,
   OpsNotice,
   OpsSurface,
@@ -68,12 +67,12 @@ export function PortalRemittancePanel({
 
   return (
     <OpsSurface
-      eyebrow={t("rem.eyebrow")}
       title={t("rem.title")}
-      description={t("rem.description")}
       action={<OpsButton variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}>{open ? t("common.cancel") : t("rem.open")}</OpsButton>}
     >
-      <div className="portal-exchange">
+      {/* Nothing sent and nothing open: the header and its button are the
+          whole panel, so the body stays empty and collapses. */}
+      {notice || error || open || remittances.length ? <div className="portal-exchange">
         {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
         {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
 
@@ -113,10 +112,10 @@ export function PortalRemittancePanel({
                 <span className="portal-document-main">
                   <strong>
                     {remittance.amount === null ? t("rem.receipt_title") : `${remittance.currency ?? ""} ${remittance.amount}`}
-                    {remittance.paid_on ? ` · paid ${portalDate(remittance.paid_on)}` : ""}
+                    {remittance.paid_on ? ` · ${t("rem.paid_on", { date: portalDate(remittance.paid_on) })}` : ""}
                   </strong>
                   <span>
-                    {remittance.filename} · {portalFileSize(remittance.size_bytes)} · sent {portalDate(remittance.uploaded_at)}
+                    {remittance.filename} · {portalFileSize(remittance.size_bytes)} · {t("rem.sent_on", { date: portalDate(remittance.uploaded_at) })}
                     {remittance.note ? ` · ${remittance.note}` : ""}
                   </span>
                 </span>
@@ -129,21 +128,13 @@ export function PortalRemittancePanel({
                   data-size="sm"
                   href={`/api/portal/invoices/${encodeURIComponent(reference)}/remittance/${encodeURIComponent(remittance.id)}`}
                 >
-                  Download
+                  {t("common.download")}
                 </a>
               </li>
             ))}
           </ul>
-        ) : (
-          <OpsEmptyState
-            compact
-            kind="neutral"
-            icon={<Receipt size={18}/>}
-            title={t("rem.empty_title")}
-            description={t("rem.empty_description")}
-          />
-        )}
-      </div>
+        ) : null}
+      </div> : null}
     </OpsSurface>
   );
 }

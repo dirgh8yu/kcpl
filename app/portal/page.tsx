@@ -24,7 +24,7 @@ export default async function PortalPage() {
     >
       {result.kind === "ready"
         ? <PortalOverview session={access.session} overview={result.overview}/>
-        : <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title={access.session.customerName} icon={<Package size={18}/>}/>}
+        : <PortalWorkspaceUnavailable title={access.session.customerName} icon={<Package size={18}/>} locale={access.session.locale}/>}
     </PortalShell>
   );
 }

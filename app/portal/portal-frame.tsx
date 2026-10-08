@@ -34,13 +34,11 @@ export function PortalUnavailable({
 
 /** Shown inside the shell when a workspace's data source is unreachable. */
 export function PortalWorkspaceUnavailable({
-  eyebrow,
   title,
   description,
   icon,
   locale = "en",
 }: {
-  eyebrow: string;
   title: string;
   description?: ReactNode;
   icon?: ReactNode;
@@ -51,7 +49,7 @@ export function PortalWorkspaceUnavailable({
 }) {
   return (
     <OpsPage>
-      <OpsPageHeader eyebrow={eyebrow} title={title}/>
+      <OpsPageHeader title={title}/>
       <div className="ops-content">
         <OpsEmptyState
           kind="unavailable"

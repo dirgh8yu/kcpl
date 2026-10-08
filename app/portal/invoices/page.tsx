@@ -6,6 +6,7 @@ import { PortalLoginPage } from "../portal-login-page";
 import { PortalShell } from "../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../portal-frame";
 import { PortalInvoicesWorkspace } from "./portal-invoices-workspace";
+import { portalText } from "../portal-i18n";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Invoices", robots: { index: false, follow: false } };
@@ -25,19 +26,19 @@ export default async function PortalInvoicesPage() {
         : null}
       {result.kind === "forbidden" ? (
         <OpsPage>
-          <OpsPageHeader eyebrow="Kapileshwor Cargo" title="Invoices"/>
+          <OpsPageHeader title={portalText(access.session.locale, "inv.title")}/>
           <div className="ops-content">
             <OpsEmptyState
               kind="unavailable"
               icon={<Receipt size={18}/>}
-              title="Account billing is not shared with this login"
-              description="Your KCPL portal account can view shipments and documents. Ask your account owner or KCPL account manager if you also need invoice access."
+              title={portalText(access.session.locale, "invd.no_access_title")}
+              description={portalText(access.session.locale, "invd.no_access_description")}
             />
           </div>
         </OpsPage>
       ) : null}
       {result.kind === "unavailable" ? (
-        <PortalWorkspaceUnavailable eyebrow="Kapileshwor Cargo" title="Invoices" icon={<Receipt size={18}/>}/>
+        <PortalWorkspaceUnavailable title={portalText(access.session.locale, "inv.title")} icon={<Receipt size={18}/>} locale={access.session.locale}/>
       ) : null}
     </PortalShell>
   );

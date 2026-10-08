@@ -1622,7 +1622,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-track-alert { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); background: var(--admin-danger-bg); color: var(--admin-danger); font-size: var(--app-text-base); line-height: 20px; }
 .kcpl-admin-content .portal-track-alert svg { flex: none; margin-top: 2px; }
 .kcpl-admin-content .portal-track-alert p { margin: 0; }
-.kcpl-admin-content .portal-track-alert-note { display: block; margin-top: 2px; color: var(--admin-ink); }
+.kcpl-admin-content .portal-track-alert-note { color: var(--admin-ink); }
 /* In a list the badge names the status; the bar under it shows how far along. */
 /* One length for every row, so a glance down the column compares progress. */
 .kcpl-admin-content .portal-status-stack { display: inline-grid; justify-items: start; gap: 6px; }
@@ -1821,7 +1821,11 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 /* The visible control is the button next to each row; the input itself is only
  * ever opened through it, but it stays focusable for keyboard and assistive use. */
 .kcpl-admin-content .portal-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); }
-.kcpl-admin-content .portal-exchange-free { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--app-space-3); border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); }
+.kcpl-admin-content .portal-exchange-free { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--app-space-3); }
+/* A rule only where the form follows the request list it is an alternative to. */
+.kcpl-admin-content .portal-checklist ~ .portal-exchange-free { border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); }
+/* The totals under an invoice's charges, set apart from the last line. */
+.kcpl-admin-content .portal-print-sheet .ops-table-wrap + .ops-detail-grid { margin-top: var(--app-space-4); }
 .kcpl-admin-content .portal-exchange-free .ops-field { min-width: 240px; }
 .kcpl-admin-content .portal-action-list { padding: var(--app-space-4); }
 /* Nothing needed from the customer: one quiet line, not an empty panel. */
@@ -1847,10 +1851,10 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   border-radius: var(--app-radius);
   background: var(--admin-surface);
 }
-.kcpl-admin-content .portal-toggle-main { display: grid; gap: 2px; min-width: 0; margin-right: auto; }
+.kcpl-admin-content .portal-toggle-main { display: grid; gap: 2px; min-width: 0; margin-right: auto; cursor: pointer; }
 .kcpl-admin-content .portal-toggle-main strong { font-size: var(--app-text-md); font-weight: 550; }
 .kcpl-admin-content .portal-toggle-main span { color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 18px; }
-.kcpl-admin-content .portal-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: var(--app-control-height); color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 550; cursor: pointer; }
+.kcpl-admin-content .portal-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: var(--app-control-height); min-height: var(--app-control-height); cursor: pointer; }
 .kcpl-admin-content .portal-toggle input { width: 18px; height: 18px; }
 
 @media (max-width: 760px) {
@@ -1859,6 +1863,12 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 }
 
 /* Customer portal -- printable invoice.
+ * `portal-print-only` is the line a filed copy needs and the screen does not:
+ * who issued the invoice to whom. */
+.kcpl-admin-content .portal-print-only,
+.kcpl-admin-content .ops-page-description:has(> .portal-print-only:only-child) { display: none; }
+
+/* Customer portal -- printable invoice (print rules).
  * KCPL generates no PDF server-side; the customer prints this page instead,
  * which needs no new dependency and keeps the invoice on the design system.
  * Printing hides the application chrome and everything that is not the record
@@ -1867,8 +1877,9 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .kcpl-portal-route .portal-topbar,
   .kcpl-portal-route .portal-footer,
   .kcpl-portal-route .portal-skip-link,
-  .kcpl-admin-content .ops-page-actions,
-  .kcpl-admin-content .portal-print-note { display: none; }
+  .kcpl-admin-content .ops-page-actions { display: none; }
+  .kcpl-admin-content .portal-print-only { display: inline; }
+  .kcpl-admin-content .ops-page-description:has(> .portal-print-only:only-child) { display: block; }
   .kcpl-admin-content .portal-stack > *:not(.portal-print-sheet) { display: none; }
   .kcpl-admin-content .ops-surface { border: 0; box-shadow: none; }
   .kcpl-admin-content .ops-table { min-width: 0; }
@@ -1972,7 +1983,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .ops-register-toolbar-actions .ops-button { min-height: 32px; gap: 6px; padding-inline: 10px; font-size: 12px; font-weight: 500; }
 .kcpl-admin-content .ops-toolbar-divider { width: 1px; height: 18px; margin-inline: 2px; background: var(--admin-line); }
 /* The match count is empty until a search narrows the list; so is its rule. */
-.kcpl-admin-content :is(.ops-result-count, .shipments-result-count):empty,
+.kcpl-admin-content :is(.ops-result-count, .shipments-result-count, .portal-toolbar-count):empty,
 .kcpl-admin-content .ops-toolbar-divider:has(+ .ops-result-count:empty) { display: none; }
 .kcpl-admin-content .ops-result-count { display: inline-flex; min-height: 24px; align-items: center; padding: 0 2px; color: var(--admin-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 

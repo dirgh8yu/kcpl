@@ -255,7 +255,7 @@ function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, return
           <table className={`${styles.table} ${extras.nextStepsTable} ops-stack-table`} data-row-link aria-label="Shipments with a step due">
             <thead><tr>
               <th><input className={styles.checkbox} type="checkbox" checked={allVisibleSelected} onChange={toggleVisible} aria-label="Select all visible shipments" /></th>
-              <th>Shipment</th><th>Status</th><th>Next step</th><th>Owner</th><th>Updated</th>
+              <th>Shipment</th><th>Status</th><th>Next step</th><th>Owner</th>
             </tr></thead>
             <tbody>
               {jobs.map((job) => {
@@ -271,9 +271,13 @@ function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, return
                       <span className={extras.queueCustomer} title={job.customer_name || undefined}>{job.customer_name || "Customer not linked"}</span>
                     </td>
                     <td data-cell="status"><span className={`${styles.statusBadge} ${statusClass(tone)}`}>{shipmentStatusLabels[job.status]}</span></td>
-                    <td data-cell="action"><Link href={withReturn(step.href, returnTo)} className={extras.nextStepLink} data-tone={step.tone}>{step.title}<ArrowRight size={12} strokeWidth={1.8} aria-hidden="true" /></Link></td>
+                    {/* How recent an update is matters only when it is not: a
+                        shipment quiet for two days says so under its step. */}
+                    <td data-cell="action">
+                      <Link href={withReturn(step.href, returnTo)} className={extras.nextStepLink} data-tone={step.tone}>{step.title}<ArrowRight size={12} strokeWidth={1.8} aria-hidden="true" /></Link>
+                      {age.danger ? <span className={`${extras.queueCustomer} ${styles.ageDanger}`}>No update in {age.label}</span> : null}
+                    </td>
                     <td data-cell="meta"><span className={`${styles.ownerCell} ${jobOwner === "Unassigned" ? styles.ownerUnassigned : undefined}`}>{jobOwner === "Unassigned" ? <UserRoundX size={12} strokeWidth={1.8} aria-hidden="true" /> : null}{jobOwner}</span></td>
-                    <td data-cell="meta" data-label="Updated" className={age.danger ? styles.ageDanger : undefined}>{age.label}</td>
                   </tr>
                 );
               })}
@@ -385,7 +389,7 @@ function LiveMovement({ movements, generatedAt, returnTo }: { movements: Overvie
   return (
     <section className={styles.card} aria-labelledby="movement-title">
       <div className={styles.cardHead}>
-        <div className={styles.cardTitleRow}><h2 id="movement-title">Live movement</h2>{movements.length ? <span className={styles.headCount}>{movements.length}</span> : null}</div>
+        <div className={styles.cardTitleRow}><h2 id="movement-title">Live movement</h2></div>
         <Link className={styles.headAction} href="/admin/visibility">View live <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
       {rows.length ? (
@@ -423,7 +427,7 @@ function RecentActivity({ activity, generatedAt, returnTo }: { activity: Overvie
   return (
     <section className={styles.card} aria-labelledby="activity-title">
       <div className={styles.cardHead}>
-        <div className={styles.cardTitleRow}><h2 id="activity-title">Recent activity</h2>{activity.length ? <span className={styles.headCount}>{activity.length}</span> : null}</div>
+        <div className={styles.cardTitleRow}><h2 id="activity-title">Recent activity</h2></div>
         <Link className={styles.headAction} href="/admin/notifications">View all <ArrowRight size={13} strokeWidth={1.8} /></Link>
       </div>
       {activity.length ? (
@@ -460,11 +464,14 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
   const [currency, setCurrency] = useState(finance?.currencies[0]?.currency ?? "");
   const selected = finance?.currencies.find((item) => item.currency === currency) ?? finance?.currencies[0] ?? null;
   const maxBar = selected ? Math.max(...selected.trend.map((point) => Math.max(point.revenue, point.cost, 0)), 1) : 1;
+  // Change against the last period sits on the two outcomes only. A cost
+  // that rose is not good news in green, and the margin percentage moves
+  // with the gross margin beside it.
   const rows = selected ? [
     { label: "Total revenue", value: money(selected.revenue, selected.currency), change: changeLabel(selected.revenue_change_percent, "%", selected.revenue === 0) },
-    { label: "Total cost", value: money(selected.cost, selected.currency), change: changeLabel(selected.cost_change_percent, "%", selected.cost === 0) },
+    { label: "Total cost", value: money(selected.cost, selected.currency), change: null },
     { label: "Gross margin", value: money(selected.profit, selected.currency), change: changeLabel(selected.profit_change_percent, "%", selected.profit === 0) },
-    { label: "Margin %", value: selected.margin_percent === null ? "—" : `${selected.margin_percent.toFixed(1)}%`, change: changeLabel(selected.margin_change_points, "pp") },
+    { label: "Margin %", value: selected.margin_percent === null ? "—" : `${selected.margin_percent.toFixed(1)}%`, change: null },
   ] : [];
   const firstTrendDate = selected?.trend[0]?.date ?? finance?.generated_at.slice(0, 10) ?? "";
   const lastTrendDate = selected?.trend.at(-1)?.date ?? firstTrendDate;
@@ -480,10 +487,10 @@ function FinanceSnapshot({ finance }: { finance: OverviewFinanceSnapshot | null 
         </div>
       </div>
       {selected ? <div className={styles.financeBody}>
-        {rows.map((row) => <div key={row.label} className={styles.financeRow}><span>{row.label}</span><span className={styles.financeValue}><strong>{row.value}</strong><span className={`${styles.change} ${row.change.className}`}>{row.change.label}</span></span></div>)}
+        {rows.map((row) => <div key={row.label} className={styles.financeRow}><span>{row.label}</span><span className={styles.financeValue}><strong>{row.value}</strong>{row.change ? <span className={`${styles.change} ${row.change.className}`}>{row.change.label}</span> : null}</span></div>)}
         <div className={styles.financeChart} aria-label={`${selected.currency} daily revenue this month`}>{selected.trend.map((point) => <span key={point.date} className={styles.financeBar} style={{ height: `${Math.max(8, (point.revenue / maxBar) * 100)}%` }} title={`${point.date}: ${money(point.revenue, selected.currency)}`} />)}</div>
-        <div className={styles.financeAxis}><span>1 {trendMonth}</span><span>{lastTrendDate.slice(8, 10)} {trendMonth}</span></div>
-      </div> : <div className={styles.financeEmpty}>Finance values are available to authorised Accounts and Management users when the current month contains financial activity.</div>}
+        <div className={styles.financeAxis}><span>1 {trendMonth}</span><span>{Number(lastTrendDate.slice(8, 10))} {trendMonth}</span></div>
+      </div> : <div className={styles.financeEmpty}>No finance activity this month yet.</div>}
     </section>
   );
 }

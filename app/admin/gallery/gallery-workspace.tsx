@@ -101,13 +101,14 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
     <OpsPageHeader title="Website gallery" description="Upload KCPL photography and choose what appears on the public site." actions={<Link className="ops-button" data-variant="secondary" data-size="md" href="/gallery" target="_blank" rel="noopener noreferrer">View public gallery<ExternalLink size={14} strokeWidth={1.75} aria-hidden="true"/></Link>} />
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
-      <OpsSurface title="Upload images" description="JPG, PNG or WebP, each up to 10 MB and at least 400 × 300 pixels. Location metadata is removed.">
+      <OpsSurface title="Upload images">
         <form onSubmit={upload} className="site-gallery-upload">
-          <OpsFileDrop inputRef={inputRef} name="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busyId === "upload"} prompt="Choose images" hint={`JPG, PNG or WebP · up to ${maxGalleryBatchSize} at a time`} chosen={selectedFiles.length ? `${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"} chosen` : null} onFiles={(files) => selectFiles(files)}/>
-          <div className="site-gallery-upload-actions">
+          <OpsFileDrop inputRef={inputRef} name="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busyId === "upload"} prompt="Choose images" hint={`JPG, PNG or WebP up to 10 MB · ${maxGalleryBatchSize} at a time`} chosen={selectedFiles.length ? `${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"} chosen` : null} onFiles={(files) => selectFiles(files)}/>
+          {/* The upload controls arrive with the files they act on. */}
+          {selectedFiles.length || busyId === "upload" ? <div className="site-gallery-upload-actions">
             <label className="site-gallery-publish"><input type="checkbox" checked={publishOnUpload} disabled={busyId === "upload"} onChange={(event) => setPublishOnUpload(event.target.checked)} /> Publish immediately</label>
             <OpsButton variant="primary" type="submit" disabled={Boolean(busyId) || selectedFiles.length === 0}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{busyId === "upload" ? "Uploading…" : failedFiles.length ? `Retry ${selectedFiles.length} failed` : selectedFiles.length ? `Upload ${selectedFiles.length} ${selectedFiles.length === 1 ? "image" : "images"}` : "Upload images"}</OpsButton>
-          </div>
+          </div> : null}
         </form>
         {busyId === "upload" && progress ? <div className="site-gallery-progress" role="status"><span>{progress.completed} of {progress.total} processed</span><progress value={progress.completed} max={progress.total} /></div> : null}
         {failedFiles.length ? <div className="site-gallery-failures"><p>Images needing another attempt</p><ul>{failedFiles.slice(0, 10).map(({ file, error }, index) => <li key={`${file.name}-${file.size}-${index}`}>{file.name}: {error}</li>)}</ul>{failedFiles.length > 10 ? <p>And {failedFiles.length - 10} more.</p> : null}</div> : null}
@@ -131,7 +132,8 @@ function GalleryRow({ item, busy, active, onUpdate, onDelete }: { item: GalleryE
       <div className="site-gallery-row-heading"><OpsBadge tone={item.published ? "success" : "neutral"} dot>{item.published ? "Published" : "Draft"}</OpsBadge><time dateTime={item.created_at}>Uploaded {galleryDate.format(new Date(item.created_at))}</time></div>
       <div className="site-gallery-row-fields"><OpsField label="Caption (optional)"><input className="ops-input" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} /></OpsField><OpsField label="Image description (optional)"><input className="ops-input" value={alt} onChange={(event) => setAlt(event.target.value)} maxLength={220} /></OpsField></div>
       <div className="site-gallery-row-actions">
-        <OpsButton size="sm" variant="secondary" disabled={busy || !changed} onClick={() => onUpdate(item, { title: title.trim(), alt: alt.trim(), published: item.published })}>Save details</OpsButton>
+        {/* Save appears once there is an edit to save. */}
+        {changed ? <OpsButton size="sm" variant="primary" disabled={busy} onClick={() => onUpdate(item, { title: title.trim(), alt: alt.trim(), published: item.published })}>Save details</OpsButton> : null}
         <OpsButton size="sm" variant={item.published ? "secondary" : "primary"} disabled={busy || changed} onClick={() => onUpdate(item, { title: item.title, alt: item.alt, published: !item.published })}>{active ? "Saving…" : item.published ? "Unpublish" : "Publish"}</OpsButton>
         <OpsButton size="sm" variant="danger" disabled={busy} onClick={() => onDelete(item)}><Trash2 size={13} strokeWidth={1.75} aria-hidden="true"/>Delete</OpsButton>
       </div>

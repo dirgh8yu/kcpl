@@ -223,7 +223,9 @@ function uniqueValues(values: Array<string | null | undefined>) {
 
 export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initialReference = "" }: { initialRows: PickupQueueRow[]; initialSummary: PickupSummary; initialReference?: string }) {
   const workspace = useWorkspaceQuery();
-  const initialSelected = initialRows.find((row) => row.shipment_reference === initialReference) ?? initialRows[0] ?? null;
+  // The inspector opens on the pickup a link asked for, never on whichever
+  // row happens to be first: an unasked-for panel halves the register.
+  const initialSelected = initialReference ? initialRows.find((row) => row.shipment_reference === initialReference) ?? null : null;
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
   const [selectedReferenceState, setSelectedReferenceState] = useState(initialSelected?.shipment_reference ?? "");
@@ -636,13 +638,13 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
                   {selected.status === "picked_up" || selected.status === "cancelled" ? (
                     <OpsInspectorNote tone={selected.status === "picked_up" ? "success" : "neutral"} icon={selected.status === "picked_up" ? <Check size={14} strokeWidth={1.75} aria-hidden="true"/> : undefined} title={selected.status === "picked_up" ? "Pickup completed" : "Pickup cancelled"}>
-                      {selected.status === "picked_up" ? `${dateTime(selected.picked_up_at)}. Tracking now owns the movement timeline.` : "This pickup appointment is cancelled."}
+                      {selected.status === "picked_up" ? dateTime(selected.picked_up_at) : "This pickup appointment is cancelled."}
                     </OpsInspectorNote>
                   ) : null}
 
                   {editor === "appointment" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
                     <OpsInspectorSection tinted title="Appointment" action={<EditorClose label="appointment" onClose={() => setEditor("details")}/>}>
-                      <p className="ops-inspector-hint mb-3">Request or confirm the collection window. Times are saved and shown in Nepal time (NPT).</p>
+                      <p className="ops-inspector-hint mb-3">Times are Nepal time.</p>
                       <div className="ops-inspector-form">
                         <OpsField label="Window start" className="col-span-full"><input name="pickup-window-start" type="datetime-local" value={windowStart} onChange={(event) => setWindowStart(event.target.value)}/></OpsField>
                         <OpsField label="Window end" className="col-span-full"><input name="pickup-window-end" type="datetime-local" value={windowEnd} onChange={(event) => setWindowEnd(event.target.value)}/></OpsField>
@@ -662,7 +664,6 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
 
                   {editor === "driver" && selected.status !== "picked_up" && selected.status !== "cancelled" ? (
                     <OpsInspectorSection tinted title="Vehicle & driver" action={<EditorClose label="vehicle & driver" onClose={() => setEditor("details")}/>}>
-                      <p className="ops-inspector-hint mb-3">Assign the collection resource once the appointment is ready.</p>
                       <div className="ops-inspector-form">
                         <OpsField label="Driver name"><input value={driverName} onChange={(event) => setDriverName(event.target.value)}/></OpsField>
                         <OpsField label="Driver phone"><input value={driverPhone} onChange={(event) => setDriverPhone(event.target.value)}/></OpsField>
@@ -684,27 +685,20 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                     </OpsInspectorSection>
                   ) : null}
 
-                  <OpsInspectorSection title="Location & route">
-                    <OpsFacts>
-                      <OpsFact label="Pickup">{selected.pickup_location || selected.origin}</OpsFact>
-                      {selected.pickup_location && selected.origin && selected.pickup_location !== selected.origin ? <OpsFact label="Origin">{selected.origin}</OpsFact> : null}
-                      <OpsFact label="Destination">{selected.destination}</OpsFact>
-                    </OpsFacts>
-                  </OpsInspectorSection>
-
                   <OpsInspectorSection
                     title="Pickup details"
                     action={<OpsButton type="button" size="xs" variant="ghost" onClick={() => openEditor("appointment")}><Pencil size={13} strokeWidth={1.75} aria-hidden="true"/>Edit</OpsButton>}
                   >
+                    {/* Pickup and destination are the header's line; the
+                        origin joins them only when the cargo starts elsewhere. */}
                     <OpsFacts>
-                      <OpsFact label="Customer">{selected.customer_name}</OpsFact>
+                      {selected.pickup_location && selected.origin && selected.pickup_location !== selected.origin ? <OpsFact label="Origin">{selected.origin}</OpsFact> : null}
                       <OpsFact label="Date & time" warning={!selectedWindowStart}>{selectedWindowStart ? `${dateLabel(selectedWindowStart)} · ${timeLabel(selectedWindowStart)}${selectedWindowEnd ? `–${timeLabel(selectedWindowEnd)}` : ""} NPT` : "Not scheduled"}</OpsFact>
                       <OpsFact label="Carrier">{selected.partner_name || readable(selected.channel)}</OpsFact>
                       <OpsFact label="Driver / vehicle">{selected.driver_name ? `${selected.driver_name}${selected.vehicle_reference ? ` · ${selected.vehicle_reference}` : ""}` : "Not assigned"}</OpsFact>
                       <OpsFact label="Contact">{[selected.contact_name, selected.contact_phone].filter(Boolean).join(" · ") || "Not provided"}</OpsFact>
-                      <OpsFact label="Reference">{selected.provider_reference || "—"}</OpsFact>
-                      <OpsFact label="Instructions">{selected.notes || "—"}</OpsFact>
-                      <OpsFact label="Shipment"><Link href={`/admin/jobs/${encodeURIComponent(selected.shipment_reference)}`} className="ops-mono">{selected.shipment_reference}</Link></OpsFact>
+                      {selected.provider_reference ? <OpsFact label="Reference">{selected.provider_reference}</OpsFact> : null}
+                      {selected.notes ? <OpsFact label="Instructions">{selected.notes}</OpsFact> : null}
                     </OpsFacts>
                   </OpsInspectorSection>
 

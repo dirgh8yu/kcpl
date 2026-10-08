@@ -1,19 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { MessageSquare, Send } from "lucide-react";
-import { OpsButton, OpsEmptyState, OpsNotice, OpsSurface } from "./admin/operations-ui";
+import { Send } from "lucide-react";
+import { OpsButton, OpsNotice, OpsSurface } from "./admin/operations-ui";
 import type { ShipmentMessageSide, ShipmentMessageView } from "./shipment-messages";
 
 export type ShipmentThreadLabels = {
-  eyebrow: string;
   title: string;
-  description: string;
   placeholder: string;
   send: string;
   sending: string;
-  empty: string;
-  emptyDescription: string;
   failed: string;
   loadFailed: string;
 };
@@ -100,12 +96,12 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
 
   return (
     <div id={id}>
-      <OpsSurface eyebrow={labels.eyebrow} title={labels.title} description={labels.description}>
+      {/* A conversation with nothing in it yet is its composer: the title and
+          the box to write in say what it is for. */}
+      <OpsSurface title={labels.title}>
         {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
-        {messages && messages.length === 0 ? (
-          <OpsEmptyState compact kind="neutral" icon={<MessageSquare size={18}/>} title={labels.empty} description={labels.emptyDescription}/>
-        ) : (
-          <ol ref={list} className="shipment-thread" aria-live="polite" aria-busy={messages === null}>
+        {messages?.length ? (
+          <ol ref={list} className="shipment-thread" aria-live="polite">
             {(messages ?? []).map((message) => (
               <li key={message.id} data-own={message.from === viewer ? "true" : undefined}>
                 <span className="shipment-thread-meta">{message.author} · {when(message.created_at, viewer)}</span>
@@ -113,7 +109,7 @@ export function ShipmentThread({ endpoint, viewer, labels, id = "messages" }: {
               </li>
             ))}
           </ol>
-        )}
+        ) : null}
         <form className="shipment-thread-form" onSubmit={send} aria-busy={busy}>
           <label className="portal-sr-only" htmlFor={`${id}-draft`}>{labels.placeholder}</label>
           <textarea

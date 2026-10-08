@@ -47,7 +47,7 @@ export function PortalTextNoticesPanel({
     ["whatsapp", t("text.whatsapp"), channels.whatsapp],
   ];
   return (
-    <OpsSurface eyebrow={t("text.eyebrow")} title={t("text.title")} description={t("text.description")}>
+    <OpsSurface title={t("text.title")}>
       <div className="portal-text-notices">
         <div role="radiogroup" className="portal-text-channels">
           {options.map(([value, label, available]) => (

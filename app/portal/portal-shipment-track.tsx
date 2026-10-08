@@ -9,14 +9,15 @@ export function PortalShipmentTrack({ status, locale, note }: { status: string; 
   const t = portalTranslator(locale);
   const position = portalTrackPosition(status);
 
-  // No step to ring: say what is wrong, with KCPL's note on it when there is one.
+  // No step to ring: say what is wrong. KCPL's note is the reason when there
+  // is one; the general line stands in only when there is not.
   if (position < 0) {
     return (
       <div className="portal-track-alert">
         <TriangleAlert size={16} strokeWidth={2} aria-hidden="true"/>
         <p>
-          <strong>{portalStatusLabel(status, locale)}.</strong> {t("mail.status_exception")}
-          {note ? <span className="portal-track-alert-note">{note}</span> : null}
+          <strong>{portalStatusLabel(status, locale)}.</strong>{" "}
+          {note ? <span className="portal-track-alert-note">{note}</span> : t("mail.status_exception")}
         </p>
       </div>
     );

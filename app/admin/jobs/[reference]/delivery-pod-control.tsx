@@ -214,7 +214,7 @@ export function DeliveryPodControl({
     : completionBlockers[0] ?? (physicalRecorded ? podStatus === "verified" ? "Other checks still open" : "Proof of delivery needs checking" : "Delivery not recorded yet");
 
   return <section id="delivery-pod" className="scroll-mt-20">
-    <OpsSurface title="Delivery & proof" description="Record the delivery, upload the proof, then have someone check it. The shipment becomes Delivered once the proof is checked." action={<div className="flex items-center gap-1.5"><OpsBadge tone={canonicalDelivered ? "success" : "info"}>KCPL {pretty(shipmentStatus)}</OpsBadge><OpsButton size="xs" variant="ghost" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={13} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton></div>}>
+    <OpsSurface title="Delivery & proof" action={<div className="flex items-center gap-1.5"><OpsButton size="xs" variant="ghost" onClick={() => { setBusy(true); refresh().catch((error) => setNotice({ tone: "danger", text: error instanceof Error ? error.message : "Refresh failed." })).finally(() => setBusy(false)); }} disabled={busy}><RefreshCw size={13} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton></div>}>
       {notice ? <div className="mb-3"><OpsNotice tone={notice.tone}>{notice.text}</OpsNotice></div> : null}
 
       {/* Four controlled facts on one hairline rail instead of four cards. */}

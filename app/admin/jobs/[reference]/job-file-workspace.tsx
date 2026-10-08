@@ -365,7 +365,7 @@ export function JobFileWorkspace({
     <OpsPage className="job-workspace">
       {notice ? <OpsNotice tone={noticeTone(notice)} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
 
-      {setupOpen ? <div data-panel="booking"><OpsSurface title="Owner & notes" description="Only KCPL staff see these." action={<OpsButton variant="ghost" size="xs" onClick={() => setSetupOpen(false)}>Close</OpsButton>}>
+      {setupOpen ? <div data-panel="booking"><OpsSurface title="Owner & notes" action={<OpsButton variant="ghost" size="xs" onClick={() => setSetupOpen(false)}>Close</OpsButton>}>
         <form onSubmit={saveSetup} className="job-form job-form-grid">
           <OpsField label="Main branch"><select disabled={!canManageBranches} value={draft.primaryBranch} onChange={(event) => setDraft({ ...draft, primaryBranch: event.target.value as KcplBranch })}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
           <OpsField label="Priority"><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as JobPriority })}>{jobPriorities.map((priority) => <option key={priority} value={priority}>{jobPriorityLabels[priority]}</option>)}</select></OpsField>
@@ -399,7 +399,7 @@ export function JobFileWorkspace({
         </div>
 
         <div data-panel="customs">
-          <OpsSurface id="shipment-customs" title="Customs checklist" description={requiredCustoms.length ? `${completedCustoms} of ${requiredCustoms.length} required steps done.` : "Add only the steps this shipment needs."} action={<OpsButton variant="secondary" size="xs" onClick={() => setCustomsOpen((value) => !value)} aria-expanded={customsOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
+          <OpsSurface id="shipment-customs" title="Customs checklist" description={requiredCustoms.length ? `${completedCustoms} of ${requiredCustoms.length} required steps done.` : undefined} action={<OpsButton variant="secondary" size="xs" onClick={() => setCustomsOpen((value) => !value)} aria-expanded={customsOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{customsOpen ? "Close" : "Add step"}</OpsButton>}>
             {requiredCustoms.length ? <div className="job-progress"><OpsProgress value={completedCustoms} max={Math.max(requiredCustoms.length, 1)} tone={completedCustoms === requiredCustoms.length ? "success" : "warning"} label="Customs checklist progress"/></div> : null}
             {customsOpen ? <form onSubmit={addCustoms} className="job-form job-form-grid job-form-grid-2">
               <OpsField label="Step"><input required value={customs.title} onChange={(event) => setCustoms({ ...customs, title: event.target.value })}/></OpsField>
@@ -413,7 +413,7 @@ export function JobFileWorkspace({
         </div>
 
         <div data-panel="documents">
-          <OpsSurface id="shipment-documents" title="Documents" description="New uploads count once someone else has checked them." action={<Link href={`/admin/documents?q=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">All documents</Link>}>
+          <OpsSurface id="shipment-documents" title="Documents" action={<Link href={`/admin/documents?q=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="ghost" data-size="xs">All documents</Link>}>
             {workflow.documents.some((item) => item.required && !item.present && item.document_type !== "proof_of_delivery") ? <ul className="job-checklist" aria-label="Documents still needed">{workflow.documents.filter((item) => item.required && !item.present && item.document_type !== "proof_of_delivery").map((item) => <li key={item.document_type}><AlertTriangle size={13} strokeWidth={1.75} aria-hidden="true"/><span>{item.label}{item.uploaded_count > 0 ? " — uploaded, needs checking" : " — not uploaded"}</span></li>)}</ul> : null}
             {documentsError ? <div className="mb-3"><OpsNotice tone="warning">{documentsError}</OpsNotice></div> : null}
             {!storageAvailable ? <div className="mb-3"><OpsNotice tone="warning">File uploads aren’t working right now. Try again later.</OpsNotice></div> : null}
@@ -429,7 +429,7 @@ export function JobFileWorkspace({
         <div data-panel="transit" id="shipment-free-time"><FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/></div>
 
         <div data-panel="tasks">
-          <OpsSurface id="shipment-tasks" title="Tasks" description={openTasks.length ? <><strong>{openTasks.length} open</strong>{overdueTasks.length ? <> · <span className="job-overdue">{overdueTasks.length} overdue</span></> : null}</> : "Anything someone needs to do for this shipment."} action={<OpsButton variant="secondary" size="xs" onClick={() => setTaskOpen((value) => !value)} aria-expanded={taskOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
+          <OpsSurface id="shipment-tasks" title="Tasks" description={overdueTasks.length ? <span className="job-overdue">{overdueTasks.length} overdue</span> : undefined} action={<OpsButton variant="secondary" size="xs" onClick={() => setTaskOpen((value) => !value)} aria-expanded={taskOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>
             {taskOpen ? <form onSubmit={addTask} className="job-form job-form-grid job-form-grid-2">
               <OpsField label="Task"><input required value={task.title} onChange={(event) => setTask({ ...task, title: event.target.value })}/></OpsField>
               <OpsField label="Branch"><select value={task.branch} onChange={(event) => setTask({ ...task, branch: event.target.value as KcplBranch })}>{job.handling_branches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
@@ -447,14 +447,10 @@ export function JobFileWorkspace({
             endpoint={`/api/admin/jobs/${encodeURIComponent(job.reference)}/messages`}
             viewer="kcpl"
             labels={{
-              eyebrow: "Customer",
               title: "Messages with the customer",
-              description: "The customer writes from the portal or the KCPL app and sees your first name on replies.",
               placeholder: "Reply to the customer",
               send: "Send",
               sending: "Sending…",
-              empty: "No messages yet",
-              emptyDescription: "Questions the customer asks about this shipment appear here.",
               failed: "The message wasn’t sent. Try again.",
               loadFailed: "Messages didn’t load. Reload the page to try again.",
             }}
@@ -462,7 +458,7 @@ export function JobFileWorkspace({
         </div> : null}
 
         {job.can_view_costs ? <div data-panel="costs">
-          <OpsSurface id="shipment-commercial" title="Costs" description="Only staff with cost access see this." action={<OpsButton variant="secondary" size="xs" onClick={() => setCostOpen((value) => !value)} aria-expanded={costOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
+          <OpsSurface id="shipment-commercial" title="Costs" action={<OpsButton variant="secondary" size="xs" onClick={() => setCostOpen((value) => !value)} aria-expanded={costOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
             {costOpen ? <form onSubmit={addCost} className="job-form job-form-grid job-form-grid-2 mt-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Supplier"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="job-form-money"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes" className="job-form-span-all"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCostOpen(false)}>Cancel</OpsButton></div></form> : null}
             {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row"><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState icon={<Receipt size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No costs yet" description="Add freight, customs, transport and handling costs here."/>}
           </OpsSurface>
