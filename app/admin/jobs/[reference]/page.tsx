@@ -1,7 +1,7 @@
 import "./job-file-premium.css";
 import { getAdminAccess } from "../../admin-auth";
 import { getDeliveryControl } from "../../delivery/delivery-control.server";
-import { getDigitalJobFile } from "../../job-file.server";
+import { getDigitalJobFile, withCombinedMargin } from "../../job-file.server";
 import { OperationsShell } from "../../operations-shell";
 import { getShipmentActivityTimeline } from "../../shipment-activity.server";
 import { getShipmentExceptions } from "../../shipment-exceptions.server";
@@ -64,7 +64,8 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
   if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch you don’t have access to. Ask Management if you need it.");
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [workflow, activity, exceptionCases, delivery, customerAccess, stepContext, partnerOptions] = await Promise.all([
+  const [job, workflow, activity, exceptionCases, delivery, customerAccess, stepContext, partnerOptions] = await Promise.all([
+    withCombinedMargin(result.job),
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
     getShipmentExceptions(result.job.reference, staff),
@@ -83,7 +84,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
 
   return <OperationsShell {...shellProps}>
     <JobRecord
-      job={result.job}
+      job={job}
       readiness={workflow.readiness}
       clearance={staff.permissions.canManageJobFile ? stepContext.clearance : null}
       customsAgents={customsAgents}

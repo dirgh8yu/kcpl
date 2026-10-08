@@ -41,7 +41,21 @@ export type ShipmentFreeTime = {
   note: string | null;
   updated_at: string | null;
   updated_by: string | null;
+  /** The day the cargo left the port or ICD for delivery: the clock stops there. */
+  ended_on: string | null;
 };
+
+/**
+ * Statuses at which the cargo has left the port or ICD. The free-time clock
+ * stops when a shipment first reaches one; it used to run on until Delivered,
+ * telling a customer whose container was already on the road that charges
+ * were still growing.
+ */
+export const freeTimeEndingStatuses = ["out_for_delivery", "delivered"] as const;
+
+export function freeTimeClockStopped(shipmentStatus: unknown) {
+  return typeof shipmentStatus === "string" && (freeTimeEndingStatuses as readonly string[]).includes(shipmentStatus);
+}
 
 export type FreeTimeStatus = {
   state: FreeTimeState;
@@ -86,6 +100,7 @@ export function shipmentFreeTimeFromRecord(data: Record<string, unknown>): Shipm
     note: text(data.free_time_note),
     updated_at: text(data.free_time_updated_at),
     updated_by: text(data.free_time_updated_by),
+    ended_on: validDay(data.free_time_ended_on) ? data.free_time_ended_on : null,
   };
 }
 
@@ -97,10 +112,12 @@ export function shipmentFreeTimeFromRecord(data: Record<string, unknown>): Shipm
  * expired one. Getting this off by one would either panic a customer a day
  * early or tell them they are safe on the day a charge starts.
  */
-export function freeTimeStatus(freeTime: ShipmentFreeTime, today: string): FreeTimeStatus {
-  if (freeTime.days === null || !freeTime.started_on || !validDay(today)) {
+export function freeTimeStatus(freeTime: ShipmentFreeTime, currentDay: string): FreeTimeStatus {
+  if (freeTime.days === null || !freeTime.started_on || !validDay(currentDay)) {
     return { state: "not_set", deadline: null, daysRemaining: 0, daysOverdue: 0, projectedCharge: null };
   }
+  // Once the cargo has left, the count stands at the day it left.
+  const today = freeTime.ended_on && freeTime.ended_on < currentDay ? freeTime.ended_on : currentDay;
 
   // A 3-day allowance beginning on the 1st covers the 1st, 2nd and 3rd.
   const deadline = addDays(freeTime.started_on, Math.max(0, freeTime.days - 1));

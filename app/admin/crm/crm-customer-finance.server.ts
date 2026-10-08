@@ -3,6 +3,8 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "./crm-data";
 import type { CrmCustomerFinanceSnapshot } from "./crm-customer-finance";
+import { loadNprRateTable } from "../finance/fx-rates.server";
+import { convertMoney, invoiceNetRevenue, jobCostCounts, type RateTable } from "../finance/money-basis";
 
 function numberValue(value: unknown) {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -72,6 +74,18 @@ export async function getCrmCustomerFinanceSnapshot(
     db.collection("shipments").where("customer_id", "==", id).limit(500).get(),
   ]);
 
+  // One NRB read, only if some record is in another currency.
+  let rateTable: Promise<RateTable | null> | null = null;
+  let ratesDate: string | null = null;
+  async function toCustomerCurrency(from: string) {
+    if (from === currency) return 1;
+    rateTable ??= loadNprRateTable();
+    const table = await rateTable;
+    const factor = convertMoney(1, from, currency, table?.rates ?? null);
+    if (factor !== null && table) ratesDate = table.date;
+    return factor;
+  }
+
   let revenue = 0;
   let collected = 0;
   let outstanding = 0;
@@ -99,17 +113,20 @@ export async function getCrmCustomerFinanceSnapshot(
     }
     if (status === "void") continue;
 
+    // Another currency is converted at NRB's rate rather than left out; only
+    // one with no rate is set aside and counted.
     const invoiceCurrency = currencyValue(invoice.get("currency"));
-    if (invoiceCurrency !== currency) {
+    const factor = await toCustomerCurrency(invoiceCurrency);
+    if (factor === null) {
       otherCurrencyInvoiceCount += 1;
       continue;
     }
 
     invoiceCount += 1;
-    const total = Math.max(0, numberValue(invoice.get("total")));
-    const paid = Math.max(0, numberValue(invoice.get("amount_paid")));
-    const balance = Math.max(0, numberValue(invoice.get("balance_due")));
-    if (!isOpeningBalance(invoice)) revenue += total;
+    const netRevenue = Math.max(0, invoiceNetRevenue(invoice.data() as Record<string, unknown>)) * factor;
+    const paid = Math.max(0, numberValue(invoice.get("amount_paid"))) * factor;
+    const balance = Math.max(0, numberValue(invoice.get("balance_due"))) * factor;
+    if (!isOpeningBalance(invoice)) revenue += netRevenue;
     collected += paid;
     outstanding += balance;
 
@@ -142,12 +159,13 @@ export async function getCrmCustomerFinanceSnapshot(
     );
     for (const costs of costSnapshots) {
       for (const item of costs.docs) {
-        const itemCurrency = currencyValue(item.get("currency"));
-        if (itemCurrency !== currency) {
+        if (!jobCostCounts(item.data() as Record<string, unknown>)) continue;
+        const factor = await toCustomerCurrency(currencyValue(item.get("currency")));
+        if (factor === null) {
           otherCurrencyCostCount += 1;
           continue;
         }
-        cost += Math.max(0, numberValue(item.get("amount")));
+        cost += Math.max(0, numberValue(item.get("amount"))) * factor;
       }
     }
   }
@@ -169,6 +187,7 @@ export async function getCrmCustomerFinanceSnapshot(
     oldest_overdue_days: oldestOverdueDays,
     other_currency_invoice_count: otherCurrencyInvoiceCount,
     other_currency_cost_count: otherCurrencyCostCount,
+    rates_date: ratesDate,
     integrity_warning_count: integrityWarningCount,
     generated_at: new Date().toISOString(),
   };

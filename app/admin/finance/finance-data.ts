@@ -96,6 +96,16 @@ export type FinanceCurrencySummary = {
   opening_balance_count: number;
 };
 
+/** A delivered shipment with no issued invoice: work done and not yet billed. */
+export type FinanceToInvoiceRow = {
+  reference: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  branch: string;
+  delivered_on: string | null;
+  draft_invoice_count: number;
+};
+
 export type FinanceDashboard = {
   generated_at: string;
   invoices: FinanceInvoice[];
@@ -105,7 +115,20 @@ export type FinanceDashboard = {
   paid_count: number;
   draft_count: number;
   opening_balance_count: number;
+  /** Delivered shipments not yet invoiced, longest-waiting first. */
+  to_invoice: FinanceToInvoiceRow[];
 };
+
+/** Issued (sent, part-paid, paid, overdue) and draft invoices among a shipment's invoices. */
+export function shipmentBillingCounts(statuses: readonly string[]) {
+  let issued = 0;
+  let draft = 0;
+  for (const status of statuses) {
+    if (status === "draft") draft += 1;
+    else if (status && status !== "void") issued += 1;
+  }
+  return { issued, draft };
+}
 
 export type CreateFinanceInvoiceInput = {
   customerId: string;

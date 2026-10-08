@@ -13,6 +13,7 @@ import {
   quoteHasTmsAuthorityMarkers,
   tmsCustomerQuoteReference,
 } from "./commercial-authority";
+import { customerTradingBlock } from "../crm/crm-policy";
 
 type Actor = { name: string; email: string };
 
@@ -244,7 +245,7 @@ export async function acceptCurrentTmsCustomerQuote(
   staff: KcplStaffContext,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canSetPrices) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const reference = normalizeCommercialId(quoteReference);
   const quoteRef = db.collection("quotes").doc(reference);
@@ -273,6 +274,8 @@ export async function acceptCurrentTmsCustomerQuote(
       if (!pricing || !customerId || version.snapshot.branch !== branch) return { kind: "invalid_tms_quote" as const };
       const customer = await transaction.get(db.collection("customers").doc(customerId));
       if (!customer.exists || customer.get("archived") === true || branchValue(customer.get("primary_branch")) !== branch) return { kind: "customer_missing" as const };
+      const tradingBlock = customerTradingBlock(customer.get("account_status"));
+      if (tradingBlock) return { kind: tradingBlock === "blacklisted" ? "customer_blacklisted" as const : "customer_on_hold" as const };
       const issued = await assertCustomerQuoteIssuedInTransaction(transaction, version);
       if (!issued.ok) return { kind: "stale_commercial_quote" as const };
       const status = text(quote.get("status"));

@@ -16,6 +16,8 @@ export type CrmCustomerFinanceSnapshot = {
   oldest_overdue_days: number | null;
   other_currency_invoice_count: number;
   other_currency_cost_count: number;
+  /** NRB rate date when other currencies were converted into this one. */
+  rates_date: string | null;
   integrity_warning_count: number;
   generated_at: string;
 };

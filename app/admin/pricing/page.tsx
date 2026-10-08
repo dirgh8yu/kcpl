@@ -58,7 +58,7 @@ export default async function PricingPage() {
 
   return (
     <OperationsShell {...shellProps}>
-      <TmsPricingWorkspace initialOrders={workspace.orders} initialCustomers={workspace.customers} initialRules={workspace.rules} canManageRules={staff.permissions.canManageRateCards} canApprove={staff.permissions.role === "management"}/>
+      <TmsPricingWorkspace initialOrders={workspace.orders} initialCustomers={workspace.customers} initialRules={workspace.rules} canManageRules={staff.permissions.canManageRateCards} canApprove={staff.permissions.role === "management"} canSetPrices={staff.permissions.canSetPrices}/>
     </OperationsShell>
   );
 }

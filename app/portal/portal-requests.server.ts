@@ -5,7 +5,7 @@ import { firebaseAdminDb } from "../firebase-admin.server";
 import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../api/quotes/quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "../api/quotes/quote-rate-limit.server";
 import type { PortalSession } from "./portal-auth";
-import { portalQuoteBookingBlock, portalQuoteView } from "./portal-access-policy";
+import { portalQuoteBookingBlock, portalQuoteView, portalQuoteVisible } from "./portal-access-policy";
 
 /*
  * A quote request raised by a signed-in customer, from the web portal or the
@@ -173,6 +173,8 @@ export async function requestPortalBooking(
       && (String(quote.get("customer_id") ?? "") === session.customerId
         || String(quote.get("portal_customer_id") ?? "") === session.customerId);
     if (!ownedByCustomer) return { status: 404, body: { ok: false, error: "Quote not found." } };
+    // A price KCPL hasn't sent yet can't be accepted: the portal doesn't show it.
+    if (!portalQuoteVisible(quote.data() as Record<string, unknown>)) return { status: 409, body: { ok: false, code: "unpriced", error: "This quote has not been sent to you yet." } };
     // The same rule the portal page and the app use to offer the button.
     const view = portalQuoteView(quote.data() as Record<string, unknown>);
     const block = portalQuoteBookingBlock(view);

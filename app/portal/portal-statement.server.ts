@@ -5,6 +5,7 @@ import { nepalOperationalDate } from "../invoice-effective-status";
 import { portalInvoiceView, portalInvoiceVisible } from "./portal-access-policy";
 import { buildStatement, type Statement, type StatementPayment } from "./portal-statement";
 import { renderStatementPdf } from "./portal-statement-pdf";
+import { readAllDocuments } from "../admin/firestore-scan";
 
 /*
  * Statements of account. Customers with finance access fetch their own
@@ -13,11 +14,11 @@ import { renderStatementPdf } from "./portal-statement-pdf";
  * only write is the log of a statement sent.
  */
 
-const INVOICE_LIMIT = 500;
 
 async function statementFor(customerId: string, asOf = nepalOperationalDate()): Promise<Statement> {
   const db = firebaseAdminDb();
-  const snapshot = await db.collection("invoices").where("customer_id", "==", customerId).limit(INVOICE_LIMIT).get();
+  // The whole ledger: a statement that drops invoices past a cap is wrong.
+  const snapshot = await readAllDocuments(db.collection("invoices").where("customer_id", "==", customerId));
   const invoices = snapshot.docs
     .map((doc) => ({ ...(doc.data() as Record<string, unknown>), reference: doc.id }))
     .filter(portalInvoiceVisible)
@@ -27,7 +28,7 @@ async function statementFor(customerId: string, asOf = nepalOperationalDate()): 
   const payments: StatementPayment[] = (await Promise.all(paid.map(async (doc) => {
     const rows = await doc.ref.collection("payments").limit(100).get();
     const invoice = typeof doc.get("external_invoice_number") === "string" && doc.get("external_invoice_number") ? String(doc.get("external_invoice_number")) : doc.id;
-    return rows.docs.map((row): StatementPayment => ({
+    return rows.docs.map((row: FirebaseFirestore.QueryDocumentSnapshot): StatementPayment => ({
       invoice,
       date: String(row.get("payment_date") || row.get("created_at") || "").slice(0, 10),
       amount: Number(row.get("amount") ?? 0),

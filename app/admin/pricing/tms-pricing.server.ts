@@ -325,7 +325,7 @@ function storedProjection(input: {
 
 export async function calculateOrderPricing(orderId: string, overrides: PricingOverrides, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canSetPrices) return { kind: "forbidden" as const };
   if (overrides.fxMode === "manual" && !staff.permissions.canOverrideFx) return { kind: "manual_fx_forbidden" as const };
   if (overrides.fxMode === "manual" && !overrides.fxOverrideReason?.trim()) return { kind: "manual_fx_reason_required" as const };
   let nrbSnapshot: NrbForexSnapshot | null = null;
@@ -555,7 +555,7 @@ export async function createQuoteFromOrderPricing(
   expectedFingerprint?: string | null,
 ) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canSetPrices) return { kind: "forbidden" as const };
   const date = validUntil?.trim() || "";
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { kind: "invalid_validity" as const };
   const expectedId = normalizeCommercialId(expectedVersionId);

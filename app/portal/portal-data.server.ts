@@ -11,6 +11,7 @@ import {
   portalQuoteBookingBlock,
   portalQuoteView,
   portalQuoteVisible,
+  portalRequestOpen,
   portalShipmentActive,
   portalShipmentEventView,
   portalShipmentView,
@@ -24,12 +25,14 @@ import {
 import type { PortalSession } from "./portal-auth";
 import { nepalOperationalDate } from "../invoice-effective-status";
 import {
+  freeTimeClockStopped,
   freeTimeNeedsAttention,
   freeTimeStatus,
   shipmentFreeTimeFromRecord,
   type FreeTimeStatus,
   type ShipmentFreeTime,
 } from "../shipment-free-time";
+import { readAllDocuments } from "../admin/firestore-scan";
 
 /*
  * Every reader in this module takes the resolved session and scopes its query
@@ -42,7 +45,6 @@ import {
  */
 
 const SHIPMENT_SCAN_LIMIT = 500;
-const INVOICE_SCAN_LIMIT = 500;
 const QUOTE_SCAN_LIMIT = 250;
 /** Documents live in a subcollection per shipment, so a cross-shipment view
  * costs one read per shipment. The document workspace therefore covers the
@@ -181,7 +183,9 @@ export async function getPortalShipment(session: PortalSession, reference: strin
         } : null,
         // The internal note stays out: it is KCPL's working context, not copy
         // written for a customer.
-        freeTime: freeTimeState.state === "not_set" ? null : { freeTime: { ...freeTime, note: null }, status: freeTimeState },
+        // Once the cargo has left the port for delivery the countdown is over
+        // for the customer; it isn't shown as still running.
+        freeTime: freeTimeState.state === "not_set" || freeTimeClockStopped(shipment.status) ? null : { freeTime: { ...freeTime, note: null }, status: freeTimeState },
         events: eventSnapshot.docs.map((document) =>
           portalShipmentEventView(document.data() as Record<string, unknown>, document.id)),
         documents: documentRecords
@@ -294,10 +298,10 @@ export async function listPortalInvoices(session: PortalSession): Promise<
   if (!session.capabilities.canViewFinance) return { kind: "forbidden" };
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" };
   try {
-    const snapshot = await firebaseAdminDb().collection("invoices")
-      .where("customer_id", "==", session.customerId)
-      .limit(INVOICE_SCAN_LIMIT)
-      .get();
+    // Every invoice the customer has: a capped read in no order could leave
+    // an unpaid one out of what they're told they owe.
+    const snapshot = await readAllDocuments(firebaseAdminDb().collection("invoices")
+      .where("customer_id", "==", session.customerId));
     // Nepal's day, the same one admin finance uses to call an invoice overdue.
     const today = nepalOperationalDate();
     const invoices = snapshot.docs
@@ -341,7 +345,9 @@ export async function portalOwnsInvoice(session: PortalSession, reference: strin
   if (!session.capabilities.canViewFinance || !firebaseRuntimeConfigured()) return false;
   try {
     const snapshot = await firebaseAdminDb().collection("invoices").doc(reference.trim().toUpperCase()).get();
-    return snapshot.exists && String(snapshot.get("customer_id") ?? "") === session.customerId;
+    // A draft or a void isn't a bill the customer can pay against.
+    return snapshot.exists && String(snapshot.get("customer_id") ?? "") === session.customerId
+      && portalInvoiceVisible({ ...(snapshot.data() as Record<string, unknown>) });
   } catch (error) {
     console.error("KCPL portal invoice ownership check failed", error);
     return false;
@@ -371,7 +377,7 @@ export async function listPortalQuotes(session: PortalSession): Promise<
     const all = [...records.values()];
     const quotes = all.filter(portalQuoteVisible).map(portalQuoteView)
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
-    const requests = all.filter((record) => !portalQuoteVisible(record)).map(portalQuoteView)
+    const requests = all.filter(portalRequestOpen).map(portalQuoteView)
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
     return { kind: "ready", quotes, requests };
   } catch (error) {
@@ -458,7 +464,7 @@ export async function getPortalOverview(session: PortalSession): Promise<Unavail
     // countdown costs no extra reads.
     const freeTimeRows = shipments.length
       ? shipments
-          .filter((shipment) => shipment.status !== "delivered")
+          .filter((shipment) => !freeTimeClockStopped(shipment.status))
           .map((shipment) => {
             const record = shipmentRecords.get(shipment.reference);
             if (!record) return null;
@@ -522,7 +528,9 @@ export async function portalOwnsShipment(session: PortalSession, reference: stri
   if (!firebaseRuntimeConfigured()) return false;
   try {
     const snapshot = await firebaseAdminDb().collection("shipments").doc(reference.trim().toUpperCase()).get();
-    return snapshot.exists && String(snapshot.get("customer_id") ?? "") === session.customerId;
+    // A draft or a void isn't a bill the customer can pay against.
+    return snapshot.exists && String(snapshot.get("customer_id") ?? "") === session.customerId
+      && portalInvoiceVisible({ ...(snapshot.data() as Record<string, unknown>) });
   } catch (error) {
     console.error("KCPL portal shipment ownership check failed", error);
     return false;

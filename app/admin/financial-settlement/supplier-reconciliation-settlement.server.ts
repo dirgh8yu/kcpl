@@ -91,6 +91,10 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
     const shipmentReference = nullable(bill.get("shipment_reference"));
     const costRef = shipmentReference ? db.collection("shipments").doc(shipmentReference).collection("job_costs").doc(`payable_${billReference}`) : null;
     const cost = costRef ? await transaction.get(costRef) : null;
+    // Back in draft, the bill no longer replaces the hand-typed cost it was for.
+    const replacedCostId = nullable(bill.get("replaces_job_cost_id"));
+    const replacedCostRef = shipmentReference && replacedCostId ? db.collection("shipments").doc(shipmentReference).collection("job_costs").doc(replacedCostId) : null;
+    const replacedCost = replacedCostRef ? await transaction.get(replacedCostRef) : null;
     const oldUniqueKey = text(bill.get("supplier_invoice_key"));
     const oldUniqueRef = oldUniqueKey && oldUniqueKey !== targetUniqueKey ? db.collection("supplier_invoice_uniques").doc(oldUniqueKey) : null;
     const oldUnique = oldUniqueRef ? await transaction.get(oldUniqueRef) : null;
@@ -111,6 +115,9 @@ export async function reconcileSupplierBillWithSettlementIntegrity(input: {
     });
     if (oldUniqueRef && oldUnique?.exists && text(oldUnique.get("payable_reference")) === billReference) transaction.delete(oldUniqueRef);
     if (costRef && cost?.exists) transaction.delete(costRef);
+    if (replacedCostRef && replacedCost?.exists && text(replacedCost.get("superseded_by_payable")) === billReference) {
+      transaction.update(replacedCostRef, { superseded_by_payable: null, superseded_at: null, updated_at: now });
+    }
 
     if (audit.exists) {
       transaction.update(auditRef, {

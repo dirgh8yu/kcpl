@@ -3,6 +3,7 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { mockFinanceSnapshot, qaMockDataEnabled } from "../qa-fixtures";
+import { invoiceNetRevenue, jobCostCounts } from "../finance/money-basis";
 
 export type OverviewFinanceTrendPoint = {
   date: string;
@@ -126,7 +127,7 @@ export async function getOverviewFinanceSnapshot(staff: KcplStaffContext): Promi
     if (!currency) continue;
     const issueDate = text(data.issue_date).slice(0, 10);
     const month = issueDate.slice(0, 7);
-    const amount = numberValue(data.total);
+    const amount = invoiceNetRevenue(data);
     const bucket = bucketFor(buckets, currency);
     if (month === currentMonth) {
       bucket.revenue += amount;
@@ -141,6 +142,7 @@ export async function getOverviewFinanceSnapshot(staff: KcplStaffContext): Promi
     const shipment = reference ? shipmentMap.get(reference) : null;
     if (!shipment?.exists || !staffCanAccessBranch(staff, text(shipment.get("primary_branch")))) continue;
     const data = doc.data() as Record<string, unknown>;
+    if (!jobCostCounts(data)) continue;
     const currency = currencyValue(data.currency);
     if (!currency) continue;
     const createdAt = text(data.created_at).slice(0, 10);

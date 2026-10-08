@@ -1,6 +1,7 @@
 import { getAdminAccess } from "../../../../admin/admin-auth";
 import { quoteCurrencies, type QuoteCurrency, quoteStatuses, type QuoteStatus } from "../../../../admin/admin-data";
-import { addQuoteNote, getQuoteDetail, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
+import { addQuoteNote, getQuoteDetail, quoteCustomerTradingBlock, updateQuoteAdmin, updateQuoteCommercial } from "../../../../admin/admin-data.server";
+import { customerTradingBlockMessage } from "../../../../admin/crm/crm-policy";
 import { acceptCurrentTmsCustomerQuote } from "../../../../admin/commercial-authority/customer-sell-authority.server";
 import { assertQuoteEconomicEditAllowed } from "../../../../admin/commercial-lineage/quote-commercial-policy.server";
 import { createCrmCustomerFromQuote } from "../../../../admin/crm/crm-quote-links.server";
@@ -90,7 +91,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   }
 
   if (body.action === "commercial") {
-    if (!auth.staff.permissions.canEditCommercial) {
+    if (!auth.staff.permissions.canSetPrices) {
       return json({ ok: false, error: "Your KCPL staff role does not allow commercial pricing changes." }, 403);
     }
 
@@ -137,6 +138,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
     if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
     if (result.kind === "locked") return json({ ok: false, error: "Versioned TMS quote economics are immutable. Reprice the Transport Order instead.", code: "VERSIONED_QUOTE_COMMERCIAL_LOCK" }, 409);
+    if (result.kind === "won-locked") return json({ ok: false, error: "The customer accepted this price, so it can't be changed now. If the charge changed, change it on the invoice.", code: "WON_PRICE_LOCKED" }, 409);
 
     return json({
       ok: true,
@@ -153,11 +155,20 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (assignedToEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assignedToEmail)) return json({ ok: false, error: "Choose a staff member with a valid email address." }, 400);
 
   let acceptedTmsQuote: { quoteReference: string; commercialVersionId: string; idempotent: boolean } | null = null;
-  if (status === "won") {
+  if (status === "won" && !auth.staff.permissions.canSetPrices) {
+    return json({ ok: false, error: "Commercial access is required to move an enquiry into or out of Quoted, Won or Lost.", code: "COMMERCIAL_REQUIRED" }, 403);
+  }
+  if (status === "won" && loaded.quote.status !== "won") {
+    // A held or blacklisted customer's quote can't be won: checked before the
+    // customer's acceptance is recorded, so nothing is half-written. A quote
+    // already won (reassigning its owner, say) isn't new work.
+    const block = await quoteCustomerTradingBlock(reference);
+    if (block) return json({ ok: false, code: "CUSTOMER_ON_HOLD", error: customerTradingBlockMessage(block) }, 409);
     const acceptance = await acceptCurrentTmsCustomerQuote(reference, { name: auth.user.displayName, email: auth.user.email }, auth.staff);
     if (acceptance.kind === "unavailable") return json({ ok: false, error: "Customer acceptance storage is unavailable." }, 503);
     if (acceptance.kind === "forbidden") return json({ ok: false, error: "Commercial access is required to record customer acceptance." }, 403);
     if (acceptance.kind === "missing" || acceptance.kind === "missing_order") return json({ ok: false, error: "Quote or transport order not found." }, 404);
+    if (acceptance.kind === "customer_on_hold" || acceptance.kind === "customer_blacklisted") return json({ ok: false, code: "CUSTOMER_ON_HOLD", error: customerTradingBlockMessage(acceptance.kind === "customer_blacklisted" ? "blacklisted" : "on_hold") }, 409);
     if (acceptance.kind === "customer_missing") return json({ ok: false, error: "The quote customer is missing or belongs to a different branch.", code: "CUSTOMER_AUTHORITY_MISMATCH" }, 409);
     if (acceptance.kind === "stale_commercial_quote") return json({ ok: false, error: "This customer quote is for an older commercial version. Issue and accept the current quote instead.", code: "stale_commercial_quote" }, 409);
     if (acceptance.kind === "invalid_tms_quote" || acceptance.kind === "invalid_transition") return json({ ok: false, error: "This TMS quote cannot become customer authority from its current state.", code: "TMS_QUOTE_AUTHORITY_INVALID" }, 409);
@@ -169,7 +180,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
     name: assignedToName,
     email: assignedToEmail,
     phone: assignedToPhone,
-  }, auth.staff.permissions.canEditCommercial);
+  }, auth.staff.permissions.canSetPrices);
   if (result.kind === "unavailable") return json({ ok: false, error: "Quote storage is unavailable." }, 503);
   if (result.kind === "missing") return json({ ok: false, error: "Quote not found." }, 404);
   if (result.kind === "commercial-required") {
@@ -181,6 +192,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (result.kind === "customer-required") {
     return json({ ok: false, error: "Confirm or create the customer record before marking this quote Won.", code: "CUSTOMER_REQUIRED" }, 409);
   }
+  if (result.kind === "customer-blocked") return json({ ok: false, code: "CUSTOMER_ON_HOLD", error: customerTradingBlockMessage(result.block) }, 409);
 
   let shipment = null;
   let shipmentWarning: string | null = null;
@@ -201,6 +213,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
         }
       }
       if (shipmentResult.kind === "unavailable") shipmentWarning = "Shipment storage is temporarily unavailable.";
+      if (shipmentResult.kind === "customer-blocked") {
+        return json({ ok: false, code: "CUSTOMER_ON_HOLD", error: customerTradingBlockMessage("on_hold") }, 409);
+      }
       if (shipmentResult.kind === "customer-required" || shipmentResult.kind === "customer-missing") {
         return json({ ok: false, error: "A valid customer record is required before shipment creation.", code: "CUSTOMER_REQUIRED" }, 409);
       }

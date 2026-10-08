@@ -2,7 +2,7 @@ import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
-import { resolveInvoiceCustomerFromShipment } from "../../finance-linking.server";
+import { agreedPriceForShipment, resolveInvoiceCustomerFromShipment } from "../../finance-linking.server";
 import { ShipmentInvoiceForm } from "./shipment-invoice-form";
 import { recordTitle } from "../../../../record-title";
 
@@ -25,7 +25,7 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
 
   const { shipmentReference } = await params;
   const reference = decodeURIComponent(shipmentReference).trim().toUpperCase();
-  const linked = await resolveInvoiceCustomerFromShipment(reference);
+  const [linked, agreedPrice] = await Promise.all([resolveInvoiceCustomerFromShipment(reference), agreedPriceForShipment(reference)]);
 
   if (linked.kind === "shipment_missing") return shellGate("Shipment not found", "No shipment has that reference.");
   if (linked.kind === "unavailable") return shellGate("Finance didn’t load", "Something went wrong fetching it. Try again in a minute; the menu and search still work.");
@@ -38,6 +38,7 @@ export default async function NewShipmentInvoicePage({ params }: { params: Promi
       customerName={linked.kind === "resolved" ? linked.customerName : null}
       quoteReference={linked.kind === "unlinked" ? linked.quoteReference : null}
       suggestions={linked.kind === "unlinked" ? linked.suggestions : []}
+      agreedPrice={agreedPrice}
     />
     </OperationsShell>
   );

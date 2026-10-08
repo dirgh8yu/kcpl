@@ -3,6 +3,7 @@ import { mockManagementAnalytics, qaMockDataEnabled } from "../qa-fixtures";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { managementRangeKeys, type BranchPerformance, type ConcentrationRisk, type CurrencyFinancialMetric, type CustomerPerformance, type JobPerformance, type ManagementAnalytics, type ManagementBranch, type ManagementRange, type ManagementRangeKey, type RoutePerformance, type StaffWorkload, type TrendPoint } from "./management-data";
+import { invoiceNetRevenue, jobCostCounts } from "../finance/money-basis";
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -236,7 +237,8 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
     const openingBalance = data.record_type === "opening_balance" || data.migration_record_type === "opening_balance";
     if (openingBalance) continue;
 
-    const total = numberValue(data.total);
+    // Revenue is what KCPL earns: before the VAT it collects for the tax office.
+    const total = invoiceNetRevenue(data);
     const shipmentReference = text(data.shipment_reference);
     if (shipmentReference) {
       const lifetimeJob = jobMeta(lifetimeJobMoney, shipmentReference, currency);
@@ -292,7 +294,7 @@ export async function buildManagementAnalytics(range: ManagementRange): Promise<
   for (const doc of costsSnapshot.docs) {
     const data = doc.data() as Record<string, unknown>;
     const shipmentReference = shipmentIdFromChild(doc.ref);
-    if (!shipmentReference) continue;
+    if (!shipmentReference || !jobCostCounts(data)) continue;
     const currency = financialCurrency(data.currency);
     if (!currency) continue;
     const amount = numberValue(data.amount);

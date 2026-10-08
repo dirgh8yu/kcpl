@@ -52,6 +52,8 @@ export type PayableBill = {
   amount_paid: number;
   balance_due: number;
   notes: string | null;
+  /** The hand-typed Job File cost this bill replaces once approved. */
+  replaces_job_cost_id: string | null;
   migration_batch_id: string | null;
   migration_as_of_date: string | null;
   created_by_name: string;
@@ -87,6 +89,17 @@ export type PayablesDashboard = {
   opening_balance_count: number;
 };
 
+/** A hand-typed Job File cost a new supplier bill can replace. */
+export type ReplaceableJobCost = {
+  id: string;
+  shipment_reference: string;
+  label: string;
+  category: JobCostCategory;
+  vendor: string | null;
+  amount: number;
+  currency: CrmCurrency;
+};
+
 export type CreatePayableInput = {
   supplierId: string;
   supplierName: string;
@@ -101,4 +114,6 @@ export type CreatePayableInput = {
   amount: number;
   taxRate: number;
   notes: string;
+  /** A hand-typed Job File cost this bill is for; it stops counting once the bill is approved. */
+  replacesJobCostId?: string;
 };

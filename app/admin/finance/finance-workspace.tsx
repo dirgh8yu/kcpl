@@ -8,6 +8,7 @@ import { FilePlus2, Landmark } from "lucide-react";
 import { crmCurrencies, type CrmCurrency } from "../crm/crm-data";
 import { financeInvoiceStatusLabels, type FinanceDashboard, type FinanceInvoiceStatus } from "./finance-data";
 import { OpsBadge, OpsButton, OpsField, OpsMono, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsRegisterToolbar, OpsResultCount, OpsSearch, OpsScopeTabs, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { TaxChoiceField, taxRateFromChoice, type TaxChoice } from "./invoice-tax-field";
 function money(amount: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
   catch { return `${currency} ${amount.toLocaleString("en-AU")}`; }
@@ -31,10 +32,11 @@ export function FinanceWorkspace({ dashboard }: { dashboard: FinanceDashboard })
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [status, setStatus] = useState<"all" | FinanceInvoiceStatus>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [showAllToInvoice, setShowAllToInvoice] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const today = nepalOperationalDate();
-  const [form, setForm] = useState({ shipmentReference: "", customerId: "", issueDate: today, dueDate: "", currency: "NPR" as CrmCurrency, description: "", amount: "", taxRate: "0", notes: "" });
+  const [form, setForm] = useState({ shipmentReference: "", customerId: "", issueDate: today, dueDate: "", currency: "NPR" as CrmCurrency, description: "", amount: "", taxChoice: "" as TaxChoice, taxRate: "", notes: "" });
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -46,12 +48,15 @@ export function FinanceWorkspace({ dashboard }: { dashboard: FinanceDashboard })
   }, [dashboard.invoices, query, status]);
 
   async function createInvoice(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setNotice("");
+    event.preventDefault();
+    const taxRate = taxRateFromChoice(form.taxChoice, form.taxRate);
+    if (taxRate === null) { setNotice("Choose the tax for this invoice."); return; }
+    setBusy(true); setNotice("");
     try {
       const shipmentReference = form.shipmentReference.trim().toUpperCase();
       const typedCustomerId = form.customerId.trim().toUpperCase();
       const customerId = typedCustomerId.startsWith("KCPL-C-") ? typedCustomerId : "";
-      const response = await fetch("/api/admin/finance/invoices", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, shipmentReference, customerId, amount: Number(form.amount), taxRate: Number(form.taxRate) }) });
+      const response = await fetch("/api/admin/finance/invoices", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, shipmentReference, customerId, amount: Number(form.amount), taxRate }) });
       const data = await response.json() as { reference?: string; error?: string; resolutionPath?: string };
       if (!response.ok && data.resolutionPath) { router.push(data.resolutionPath); return; }
       if (!response.ok || !data.reference) throw new Error(data.error || "Invoice could not be created.");
@@ -73,10 +78,21 @@ export function FinanceWorkspace({ dashboard }: { dashboard: FinanceDashboard })
     <OpsPageHeader title="Receivables" description="What customers owe and when it’s due." actions={<OpsButton variant="primary" onClick={() => setCreateOpen((value) => !value)}><FilePlus2 size={13}/>{createOpen ? "Close form" : "New invoice"}</OpsButton>}/>
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-      {createOpen ? <OpsSurface title="New invoice draft"><form onSubmit={createInvoice} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><OpsField label="Shipment reference"><input value={form.shipmentReference} onChange={(event) => setForm((current) => ({ ...current, shipmentReference: event.target.value, customerId: event.target.value.trim() ? "" : current.customerId }))} placeholder="KCPL-S-…"/></OpsField><OpsField label={shipmentMode ? "Customer reference (automatic)" : "Customer reference"}><input disabled={shipmentMode} value={shipmentMode ? "Resolved from shipment" : form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} placeholder="KCPL-C-…"/></OpsField><OpsField label="Issue date"><input required type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></OpsField><OpsField label="Due date"><input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></OpsField><OpsField label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField><OpsField label="Amount before tax"><input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></OpsField><OpsField label="Tax %"><input min="0" max="100" step="0.01" type="number" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></OpsField><OpsField label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Freight and logistics services"/></OpsField><OpsField label="Invoice notes" className="md:col-span-2 xl:col-span-4"><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></OpsField><div className="flex gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}>{busy ? "Creating…" : shipmentMode ? "Continue to invoice" : "Create invoice draft"}</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</OpsButton></div></form></OpsSurface> : null}
+      {createOpen ? <OpsSurface title="New invoice draft"><form onSubmit={createInvoice} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><OpsField label="Shipment reference"><input value={form.shipmentReference} onChange={(event) => setForm((current) => ({ ...current, shipmentReference: event.target.value, customerId: event.target.value.trim() ? "" : current.customerId }))} placeholder="KCPL-S-…"/></OpsField><OpsField label={shipmentMode ? "Customer reference (automatic)" : "Customer reference"}><input disabled={shipmentMode} value={shipmentMode ? "Resolved from shipment" : form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} placeholder="KCPL-C-…"/></OpsField><OpsField label="Issue date"><input required type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></OpsField><OpsField label="Due date"><input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></OpsField><OpsField label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField><OpsField label="Amount before tax"><input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></OpsField><TaxChoiceField choice={form.taxChoice} rate={form.taxRate} onChange={(next) => setForm({ ...form, taxChoice: next.choice, taxRate: next.rate })}/><OpsField label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Freight and logistics services"/></OpsField><OpsField label="Invoice notes" className="md:col-span-2 xl:col-span-4"><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></OpsField><div className="flex gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}>{busy ? "Creating…" : shipmentMode ? "Continue to invoice" : "Create invoice draft"}</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</OpsButton></div></form></OpsSurface> : null}
 
       {/* Per currency: what's owed and how old it is. Counts live on the chips below. */}
       {dashboard.currency_summaries.length ? <div className={`grid gap-3 ${dashboard.currency_summaries.length > 1 ? "xl:grid-cols-2" : ""}`}>{dashboard.currency_summaries.map((summary) => <OpsSurface key={summary.currency} title={`${money(summary.outstanding, summary.currency)} outstanding`} description={<>{summary.overdue > 0 ? <strong className="text-[var(--admin-danger)]">{money(summary.overdue, summary.currency)} overdue</strong> : "Nothing overdue"}{` · ${money(summary.collected, summary.currency)} collected of ${money(summary.invoiced + summary.opening_balance, summary.currency)}`}{summary.opening_balance_count ? ` · ${summary.opening_balance_count} opening balance${summary.opening_balance_count === 1 ? "" : "s"}` : ""}</>}><div className="grid gap-x-6 gap-y-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]"><Age label="0–30 days" value={summary.aging_0_30} total={summary.outstanding} currency={summary.currency}/><Age label="31–60 days" value={summary.aging_31_60} total={summary.outstanding} currency={summary.currency}/><Age label="61–90 days" value={summary.aging_61_90} total={summary.outstanding} currency={summary.currency}/><Age label="Over 90 days" value={summary.aging_90_plus} total={summary.outstanding} currency={summary.currency} danger={summary.aging_90_plus > 0}/></div></OpsSurface>)}</div> : null}
+
+      {/* Work delivered and not yet billed: nothing else in the app says so. */}
+      {dashboard.to_invoice.length ? <OpsSurface title={`${dashboard.to_invoice.length} delivered, not invoiced`} flush>
+        <OpsTableWrap><table className="ops-table ops-register-table finance-table ops-stack-table"><thead><tr><th>Shipment</th><th>Customer</th><th>Delivered</th><th><span className="sr-only">Next step</span></th></tr></thead><tbody>{(showAllToInvoice ? dashboard.to_invoice : dashboard.to_invoice.slice(0, 8)).map((row) => <tr key={row.reference}>
+          <td data-cell="primary"><Link href={`/admin/jobs/${encodeURIComponent(row.reference)}`}><OpsMono>{row.reference}</OpsMono></Link></td>
+          <td data-cell="route">{row.customer_name || row.customer_id || "Customer not linked"}<p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.branch}</p></td>
+          <td data-cell="meta" data-label="Delivered">{row.delivered_on ? dateLabel(row.delivered_on) : "—"}</td>
+          <td data-cell="action">{row.draft_invoice_count ? <OpsButton size="xs" variant="secondary" onClick={() => { setQuery(row.reference); setStatus("draft"); }}>Issue the draft</OpsButton> : <Link href={`/admin/finance/new/${encodeURIComponent(row.reference)}`} className="ops-button" data-variant="secondary" data-size="xs">Create invoice</Link>}</td>
+        </tr>)}</tbody></table></OpsTableWrap>
+        {dashboard.to_invoice.length > 8 ? <div className="p-3"><OpsButton size="xs" variant="ghost" onClick={() => setShowAllToInvoice((value) => !value)}>{showAllToInvoice ? "Show fewer" : `Show all ${dashboard.to_invoice.length}`}</OpsButton></div> : null}
+      </OpsSurface> : null}
 
       <OpsSurface flush>
         <OpsRegisterToolbar

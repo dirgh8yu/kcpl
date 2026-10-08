@@ -9,6 +9,7 @@ import { financePaymentMethodLabels, financePaymentMethods, type FinancePaymentM
 import { jobCostCategoryLabels } from "../../../job-file";
 import { payableStatusLabels, type PayableBill } from "../../payables-data";
 import { OpsBadge, OpsCopyButton, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
+import { newPaymentKey } from "../../../payment-key";
 
 function money(amount: number, currency: string) { try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); } catch { return `${currency} ${amount.toLocaleString("en-AU")}`; } }
 function dateLabel(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date); }
@@ -20,6 +21,7 @@ export function PayableWorkspace({ bill }: { bill: PayableBill }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [payment, setPayment] = useState({ amount: bill.balance_due ? String(bill.balance_due) : "", paymentDate: today, method: "bank_transfer" as FinancePaymentMethod, reference: "", notes: "" });
+  const [paymentKey, setPaymentKey] = useState(newPaymentKey);
   const openingBalance = bill.record_type === "opening_balance";
 
   async function billAction(action: "approve" | "void") {
@@ -42,10 +44,10 @@ export function PayableWorkspace({ bill }: { bill: PayableBill }) {
   async function recordPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setNotice("");
     try {
-      const response = await fetch(`/api/admin/payables/bills/${encodeURIComponent(bill.reference)}/payments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...payment, amount: Number(payment.amount) }) });
-      const data = await response.json() as { error?: string };
+      const response = await fetch(`/api/admin/payables/bills/${encodeURIComponent(bill.reference)}/payments`, { method: "POST", headers: { "content-type": "application/json", "idempotency-key": paymentKey }, body: JSON.stringify({ ...payment, amount: Number(payment.amount) }) });
+      const data = await response.json() as { error?: string; idempotent?: boolean };
       if (!response.ok) throw new Error(data.error || "Supplier payment could not be recorded.");
-      setNotice("Supplier payment recorded."); setPayment((current) => ({ ...current, amount: "", reference: "", notes: "" })); router.refresh();
+      setNotice(data.idempotent ? "This supplier payment was already recorded." : "Supplier payment recorded."); setPaymentKey(newPaymentKey()); setPayment((current) => ({ ...current, amount: "", reference: "", notes: "" })); router.refresh();
     } catch (error) { setNotice(error instanceof Error ? error.message : "Supplier payment could not be recorded."); }
     finally { setBusy(false); }
   }
@@ -67,6 +69,7 @@ export function PayableWorkspace({ bill }: { bill: PayableBill }) {
             <div className="mt-6 grid gap-2 sm:grid-cols-4">{openingBalance ? <Metric label="Opening balance" value={money(bill.total,bill.currency)}/> : <><Metric label="Subtotal" value={money(bill.subtotal,bill.currency)}/><Metric label={`Tax ${bill.tax_rate}%`} value={money(bill.tax_total,bill.currency)}/></>}<Metric label="Paid" value={money(bill.amount_paid,bill.currency)} tone="success"/><Metric label="Balance due" value={money(bill.balance_due,bill.currency)} tone={bill.balance_due > 0 ? "warning" : "success"}/></div>
             <div className="mt-5 rounded-[var(--app-radius)] bg-[var(--admin-surface-muted)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">Description</p><p className="mt-2 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">{bill.description}</p>{bill.notes ? <p className="mt-2 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{bill.notes}</p> : null}</div>
             {!openingBalance && bill.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(bill.shipment_reference)}`} className="mt-4 inline-flex items-center gap-2 text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]"><BriefcaseBusiness size={12}/>Open shipment record · <OpsMono>{bill.shipment_reference}</OpsMono></Link> : null}
+            {!openingBalance && bill.shipment_reference && bill.replaces_job_cost_id ? <p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{bill.status === "draft" ? "Once approved, this bill replaces a hand-typed cost on the Job File, so the job counts it once." : "This bill replaced a hand-typed cost on the Job File, so the job counts it once."}</p> : null}
           </OpsSurface>
         </div>
 

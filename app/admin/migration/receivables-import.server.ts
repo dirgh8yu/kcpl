@@ -2,7 +2,7 @@ import { readAllDocuments } from "../firestore-scan";
 import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { recomputeCustomerFinance } from "../finance/finance.server";
+import { recomputeCustomerFinance, syncShipmentBilling } from "../finance/finance.server";
 import {
   receivablesImportHeaders,
   type ReceivablesImportPreview,
@@ -454,6 +454,7 @@ export async function importReceivablesCsv(filename: string, csv: string, actor:
   const startedAt = new Date().toISOString();
   const createdReferences: string[] = [];
   const affectedCustomers = new Set<string>();
+  const affectedShipments = new Set<string>();
   let invoiceRowsImported = 0;
   let openingBalanceRowsImported = 0;
 
@@ -575,6 +576,7 @@ export async function importReceivablesCsv(filename: string, csv: string, actor:
       for (const row of chunk) {
         createdReferences.push(row.reference);
         affectedCustomers.add(row.customerId);
+        if (row.shipmentReference) affectedShipments.add(row.shipmentReference);
         if (row.recordType === "invoice") invoiceRowsImported += 1;
         else openingBalanceRowsImported += 1;
       }
@@ -587,6 +589,7 @@ export async function importReceivablesCsv(filename: string, csv: string, actor:
     }
 
     for (const customerId of affectedCustomers) await recomputeCustomerFinance(customerId);
+    for (const shipmentReference of affectedShipments) await syncShipmentBilling(shipmentReference);
 
     const completedAt = new Date().toISOString();
     await batchRef.set({

@@ -17,7 +17,7 @@ import {
 } from "./portal-push.server";
 import { mobileDevicesFor, refreshLiveActivities, sendMobilePush, type MobileDevice } from "../mobile-push.server";
 import { customerPushTarget, liveActivityState } from "../mobile-push-policy";
-import { freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
+import { freeTimeClockStopped, freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
 import {
   portalDocumentReleaseMessage,
   portalDocumentRequestFact,
@@ -485,7 +485,7 @@ export async function dispatchPortalNotifications() {
       // Free time rides on the shipment document already read, so the warning
       // costs nothing extra. Only the thresholds are notified, and each is its
       // own delivery key, so a sweep running hourly still sends once per step.
-      if (shipment.status !== "delivered" && freeTimeSubscribers.length > 0) {
+      if (!freeTimeClockStopped(shipment.status) && freeTimeSubscribers.length > 0) {
         const freeTime = shipmentFreeTimeFromRecord(record);
         const status = freeTimeStatus(freeTime, today);
         const threshold = freeTimeReminderThreshold(status);

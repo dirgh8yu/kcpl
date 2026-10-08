@@ -1,8 +1,11 @@
 import { mockFinanceDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
-import { effectiveInvoiceStatus, nepalOperationalDate } from "../../invoice-effective-status";
+import { effectiveInvoiceStatus, invoiceDatesOnIssue, nepalOperationalDate } from "../../invoice-effective-status";
 import { readAllDocuments } from "../firestore-scan";
+import { loadDocumentsById } from "../operational-shipments.server";
+import { loadNprRateTable } from "./fx-rates.server";
+import { invoiceNetRevenue, jobCostCounts, sumInCurrency } from "./money-basis";
 import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } from "../branch-access-policy";
 import { customerCommercialProfitabilitySummary } from "../commercial-lineage/commercial-profitability.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
@@ -19,6 +22,8 @@ import {
   type FinancePayment,
   type FinancePaymentMethod,
   type FinanceReceivableRecordType,
+  type FinanceToInvoiceRow,
+  shipmentBillingCounts,
 } from "./finance-data";
 
 type Actor = { name: string; email: string };
@@ -193,41 +198,124 @@ export async function recomputeCustomerFinance(customerId: string) {
   if (!customer.exists) return;
   const currency = currencyValue(customer.get("preferred_currency"));
   const [invoicesSnapshot, shipmentsSnapshot, commercialProfitability] = await Promise.all([
-    db.collection("invoices").where("customer_id", "==", customerId).limit(2500).get(),
+    readAllDocuments(db.collection("invoices").where("customer_id", "==", customerId)),
     db.collection("shipments").where("customer_id", "==", customerId).limit(1000).get(),
     customerCommercialProfitabilitySummary(customerId, currency),
   ]);
 
-  let revenue = 0;
-  let outstanding = 0;
+  // Every currency counts. Revenue is before VAT; what is owed is the whole
+  // balance, because the credit limit is about exposure, so an NPR customer
+  // owing in USD is still over the limit.
+  const revenueByCurrency: Partial<Record<string, number>> = {};
+  const outstandingByCurrency: Partial<Record<string, number>> = {};
   for (const invoice of invoicesSnapshot.docs) {
-    if (currencyValue(invoice.get("currency")) !== currency) continue;
+    const invoiceCurrency = currencyValue(invoice.get("currency"));
     const status = invoiceStatus(invoice.get("status"));
     if (status === "draft" || status === "void") continue;
     if (receivableRecordType(invoice.get("record_type") ?? invoice.get("migration_record_type")) !== "opening_balance") {
-      revenue += numberValue(invoice.get("total"));
+      revenueByCurrency[invoiceCurrency] = (revenueByCurrency[invoiceCurrency] ?? 0) + invoiceNetRevenue(invoice.data() as Record<string, unknown>);
     }
-    outstanding += Math.max(0, numberValue(invoice.get("balance_due")));
+    outstandingByCurrency[invoiceCurrency] = (outstandingByCurrency[invoiceCurrency] ?? 0) + Math.max(0, numberValue(invoice.get("balance_due")));
   }
 
-  let cost = 0;
+  const costByCurrency: Partial<Record<string, number>> = {};
   for (const shipment of shipmentsSnapshot.docs) {
     const costs = await shipment.ref.collection("job_costs").limit(1000).get();
     for (const item of costs.docs) {
-      if (currencyValue(item.get("currency")) === currency) cost += numberValue(item.get("amount"));
+      if (!jobCostCounts(item.data() as Record<string, unknown>)) continue;
+      const costCurrency = currencyValue(item.get("currency"));
+      costByCurrency[costCurrency] = (costByCurrency[costCurrency] ?? 0) + numberValue(item.get("amount"));
     }
   }
 
+  const foreign = [...Object.keys(revenueByCurrency), ...Object.keys(outstandingByCurrency), ...Object.keys(costByCurrency)].some((key) => key !== currency);
+  const table = foreign ? await loadNprRateTable() : null;
+  const revenue = sumInCurrency(revenueByCurrency, currency, table?.rates ?? null);
+  const cost = sumInCurrency(costByCurrency, currency, table?.rates ?? null);
+  const outstanding = sumInCurrency(outstandingByCurrency, currency, table?.rates ?? null);
+  const unconverted = [...new Set([...revenue.missing, ...cost.missing, ...outstanding.missing])].sort();
+
   await customerRef.update({
-    revenue_total: revenue,
-    cost_total: cost,
-    profit_total: revenue - cost,
-    outstanding_balance: outstanding,
+    revenue_total: revenue.amount,
+    cost_total: cost.amount,
+    profit_total: Math.round((revenue.amount - cost.amount) * 100) / 100,
+    outstanding_balance: outstanding.amount,
+    outstanding_by_currency: outstandingByCurrency,
+    finance_unconverted_currencies: unconverted,
+    finance_rates_date: table && foreign ? table.date : null,
     finance_currency: currency,
     ...commercialProfitability,
     finance_updated_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
+}
+
+/**
+ * How many issued and draft invoices a shipment has, kept on the shipment so
+ * Finance can list delivered work not yet billed without reading every
+ * invoice ever raised. Rewritten whenever an invoice is drafted, issued or
+ * voided; a failure only leaves the list to recount it.
+ */
+export async function syncShipmentBilling(shipmentReference: string | null) {
+  const reference = shipmentReference?.trim().toUpperCase();
+  if (!reference || !firebaseRuntimeConfigured()) return;
+  try {
+    const db = firebaseAdminDb();
+    const invoices = await db.collection("invoices").where("shipment_reference", "==", reference).limit(500).get();
+    const counts = shipmentBillingCounts(invoices.docs.map((doc) => text(doc.get("status"))));
+    await db.collection("shipments").doc(reference).update({ issued_invoice_count: counts.issued, draft_invoice_count: counts.draft, billing_synced_at: new Date().toISOString() });
+  } catch (error) {
+    console.error("Failed to record a shipment's invoice counts", error);
+  }
+}
+
+/**
+ * Delivered shipments with no issued invoice, longest-waiting first. A job
+ * could be delivered, closed and never billed with nothing anywhere saying
+ * so. Shipments from before the counts were kept are counted once here and
+ * the count written back.
+ */
+async function listShipmentsToInvoice(context: KcplStaffContext): Promise<FinanceToInvoiceRow[]> {
+  const db = firebaseAdminDb();
+  const delivered = await readAllDocuments(db.collection("shipments").where("status", "==", "delivered"));
+  const visible = delivered.docs.filter((doc) => canAccessBranchValue(context, doc.get("primary_branch")));
+  const counts = new Map<string, { issued: number; draft: number }>();
+  const uncounted: string[] = [];
+  for (const doc of visible) {
+    const issued = doc.get("issued_invoice_count");
+    if (typeof issued === "number") counts.set(doc.id, { issued, draft: numberValue(doc.get("draft_invoice_count")) });
+    else uncounted.push(doc.id);
+  }
+  for (let index = 0; index < uncounted.length; index += 30) {
+    const chunk = uncounted.slice(index, index + 30);
+    const invoices = await db.collection("invoices").where("shipment_reference", "in", chunk).get();
+    const statuses = new Map<string, string[]>(chunk.map((id) => [id, []]));
+    for (const invoice of invoices.docs) statuses.get(text(invoice.get("shipment_reference")).toUpperCase())?.push(text(invoice.get("status")));
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    for (const [id, list] of statuses) {
+      const count = shipmentBillingCounts(list);
+      counts.set(id, count);
+      batch.update(db.collection("shipments").doc(id), { issued_invoice_count: count.issued, draft_invoice_count: count.draft, billing_synced_at: now });
+    }
+    await batch.commit().catch((error) => console.error("Failed to store shipment invoice counts", error));
+  }
+  const waiting = visible.filter((doc) => (counts.get(doc.id)?.issued ?? 0) === 0);
+  const customers = await loadDocumentsById(db, "customers", waiting.map((doc) => text(doc.get("customer_id")).toUpperCase()));
+  const customerNames = new Map(customers.map((doc) => [doc.id, text(doc.get("display_name"))]));
+  return waiting
+    .map((doc) => {
+      const customerId = nullable(doc.get("customer_id"))?.toUpperCase() ?? null;
+      return {
+        reference: doc.id,
+        customer_id: customerId,
+        customer_name: customerId ? customerNames.get(customerId) || null : null,
+        branch: text(doc.get("primary_branch")),
+        delivered_on: nullable(doc.get("delivered_at"))?.slice(0, 10) ?? nullable(doc.get("updated_at"))?.slice(0, 10) ?? null,
+        draft_invoice_count: counts.get(doc.id)?.draft ?? 0,
+      };
+    })
+    .sort((a, b) => (a.delivered_on ?? "").localeCompare(b.delivered_on ?? ""));
 }
 
 export async function getFinanceInvoice(reference: string, context: KcplStaffContext) {
@@ -313,9 +401,15 @@ export async function listFinanceDashboard(context: KcplStaffContext): Promise<F
     }
   }
 
+  const toInvoice = await listShipmentsToInvoice(context).catch((error) => {
+    console.error("Failed to list delivered shipments not yet invoiced", error);
+    return [] as FinanceToInvoiceRow[];
+  });
+
   return {
     generated_at: new Date().toISOString(),
     invoices,
+    to_invoice: toInvoice,
     currency_summaries: [...summaries.values()].sort((a, b) => b.outstanding - a.outstanding || a.currency.localeCompare(b.currency)),
     overdue_count: invoices.filter((invoice) => invoice.status === "overdue").length,
     unpaid_count: invoices.filter((invoice) => ["issued", "partially_paid", "overdue"].includes(invoice.status)).length,
@@ -408,6 +502,7 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
     updated_at: now,
   };
   await db.collection("invoices").doc(reference).create(document);
+  await syncShipmentBilling(document.shipment_reference);
   await writeCustomerActivity(customerId, `Invoice draft created: ${reference}`, `${input.currency} ${total.toFixed(2)} · due ${dueDate}`, actor);
   await writeJobActivity(shipment?.exists ? shipmentId : null, `Invoice draft created: ${reference}`, `${input.currency} ${total.toFixed(2)}`, actor);
   return { kind: "created" as const, reference };
@@ -417,11 +512,20 @@ export async function issueFinanceInvoice(reference: string, actor: Actor, conte
   const loaded = await getFinanceInvoice(reference, context);
   if (loaded.kind !== "ready") return loaded;
   if (loaded.invoice.status !== "draft") return { kind: "invalid_status" as const };
-  const nextStatus = loaded.invoice.due_date < operationalDate() ? "overdue" : "issued";
+  const today = operationalDate();
+  const dates = invoiceDatesOnIssue(loaded.invoice.issue_date, loaded.invoice.due_date, today);
+  const nextStatus = dates.dueDate < today ? "overdue" : "issued";
   const now = new Date().toISOString();
-  await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({ status: nextStatus, issued_at: now, issued_by_name: actor.name, issued_by_email: actor.email, updated_at: now });
+  await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({
+    status: nextStatus,
+    issue_date: dates.issueDate,
+    due_date: dates.dueDate,
+    ...(dates.moved ? { drafted_issue_date: loaded.invoice.issue_date, drafted_due_date: loaded.invoice.due_date } : {}),
+    issued_at: now, issued_by_name: actor.name, issued_by_email: actor.email, updated_at: now,
+  });
   await recomputeCustomerFinance(loaded.invoice.customer_id);
-  await writeCustomerActivity(loaded.invoice.customer_id, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)} · due ${loaded.invoice.due_date}`, actor);
+  await syncShipmentBilling(loaded.invoice.shipment_reference);
+  await writeCustomerActivity(loaded.invoice.customer_id, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)} · due ${dates.dueDate}${dates.moved ? ` · dated ${dates.issueDate}, the day it was issued` : ""}`, actor);
   await writeJobActivity(loaded.invoice.shipment_reference, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
   return { kind: "updated" as const };
 }
@@ -434,6 +538,7 @@ export async function voidFinanceInvoice(reference: string, actor: Actor, contex
   const now = new Date().toISOString();
   await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({ status: "void", balance_due: 0, voided_at: now, voided_by_name: actor.name, voided_by_email: actor.email, updated_at: now });
   await recomputeCustomerFinance(loaded.invoice.customer_id);
+  await syncShipmentBilling(loaded.invoice.shipment_reference);
   await writeCustomerActivity(loaded.invoice.customer_id, `Invoice voided: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
   await writeJobActivity(loaded.invoice.shipment_reference, `Invoice voided: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
   return { kind: "updated" as const };

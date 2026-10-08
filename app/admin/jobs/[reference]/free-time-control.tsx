@@ -98,7 +98,11 @@ export function FreeTimeControl({
         <div className="portal-exchange">
           <div className="portal-checklist">
             <div className="portal-checklist-main">
-              <strong>{freeTimeSummary(freeTime, status)}</strong>
+              <strong>{freeTime.ended_on && status.state !== "not_set"
+                ? status.daysOverdue > 0
+                  ? `Cargo left on ${freeTime.ended_on}, ${status.daysOverdue} day${status.daysOverdue === 1 ? "" : "s"} past free time. The clock has stopped.`
+                  : `Cargo left on ${freeTime.ended_on}, inside free time. The clock has stopped.`
+                : freeTimeSummary(freeTime, status)}</strong>
               <span>
                 {status.deadline ? `Last free day ${status.deadline}` : "No allowance recorded"}
                 {freeTime.daily_charge !== null ? ` · ${freeTime.charge_currency ?? ""} ${freeTime.daily_charge}/day after` : ""}
@@ -106,7 +110,7 @@ export function FreeTimeControl({
               </span>
             </div>
             <OpsBadge tone={stateTones[status.state] ?? "neutral"} dot>
-              {status.state === "not_set" ? "Not recorded" : status.state === "expired" ? "Expired" : status.state === "last_day" ? "Last day" : `${status.daysRemaining} days left`}
+              {status.state === "not_set" ? "Not recorded" : freeTime.ended_on ? "Stopped" : status.state === "expired" ? "Expired" : status.state === "last_day" ? "Last day" : `${status.daysRemaining} days left`}
             </OpsBadge>
           </div>
           {freeTime.days !== null ? (

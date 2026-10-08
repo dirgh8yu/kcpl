@@ -25,6 +25,7 @@ import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.
 import { ensureBookingArtifacts, TMS_BOOKING_ARTIFACT_SEED_VERSION } from "../tenders/tms-booking-artifacts.server";
 import { resolveTenderAuthority } from "../tenders/tms-tendering";
 import { allocateProcurementCost, consolidatedBookingRetryDecision, MAX_LOAD_ORDERS } from "./tms-consolidation";
+import { customerTradingBlock } from "../crm/crm-policy";
 
 type Actor = { name: string; email: string };
 
@@ -303,6 +304,9 @@ export async function confirmConsolidatedLoadBookingWithLineage(input: Consolida
       const customerIds = [...new Set(houseOrders.map((order) => normalizeCommercialId(order.get("customer_id"))))];
       const customers = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
       if (customers.some((customer) => !customer.exists || customer.get("archived") === true)) return { kind: "customer_missing" as const };
+      const tradingBlocks = customers.map((customer) => customerTradingBlock(customer.get("account_status")));
+      if (tradingBlocks.includes("blacklisted")) return { kind: "customer_blacklisted" as const };
+      if (tradingBlocks.includes("on_hold")) return { kind: "customer_on_hold" as const };
       const customerMap = new Map(customers.map((customer) => [customer.id, customer]));
       for (const order of houseOrders) {
         const customer = customerMap.get(normalizeCommercialId(order.get("customer_id")));

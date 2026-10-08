@@ -12,6 +12,9 @@ import {
   type ShipmentStatus,
   type ShipmentUpdateInput,
 } from "./shipment-types";
+import { customerTradingBlock } from "./admin/crm/crm-policy";
+import { freeTimeClockStopped } from "./shipment-free-time";
+import { nepalOperationalDate } from "./invoice-effective-status";
 
 function configured() {
   return Boolean(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
@@ -131,6 +134,7 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     const customerRef = db.collection("customers").doc(customerId);
     const customerSnapshot = await transaction.get(customerRef);
     if (!customerSnapshot.exists) return { kind: "customer-missing" as const };
+    if (customerTradingBlock(customerSnapshot.get("account_status"))) return { kind: "customer-blocked" as const };
     const primaryBranch = branchValue(customerSnapshot.get("primary_branch"));
     const mode = stringValue(data.mode);
     const assignedUid = stringValue(data.assigned_to_uid).trim();
@@ -266,7 +270,8 @@ export async function ensureShipmentForWonQuote(quoteReference: string, authorNa
     result.kind === "not-won" ||
     result.kind === "tms-authority-required" ||
     result.kind === "customer-required" ||
-    result.kind === "customer-missing"
+    result.kind === "customer-missing" ||
+    result.kind === "customer-blocked"
   ) return result;
 
   return { kind: result.kind, shipment: await loadShipment(result.reference) } as const;
@@ -303,6 +308,10 @@ export async function updateShipment(reference: string, values: ShipmentUpdateIn
       carrier: keep(values.carrier, stored.carrier),
       carrier_reference: keep(values.carrierReference, stored.carrier_reference),
       customer_note: keep(values.customerNote, stored.customer_note),
+      // The free-time clock stops the day the cargo leaves for delivery.
+      ...(statusChanged && freeTimeClockStopped(values.status) && stored.free_time_started_on && !stored.free_time_ended_on
+        ? { free_time_ended_on: nepalOperationalDate() }
+        : {}),
       updated_at: updatedAt,
     });
 

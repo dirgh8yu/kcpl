@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   commercialFingerprint,
   commercialSnapshotIntegrity,
@@ -74,8 +74,15 @@ export function settlementRequestFingerprint(input: { accountReference: string; 
   return createHash("sha256").update(JSON.stringify({ accountReference: input.accountReference.trim().toUpperCase(), amount: money(input.amount), currency: normalizeSettlementCurrency(input.currency), paymentDate: input.paymentDate, method: input.method, externalReference: input.externalReference?.trim() || null })).digest("hex");
 }
 
-export function paymentDocumentId(accountReference: string, idempotencyKey: string, requestFingerprint: string) {
-  const key = idempotencyKey.trim() || requestFingerprint;
+/**
+ * The payment's document ID. A retry is recognised only by the key the form
+ * or gateway sent with it: two real payments of the same amount, date and
+ * method (two cash instalments in a day) are two payments, so a request
+ * without a key always gets a fresh ID rather than one derived from its
+ * content.
+ */
+export function paymentDocumentId(accountReference: string, idempotencyKey: string) {
+  const key = idempotencyKey.trim() || randomBytes(20).toString("hex");
   return `payment-${createHash("sha256").update(`${accountReference.trim().toUpperCase()}|${key}`).digest("hex").slice(0, 40)}`;
 }
 

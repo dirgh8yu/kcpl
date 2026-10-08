@@ -16,6 +16,24 @@ export function crmAccountStatusChangeError(current: CrmAccountStatus, next: Crm
   return null;
 }
 
+/**
+ * Whether new work may be booked for a customer. "On hold" (set by Accounts,
+ * or automatically when the credit limit is exceeded) and "Blacklisted" used
+ * to be labels only: quotes were still won and shipments still booked. They
+ * stop new bookings now; invoicing and collecting what is owed carry on.
+ */
+export function customerTradingBlock(accountStatus: unknown): "on_hold" | "blacklisted" | null {
+  if (accountStatus === "blacklisted") return "blacklisted";
+  if (accountStatus === "on_hold") return "on_hold";
+  return null;
+}
+
+export function customerTradingBlockMessage(block: "on_hold" | "blacklisted") {
+  return block === "blacklisted"
+    ? "KCPL has stopped trading with this customer, so no new work can be booked for them."
+    : "This customer is on credit hold. Accounts or Management must release the hold before new work is booked.";
+}
+
 export function validCalendarDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);

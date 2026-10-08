@@ -56,7 +56,7 @@ export default async function EnquiriesPage({ searchParams }: { searchParams: Pr
       <AdminDashboard
         initialQuotes={orderedQuotes}
         canViewCommercial={staff.permissions.canViewCommercial}
-        canEditCommercial={staff.permissions.canEditCommercial}
+        canEditCommercial={staff.permissions.canSetPrices}
       />
     </OperationsShell>
   );

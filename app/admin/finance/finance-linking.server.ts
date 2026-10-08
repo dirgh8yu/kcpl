@@ -4,7 +4,8 @@ import { crmCurrencies, type CrmCreateCustomerInput, type CrmCurrency } from "..
 import { linkQuoteToCrmCustomer } from "../crm/crm-quote-links.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { authorizeFinanceCustomerLink } from "./finance-authorization.server";
-import type { FinanceCustomerResolution, FinanceCustomerSuggestion } from "./finance-customer-resolution";
+import type { AgreedShipmentPrice, FinanceCustomerResolution, FinanceCustomerSuggestion } from "./finance-customer-resolution";
+import { resolveBookedCommercialLineage } from "../financial-settlement/settlement-policy";
 import { mockInvoiceCustomerResolution, qaMockDataEnabled } from "../qa-fixtures";
 
 type Actor = { name: string; email: string };
@@ -22,6 +23,45 @@ function suggestionsFromQuote(value: unknown): FinanceCustomerSuggestion[] {
     if (!id) return [];
     return [{ id, display_name: text(data.display_name) || id, reason: text(data.reason) || "Customer match" }];
   });
+}
+
+function positiveAmount(value: unknown) {
+  const parsed = typeof value === "number" ? value : typeof value === "string" && /^\d{1,12}(?:\.\d{1,3})?$/.test(value.trim()) ? Number(value.trim()) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/**
+ * The price the customer agreed: the sell price on the booked commercial
+ * version when there is one, otherwise the quoted price. The invoice form
+ * starts from it instead of a blank NPR amount that someone retypes.
+ */
+export async function agreedPriceForShipment(shipmentReference: string): Promise<AgreedShipmentPrice | null> {
+  if (qaMockDataEnabled() || !firebaseRuntimeConfigured()) return null;
+  const shipmentId = shipmentReference.trim().toUpperCase();
+  if (!shipmentId) return null;
+  try {
+    const db = firebaseAdminDb();
+    const shipment = await db.collection("shipments").doc(shipmentId).get();
+    if (!shipment.exists) return null;
+    const data = shipment.data() as Record<string, unknown>;
+    const quoteReference = text(data.quote_reference).toUpperCase() || null;
+    const lineage = resolveBookedCommercialLineage(data);
+    if (lineage.ok) {
+      const amount = positiveAmount(lineage.snapshot.pricing?.sell_amount);
+      const currency = text(lineage.snapshot.pricing?.sell_currency).toUpperCase();
+      if (amount !== null && crmCurrencies.includes(currency as CrmCurrency)) return { amount, currency, source: "booking", quote_reference: quoteReference };
+    }
+    if (!quoteReference) return null;
+    const quote = await db.collection("quotes").doc(quoteReference).get();
+    if (!quote.exists) return null;
+    const amount = positiveAmount(quote.get("quoted_amount"));
+    const currency = text(quote.get("quote_currency")).toUpperCase();
+    if (amount === null || !crmCurrencies.includes(currency as CrmCurrency)) return null;
+    return { amount, currency, source: "quote", quote_reference: quoteReference };
+  } catch (error) {
+    console.error("Failed to read the agreed price for an invoice", error);
+    return null;
+  }
 }
 
 /**

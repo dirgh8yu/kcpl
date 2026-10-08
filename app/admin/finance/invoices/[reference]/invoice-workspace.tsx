@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Banknote, CheckCircle2, FileDown, Printer, ReceiptText, Trash2 } from "lucide-react";
 import { nepalOperationalDate } from "../../../../invoice-effective-status";
+import { newPaymentKey } from "../../../payment-key";
 import type { StaffRemittance } from "../../../../portal/portal-remittance.server";
 import { financeInvoiceStatusLabels, financePaymentMethodLabels, financePaymentMethods, type FinanceInvoice, type FinancePaymentMethod } from "../../finance-data";
 import { OpsBadge, OpsCopyButton, OpsButton, OpsEmptyState, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
@@ -22,6 +23,7 @@ export function InvoiceWorkspace({ invoice, remittances }: { invoice: FinanceInv
   const [notice, setNotice] = useState("");
   const today = nepalOperationalDate();
   const [payment, setPayment] = useState({ amount: invoice.balance_due ? String(invoice.balance_due) : "", paymentDate: today, method: "bank_transfer" as FinancePaymentMethod, reference: "", notes: "" });
+  const [paymentKey, setPaymentKey] = useState(newPaymentKey);
 
   async function invoiceAction(action: "issue" | "void") {
     if (action === "void" && !window.confirm(`Void ${invoice.reference}? This keeps the audit trail but removes the receivable.`)) return;
@@ -38,10 +40,10 @@ export function InvoiceWorkspace({ invoice, remittances }: { invoice: FinanceInv
   async function recordPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setNotice("");
     try {
-      const response = await fetch(`/api/admin/finance/invoices/${encodeURIComponent(invoice.reference)}/payments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...payment, amount: Number(payment.amount) }) });
-      const data = await response.json() as { error?: string };
+      const response = await fetch(`/api/admin/finance/invoices/${encodeURIComponent(invoice.reference)}/payments`, { method: "POST", headers: { "content-type": "application/json", "idempotency-key": paymentKey }, body: JSON.stringify({ ...payment, amount: Number(payment.amount) }) });
+      const data = await response.json() as { error?: string; idempotent?: boolean };
       if (!response.ok) throw new Error(data.error || "Payment could not be recorded.");
-      setNotice("Payment recorded and customer receivables recalculated."); setPayment((current) => ({ ...current, amount: "", reference: "", notes: "" })); router.refresh();
+      setNotice(data.idempotent ? "This payment was already recorded." : "Payment recorded."); setPaymentKey(newPaymentKey()); setPayment((current) => ({ ...current, amount: "", reference: "", notes: "" })); router.refresh();
     } catch (error) { setNotice(error instanceof Error ? error.message : "Payment could not be recorded."); }
     finally { setBusy(false); }
   }

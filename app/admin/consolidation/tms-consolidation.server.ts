@@ -21,6 +21,7 @@ import {
   type TmsLoadStatus,
   type TmsLoadStop,
 } from "./tms-consolidation";
+import { customerTradingBlock } from "../crm/crm-policy";
 
 type Actor = { name: string; email: string };
 
@@ -708,6 +709,9 @@ export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingI
       const customerIds = [...new Set(houseRecords.map((item) => item.order.customer_id!.trim().toUpperCase()))];
       const customerSnapshots = await Promise.all(customerIds.map((id) => transaction.get(db.collection("customers").doc(id))));
       if (customerSnapshots.some((snapshot) => !snapshot.exists || snapshot.get("archived") === true)) return { kind: "customer_missing" as const };
+      const tradingBlocks = customerSnapshots.map((snapshot) => customerTradingBlock(snapshot.get("account_status")));
+      if (tradingBlocks.includes("blacklisted")) return { kind: "customer_blacklisted" as const };
+      if (tradingBlocks.includes("on_hold")) return { kind: "customer_on_hold" as const };
       const customerMap = new Map(customerSnapshots.map((snapshot) => [snapshot.id, snapshot]));
       const masterQuoteReference = masterBridgeQuoteReference(record.load.id);
       const masterQuoteRef = db.collection("quotes").doc(masterQuoteReference);

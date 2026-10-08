@@ -45,6 +45,7 @@ import {
   type TmsTenderChannel,
   type TmsTenderStatus,
 } from "./tms-tendering";
+import { customerTradingBlock } from "../crm/crm-policy";
 
 type Actor = { name: string; email: string };
 
@@ -619,6 +620,8 @@ async function createBookedShipment(tenderIdValue: string, expectedUpdatedAt: st
       const customerRef = db.collection("customers").doc(customerId);
       const customer = await transaction.get(customerRef);
       if (!customer.exists || customer.get("archived") === true || branchValue(customer.get("primary_branch")) !== branch) return { kind: "customer_missing" as const };
+      const tradingBlock = customerTradingBlock(customer.get("account_status"));
+      if (tradingBlock) return { kind: tradingBlock === "blacklisted" ? "customer_blacklisted" as const : "customer_on_hold" as const };
       const customerAuthority = await assertCustomerSellAuthorityInTransaction(transaction, version);
       if (!customerAuthority.ok) return { kind: customerAuthority.reason };
       const explicitQuoteReference = customerAuthority.quoteReference;

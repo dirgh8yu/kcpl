@@ -18,6 +18,7 @@ import { getShipmentForQuote } from "../shipment-data.server";
 import { quoteHasTmsAuthorityMarkers } from "./commercial-authority/commercial-authority";
 import { listStaffProfiles, resolveStaffIdentity, resolveStaffIdentityFromProfiles, type KcplStaffContext } from "./staff-directory.server";
 import type { KcplStaffProfile } from "./staff-directory";
+import { customerTradingBlock } from "./crm/crm-policy";
 
 function configured() {
   return Boolean(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
@@ -222,6 +223,17 @@ export async function getQuoteDetail(reference: string): Promise<QuoteDetail | n
   return { ...quote, shipment, notes, communications };
 }
 
+/** Whether the quote's customer is on credit hold or blacklisted, so it can't be won. */
+export async function quoteCustomerTradingBlock(reference: string) {
+  if (!configured()) return null;
+  const db = firebaseAdminDb();
+  const quote = await db.collection("quotes").doc(reference.trim().toUpperCase()).get();
+  const customerId = quote.exists ? nullableString(quote.get("customer_id")) : null;
+  if (!customerId) return null;
+  const customer = await db.collection("customers").doc(customerId.toUpperCase()).get();
+  return customer.exists ? customerTradingBlock(customer.get("account_status")) : null;
+}
+
 export async function updateQuoteAdmin(
   reference: string,
   status: QuoteStatus,
@@ -247,6 +259,10 @@ export async function updateQuoteAdmin(
   if (status === "won" && !nullableString(snapshot.get("customer_id"))) {
     return { kind: "customer-required" as const, currentStatus };
   }
+  if (status === "won" && statusChanged) {
+    const block = await quoteCustomerTradingBlock(reference);
+    if (block) return { kind: "customer-blocked" as const, currentStatus, block };
+  }
 
   const resolved = await resolveStaffIdentity({ uid: assignee.uid, name: assignee.name, email: assignee.email, phone: assignee.phone });
   const assignedUid = resolved.uid;
@@ -271,6 +287,8 @@ export async function updateQuoteCommercial(reference: string, values: QuoteComm
   const snapshot = await ref.get();
   if (!snapshot.exists) return { kind: "missing" as const };
   if (quoteHasTmsAuthorityMarkers(snapshot.data() as Record<string, unknown>)) return { kind: "locked" as const };
+  // The price the customer accepted is what was agreed; a won quote keeps it.
+  if (quoteStatus(snapshot.get("status")) === "won") return { kind: "won-locked" as const };
 
   await ref.update({
     quote_currency: values.currency,

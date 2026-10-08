@@ -7,7 +7,8 @@ import { BriefcaseBusiness, FilePlus2 } from "lucide-react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { jobCostCategories, jobCostCategoryLabels, type JobCostCategory } from "../job-file";
 import type { PartnerOption } from "../partners/partners-data";
-import { payableStatusLabels, type PayablesDashboard, type PayableStatus } from "./payables-data";
+import { TaxChoiceField, taxRateFromChoice, type TaxChoice } from "../finance/invoice-tax-field";
+import { payableStatusLabels, type PayablesDashboard, type PayableStatus, type ReplaceableJobCost } from "./payables-data";
 import { OpsBadge, OpsButton, OpsField, OpsMono, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsProgress, OpsRegisterToolbar, OpsResultCount, OpsSearch, OpsScopeTabs, OpsSurface, OpsTableWrap } from "../operations-ui";
 function money(amount: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
@@ -52,6 +53,7 @@ type PayableForm = {
   category: JobCostCategory;
   description: string;
   amount: string;
+  taxChoice: TaxChoice;
   taxRate: string;
   notes: string;
 };
@@ -65,11 +67,13 @@ const STATUS_TABS: Array<{ value: "all" | PayableStatus; label: string }> = [
   { value: "overdue", label: "Overdue" },
 ];
 
-export function PayablesWorkspace({ dashboard, initialShipment = "", initialPartner = "", initialCreate = false, partnerOptions, branchOptions, defaultBranch }: {
+export function PayablesWorkspace({ dashboard, initialShipment = "", initialPartner = "", initialCreate = false, initialReplaces = null, partnerOptions, branchOptions, defaultBranch }: {
   dashboard: PayablesDashboard;
   initialShipment?: string;
   initialPartner?: string;
   initialCreate?: boolean;
+  /** The hand-typed Job File cost this bill is being entered for. */
+  initialReplaces?: ReplaceableJobCost | null;
   partnerOptions: PartnerOption[];
   branchOptions: KcplBranch[];
   defaultBranch: KcplBranch;
@@ -82,19 +86,21 @@ export function PayablesWorkspace({ dashboard, initialShipment = "", initialPart
   const [createOpen, setCreateOpen] = useState(Boolean(initialCreate || initialShipment || initialPartner));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [replaces, setReplaces] = useState(initialReplaces);
   const [form, setForm] = useState<PayableForm>(() => ({
     shipmentReference: initialShipment,
     supplierId: initialPartnerRecord?.id ?? "",
-    supplierName: initialPartnerRecord?.name ?? "",
+    supplierName: initialPartnerRecord?.name ?? initialReplaces?.vendor ?? "",
     supplierBillReference: "",
     branch: defaultBranch,
     billDate: today,
     dueDate: initialPartnerRecord ? addDays(today, initialPartnerRecord.payment_terms_days) : "",
-    currency: initialPartnerRecord?.currency ?? "NPR",
-    category: "freight",
-    description: "Freight / logistics supplier cost",
-    amount: "",
-    taxRate: "0",
+    currency: initialReplaces?.currency ?? initialPartnerRecord?.currency ?? "NPR",
+    category: initialReplaces?.category ?? "freight",
+    description: initialReplaces?.label ?? "Freight / logistics supplier cost",
+    amount: initialReplaces ? String(initialReplaces.amount) : "",
+    taxChoice: "",
+    taxRate: "",
     notes: "",
   }));
 
@@ -145,12 +151,15 @@ export function PayablesWorkspace({ dashboard, initialShipment = "", initialPart
   }
 
   async function createBill(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setNotice("");
+    event.preventDefault();
+    const taxRate = taxRateFromChoice(form.taxChoice, form.taxRate);
+    if (taxRate === null) { setNotice("Choose the tax on this bill."); return; }
+    setBusy(true); setNotice("");
     try {
       const response = await fetch("/api/admin/payables/bills", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...form, amount: Number(form.amount), taxRate: Number(form.taxRate) }),
+        body: JSON.stringify({ ...form, amount: Number(form.amount), taxRate, replacesJobCostId: replaces && replaces.shipment_reference === form.shipmentReference.trim().toUpperCase() ? replaces.id : "" }),
       });
       const data = await response.json() as { reference?: string; error?: string; existingReference?: string };
       if (!response.ok || !data.reference) throw new Error(data.error || "Supplier bill could not be created.");
@@ -171,6 +180,7 @@ export function PayablesWorkspace({ dashboard, initialShipment = "", initialPart
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
       {createOpen ? <OpsSurface title="New supplier bill" description="Pick the partner when the supplier is registered.">
+        {replaces ? <OpsNotice tone="neutral" onDismiss={() => setReplaces(null)}>Replaces the Job File cost “{replaces.label}” ({money(replaces.amount, replaces.currency)}) on <OpsMono>{replaces.shipment_reference}</OpsMono>. Once this bill is approved, the job counts the bill instead, not both.</OpsNotice> : null}
         <form onSubmit={createBill} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <OpsField label="Shipment reference" hint="Optional. When supplied, the shipment determines the payable branch."><input value={form.shipmentReference} onChange={(event) => setForm({ ...form, shipmentReference: event.target.value })} placeholder="KCPL-S-…"/></OpsField>
           <OpsField label="Registered partner"><select value={form.supplierId} onChange={(event) => choosePartner(event.target.value)}><option value="">Unregistered supplier</option>{partnerOptions.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}{partner.owner_branch ? ` · ${partner.owner_branch}` : ""}</option>)}</select></OpsField>
@@ -182,7 +192,7 @@ export function PayablesWorkspace({ dashboard, initialShipment = "", initialPart
           <OpsField label="Cost category"><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((item) => <option key={item} value={item}>{jobCostCategoryLabels[item]}</option>)}</select></OpsField>
           <OpsField label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></OpsField>
           <OpsField label="Amount before tax"><input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></OpsField>
-          <OpsField label="Tax %"><input min="0" max="100" step="0.01" type="number" value={form.taxRate} onChange={(event) => setForm({ ...form, taxRate: event.target.value })}/></OpsField>
+          <TaxChoiceField choice={form.taxChoice} rate={form.taxRate} onChange={(next) => setForm({ ...form, taxChoice: next.choice, taxRate: next.rate })}/>
           <OpsField label="Description" className="md:col-span-2"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></OpsField>
           <OpsField label="Notes" className="md:col-span-2 xl:col-span-4"><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></OpsField>
           <div className="flex gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}>{busy ? "Creating…" : "Create bill draft"}</OpsButton><OpsButton type="button" variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</OpsButton></div>

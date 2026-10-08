@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     amount: Number(body.amount),
     taxRate: Number(body.taxRate ?? 0),
     notes: typeof body.notes === "string" ? body.notes : "",
+    replacesJobCostId: typeof body.replacesJobCostId === "string" ? body.replacesJobCostId : "",
   }, { name: access.user.displayName, email: access.user.email }, staff);
 
   if (result.kind === "created") return json({ ok: true, reference: result.reference }, 201);
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);
   if (result.kind === "invalid_currency") return json({ ok: false, error: "Choose a supported bill currency." }, 400);
   if (result.kind === "invalid_category") return json({ ok: false, error: "Choose a valid job cost category." }, 400);
+  if (result.kind === "replaced_cost_unavailable") return json({ ok: false, error: "That Job File cost is no longer open to replace. Another bill may already cover it; check the job's costs." }, 409);
   if (result.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
   return json({ ok: false, error: "Accounts Payable storage is unavailable." }, 503);
 }

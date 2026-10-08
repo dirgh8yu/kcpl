@@ -1,6 +1,8 @@
 import { mockDigitalJobFile, qaMockDataEnabled } from "./qa-fixtures.ts";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../firebase-admin.server";
+import { combinedMargin, invoiceNetRevenue } from "./finance/money-basis";
+import { loadNprRateTable } from "./finance/fx-rates.server";
 import { kcplBranches, crmCurrencies, type KcplBranch, type CrmCurrency } from "./crm/crm-data";
 import { shipmentStatuses, type ShipmentStatus } from "../shipment-types";
 import {
@@ -121,6 +123,7 @@ function costFromDoc(id: string, data: Record<string, unknown>): JobCost {
     source_type: data.source_type === "payable" ? "payable" : "manual",
     source_reference: nullable(data.source_reference),
     locked: data.locked === true,
+    superseded_by_payable: nullable(data.superseded_by_payable),
     created_at: text(data.created_at),
     created_by: text(data.created_by, "KCPL Staff"),
   };
@@ -185,7 +188,10 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
   }, profiles);
 
   const costTotals: Partial<Record<CrmCurrency, number>> = {};
-  for (const cost of costs) costTotals[cost.currency] = (costTotals[cost.currency] ?? 0) + cost.amount;
+  for (const cost of costs) {
+    if (cost.superseded_by_payable) continue;
+    costTotals[cost.currency] = (costTotals[cost.currency] ?? 0) + cost.amount;
+  }
 
   const revenueTotals: Partial<Record<CrmCurrency, number>> = {};
   if (invoicesSnapshot) {
@@ -193,7 +199,7 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
       const status = text(invoice.get("status"));
       if (status === "draft" || status === "void") continue;
       const currency = currencyValue(invoice.get("currency"));
-      revenueTotals[currency] = (revenueTotals[currency] ?? 0) + numberValue(invoice.get("total"));
+      revenueTotals[currency] = (revenueTotals[currency] ?? 0) + invoiceNetRevenue(invoice.data() as Record<string, unknown>);
     }
   }
 
@@ -246,6 +252,19 @@ export async function getDigitalJobFile(reference: string, context: KcplStaffCon
     updated_at: text(shipmentData.updated_at),
   };
   return { kind: "ready" as const, job };
+}
+
+/**
+ * The job's margin across currencies, in NPR at NRB's rates, for the pages
+ * that show it. Only fetched when revenue and cost really are in more than
+ * one currency; a single-currency job needs no rate.
+ */
+export async function withCombinedMargin(job: DigitalJobFile): Promise<DigitalJobFile> {
+  if (!job.can_view_costs) return { ...job, combined_margin: null };
+  const used = new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)]);
+  if (used.size <= 1) return { ...job, combined_margin: null };
+  const table = await loadNprRateTable();
+  return { ...job, combined_margin: combinedMargin(job.revenue_totals, job.cost_totals, table) };
 }
 
 export async function updateDigitalJobFile(

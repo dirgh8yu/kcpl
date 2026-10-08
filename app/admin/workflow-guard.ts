@@ -77,7 +77,9 @@ export const allowedTransitions: Record<ShipmentStatus, ShipmentStatus[]> = {
   in_transit: ["preparing", "customs_clearance", "out_for_delivery", "exception"],
   customs_clearance: ["preparing", "in_transit", "out_for_delivery", "exception"],
   out_for_delivery: ["in_transit", "customs_clearance", "delivered", "exception"],
-  delivered: ["exception"],
+  // Delivered is final; a later problem is recorded as a problem on the
+  // shipment, not by moving its status back.
+  delivered: [],
   exception: ["preparing", "in_transit", "customs_clearance", "out_for_delivery"],
 };
 
@@ -101,7 +103,7 @@ export function otherShipmentStatuses(status: ShipmentStatus): ShipmentStatus[] 
 }
 
 /** Job File steps a blocker can send staff to. Kept in step with job-steps.ts. */
-export type WorkflowFixStep = "booking" | "documents" | "customs" | "delivery" | "proof" | "tasks" | "close";
+export type WorkflowFixStep = "booking" | "documents" | "customs" | "delivery" | "proof" | "invoice" | "tasks" | "close";
 
 /** Where a guard blocker is fixed. Blockers are sentences written by the
  * server guard; this reads their subject, so a new blocker without a match
@@ -109,6 +111,7 @@ export type WorkflowFixStep = "booking" | "documents" | "customs" | "delivery" |
 export function workflowBlockerFix(blocker: string): { step: WorkflowFixStep; label: string } | null {
   const text = blocker.toLowerCase();
   if (text.includes("closed")) return { step: "close", label: "Open closeout" };
+  if (text.includes("invoice:") || text.includes("issue the invoice")) return { step: "invoice", label: "Open invoice" };
   // Document sentences list document names ("Customs declaration", "Customer
   // invoice"), so they are recognised by their opening before any name can match.
   if (text.startsWith("documents still needed") || text.includes("required documents")) return { step: "documents", label: "Open documents" };

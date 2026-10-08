@@ -26,3 +26,21 @@ export function effectiveInvoiceStatus<S extends string>(status: S, dueDate: str
   if (dueDate && dueDate.slice(0, 10) < today) return "overdue";
   return status === "overdue" ? "issued" : status;
 }
+
+function dayNumber(day: string) {
+  return Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
+}
+
+/**
+ * The dates an invoice carries when it is issued. A draft keeps the dates it
+ * was written with, so one drafted on the 1st with 15-day terms and issued on
+ * the 20th used to go out already overdue. Issued later than drafted, it is
+ * dated the day it is issued and keeps the same number of days to pay.
+ */
+export function invoiceDatesOnIssue(issueDate: string, dueDate: string, today: string) {
+  const valid = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
+  if (!valid(issueDate) || !valid(today) || issueDate >= today) return { issueDate, dueDate, moved: false };
+  const termDays = valid(dueDate) ? Math.max(0, dayNumber(dueDate) - dayNumber(issueDate)) : 0;
+  const due = new Date((dayNumber(today) + termDays) * 86_400_000).toISOString().slice(0, 10);
+  return { issueDate: today, dueDate: due, moved: true };
+}

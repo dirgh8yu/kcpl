@@ -7,6 +7,9 @@ export type StaffCapabilities = {
   role: KcplStaffRole;
   canViewCommercial: boolean;
   canEditCommercial: boolean;
+  /** Set a customer's price and record that they accepted it. Not Accounts:
+   *  the people who collect the money don't also set what is charged. */
+  canSetPrices: boolean;
   canOverrideCommercialPolicy: boolean;
   canOverrideFx: boolean;
   canManageRateCards: boolean;
@@ -66,6 +69,7 @@ export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities
     role,
     canViewCommercial: management || accounts || commercial,
     canEditCommercial: management || accounts || commercial,
+    canSetPrices: management || commercial,
     canOverrideCommercialPolicy: management,
     canOverrideFx: management,
     canManageRateCards: management || commercial,

@@ -8,6 +8,7 @@ import { reconcileExpiredTmsTenders } from "../../../admin/tenders/tms-tender-ex
 import { tmsTenderChannels, type TmsTenderChannel } from "../../../admin/tenders/tms-tendering";
 import { cancelTmsTender, createTmsTender, listTmsTenders, respondToTmsTender } from "../../../admin/tenders/tms-tendering.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
+import { customerTradingBlockMessage } from "../../../admin/crm/crm-policy";
 
 function json(body: unknown, status = 200) { return Response.json(body, { status, headers: { "cache-control": "no-store" } }); }
 function clean(value: unknown, max = 4000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
@@ -139,6 +140,7 @@ export async function POST(request: Request) {
     if (result.kind === "commercials_required") return json({ ok: false, error: "Final tender commercials are incomplete." }, 409);
     if (result.kind === "customer_required") return json({ ok: false, error: "Link the transport order to a KCPL customer before confirming a booking." }, 409);
     if (result.kind === "customer_missing") return json({ ok: false, error: "The linked customer could not be found." }, 409);
+    if (result.kind === "customer_on_hold" || result.kind === "customer_blacklisted") return json({ ok: false, code: "CUSTOMER_ON_HOLD", error: customerTradingBlockMessage(result.kind === "customer_blacklisted" ? "blacklisted" : "on_hold") }, 409);
     if (result.kind === "booking_reference_required") return json({ ok: false, error: "Carrier / partner booking reference is required." }, 400);
     if (result.kind !== "booked") return json({ ok: false, error: "The booking could not be confirmed." }, 400);
     return json({ ok: true, shipmentReference: result.shipmentReference, bookingType: result.bookingType });

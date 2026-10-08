@@ -342,11 +342,27 @@ export function portalQuoteAmount(value: unknown): number | null {
   return amount !== null && Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
-/** A quote reaches the customer only once it has been priced and issued. */
+/**
+ * A quote reaches the customer only once it has been priced and sent: marked
+ * Quoted (the quote email and a released TMS quote both do that) or Won. A
+ * price typed on an enquiry still being worked on used to show at once, with
+ * a button to proceed.
+ */
 export function portalQuoteVisible(quote: Record<string, unknown>) {
   const status = typeof quote.status === "string" ? quote.status : "";
-  if (status === "lost" || status === "cancelled") return false;
+  if (status !== "quoted" && status !== "won") return false;
   return portalQuoteAmount(quote.quoted_amount) !== null;
+}
+
+/**
+ * A request KCPL is still working on: not yet sent as a quote and not closed.
+ * A lost or cancelled enquiry is finished, so it no longer sits under
+ * "Requests KCPL is working on".
+ */
+export function portalRequestOpen(quote: Record<string, unknown>) {
+  const status = typeof quote.status === "string" ? quote.status : "";
+  if (status === "lost" || status === "cancelled" || status === "won") return false;
+  return !portalQuoteVisible(quote);
 }
 
 /**

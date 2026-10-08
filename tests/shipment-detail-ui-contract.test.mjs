@@ -55,7 +55,9 @@ test("shipment detail composes real operational sections with preserved server a
   for (const loader of ["getDigitalJobFile", "checkShipmentBranchAccess", "getShipmentWorkflowReadiness", "getShipmentActivityTimeline", "getShipmentExceptions", "getDeliveryControl", "getJobStepContext"]) {
     assert.match(page, new RegExp(loader));
   }
-  assert.match(page, /<JobRecord\s+job=\{result\.job\}\s+readiness=\{workflow\.readiness\}/);
+  // The record is the loaded job with its margin combined across currencies.
+  assert.match(page, /withCombinedMargin\(result\.job\)/);
+  assert.match(page, /<JobRecord\s+job=\{job\}\s+readiness=\{workflow\.readiness\}/);
 });
 
 // Every step and extra panel must show at least one surface, and every

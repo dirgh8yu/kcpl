@@ -29,7 +29,7 @@ import {
   type JobPriority,
   type JobTask,
 } from "../../job-file";
-import { type KcplStaffRole } from "../../staff-permissions";
+import { staffCapabilitiesForRole, type KcplStaffRole } from "../../staff-permissions";
 import { workflowBlockerFix, type ShipmentWorkflowReadiness } from "../../workflow-guard";
 import { openJobPanel } from "./job-record";
 import { StaffAssignmentPicker } from "../../staff-assignment-picker";
@@ -111,6 +111,8 @@ export function JobFileWorkspace({
   const [taskOpen, setTaskOpen] = useState(false);
   const [customsOpen, setCustomsOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
+  // Accounts enter the supplier bill for a hand-typed cost; the bill then replaces it.
+  const canBillCosts = staffCapabilitiesForRole(role).canManageFinance;
   const [setupOpen, setSetupOpen] = useState(false);
   const [draft, setDraft] = useState({
     primaryBranch: job.primary_branch,
@@ -139,6 +141,8 @@ export function JobFileWorkspace({
   const taskCountPhrase = (text: string) => text.match(/(\d+)\s+(?:operational )?tasks?\b/i)?.[1] ?? null;
   const closeoutWarnings = useMemo(() => workflow.warnings.filter((warning) => {
     if (workflow.close_blockers.some((blocker) => blocker.includes(warning))) return false;
+    // The invoice is said once, as the thing to do before closing.
+    if (/invoice/i.test(warning) && workflow.close_blockers.some((blocker) => /invoice/i.test(blocker))) return false;
     const warnTasks = taskCountPhrase(warning);
     return !(warnTasks && workflow.close_blockers.some((blocker) => taskCountPhrase(blocker) === warnTasks));
   }), [workflow.warnings, workflow.close_blockers]);
@@ -459,8 +463,8 @@ export function JobFileWorkspace({
 
         {job.can_view_costs ? <div data-panel="costs">
           <OpsSurface id="shipment-commercial" title="Costs" action={<OpsButton variant="secondary" size="xs" onClick={() => setCostOpen((value) => !value)} aria-expanded={costOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{costOpen ? "Close" : "Add cost"}</OpsButton>}>
-            {costOpen ? <form onSubmit={addCost} className="job-form job-form-grid job-form-grid-2 mt-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Supplier"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="job-form-money"><OpsField label="Amount"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes" className="job-form-span-all"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCostOpen(false)}>Cancel</OpsButton></div></form> : null}
-            {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row"><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState icon={<Receipt size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No costs yet" description="Add freight, customs, transport and handling costs here."/>}
+            {costOpen ? <form onSubmit={addCost} className="job-form job-form-grid job-form-grid-2 mt-3"><OpsField label="Category"><select value={cost.category} onChange={(event) => setCost({ ...cost, category: event.target.value as JobCostCategory })}>{jobCostCategories.map((category) => <option key={category} value={category}>{jobCostCategoryLabels[category]}</option>)}</select></OpsField><OpsField label="Description"><input required value={cost.label} onChange={(event) => setCost({ ...cost, label: event.target.value })}/></OpsField><OpsField label="Supplier"><input value={cost.vendor} onChange={(event) => setCost({ ...cost, vendor: event.target.value })}/></OpsField><div className="job-form-money"><OpsField label="Amount before VAT"><input required type="number" min="0" step="0.01" value={cost.amount} onChange={(event) => setCost({ ...cost, amount: event.target.value })}/></OpsField><OpsField label="Currency"><select value={cost.currency} onChange={(event) => setCost({ ...cost, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></OpsField></div><OpsField label="Notes" className="job-form-span-all"><textarea value={cost.notes} onChange={(event) => setCost({ ...cost, notes: event.target.value })}/></OpsField><div className="job-form-actions job-form-span-all"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}>Save cost</OpsButton><OpsButton type="button" variant="ghost" size="sm" onClick={() => setCostOpen(false)}>Cancel</OpsButton></div></form> : null}
+            {job.costs.length ? <ul className="job-rows mt-2">{job.costs.map((item) => <li key={item.id} className="job-row" data-done={item.superseded_by_payable ? true : undefined}><div className="job-row-main"><span className="job-row-title">{item.label}</span><span className="job-row-meta">{jobCostCategoryLabels[item.category]}{item.vendor ? ` · ${item.vendor}` : ""}{item.source_reference ? ` · ${item.source_reference}` : ""}{item.superseded_by_payable ? <> · Replaced by supplier bill <Link href={`/admin/payables/bills/${encodeURIComponent(item.superseded_by_payable)}`}>{item.superseded_by_payable}</Link>, not counted</> : null}{canBillCosts && item.source_type === "manual" && !item.superseded_by_payable ? <Link href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}&replaces=${encodeURIComponent(item.id)}`}>Enter its supplier bill</Link> : null}</span></div><strong className="job-row-amount">{money(item.amount, item.currency)}</strong></li>)}</ul> : <OpsEmptyState icon={<Receipt size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No costs yet" description="Add freight, customs, transport and handling costs here."/>}
           </OpsSurface>
         </div> : null}
 

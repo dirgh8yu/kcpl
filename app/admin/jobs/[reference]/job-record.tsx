@@ -138,12 +138,23 @@ export function JobRecord({
     ["history", 0],
   ] as const);
 
-  const currencies = [...new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)])];
-  const firstCurrency = currencies[0];
-  const revenue = firstCurrency ? job.revenue_totals[firstCurrency as keyof typeof job.revenue_totals] ?? 0 : 0;
-  const cost = firstCurrency ? job.cost_totals[firstCurrency as keyof typeof job.cost_totals] ?? 0 : 0;
-  const profit = firstCurrency ? job.profit_totals[firstCurrency as keyof typeof job.profit_totals] ?? revenue - cost : revenue - cost;
-  const margin = firstCurrency ? job.margin_percent[firstCurrency as keyof typeof job.margin_percent] : undefined;
+  // One currency is shown as it is; several are combined in NPR at NRB's
+  // rates, never by showing the first currency alone (a USD invoice against
+  // NPR costs read as a 100% margin).
+  const currencies = [...new Set([...Object.entries(job.revenue_totals), ...Object.entries(job.cost_totals)].filter(([, value]) => value).map(([currency]) => currency))];
+  const combined = job.combined_margin ?? null;
+  const singleCurrency = currencies.length === 1 ? currencies[0] : null;
+  const marginFigures = combined?.kind === "converted"
+    ? { currency: combined.currency, revenue: combined.revenue, cost: combined.cost, profit: combined.profit, margin: combined.margin_percent ?? undefined }
+    : singleCurrency
+      ? {
+        currency: singleCurrency,
+        revenue: job.revenue_totals[singleCurrency as keyof typeof job.revenue_totals] ?? 0,
+        cost: job.cost_totals[singleCurrency as keyof typeof job.cost_totals] ?? 0,
+        profit: job.profit_totals[singleCurrency as keyof typeof job.profit_totals] ?? 0,
+        margin: job.margin_percent[singleCurrency as keyof typeof job.margin_percent],
+      }
+      : null;
 
   return <div className="shipment-detail-v2 job-record" data-panel-active={panel} data-surface-density="compact">
     <OpsPageHeader
@@ -218,11 +229,15 @@ export function JobRecord({
 
         {job.can_view_costs ? <div data-panel="costs">
           <OpsSurface title="Margin" action={<Link href={`/admin/jobs/${reference}/profitability`} className="ops-button" data-variant="ghost" data-size="xs">Full breakdown<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></Link>}>
-            {firstCurrency ? <dl className="job-stat-row">
-              <div><dt>Revenue</dt><dd>{money(revenue, firstCurrency)}</dd></div>
-              <div><dt>Cost</dt><dd>{money(cost, firstCurrency)}</dd></div>
-              <div><dt>Margin</dt><dd>{money(profit, firstCurrency)}{typeof margin === "number" ? <span> · {margin.toFixed(1)}%</span> : null}</dd></div>
-            </dl> : <p className="ops-inspector-hint">No revenue or costs recorded yet.</p>}
+            {marginFigures ? <dl className="job-stat-row">
+              <div><dt>Revenue</dt><dd>{money(marginFigures.revenue, marginFigures.currency)}</dd></div>
+              <div><dt>Cost</dt><dd>{money(marginFigures.cost, marginFigures.currency)}</dd></div>
+              <div><dt>Margin</dt><dd>{money(marginFigures.profit, marginFigures.currency)}{typeof marginFigures.margin === "number" ? <span> · {marginFigures.margin.toFixed(1)}%</span> : null}</dd></div>
+            </dl> : null}
+            {combined?.kind === "converted" ? <p className="ops-inspector-hint mt-2">Before VAT. {currencies.filter((currency) => currency !== combined.currency).join(", ")} converted to {combined.currency} at Nepal Rastra Bank rates of {combined.rates_date}.</p>
+              : combined?.kind === "unconverted" ? <p className="ops-inspector-hint">Revenue and costs are in {currencies.join(" and ")}. No Nepal Rastra Bank rate for {combined.missing.join(", ")} right now, so they can’t be combined. The full breakdown shows each currency.</p>
+                : marginFigures ? <p className="ops-inspector-hint mt-2">Before VAT.</p>
+                  : <p className="ops-inspector-hint">No revenue or costs recorded yet.</p>}
           </OpsSurface>
         </div> : null}
 

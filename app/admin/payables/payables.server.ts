@@ -5,6 +5,7 @@ import { readAllDocuments } from "../firestore-scan";
 import { canAccessBranchValue } from "../branch-access-policy";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
+import { billNetCost } from "../finance/money-basis";
 import { recomputeCustomerFinance } from "../finance/finance.server";
 import { jobCostCategories, type JobCostCategory } from "../job-file";
 import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
@@ -18,6 +19,7 @@ import {
   type PayableRecordType,
   type PayableStatus,
   type PayablesDashboard,
+  type ReplaceableJobCost,
 } from "./payables-data";
 import {
   normalizeSupplierBillReference,
@@ -145,6 +147,7 @@ async function payableFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     amount_paid: numberValue(data.amount_paid),
     balance_due: balanceDue,
     notes: nullable(data.notes),
+    replaces_job_cost_id: nullable(data.replaces_job_cost_id),
     migration_batch_id: nullable(data.migration_batch_id),
     migration_as_of_date: nullable(data.migration_as_of_date),
     created_by_name: text(data.created_by_name, "KCPL Accounts"),
@@ -191,12 +194,16 @@ async function syncApprovedBillToJobCost(bill: PayableBill) {
   if (bill.record_type === "opening_balance" || !bill.shipment_reference) return;
   const shipmentRef = firebaseAdminDb().collection("shipments").doc(bill.shipment_reference);
   const costRef = shipmentRef.collection("job_costs").doc(`payable_${bill.reference}`);
+  // The job's cost is the bill before VAT, which KCPL claims back; the gross
+  // stays on the record for reference.
   await costRef.set({
     category: bill.category,
     label: bill.description,
     vendor: bill.supplier_name,
     partner_id: isPartnerReference(bill.supplier_id) ? bill.supplier_id : null,
-    amount: bill.total,
+    amount: billNetCost(bill),
+    gross_amount: bill.total,
+    tax_amount: bill.tax_total,
     currency: bill.currency,
     notes: bill.supplier_bill_reference ? `Supplier bill ${bill.supplier_bill_reference}` : "Accounts Payable bill",
     source_type: "payable",
@@ -206,12 +213,36 @@ async function syncApprovedBillToJobCost(bill: PayableBill) {
     created_by: bill.created_by_email,
     updated_at: new Date().toISOString(),
   }, { merge: true });
+  await markReplacedJobCost(bill, true);
+}
+
+/**
+ * The hand-typed cost a bill was entered for stops counting while the bill
+ * is approved, and counts again if the bill is voided or sent back to draft.
+ */
+async function markReplacedJobCost(bill: PayableBill, replaced: boolean) {
+  if (!bill.replaces_job_cost_id || !bill.shipment_reference) return;
+  const ref = firebaseAdminDb().collection("shipments").doc(bill.shipment_reference).collection("job_costs").doc(bill.replaces_job_cost_id);
+  try {
+    const snapshot = await ref.get();
+    if (!snapshot.exists || snapshot.get("source_type") === "payable") return;
+    const current = typeof snapshot.get("superseded_by_payable") === "string" ? snapshot.get("superseded_by_payable") as string : "";
+    if (replaced && current && current !== bill.reference) return;
+    if (!replaced && current !== bill.reference) return;
+    const now = new Date().toISOString();
+    await ref.update(replaced
+      ? { superseded_by_payable: bill.reference, superseded_at: now, updated_at: now }
+      : { superseded_by_payable: null, superseded_at: null, updated_at: now });
+  } catch (error) {
+    console.error("Failed to update the Job File cost a supplier bill replaces", error);
+  }
 }
 
 async function removeBillJobCost(bill: PayableBill) {
   if (bill.record_type === "opening_balance" || !bill.shipment_reference) return;
   await firebaseAdminDb().collection("shipments").doc(bill.shipment_reference)
     .collection("job_costs").doc(`payable_${bill.reference}`).delete().catch(() => undefined);
+  await markReplacedJobCost(bill, false);
 }
 
 async function recomputeLinkedCustomer(bill: PayableBill) {
@@ -233,6 +264,31 @@ async function duplicateSupplierBill(supplierKey: string, normalizedReference: s
     if (existingKey === supplierKey) return doc.id;
   }
   return null;
+}
+
+/** The hand-typed cost a new bill is being entered for, if it is still open to replace. */
+export async function getReplaceableJobCost(shipmentReference: string, costId: string, context: KcplStaffContext): Promise<ReplaceableJobCost | null> {
+  const shipmentId = shipmentReference.trim().toUpperCase();
+  const id = costId.trim();
+  if (!firebaseRuntimeConfigured() || !canAccessPayables(context) || !shipmentId || !id) return null;
+  try {
+    const shipmentRef = firebaseAdminDb().collection("shipments").doc(shipmentId);
+    const [shipment, cost] = await Promise.all([shipmentRef.get(), shipmentRef.collection("job_costs").doc(id).get()]);
+    if (!shipment.exists || !canAccessBill(context, shipment.get("primary_branch"))) return null;
+    if (!cost.exists || cost.get("source_type") === "payable" || text(cost.get("superseded_by_payable"))) return null;
+    return {
+      id,
+      shipment_reference: shipmentId,
+      label: text(cost.get("label"), "Job cost"),
+      category: jobCostCategories.includes(cost.get("category") as JobCostCategory) ? cost.get("category") as JobCostCategory : "other",
+      vendor: nullable(cost.get("vendor")),
+      amount: numberValue(cost.get("amount")),
+      currency: crmCurrencies.includes(cost.get("currency") as CrmCurrency) ? cost.get("currency") as CrmCurrency : "NPR",
+    };
+  } catch (error) {
+    console.error("Failed to read the Job File cost a bill replaces", error);
+    return null;
+  }
 }
 
 export async function getPayable(reference: string, context: KcplStaffContext) {
@@ -282,14 +338,16 @@ export async function listPayablesDashboard(context: KcplStaffContext): Promise<
       summaries.set(bill.currency, summary);
     }
     if (bill.status === "draft" || bill.status === "void") continue;
+    // Read the same way as receivables: an opening balance counts at what was
+    // owed when it was brought in, and every payment counts as paid.
     if (bill.record_type === "opening_balance") {
-      summary.opening_balance += bill.balance_due;
+      summary.opening_balance += bill.total;
       summary.opening_balance_count += 1;
     } else {
       summary.bill_count += 1;
       summary.billed += bill.total;
-      summary.paid += bill.amount_paid;
     }
+    summary.paid += bill.amount_paid;
     summary.outstanding += bill.balance_due;
     if (bill.status === "overdue" && bill.balance_due > 0) {
       summary.overdue += bill.balance_due;

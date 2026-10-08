@@ -166,6 +166,21 @@ const reviewedClassifications = [
     rationale: "Generated freight-document persistence supersedes the prior revision and increments the shipment generated-document counter; no canonical status field is written.",
   },
   {
+    file: "app/admin/finance/finance.server.ts",
+    category: "A",
+    rationale: "Receivables write invoices, customer finance aggregates and each shipment's issued/draft invoice counts (issued_invoice_count, draft_invoice_count, billing_synced_at) from fixed literal keys; delivered shipments are only read to list work not yet invoiced, and status is never assigned.",
+  },
+  {
+    file: "app/admin/finance/finance-data.ts",
+    category: "F",
+    rationale: "Pure receivables types and the invoice-count helper; no Firestore access.",
+  },
+  {
+    file: "app/admin/finance/finance-workspace.tsx",
+    category: "F",
+    rationale: "Client Receivables workspace; shows delivered shipments not yet invoiced and links to the invoice form. No Firestore access.",
+  },
+  {
     file: "app/admin/job-file.server.ts",
     category: "A",
     rationale: "Digital Job File writes one fixed metadata update (assignment, priority, internal reference/notes, management branch) built from explicit literal keys; no status field can enter the update object.",

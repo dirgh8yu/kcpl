@@ -92,6 +92,8 @@ export async function getNrbForexSnapshot(): Promise<NrbForexSnapshot> {
       "user-agent": "KCPL-Operations/1.0",
     },
     next: { revalidate: 3600 },
+    // A slow NRB must not hold up a Job File or a payment; callers fall back.
+    signal: AbortSignal.timeout(6000),
   });
   if (!response.ok) throw new Error(`NRB Forex API returned HTTP ${response.status}.`);
 

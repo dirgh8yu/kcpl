@@ -1312,6 +1312,14 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
     paid_count: count("paid"),
     draft_count: count("draft"),
     opening_balance_count: 0,
+    to_invoice: invoices.filter((invoice) => invoice.status === "draft" && invoice.shipment_reference).slice(0, 3).map((invoice) => ({
+      reference: invoice.shipment_reference as string,
+      customer_id: invoice.customer_id,
+      customer_name: invoice.customer_name,
+      branch: invoice.branch,
+      delivered_on: invoice.issue_date,
+      draft_invoice_count: 1,
+    })),
   };
 }
 
@@ -1568,6 +1576,7 @@ export function mockPayablesDashboard(staff: KcplStaffContext, now = Date.now())
         amount_paid: paid,
         balance_due: total - paid,
         notes: null,
+        replaces_job_cost_id: null,
         migration_batch_id: null,
         migration_as_of_date: null,
         created_by_name: "Prakash Adhikari",
@@ -2229,6 +2238,7 @@ function mockJobCosts(job: CommandCentreJob, now: number): JobCost[] {
     source_type: source,
     source_reference: source === "payable" ? `AP-${job.reference.slice(-8)}-${index + 1}` : null,
     locked: source === "payable",
+    superseded_by_payable: null,
     created_at: iso(now, -(40 - index * 6) * HOUR),
     created_by: JOB_OWNER.name,
   }));
@@ -3029,6 +3039,7 @@ export function mockCrmCustomerFinanceSnapshot(id: string, staff: KcplStaffConte
     oldest_overdue_days: overdue > 0 ? 18 : null,
     other_currency_invoice_count: 0,
     other_currency_cost_count: 0,
+    rates_date: null,
     integrity_warning_count: 0,
     generated_at: iso(now, 0),
   };

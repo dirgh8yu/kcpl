@@ -113,7 +113,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
       accountReference: normalizedReference, amount: input.amount, currency: invoiceCurrency, paymentDate, method: input.method,
       externalReference: input.reference,
     });
-    const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "", requestFingerprint);
+    const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "");
     const paymentRef = invoiceRef.collection("payments").doc(paymentId);
     const existingPayment = await transaction.get(paymentRef);
     if (existingPayment.exists) {
@@ -142,7 +142,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     transaction.create(paymentRef, {
       invoice_reference: normalizedReference, amount: applied.amount, currency: invoiceCurrency, payment_date: paymentDate, method: input.method,
       reference: input.reference.trim() || null, notes: input.notes.trim() || null, request_fingerprint: requestFingerprint,
-      idempotency_key: input.idempotencyKey?.trim() || requestFingerprint, balance_before: basis.basis.outstandingAmount,
+      idempotency_key: input.idempotencyKey?.trim() || null, balance_before: basis.basis.outstandingAmount,
       balance_after: applied.nextOutstanding, settlement_basis_amount: basis.basis.totalPayable, settlement_basis_currency: invoiceCurrency,
       settlement_basis_version: 1, recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
     });

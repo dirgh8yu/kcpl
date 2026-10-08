@@ -1,5 +1,6 @@
 import type { KcplBranch, CrmCurrency } from "./crm/crm-data";
 import type { ShipmentStatus } from "../shipment-types";
+import type { CombinedMargin } from "./finance/money-basis";
 
 export const jobPriorities = ["standard", "high", "urgent"] as const;
 export type JobPriority = (typeof jobPriorities)[number];
@@ -46,6 +47,8 @@ export type JobCost = {
   source_type: "manual" | "payable";
   source_reference: string | null;
   locked: boolean;
+  /** The supplier bill that replaced this hand-typed cost; it no longer counts. */
+  superseded_by_payable: string | null;
   created_at: string;
   created_by: string;
 };
@@ -81,6 +84,8 @@ export type DigitalJobFile = {
   revenue_totals: Partial<Record<CrmCurrency, number>>;
   profit_totals: Partial<Record<CrmCurrency, number>>;
   margin_percent: Partial<Record<CrmCurrency, number>>;
+  /** Revenue and cost in more than one currency, combined in NPR (set by the page). */
+  combined_margin?: CombinedMargin | null;
   can_view_costs: boolean;
   updated_at: string;
 };

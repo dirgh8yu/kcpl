@@ -153,6 +153,29 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
     const subtotal = Math.round(amount * 100) / 100;
     const taxTotal = Math.round(subtotal * (taxRate / 100) * 100) / 100;
     const total = Math.round((subtotal + taxTotal) * 100) / 100;
+
+    // The hand-typed Job File cost this bill is for, so the job counts the
+    // charge once. Named by the person entering it, or found when exactly one
+    // open hand-typed cost has the same category, currency and amount.
+    let replacesJobCostId: string | null = null;
+    if (shipmentRef && shipment?.exists) {
+      const requested = (input.replacesJobCostId ?? "").trim();
+      const replaceable = (doc: FirebaseFirestore.DocumentSnapshot) => doc.exists && doc.get("source_type") !== "payable" && !text(doc.get("superseded_by_payable"));
+      if (requested) {
+        const costSnapshot = await transaction.get(shipmentRef.collection("job_costs").doc(requested));
+        if (!replaceable(costSnapshot)) return { kind: "replaced_cost_unavailable" as const };
+        replacesJobCostId = requested;
+      } else {
+        const sameCategory = await transaction.get(shipmentRef.collection("job_costs").where("category", "==", input.category).limit(100));
+        const matches = sameCategory.docs.filter((doc) => replaceable(doc)
+          && text(doc.get("currency")).toUpperCase() === input.currency
+          && Math.abs(numberValue(doc.get("amount")) - subtotal) < 0.005);
+        if (matches.length === 1) replacesJobCostId = matches[0].id;
+      }
+    } else if ((input.replacesJobCostId ?? "").trim()) {
+      return { kind: "replaced_cost_unavailable" as const };
+    }
+
     const now = new Date().toISOString();
     transaction.set(uniqueRef, { supplier_key: supplierKey, normalized_supplier_bill_reference: normalizedSupplierBillReference, payable_reference: reference, created_at: now, updated_at: now });
     transaction.create(billRef, {
@@ -163,7 +186,7 @@ export async function createPayableWithSettlementIntegrity(input: CreatePayableI
       branch, category: input.category, status: "draft", payment_status: "unpaid", bill_date: billDate, due_date: dueDate,
       currency: input.currency, description: input.description.trim() || "Supplier / carrier cost", subtotal, tax_rate: taxRate,
       tax_total: taxTotal, adjustment_total: 0, credit_total: 0, total, amount_paid: 0, balance_due: total,
-      settlement_basis_version: 1, notes: input.notes.trim() || null, created_by_name: actor.name, created_by_email: actor.email,
+      settlement_basis_version: 1, notes: input.notes.trim() || null, replaces_job_cost_id: replacesJobCostId, created_by_name: actor.name, created_by_email: actor.email,
       created_at: now, updated_at: now,
     });
     transaction.create(billRef.collection("activity").doc("created"), { type: "payable_created", title: "Supplier bill created", detail: `${input.currency} ${total.toFixed(2)} · ${supplierName}`, actor_name: actor.name, actor_email: actor.email, created_at: now });
@@ -215,7 +238,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
 
     // A retry is recognised before the balance is checked again, as for receivables.
     const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: input.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: input.reference });
-    const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "", requestFingerprint);
+    const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "");
     const paymentRef = billRef.collection("payments").doc(paymentId);
     const existingPayment = await transaction.get(paymentRef);
     if (existingPayment.exists) {
@@ -284,7 +307,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     transaction.create(paymentRef, {
       payable_reference: normalizedReference, amount: applied.amount, currency: billCurrency, payment_date: paymentDate, method: input.method,
       reference: input.reference.trim() || null, notes: input.notes.trim() || null, request_fingerprint: requestFingerprint,
-      idempotency_key: input.idempotencyKey?.trim() || requestFingerprint, approved_settlement_amount: basisResult.basis.totalPayable,
+      idempotency_key: input.idempotencyKey?.trim() || null, approved_settlement_amount: basisResult.basis.totalPayable,
       approved_settlement_currency: billCurrency, settlement_basis_version: 1, balance_before: basisResult.basis.outstandingAmount,
       balance_after: applied.nextOutstanding, freight_audit_status: auditStatus, freight_audit_fingerprint: auditFingerprint,
       booked_commercial_version_id: commercialVersionId, booked_commercial_fingerprint: commercialFingerprint,

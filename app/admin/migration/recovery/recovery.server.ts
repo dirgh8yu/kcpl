@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../../firebase-admin.server";
-import { recomputeCustomerFinance } from "../../finance/finance.server";
+import { recomputeCustomerFinance, syncShipmentBilling } from "../../finance/finance.server";
 import { getMigrationBatch } from "../migration-batches.server";
 import type { MigrationCreatedRecord } from "../migration-batches";
 import type { MigrationRecoveryPlan, MigrationRecoveryResult, RecoveryRecordKind, RecoveryRecordPlan } from "./recovery-data";
@@ -403,6 +403,7 @@ async function reverseReceivable(record: RecoveryRecordPlan, batchId: string, re
   if (shipmentReference) await deleteMigrationActivity(db.collection("shipments").doc(shipmentReference).collection("job_activity"), batchId);
   await db.recursiveDelete(ref);
   if (customerId) await recomputeCustomerFinance(customerId);
+  if (shipmentReference) await syncShipmentBilling(shipmentReference);
   return { relinked, customerId };
 }
 

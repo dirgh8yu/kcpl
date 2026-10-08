@@ -5,7 +5,7 @@ import { listPartnerOptions } from "../partners/partners.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { getStaffContext } from "../staff-directory.server";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
-import { listPayablesDashboard } from "./payables.server";
+import { getReplaceableJobCost, listPayablesDashboard } from "./payables.server";
 import { PayablesWorkspace } from "./payables-workspace";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,7 @@ async function loadWorkspace(staff: Awaited<ReturnType<typeof getStaffContext>>)
   }
 }
 
-export default async function PayablesPage({ searchParams }: { searchParams: Promise<{ shipment?: string; partner?: string; create?: string }> }) {
+export default async function PayablesPage({ searchParams }: { searchParams: Promise<{ shipment?: string; partner?: string; create?: string; replaces?: string }> }) {
   const access = await getAdminAccess();
   if (access.kind !== "authorized") return <Gate title="Sign in to KCPL Operations" detail="Accounts Payable is available only to authorised KCPL staff."/>;
 
@@ -59,10 +59,13 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
   const requestedPartner = typeof params.partner === "string" ? params.partner.trim().toUpperCase() : "";
   const initialPartner = loaded.partnerOptions.some((partner) => partner.id === requestedPartner) ? requestedPartner : "";
   const initialCreate = params.create === "1";
+  const initialReplaces = initialShipment && typeof params.replaces === "string"
+    ? await getReplaceableJobCost(initialShipment, params.replaces, staff)
+    : null;
   const branchOptions = (staff.can_access_all_branches ? [...kcplBranches] : staff.branches) as KcplBranch[];
   const defaultBranch = branchOptions[0] ?? "Kathmandu";
 
-  return <OperationsShell {...shellProps}><PayablesWorkspace dashboard={loaded.dashboard} initialShipment={initialShipment} initialPartner={initialPartner} initialCreate={initialCreate} partnerOptions={loaded.partnerOptions} branchOptions={branchOptions} defaultBranch={defaultBranch}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><PayablesWorkspace dashboard={loaded.dashboard} initialShipment={initialShipment} initialPartner={initialPartner} initialCreate={initialCreate} initialReplaces={initialReplaces} partnerOptions={loaded.partnerOptions} branchOptions={branchOptions} defaultBranch={defaultBranch}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

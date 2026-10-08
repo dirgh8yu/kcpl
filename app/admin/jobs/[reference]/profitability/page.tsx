@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CircleDollarSign, FileText, WalletCards } from "lucide-react";
 import { getAdminAccess } from "../../../admin-auth";
-import { getDigitalJobFile } from "../../../job-file.server";
+import { getDigitalJobFile, withCombinedMargin } from "../../../job-file.server";
 import { jobCostCategoryLabels } from "../../../job-file";
 import { OperationsShell } from "../../../operations-shell";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
@@ -36,7 +36,7 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
   if (result.kind === "missing") return shellGate("Shipment not found", "This shipment reference does not exist.");
   if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch outside your staff profile.");
 
-  const job = result.job;
+  const job = await withCombinedMargin(result.job);
   const payablesDashboard = staff.permissions.canManageFinance ? await listPayablesDashboard(staff) : null;
   const bills = payablesDashboard?.bills.filter((bill) => bill.shipment_reference === job.reference) ?? [];
   const currencies = [...new Set([...Object.keys(job.revenue_totals), ...Object.keys(job.cost_totals)])].sort();
@@ -46,7 +46,9 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
       <OpsPageHeader eyebrow={job.reference} title="Margin" description={`${job.origin || "Origin"} → ${job.destination || "Destination"}`} meta={<><span>{job.customer_name || "Customer not linked"}</span><span>{job.primary_branch}</span></>} actions={<><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="md">Open Job File</Link>{staff.permissions.canManageFinance ? <Link href={`/admin/payables?shipment=${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="primary" data-size="md">Add supplier bill</Link> : null}</>}/>
 
       <div className="ops-content-wide ops-stack">
-        <OpsSurface title="Revenue → cost → gross profit">
+        <OpsSurface title="Revenue → cost → gross profit" description="Before VAT.">
+          {job.combined_margin?.kind === "converted" ? <div className="mb-3 rounded-[var(--app-radius)] border border-[var(--admin-line)] p-5"><div className="flex items-center justify-between gap-3"><strong className="text-[length:var(--app-text-base)] text-[var(--admin-ink)]">All currencies in {job.combined_margin.currency}</strong><OpsBadge tone={job.combined_margin.profit >= 0 ? "success" : "danger"}>{job.combined_margin.margin_percent === null ? "Margin N/A" : `${job.combined_margin.margin_percent.toFixed(1)}% margin`}</OpsBadge></div><div className="mt-4 grid gap-2 sm:grid-cols-3"><MoneyCell label="Revenue" value={money(job.combined_margin.revenue, job.combined_margin.currency)}/><MoneyCell label="Cost" value={money(job.combined_margin.cost, job.combined_margin.currency)}/><MoneyCell label="Gross profit" value={money(job.combined_margin.profit, job.combined_margin.currency)} positive={job.combined_margin.profit >= 0}/></div><p className="mt-3 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">At Nepal Rastra Bank rates of {job.combined_margin.rates_date}. Each currency on its own is below.</p></div>
+            : job.combined_margin?.kind === "unconverted" ? <p className="mb-3 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">No Nepal Rastra Bank rate for {job.combined_margin.missing.join(", ")} right now, so the currencies below can’t be combined into one margin.</p> : null}
           {currencies.length ? <div className="grid gap-3 lg:grid-cols-2">{currencies.map((currency) => {
             const revenue = job.revenue_totals[currency as keyof typeof job.revenue_totals] ?? 0;
             const cost = job.cost_totals[currency as keyof typeof job.cost_totals] ?? 0;
@@ -58,7 +60,7 @@ export default async function JobProfitabilityPage({ params }: { params: Promise
 
         <div className="ops-grid-2">
           <OpsSurface title="Recognised job costs">
-            {job.costs.length ? <div className="divide-y divide-[var(--admin-line)]">{job.costs.map((cost) => <div key={cost.id} className="flex items-start justify-between gap-4 py-3.5"><div className="min-w-0"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{cost.label}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{jobCostCategoryLabels[cost.category]}{cost.vendor ? ` · ${cost.vendor}` : ""}</p>{cost.source_type === "payable" && cost.source_reference ? <Link href={`/admin/payables/bills/${encodeURIComponent(cost.source_reference)}`} className="mt-2 inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]"><FileText size={12} strokeWidth={1.75} aria-hidden="true"/>Supplier bill <OpsMono>{cost.source_reference}</OpsMono></Link> : <p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Manual Job File cost</p>}</div><strong className="shrink-0 text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{money(cost.amount,cost.currency)}</strong></div>)}</div> : <OpsEmptyState icon={<WalletCards size={17}/>} title="No recognised costs" description="Add costs in the shipment record or approve a supplier bill."/>}
+            {job.costs.length ? <div className="divide-y divide-[var(--admin-line)]">{job.costs.map((cost) => <div key={cost.id} className="flex items-start justify-between gap-4 py-3.5"><div className="min-w-0"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{cost.label}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{jobCostCategoryLabels[cost.category]}{cost.vendor ? ` · ${cost.vendor}` : ""}</p>{cost.superseded_by_payable ? <Link href={`/admin/payables/bills/${encodeURIComponent(cost.superseded_by_payable)}`} className="mt-2 inline-flex items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Replaced by supplier bill <OpsMono>{cost.superseded_by_payable}</OpsMono>; not counted</Link> : cost.source_type === "payable" && cost.source_reference ? <Link href={`/admin/payables/bills/${encodeURIComponent(cost.source_reference)}`} className="mt-2 inline-flex items-center gap-1 text-[length:var(--app-label-size)] font-bold text-[var(--admin-crimson)]"><FileText size={12} strokeWidth={1.75} aria-hidden="true"/>Supplier bill <OpsMono>{cost.source_reference}</OpsMono></Link> : <p className="mt-2 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">Manual Job File cost</p>}</div><strong className={`shrink-0 text-[length:var(--app-label-size)] ${cost.superseded_by_payable ? "text-[var(--admin-faint)] line-through" : "text-[var(--admin-ink)]"}`}>{money(cost.amount,cost.currency)}</strong></div>)}</div> : <OpsEmptyState icon={<WalletCards size={17}/>} title="No recognised costs" description="Add costs in the shipment record or approve a supplier bill."/>}
           </OpsSurface>
 
           <OpsSurface title="Supplier bills for this job" description={staff.permissions.canManageFinance ? undefined : "Supplier payment detail is restricted to Management and Accounts."}>

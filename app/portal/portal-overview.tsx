@@ -199,7 +199,7 @@ function PortalNeedsList({ session, needs, owed, openInvoices }: { session: Port
         return <li key={key}>
           <span className="portal-document-icon" aria-hidden="true"><AlarmClock size={15} strokeWidth={1.75}/></span>
           <span className="portal-document-main">
-            <strong>{freeTimeSummary({ location: need.location, days: null, started_on: null, daily_charge: null, charge_currency: null, bearer: "undecided", note: null, updated_at: null, updated_by: null }, need.status, locale)}</strong>
+            <strong>{freeTimeSummary({ location: need.location, days: null, started_on: null, daily_charge: null, charge_currency: null, bearer: "undecided", note: null, updated_at: null, updated_by: null, ended_on: null }, need.status, locale)}</strong>
             <span><OpsMono>{need.reference}</OpsMono>{need.route ? ` · ${need.route}` : ""}</span>
           </span>
           <Link href={need.href} className="ops-button" data-variant="secondary" data-size="sm">{t("overview.open")}</Link>

@@ -60,11 +60,13 @@ const PRICING_SCOPES: Array<{ value: PricingScope; label: string }> = [
 /** Docked beside the register while there is room; mirrors the .ops-register-layout query. */
 const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-width: 1023px)";
 
-export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRules, canManageRules, canApprove }: {
+export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRules, canManageRules, canApprove, canSetPrices = true }: {
   initialOrders: PricingOrderCandidate[];
   initialCustomers: CustomerPricingProfile[];
   initialRules: PricingRule[];
   canManageRules: boolean;
+  /** Accounts see prices but don't set them. */
+  canSetPrices?: boolean;
   canApprove: boolean;
 }) {
   const [orders, setOrders] = useState(initialOrders);
@@ -306,7 +308,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
                   <OpsField label={`Fixed markup (${sellCurrency})`}><input type="number" min="0" step="0.01" value={fixedMarkup} onChange={(event) => setFixedMarkup(event.target.value)} placeholder={String(defaults.fixed_markup)}/></OpsField>
                   <OpsField label={`Manual discount (${sellCurrency})`} hint="Audited; can trigger approval"><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} placeholder="0"/></OpsField>
                 </div>
-                <div className="ops-inspector-actions plan-section-actions"><OpsButton variant="primary" size="sm" onClick={calculate} disabled={busy || !customer}><Calculator size={14} strokeWidth={1.75} aria-hidden="true"/>Calculate governed sell price</OpsButton></div>
+                <div className="ops-inspector-actions plan-section-actions"><OpsButton variant="primary" size="sm" onClick={calculate} disabled={busy || !customer || !canSetPrices} title={canSetPrices ? undefined : "Commercial or Management set customer prices"}><Calculator size={14} strokeWidth={1.75} aria-hidden="true"/>Calculate governed sell price</OpsButton></div>
               </OpsInspectorSection>
 
               {preview ? <OpsInspectorSection title="Price result">
@@ -327,7 +329,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
                 {preview.result.approval_required && preview.approval_status !== "approved" && canApprove ? <div className="ops-inspector-actions plan-section-actions"><OpsButton size="sm" onClick={approve} disabled={busy}><ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>Approve this snapshot</OpsButton></div> : null}
               </OpsInspectorSection> : null}
 
-              {preview && (!preview.result.approval_required || preview.approval_status === "approved") ? <OpsInspectorSection title="Customer quote">
+              {canSetPrices && preview && (!preview.result.approval_required || preview.approval_status === "approved") ? <OpsInspectorSection title="Customer quote">
                 <div className="ops-inspector-form">
                   <OpsField label="Valid until"><input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)}/></OpsField>
                   <OpsField label="Customer quote note" className="col-span-full"><input value={customerNote} onChange={(event) => setCustomerNote(event.target.value)} placeholder="Service assumptions, inclusions, exclusions…"/></OpsField>

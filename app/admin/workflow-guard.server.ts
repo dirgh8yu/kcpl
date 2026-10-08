@@ -217,6 +217,8 @@ export async function getShipmentWorkflowReadiness(reference: string, context?: 
   if (!documentPackReady) closeBlockers.push("Check all required documents, and replace any that have expired.");
   if (!proofOfDeliveryPresent) closeBlockers.push("Upload the proof of delivery and have it checked.");
   if (openTasks > 0) closeBlockers.push(`${openTasks} task${openTasks === 1 ? " is" : "s are"} still open.`);
+  // A job closed with no invoice is work done for free unless someone notices.
+  if (issuedInvoiceCount === 0) closeBlockers.push(invoiceCount ? "Issue the invoice: it is still a draft." : "Raise and issue the invoice.");
 
   const inTransitOrLater = ["in_transit", "customs_clearance", "out_for_delivery", "delivered"].includes(status);
   const outForDeliveryOrLater = ["out_for_delivery", "delivered"].includes(status);

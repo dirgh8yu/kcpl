@@ -532,13 +532,14 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                 </div> : null}
 
                 {activeTab === "pricing" && canViewCommercial ? <OpsSurface density="compact" title="Build the customer offer">
-                  {!canEditCommercial ? <div className="plan-notice"><OpsInlineAlert tone="neutral">Pricing is read-only for your current KCPL role.</OpsInlineAlert></div> : null}
+                  {!canEditCommercial ? <div className="plan-notice"><OpsInlineAlert tone="neutral">Pricing is read-only for your current KCPL role.</OpsInlineAlert></div>
+                    : detail.status === "won" ? <div className="plan-notice"><OpsInlineAlert tone="neutral">The customer accepted this price, so it stays as agreed. If a charge changed, change it on the invoice.</OpsInlineAlert></div> : null}
                   <form onSubmit={saveCommercial}>
                     <div className="ops-form-grid">
-                      <OpsField label="Currency"><select disabled={!canEditCommercial} value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></OpsField>
-                      <OpsField label="Customer price"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00"/></OpsField>
-                      <OpsField label="Internal cost" hint="KCPL only"><input disabled={!canEditCommercial} inputMode="decimal" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00"/></OpsField>
-                      <OpsField label="Valid until"><input disabled={!canEditCommercial} type="date" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></OpsField>
+                      <OpsField label="Currency"><select disabled={!canEditCommercial || detail.status === "won"} value={detail.quote_currency} onChange={(event) => setDetail({ ...detail, quote_currency: event.target.value as QuoteCurrency })}>{quoteCurrencies.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select></OpsField>
+                      <OpsField label="Customer price"><input disabled={!canEditCommercial || detail.status === "won"} inputMode="decimal" value={detail.quoted_amount ?? ""} onChange={(event) => setDetail({ ...detail, quoted_amount: event.target.value })} placeholder="0.00"/></OpsField>
+                      <OpsField label="Internal cost" hint="KCPL only"><input disabled={!canEditCommercial || detail.status === "won"} inputMode="decimal" value={detail.internal_cost ?? ""} onChange={(event) => setDetail({ ...detail, internal_cost: event.target.value })} placeholder="0.00"/></OpsField>
+                      <OpsField label="Valid until"><input disabled={!canEditCommercial || detail.status === "won"} type="date" value={detail.valid_until ?? ""} onChange={(event) => setDetail({ ...detail, valid_until: event.target.value })}/></OpsField>
                     </div>
                     <div className="enq-pricing-rail">
                       <OpsKpiRail label="Offer economics">
@@ -549,9 +550,9 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                       </OpsKpiRail>
                     </div>
                     <div className="ops-form-grid">
-                      <OpsField label="Customer-facing note" hint="Included in the quote email" className="ops-form-full"><textarea disabled={!canEditCommercial} value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Scope, inclusions, exclusions, transit assumptions or next steps…"/></OpsField>
+                      <OpsField label="Customer-facing note" hint="Included in the quote email" className="ops-form-full"><textarea disabled={!canEditCommercial || detail.status === "won"} value={detail.customer_quote_note ?? ""} onChange={(event) => setDetail({ ...detail, customer_quote_note: event.target.value })} placeholder="Scope, inclusions, exclusions, transit assumptions or next steps…"/></OpsField>
                     </div>
-                    {canEditCommercial ? <div className="ops-form-actions enq-pricing-actions">
+                    {canEditCommercial && detail.status !== "won" ? <div className="ops-form-actions enq-pricing-actions">
                       <OpsButton type="button" variant="ghost" size="sm" disabled={saving || !detail.quoted_amount?.trim()} onClick={openQuoteDraft}><Mail size={14} strokeWidth={1.75} aria-hidden="true"/>Open email draft</OpsButton>
                       <OpsButton type="submit" variant="secondary" size="sm" disabled={saving}>{saving ? "Saving…" : "Save pricing"}</OpsButton>
                       <OpsButton type="button" variant="primary" size="sm" disabled={saving || !detail.quoted_amount?.trim()} onClick={sendQuote}><Send size={14} strokeWidth={1.75} aria-hidden="true"/>Send quote email</OpsButton>
