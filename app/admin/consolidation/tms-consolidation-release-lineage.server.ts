@@ -43,7 +43,7 @@ function memberOrderIds(load: FirebaseFirestore.DocumentSnapshot) {
 
 export async function releaseConsolidationToProcurementWithLineage(loadIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(normalizedId(loadIdValue));
   const now = new Date().toISOString();

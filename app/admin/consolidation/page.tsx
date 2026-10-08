@@ -46,11 +46,11 @@ export default async function ConsolidationPage() {
       <TmsConsolidationWorkspace
         initialLoads={loads.loads}
         initialOrders={orders.orders}
-        canManage={staff.permissions.canEditCommercial}
+        canManage={staff.permissions.canManageTransportOrders}
         allocation={<TmsConsolidationAllocationDesk key="allocation"
           initialLoads={loads.loads}
           initialAllocations={Object.fromEntries(allocations)}
-          canPrepare={staff.permissions.canEditCommercial}
+          canPrepare={staff.permissions.canManageTransportOrders}
           canApprove={staff.permissions.role === "management"}
         />}
       />

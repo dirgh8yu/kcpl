@@ -45,7 +45,7 @@ import type { CommandCentreData, CommandCentreJob } from "./command-centre-data"
 import type { OperationalNote } from "./operational-notes.server";
 import type { OverviewFinanceSnapshot } from "./overview-finance.server";
 import type { OverviewActivity, OverviewMovement, WorkflowOverview } from "./workflow-overview.server";
-import type { KcplStaffRole } from "../staff-permissions";
+import { staffCapabilitiesForRole, type KcplStaffRole } from "../staff-permissions";
 import { BulkAssignBar } from "../bulk-assign-bar";
 import { ownedBy, useMineFilter, type CurrentStaff } from "../mine-filter";
 import styles from "./overview-dashboard.module.css";
@@ -516,7 +516,7 @@ function OperationalNotes({ note, selectedBranch, canPostNotes, generatedAt }: {
   );
 }
 
-export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, canViewCommercial, canPostNotes, role, currentStaff }: DashboardProps) {
+export function V4OperationsOverview({ data, workflow, finance, note, exposureByCustomer, selectedBranch, canPostNotes, role, currentStaff }: DashboardProps) {
   const { search } = useWorkspaceQuery();
   const returnTo = `/admin/command-centre${search}`;
   const activeShipments = useMemo(() => data.jobs.filter((job) => job.status !== "delivered"), [data.jobs]);
@@ -602,7 +602,7 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
               {arranging ? "Done" : "Customise"}
             </button>
           {/* The one way to start a shipment: the transport order form on Buy rates. */}
-          {canViewCommercial ? (
+          {staffCapabilitiesForRole(role).canManageTransportOrders ? (
             <Link href="/admin/rating?create=1" className={styles.blackButton}>
               <Plus size={14} strokeWidth={2} /> New shipment
             </Link>

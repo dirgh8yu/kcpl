@@ -35,7 +35,7 @@ export default async function EdiGatewayPage() {
   }
   if (dashboard.kind !== "ready" || tenders.kind !== "ready") return <OperationsShell {...shell}><Gate title="EDI messages didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
   const eligible = tenders.tenders.filter((tender) => tender.status === "sent" && (tender.channel === "manual" || tender.channel === "edi_204"));
-  return <OperationsShell {...shell}><OpsPage><EdiWorkspace initialRows={dashboard.rows} initialSummary={dashboard.summary} initialConfigured={dashboard.configured} initialEligibleTenders={eligible} canQueue204={staff.permissions.canEditCommercial}/></OpsPage></OperationsShell>;
+  return <OperationsShell {...shell}><OpsPage><EdiWorkspace initialRows={dashboard.rows} initialSummary={dashboard.summary} initialConfigured={dashboard.configured} initialEligibleTenders={eligible} canQueue204={staff.permissions.canManageTransportOrders}/></OpsPage></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

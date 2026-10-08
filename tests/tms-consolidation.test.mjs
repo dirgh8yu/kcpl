@@ -227,6 +227,6 @@ test("released house orders remain procurement-locked against independent rating
 test("consolidation API preserves commercial RBAC and same-origin checks", () => {
   assert.match(consolidationRoute, /isTrustedSameOriginRequest/);
   assert.match(consolidationRoute, /canViewCommercial/);
-  assert.match(consolidationServer, /permissions\.canEditCommercial/);
+  assert.match(consolidationServer, /permissions\.canManageTransportOrders/);
   assert.match(consolidationServer, /staffCanAccessBranch/);
 });

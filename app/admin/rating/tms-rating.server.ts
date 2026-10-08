@@ -164,6 +164,7 @@ export async function listTmsOrders(staff: KcplStaffContext) {
 
 export async function createTmsOrder(input: TmsOrderInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "role_forbidden" as const };
   if (!staffCanAccessBranch(staff, input.branch)) return { kind: "forbidden" as const };
   if (!tmsModes.includes(input.mode) || !input.origin.trim() || !input.destination.trim()) return { kind: "invalid" as const };
   if (![input.weightKg, input.volumeCbm, input.pieces, input.containerCount].every((value) => Number.isFinite(value) && value >= 0)) return { kind: "invalid" as const };
@@ -289,7 +290,7 @@ function selectedRateSnapshot(order: TmsOrder, card: PartnerBuyRateCard, result:
 
 export async function selectTmsRate(id: string, rateCardIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "role_forbidden" as const };
   const db = firebaseAdminDb();
   const orderRef = db.collection("transport_orders").doc(id.trim().toUpperCase());
   const rateCardId = normalizeCommercialId(rateCardIdValue);

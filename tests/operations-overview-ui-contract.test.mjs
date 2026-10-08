@@ -112,7 +112,8 @@ test("every New shipment opens the one form, and it offers only modes create_ord
   for (const source of [overview, shipments]) assert.match(source, /href="\/admin\/rating\?create=1"[^>]*>\s*<Plus[^>]*\/> New shipment/);
   assert.doesNotMatch(overview, /create_order|NewShipmentLauncher/, "the Overview keeps no second copy of the form");
   assert.match(page, /initialCreate=\{create === "1"\}/);
-  assert.match(form, /useState\(initialCreate\)/);
+  // The form opens straight away for roles that place transport orders.
+  assert.match(form, /useState\(initialCreate && canCreate\)/);
   assert.match(route, /tmsModes\.includes\(mode\)/, "create_order must validate mode against tmsModes");
   assert.match(form, /tmsModes\.map\(\(value\) => <option key=\{value\} value=\{value\}>/, "the form must offer tmsModes, not its own copy");
   assert.ok(tmsModes.includes("sea") && !tmsModes.includes("ocean"), "sea freight is 'sea' on the server");

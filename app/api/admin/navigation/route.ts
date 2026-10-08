@@ -19,6 +19,7 @@ export async function GET() {
         canManageFinance: staff.permissions.canManageFinance,
         canManageStaff: staff.permissions.canManageStaff,
         isManagement: staff.permissions.role === "management",
+        canManageTransportOrders: staff.permissions.canManageTransportOrders,
       },
     });
   } catch (error) {

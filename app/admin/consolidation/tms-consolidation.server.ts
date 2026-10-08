@@ -272,7 +272,7 @@ export async function listConsolidationLoads(staff: KcplStaffContext) {
 
 export async function createConsolidationLoad(input: LoadCreateInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   if (!tmsModes.includes(input.mode)) return { kind: "invalid" as const };
   const normalizedIds = [...new Set(input.orderIds.map((id) => id.trim().toUpperCase()).filter(Boolean))];
   if (!normalizedIds.length || normalizedIds.length !== input.orderIds.map((id) => id.trim().toUpperCase()).filter(Boolean).length) return { kind: "incompatible" as const, compatibility: membershipCompatibilityError("Each transport order may appear only once in a consolidation load.") };
@@ -335,7 +335,7 @@ export async function createConsolidationLoad(input: LoadCreateInput, actor: Act
 
 export async function addOrderToConsolidationLoad(loadIdValue: string, orderIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const orderIdValueNormalized = orderIdValue.trim().toUpperCase();
@@ -384,7 +384,7 @@ export async function addOrderToConsolidationLoad(loadIdValue: string, orderIdVa
 
 export async function removeOrderFromConsolidationLoad(loadIdValue: string, orderIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const normalized = orderIdValue.trim().toUpperCase();
@@ -419,7 +419,7 @@ export async function removeOrderFromConsolidationLoad(loadIdValue: string, orde
 
 export async function reorderConsolidationStops(loadIdValue: string, orderedStopIds: string[], actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
@@ -444,7 +444,7 @@ export async function reorderConsolidationStops(loadIdValue: string, orderedStop
 
 export async function updateConsolidationStop(loadIdValue: string, stopIdValue: string, values: { plannedAt?: string; instructions?: string }, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const stopId = stopIdValue.trim();
@@ -470,7 +470,7 @@ export async function updateConsolidationStop(loadIdValue: string, stopIdValue: 
 
 export async function releaseConsolidationToProcurement(loadIdValue: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
@@ -548,7 +548,7 @@ export async function releaseConsolidationToProcurement(loadIdValue: string, act
 
 export async function cancelDraftConsolidationLoad(loadIdValue: string, note: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const db = firebaseAdminDb();
   const loadRef = db.collection("consolidation_loads").doc(loadIdValue.trim().toUpperCase());
   const now = new Date().toISOString();
@@ -589,7 +589,7 @@ function actualTenderCommercials(tender: FirebaseFirestore.DocumentSnapshot) {
 
 export async function confirmConsolidatedLoadBooking(input: ConsolidatedBookingInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const bookingReference = input.bookingReference.trim();
   if (!bookingReference) return { kind: "booking_reference_required" as const };
   if (!Number.isFinite(input.amount) || input.amount < 0 || !crmCurrencies.includes(input.currency)) return { kind: "commercials_required" as const };

@@ -151,7 +151,7 @@ function bookedPointerMatches(doc: FirebaseFirestore.DocumentSnapshot, version: 
 
 export async function confirmConsolidatedLoadBookingWithLineage(input: ConsolidatedBookingInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const bookingReference = input.bookingReference.trim();
   if (!bookingReference) return { kind: "booking_reference_required" as const };
   if (!Number.isFinite(input.amount) || input.amount < 0 || !crmCurrencies.includes(input.currency)) return { kind: "commercials_required" as const };

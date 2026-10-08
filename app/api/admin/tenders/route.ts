@@ -39,7 +39,7 @@ export async function GET() {
   await reconcileExpiredTmsTenders();
   const result = await listTmsTenders(access.staff);
   if (result.kind !== "ready") return json({ ok: false, error: "Tender storage is unavailable." }, 503);
-  return json({ ok: true, tenders: result.tenders, canManageTenders: access.staff.permissions.canEditCommercial });
+  return json({ ok: true, tenders: result.tenders, canManageTenders: access.staff.permissions.canManageTransportOrders });
 }
 
 export async function POST(request: Request) {

@@ -133,7 +133,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (access.kind !== "authorized") return json({ ok: false, error: "Admin access is not configured." }, 503);
 
   const staff = await getStaffContext(access.user);
-  if (!staff.permissions.canEditCommercial) return json({ ok: false, error: "Commercial edit access is required to send customer quotes." }, 403);
+  if (!staff.permissions.canSetPrices) return json({ ok: false, error: "Commercial edit access is required to send customer quotes." }, 403);
 
   const { reference } = await context.params;
   const branchAccess = await checkQuoteBranchAccess(reference, staff);

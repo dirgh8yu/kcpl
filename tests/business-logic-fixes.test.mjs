@@ -150,3 +150,26 @@ test("Payables counts opening balances and payments the way Receivables does", (
   assert.match(payables, /summary\.opening_balance \+= bill\.total;/);
   assert.doesNotMatch(payables, /summary\.opening_balance \+= bill\.balance_due;/);
 });
+
+test("Accounts see transport orders but don't place, tender, book or consolidate them", () => {
+  assert.equal(staffCapabilitiesForRole("accounts").canManageTransportOrders, false);
+  assert.equal(staffCapabilitiesForRole("commercial").canManageTransportOrders, true);
+  assert.equal(staffCapabilitiesForRole("management").canManageTransportOrders, true);
+  assert.equal(staffCapabilitiesForRole("operations").canManageTransportOrders, false);
+  assert.match(read("app/admin/rating/tms-rating.server.ts"), /export async function createTmsOrder[\s\S]{0,200}canManageTransportOrders/);
+  for (const path of ["app/admin/tenders/tms-tendering.server.ts", "app/admin/consolidation/tms-consolidation.server.ts", "app/api/admin/edi/route.ts"]) {
+    assert.doesNotMatch(read(path), /permissions\.canEditCommercial/, path);
+  }
+  // New shipment isn't offered where it would be refused.
+  assert.match(read("app/admin/shipments/page.tsx"), /canStartShipment=\{staff\.permissions\.canManageTransportOrders\}/);
+  assert.match(read("app/admin/operations-command-palette.tsx"), /allowedIds\.has\("rating"\) && canStartShipment/);
+});
+
+test("before the navigation API answers, New shipment follows the same roles", async () => {
+  const { canStartShipment } = await import("../app/admin/workflow-navigation.ts");
+  const base = { canManageJobFile: true, canManageStaff: false };
+  assert.equal(canStartShipment({ ...base, canViewCommercial: true, canManageFinance: true, isManagement: false }), false, "Accounts");
+  assert.equal(canStartShipment({ ...base, canViewCommercial: true, canManageFinance: false, isManagement: false }), true, "Commercial");
+  assert.equal(canStartShipment({ ...base, canViewCommercial: true, canManageFinance: true, isManagement: true }), true, "Management");
+  assert.equal(canStartShipment({ ...base, canViewCommercial: false, canManageFinance: false, isManagement: false }), false, "Operations");
+});

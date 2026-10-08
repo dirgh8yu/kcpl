@@ -24,14 +24,14 @@ export async function GET() {
   const eligibleTenders = tenders.tenders
     .filter((tender) => tender.status === "sent" && (tender.channel === "manual" || tender.channel === "edi_204"))
     .slice(0, 100);
-  return json({ ok: true, ...dashboard, eligibleTenders, canQueue204: access.staff.permissions.canEditCommercial });
+  return json({ ok: true, ...dashboard, eligibleTenders, canQueue204: access.staff.permissions.canManageTransportOrders });
 }
 
 export async function POST(request: Request) {
   const access = await auth();
   if ("response" in access) return access.response;
   if (!isTrustedSameOriginRequest(request)) return json({ ok: false, error: "Cross-origin EDI staff updates are not accepted." }, 403);
-  if (!access.staff.permissions.canEditCommercial) return json({ ok: false, error: "Commercial edit access is required to dispatch EDI 204 tenders." }, 403);
+  if (!access.staff.permissions.canManageTransportOrders) return json({ ok: false, error: "Commercial edit access is required to dispatch EDI 204 tenders." }, 403);
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; }
   catch { return json({ ok: false, error: "The EDI request could not be read." }, 400); }

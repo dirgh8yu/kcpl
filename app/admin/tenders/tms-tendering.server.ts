@@ -233,7 +233,7 @@ export async function listTmsTenders(staff: KcplStaffContext) {
 
 export async function createTmsTender(input: TenderCreateInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   if (!tmsTenderChannels.includes(input.channel)) return { kind: "invalid" as const };
   const dueAt = futureIso(input.responseDueAt);
   if (!dueAt) return { kind: "invalid_deadline" as const };
@@ -487,7 +487,7 @@ async function applyTenderResponse(
 
 export async function respondToTmsTender(tenderIdValue: string, input: TenderResponseInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   if (input.status === "countered" && (input.counterCost === null || input.counterCost === undefined || !Number.isFinite(input.counterCost) || input.counterCost < 0 || !input.counterCurrency || !crmCurrencies.includes(input.counterCurrency))) return { kind: "invalid_counter" as const };
   const preflight = await tenderSnapshot(tenderIdValue);
   if (!preflight) return { kind: "missing" as const };
@@ -502,7 +502,7 @@ export async function respondToTmsTenderFromEdi990(tenderIdValue: string, input:
 
 export async function cancelTmsTender(tenderIdValue: string, note: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const preflight = await tenderSnapshot(tenderIdValue);
   if (!preflight) return { kind: "missing" as const };
   if (!staffCanAccessBranch(staff, preflight.branch)) return { kind: "forbidden" as const };
@@ -690,7 +690,7 @@ async function createBookedShipment(tenderIdValue: string, expectedUpdatedAt: st
 
 export async function confirmTmsTenderBooking(tenderIdValue: string, input: TenderBookingInput, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   if (!input.bookingReference.trim()) return { kind: "booking_reference_required" as const };
   const record = await tenderSnapshot(tenderIdValue);
   if (!record) return { kind: "missing" as const };

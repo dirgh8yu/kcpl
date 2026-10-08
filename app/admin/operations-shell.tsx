@@ -15,6 +15,7 @@ import { OperationsNotificationCentre } from "./operations-notification-centre";
 import {
   activeHub,
   activeWorkspace,
+  canStartShipment,
   visibleHubs,
   visibleWorkspaces,
   type NavigationCapabilities,
@@ -310,7 +311,7 @@ export function OperationsShell({
       <div className="app-account-anchor">
         <OperationsAccountMenu userName={userName} isManagement={capabilities.isManagement} signOutPath={signOutPath} open={accountOpen} tab={accountTab} onTabChange={setAccountTab} onClose={closeAccount} triggerRef={accountTrigger}/>
       </div>
-      <OperationsCommandPalette open={paletteOpen} instant={paletteInstant} onClose={() => setPaletteOpen(false)} workspaces={workspaces}/>
+      <OperationsCommandPalette open={paletteOpen} instant={paletteInstant} onClose={() => setPaletteOpen(false)} workspaces={workspaces} canStartShipment={canStartShipment(capabilities)}/>
       {placeholder ? null : <StaffShortcuts hubs={keyHubs} paletteOpen={paletteOpen} onOpenPalette={openSearchFromKeyboard} onToggleSidebar={toggleRail}/>}
     </div>
   );

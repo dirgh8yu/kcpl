@@ -80,6 +80,7 @@ export async function POST(request: Request) {
       carrierRequirement: clean(body.carrierRequirement, 200),
       notes: clean(body.notes, 5000),
     }, actor, access.staff);
+    if (result.kind === "role_forbidden") return json({ ok: false, error: "Commercial or Management place transport orders. Your role can see them but not create or change them." }, 403);
     if (result.kind === "forbidden") return json({ ok: false, error: "This branch is outside your staff access." }, 403);
     if (result.kind === "unavailable") return json({ ok: false, error: "Order storage is unavailable." }, 503);
     if (result.kind !== "created") return json({ ok: false, error: "Enter a valid order with origin, destination and non-negative cargo quantities." }, 400);
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
   if (action === "select_rate") {
     const result = await selectTmsRate(clean(body.orderId, 120), clean(body.rateCardId, 120), actor, access.staff);
     if (result.kind === "missing") return json({ ok: false, error: "Transport order not found." }, 404);
+    if (result.kind === "role_forbidden") return json({ ok: false, error: "Commercial or Management place transport orders. Your role can see them but not create or change them." }, 403);
     if (result.kind === "forbidden") return json({ ok: false, error: "This order is outside your branch access." }, 403);
     if (result.kind === "locked") return json({ ok: false, error: "Procurement selection is locked by the current tender, booking, cancellation or released-consolidation workflow state.", code: "COMMERCIAL_SELECTION_LOCKED" }, 409);
     if (result.kind === "commercial_review_required") return json({ ok: false, error: "The current commercial lineage cannot be proven safely. Commercial review is required before selecting another rate.", code: "COMMERCIAL_REVIEW_REQUIRED" }, 409);

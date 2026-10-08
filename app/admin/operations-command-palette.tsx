@@ -53,7 +53,7 @@ function kindLabel(kind: PaletteEntry["kind"]) {
   return "Supplier bill";
 }
 
-export function OperationsCommandPalette({ open, instant = false, onClose, workspaces }: { open: boolean; instant?: boolean; onClose: () => void; workspaces: WorkflowWorkspace[] }) {
+export function OperationsCommandPalette({ open, instant = false, onClose, workspaces, canStartShipment = false }: { open: boolean; instant?: boolean; onClose: () => void; workspaces: WorkflowWorkspace[]; canStartShipment?: boolean }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -138,7 +138,7 @@ export function OperationsCommandPalette({ open, instant = false, onClose, works
     // Things to start. Places to go are the sections listed below them, so a
     // section never appears here as well.
     const quickActionCandidates: PaletteEntry[] = [
-      ...(allowedIds.has("rating") ? [{ key: "action:new-shipment", title: "New shipment", subtitle: "Start a transport order and get carrier rates", meta: null, href: "/admin/rating?create=1", kind: "action" as const }] : []),
+      ...(allowedIds.has("rating") && canStartShipment ? [{ key: "action:new-shipment", title: "New shipment", subtitle: "Start a transport order and get carrier rates", meta: null, href: "/admin/rating?create=1", kind: "action" as const }] : []),
       { key: "action:new-customer", title: "New customer", subtitle: "Create a customer account", meta: null, href: "/admin/crm/new", kind: "action" },
       ...(allowedIds.has("partners") ? [{ key: "action:new-partner", title: "New partner", subtitle: "Add a carrier, agent, vendor or counterpart", meta: null, href: "/admin/partners/new", kind: "action" as const }] : []),
       ...(allowedIds.has("receivables") ? [{ key: "action:new-invoice", title: "New invoice", subtitle: "Bill a customer, from a shipment or on its own", meta: null, href: "/admin/finance/new", kind: "action" as const }] : []),
@@ -167,7 +167,7 @@ export function OperationsCommandPalette({ open, instant = false, onClose, works
       .map((recent) => ({ key: `recent:${recent.href}`, title: recent.title, subtitle: recent.subtitle, meta: null, href: recent.href, kind: recent.kind as PaletteEntry["kind"], recent: true as const }));
     const recentClear = !needle && recents.length ? [{ key: "recent:clear", title: "Clear recent items", subtitle: "Forget the recent list on this device", meta: null, href: "", kind: "action" as const, recent: true as const }] : [];
     return [...recentEntries, ...recentClear, ...remoteEntries, ...quickActions.slice(0, needle ? 6 : 4), ...workspaceEntries].slice(0, 45);
-  }, [query, remoteResults, resultQuery, workspaces, recents, allowedIds]);
+  }, [query, remoteResults, resultQuery, workspaces, recents, allowedIds, canStartShipment]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setSelectedIndex(0));

@@ -9,7 +9,7 @@ function branch(value: unknown): KcplBranch | null { return kcplBranches.include
 
 export async function linkTmsOrderCustomer(orderId: string, customerId: string, actor: Actor, staff: KcplStaffContext) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
-  if (!staff.permissions.canEditCommercial) return { kind: "forbidden" as const };
+  if (!staff.permissions.canManageTransportOrders) return { kind: "forbidden" as const };
   const orderRef = firebaseAdminDb().collection("transport_orders").doc(orderId.trim().toUpperCase());
   const customerRef = firebaseAdminDb().collection("customers").doc(customerId.trim().toUpperCase());
   const [order, customer] = await Promise.all([orderRef.get(), customerRef.get()]);

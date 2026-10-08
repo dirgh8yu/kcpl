@@ -63,7 +63,7 @@ export default async function TenderDeskPage({ searchParams }: { searchParams: P
       initialOrders={orderedOrders}
       initialTenders={orderedTenders}
       customers={customers.map((customer) => ({ id: customer.id, name: customer.display_name, branch: customer.primary_branch }))}
-      canManage={staff.permissions.canEditCommercial}
+      canManage={staff.permissions.canManageTransportOrders}
     />
   </OperationsShell>;
 }

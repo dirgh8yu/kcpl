@@ -64,12 +64,13 @@ export default async function RatingPage({ searchParams }: { searchParams: Promi
         branches={staff.branches}
         canUseGlobalBranch={staff.permissions.role === "management" || staff.can_access_all_branches}
         canManageRateCards={staff.permissions.canManageRateCards}
+        canManageOrders={staff.permissions.canManageTransportOrders}
       />
     </OperationsShell>;
   }
 
   return <OperationsShell {...shellProps}>
-    <V4TransportOrdersWorkspace initialOrders={orderedOrders} branches={staff.branches} initialCreate={create === "1"}/>
+    <V4TransportOrdersWorkspace initialOrders={orderedOrders} branches={staff.branches} initialCreate={create === "1"} canCreate={staff.permissions.canManageTransportOrders}/>
   </OperationsShell>;
 }
 

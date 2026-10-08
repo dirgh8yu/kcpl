@@ -223,6 +223,6 @@ test("counter-offer booking remains supported from transaction-read commercials"
 test("branch RBAC and same-origin mutation controls remain enforced", () => {
   assert.match(tenderRoute, /isTrustedSameOriginRequest/);
   assert.match(tenderRoute, /canViewCommercial/);
-  assert.match(tenderServer, /permissions\.canEditCommercial/);
+  assert.match(tenderServer, /permissions\.canManageTransportOrders/);
   assert.match(tenderServer, /staffCanAccessBranch/);
 });

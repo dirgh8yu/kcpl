@@ -28,13 +28,15 @@ function money(value: number, currency: string) {
 const modeLabel = freightModeLabel;
 function dateLabel(value: string | null) { if (!value) return "Any date"; const d = new Date(`${value}T00:00:00`); return Number.isNaN(d.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(d); }
 
-export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, branches, canUseGlobalBranch, canManageRateCards }: {
+export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, branches, canUseGlobalBranch, canManageRateCards, canManageOrders = true }: {
   initialOrders: TmsOrder[];
   initialRateCards: PartnerBuyRateCard[];
   partners: PartnerOption[];
   branches: KcplBranch[];
   canUseGlobalBranch: boolean;
   canManageRateCards: boolean;
+  /** Accounts see orders and rates but don't place orders or choose carriers. */
+  canManageOrders?: boolean;
 }) {
   const [orders, setOrders] = useState(initialOrders);
   const [rateCards, setRateCards] = useState(initialRateCards);
@@ -164,7 +166,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
         description="Compare Partner buy rates and lock the procurement rate."
         actions={<>
           {canManageRateCards ? <OpsButton variant="secondary" onClick={() => setShowRate((value) => !value)} aria-expanded={showRate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>Partner buy rate</OpsButton> : null}
-          <OpsButton variant="primary" onClick={() => setShowOrder((value) => !value)} aria-expanded={showOrder}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New order</OpsButton>
+          {canManageOrders ? <OpsButton variant="primary" onClick={() => setShowOrder((value) => !value)} aria-expanded={showOrder}><PackagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>New order</OpsButton> : null}
         </>}
       />
 
@@ -178,7 +180,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
 
         {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-        {showOrder ? <div className="plan-panel"><OpsSurface density="compact" title="Create transport order" action={<button type="button" className="ops-inspector-close" onClick={() => setShowOrder(false)} aria-label="Close create order"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
+        {showOrder && canManageOrders ? <div className="plan-panel"><OpsSurface density="compact" title="Create transport order" action={<button type="button" className="ops-inspector-close" onClick={() => setShowOrder(false)} aria-label="Close create order"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
           <form onSubmit={createOrder}>
             <div className="ops-form-grid">
               <OpsField label="Branch"><select value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></OpsField>
@@ -262,7 +264,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
                     <td className="ops-col-num"><span className="ops-num">{money(result.accessorials, result.currency)}</span></td>
                     <td className="ops-col-num"><span className="ops-num rate-total">{money(result.total_cost, result.currency)}</span></td>
                     <td><span className="ops-cell-muted plan-nowrap">{result.transit_days_min === null ? "Not set" : result.transit_days_max && result.transit_days_max !== result.transit_days_min ? `${result.transit_days_min}–${result.transit_days_max} days` : `${result.transit_days_min} days`}</span></td>
-                    <td className="ops-cell-actions"><OpsButton size="xs" variant={isSelected ? "ghost" : "secondary"} onClick={() => selectRate(result)} disabled={busy || isSelected}>{isSelected ? "Selected" : "Select"}</OpsButton></td>
+                    <td className="ops-cell-actions">{canManageOrders ? <OpsButton size="xs" variant={isSelected ? "ghost" : "secondary"} onClick={() => selectRate(result)} disabled={busy || isSelected}>{isSelected ? "Selected" : "Select"}</OpsButton> : isSelected ? <OpsBadge tone="success">Selected</OpsBadge> : null}</td>
                   </tr>;
                 })}</tbody>
               </table>

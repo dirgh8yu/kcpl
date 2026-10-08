@@ -50,7 +50,7 @@ export async function GET() {
       loads: loads.loads,
       orders: orders.orders,
       allocations: Object.fromEntries(allocationViews),
-      canManage: access.staff.permissions.canEditCommercial,
+      canManage: access.staff.permissions.canManageTransportOrders,
       canApproveAllocation: access.staff.permissions.role === "management",
     });
   } catch {

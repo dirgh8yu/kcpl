@@ -88,7 +88,20 @@ export type NavigationCapabilities = {
   canManageFinance: boolean;
   canManageStaff: boolean;
   isManagement: boolean;
+  /** Sent by the navigation API; absent in older remembered shells. */
+  canManageTransportOrders?: boolean;
 };
+
+/**
+ * Whether "New shipment" is offered: Management and Commercial place
+ * transport orders, Accounts and Operations don't. Before the navigation API
+ * answers, the same rule is read off the other flags (commercial view without
+ * finance is Commercial).
+ */
+export function canStartShipment(capabilities: NavigationCapabilities) {
+  return capabilities.canManageTransportOrders
+    ?? (capabilities.isManagement || (capabilities.canViewCommercial && !capabilities.canManageFinance));
+}
 
 export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "home", href: "/admin/command-centre", label: "Overview", hub: "overview", tab: "Overview", group: "Operate", hint: "Today’s work, what’s stuck and what’s next", keywords: ["overview", "home", "command centre", "dashboard", "operations"], permission: "all", icon: "Home", prefixes: ["/admin/command-centre", "/admin/branches/", "/admin/workload/"] },

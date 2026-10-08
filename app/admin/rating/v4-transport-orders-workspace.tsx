@@ -65,7 +65,7 @@ function nextAction(order: TmsOrder) {
 
 /** `initialCreate` opens the form straight away: every "New shipment" in the
  *  app lands here, on the one form that starts one. */
-export function V4TransportOrdersWorkspace({ initialOrders, branches, initialCreate = false }: { initialOrders: TmsOrder[]; branches: KcplBranch[]; initialCreate?: boolean }) {
+export function V4TransportOrdersWorkspace({ initialOrders, branches, initialCreate = false, canCreate = true }: { initialOrders: TmsOrder[]; branches: KcplBranch[]; initialCreate?: boolean; canCreate?: boolean }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -73,7 +73,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches, initialCre
   const [status, setStatus] = useState<StatusFilter>("active");
   const [branch, setBranch] = useState<"all" | KcplBranch>("all");
   const [modeFilter, setModeFilter] = useState<"all" | TmsMode>("all");
-  const [showCreate, setShowCreate] = useState(initialCreate);
+  const [showCreate, setShowCreate] = useState(initialCreate && canCreate);
   // Opening the form puts the cursor where the typing starts; branch and mode
   // already hold sensible defaults.
   const originRef = useRef<HTMLInputElement>(null);
@@ -165,7 +165,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches, initialCre
         <>
           <Link href="/admin/rating?view=rate-desk" className="ops-button" data-variant="secondary" data-size="md">Rate desk</Link>
           {/* The form has its own Cancel; while it is open the button that opened it steps aside. */}
-          {showCreate ? null : <button type="button" onClick={() => setShowCreate(true)} className="ops-button" data-variant="primary" data-size="md">New transport order</button>}
+          {showCreate || !canCreate ? null : <button type="button" onClick={() => setShowCreate(true)} className="ops-button" data-variant="primary" data-size="md">New transport order</button>}
         </>
       )}
     />

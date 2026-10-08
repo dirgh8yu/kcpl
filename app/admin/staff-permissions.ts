@@ -10,6 +10,9 @@ export type StaffCapabilities = {
   /** Set a customer's price and record that they accepted it. Not Accounts:
    *  the people who collect the money don't also set what is charged. */
   canSetPrices: boolean;
+  /** Create transport orders, choose carriers, tender, book and consolidate.
+   *  Not Accounts: they see the orders but don't place them. */
+  canManageTransportOrders: boolean;
   canOverrideCommercialPolicy: boolean;
   canOverrideFx: boolean;
   canManageRateCards: boolean;
@@ -70,6 +73,7 @@ export function staffCapabilitiesForRole(role: KcplStaffRole): StaffCapabilities
     canViewCommercial: management || accounts || commercial,
     canEditCommercial: management || accounts || commercial,
     canSetPrices: management || commercial,
+    canManageTransportOrders: management || commercial,
     canOverrideCommercialPolicy: management,
     canOverrideFx: management,
     canManageRateCards: management || commercial,
