@@ -17,6 +17,7 @@ import {
   OpsPageHeader,
   OpsScopeTabs,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
@@ -174,7 +175,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
     <div className="delivery-control-page">
       <OpsPageHeader
         title="Delivery & POD"
-        description="Deliveries to make and proof of delivery to check. A photo or signature counts once someone has checked it."
+        description="Deliveries to make and proof of delivery to check."
       />
 
       <div className="px-4 pb-8 md:px-6">
@@ -185,7 +186,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
               <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <button type="button" className="ops-inline-alert-action" onClick={reset}>Reset</button> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{rows.length === initialRows.length ? `${initialRows.length} deliveries` : `${rows.length} of ${initialRows.length}`}</span>
+              <OpsResultCount count={rows.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs<Focus> label="Delivery stage" value={focus} onChange={setFocus} items={[
@@ -238,7 +239,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                         <td data-cell="meta"><span className="ops-cell-muted">{row.primary_branch}</span></td>
                         <td data-cell="meta">
                           <span className="ops-cell-primary">{row.next_delivery_at ? dateTime(row.next_delivery_at) : row.last_attempt_at ? dateTime(row.last_attempt_at) : "Not scheduled"}</span>
-                          <span className="ops-cell-secondary">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : `${row.attempt_count} attempt${row.attempt_count === 1 ? "" : "s"}`}</span>
+                          {row.last_attempt_status || row.attempt_count ? <span className="ops-cell-secondary">{row.last_attempt_status ? deliveryAttemptStatusLabels[row.last_attempt_status] : `${row.attempt_count} attempt${row.attempt_count === 1 ? "" : "s"}`}</span> : null}
                         </td>
                         <td data-cell="status">
                           <span className="delivery-state-cell">
@@ -248,7 +249,7 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                         </td>
                         <td data-cell="meta" data-label="Proof">
                           <span className="ops-cell-primary"><OpsBadge tone={podTone(row)} dot>{podLabel(row)}</OpsBadge></span>
-                          <span className="ops-cell-secondary">{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</span>
+                          {row.pod_evidence_count ? <span className="ops-cell-secondary">{row.pod_evidence_count} item{row.pod_evidence_count === 1 ? "" : "s"}</span> : null}
                         </td>
                         <td data-cell="open" className="ops-cell-open">
                           <Link href={`/admin/jobs/${encodeURIComponent(row.reference)}#delivery-pod`} className="ops-row-open" onClick={(event) => event.stopPropagation()} aria-label={`Open Delivery and POD control for ${row.reference}`} tabIndex={-1}>
@@ -261,7 +262,6 @@ export function DeliveryWorkspace({ initialRows, initialSummary, initialQuery = 
                 </table>
               </OpsTableWrap>
             ) : (filtersActive ? <OpsNoMatches noun="shipments" onClear={reset}/> : <OpsEmptyState compact icon={<Truck size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No final-mile movements" description="No accessible shipments are currently in the final-mile queue."/>)}
-            {rows.length ? <footer className="ops-register-footer"><span>{rows.length} deliver{rows.length === 1 ? "y" : "ies"} in this view</span></footer> : null}
           </section>
 
           {selected ? <Inspector row={selected} onClose={() => update({ selected: null })} inspectorRef={inspectorRef}/> : null}

@@ -2,7 +2,7 @@
 
 import { Navigation } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { OpsBadge, OpsButton, OpsErrorState, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { OpsButton, OpsErrorState, OpsKpiRail, OpsRailMetric, OpsSurface } from "../operations-ui";
 import { GooglePlaceInput } from "./google-place-input";
 
 type Estimate = {
@@ -100,15 +100,14 @@ export function GoogleRoadRoutePanel({ initialOrigin = "", initialDestination = 
     <OpsSurface
       density="compact"
       title="Road distance & ETA"
-      description="Indicative truck-road distance and transit time from Google Routes. Start typing to use Google Maps location suggestions."
-      action={<OpsBadge tone={trafficAware ? "info" : "neutral"}>{trafficAware ? "Live traffic · Pro" : "Standard · Essentials"}</OpsBadge>}
+      description="Indicative truck distance and transit time."
     >
       <form onSubmit={calculate} className="route-form" data-compact={compact || undefined}>
         <GooglePlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="Kolkata, India" required />
         <GooglePlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="Kathmandu, Nepal" icon={<Navigation size={14} strokeWidth={1.75} aria-hidden="true"/>} required />
         <label className="ops-field route-via"><span className="ops-field-label">Via stops <span className="route-optional">optional</span></span><textarea rows={1} value={via} onChange={(event) => setVia(event.target.value)} placeholder="Raxaul, India&#10;Birgunj, Nepal"/></label>
         <div className="route-form-actions">
-          <label className="route-traffic"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)}/><span>Use live traffic <span className="route-optional">Pro</span></span></label>
+          <label className="route-traffic"><input type="checkbox" checked={trafficAware} onChange={(event) => setTrafficAware(event.target.checked)}/><span>Use live traffic</span></label>
           <OpsButton variant="primary" size="sm" type="submit" disabled={loading}>{loading ? "Calculating…" : "Calculate route"}</OpsButton>
         </div>
       </form>

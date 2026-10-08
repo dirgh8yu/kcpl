@@ -169,7 +169,7 @@ export function ShipmentActivityTimeline({ initialTimeline, highlightId }: { ini
 
   return (
     <div className="pb-10">
-      <OpsSurface eyebrow="Shipment flight recorder" title="Unified activity timeline" description="One chronological audit trail for movement milestones, ownership, tasks, customs, documents, workflow controls, alerts and authorised finance activity." action={<OpsButton variant="ghost" size="xs" disabled={busy} onClick={() => refresh(false)}><RefreshCw size={13} strokeWidth={1.75} className={busy ? "app-refreshing" : ""} aria-hidden="true"/>{busy ? "Refreshing…" : "Refresh"}</OpsButton>}>
+      <OpsSurface title="Unified activity timeline" action={<OpsButton variant="ghost" size="xs" disabled={busy} onClick={() => refresh(false)}><RefreshCw size={13} strokeWidth={1.75} className={busy ? "app-refreshing" : ""} aria-hidden="true"/>{busy ? "Refreshing…" : "Refresh"}</OpsButton>}>
         {notice ? <div className="mb-3"><OpsNotice tone={notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice></div> : null}
         <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search activity: owner, customs, document, alert, staff…" aria-label="Search activity"/>}

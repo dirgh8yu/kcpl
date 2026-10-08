@@ -98,7 +98,6 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
   return <OpsSurface
     density="compact"
     title="Commercial allocation"
-    description="Prepare → approve exact versions → book. Released membership and source commercials are frozen first; this stage persists the exact derived house economics before any booking artifacts are created."
   >
     {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
     {eligible.length ? <div className="allocation-grid">
@@ -128,7 +127,7 @@ export function TmsConsolidationAllocationDesk({ initialLoads, initialAllocation
             {canPrepare && selectedLoad.status !== "booked" ? <OpsButton size="sm" variant="primary" onClick={prepare} disabled={busy}><ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>{allocation ? "Re-prepare exact allocation" : "Prepare allocation"}</OpsButton> : null}
           </div>
         </div>
-        {!allocation ? <p className="ops-inspector-hint">After the master tender is accepted or countered, prepare the commercial allocation here. Booking will fail closed until this exact package exists.</p> : <>
+        {!allocation ? <p className="ops-inspector-hint">Prepare the allocation once the carrier accepts or counters. The load can’t be booked until it’s ready.</p> : <>
           <OpsFacts columns={2}>
             <OpsFact label="Master procurement">{money(allocation.total, allocation.currency)}</OpsFact>
             <OpsFact label="Allocation basis">{readable(allocation.allocation_basis)}</OpsFact>

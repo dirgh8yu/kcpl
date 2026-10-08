@@ -13,9 +13,7 @@ import {
   Clock3,
   FileText,
   GripVertical,
-  ListChecks,
   MoreHorizontal,
-  PackageCheck,
   Plane,
   Plus,
   ShieldCheck,
@@ -141,15 +139,6 @@ function formatOperationalDate(value: string) {
   }).format(parsed);
 }
 
-function formatNepalTime(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "NPT";
-  return new Intl.DateTimeFormat("en-AU", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "Asia/Kathmandu",
-  }).format(parsed);
-}
 
 function relativeAge(value: string, anchor: string) {
   const time = Date.parse(value);
@@ -303,11 +292,13 @@ function WorkQueue({ jobs, total, mine, mineCount, everyoneCount, onMine, return
   );
 }
 
-function TodayItem({ href, label, value, icon, tone }: { href: string; label: string; value: number | null; icon: ReactNode; tone: Tone }) {
+// A row only for something to do: a zero is not news, and the label already
+// says what the row is, so it carries no icon.
+function TodayItem({ href, label, value, tone }: { href: string; label: string; value: number | null; tone: Tone }) {
+  if (value === 0) return null;
   const alert = tone === "danger" && value !== null && value > 0;
   return (
     <Link href={href} className={styles.todayItem} data-alert={alert || undefined}>
-      <span className={styles.todayItemIcon} aria-hidden="true">{icon}</span>
       <strong>{label}</strong>
       <span className={styles.todayItemCount} data-zero={value === 0 || undefined}>{value === null ? "—" : value}</span>
       <ChevronRight size={13} strokeWidth={1.8} className={styles.rowChevron} aria-hidden="true" />
@@ -317,21 +308,25 @@ function TodayItem({ href, label, value, icon, tone }: { href: string; label: st
 
 function TodayPanel({ data, workflow, customs, arrivingToday }: { data: CommandCentreData; workflow: WorkflowOverview; customs: number; arrivingToday: number }) {
   const critical = workflow.critical_blockers;
+  const todayItems: Array<{ href: string; label: string; value: number | null; tone: Tone }> = [
+    { href: "/admin/alerts", label: "Overdue tasks", value: data.totals.overdue_tasks, tone: "danger" },
+    { href: "/admin/shipments?attention=1", label: "Shipments with no owner", value: data.totals.unassigned_jobs, tone: "danger" },
+    { href: "/admin/freight-documents", label: "Documents missing", value: workflow.documents?.missing_primary ?? null, tone: "danger" },
+    { href: "/admin/shipments?status=customs_clearance", label: "At customs", value: customs, tone: "warning" },
+    { href: "/admin/delivery", label: "Arriving today", value: arrivingToday, tone: "info" },
+    { href: "/admin/delivery", label: "Deliveries due today", value: data.totals.deliveries_today, tone: "info" },
+    { href: "/admin/visibility", label: "Departing today", value: workflow.visibility?.departing_today ?? null, tone: "info" },
+    { href: "/admin/delivery", label: "Proof of delivery overdue", value: workflow.delivery?.pod_overdue ?? null, tone: "danger" },
+    { href: "/admin/tenders", label: "Bookings to approve", value: workflow.tendering?.accepted_or_countered ?? null, tone: "violet" },
+  ];
   return (
     <section className={`${styles.card} ${styles.todayCard}`} aria-labelledby="today-title">
       <div className={styles.cardHead}>
         <div className={styles.cardTitleRow}><h2 id="today-title">Today</h2></div>
       </div>
       <div className={styles.todayList}>
-        <TodayItem href="/admin/alerts" label="Overdue tasks" value={data.totals.overdue_tasks} tone="danger" icon={<ListChecks size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/shipments?attention=1" label="Shipments with no owner" value={data.totals.unassigned_jobs} tone="danger" icon={<UserRoundX size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/freight-documents" label="Documents missing" value={workflow.documents?.missing_primary ?? null} tone="danger" icon={<FileText size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/shipments?status=customs_clearance" label="At customs" value={customs} tone="warning" icon={<ShieldCheck size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/delivery" label="Arriving today" value={arrivingToday} tone="info" icon={<Plane size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/delivery" label="Deliveries due today" value={data.totals.deliveries_today} tone="info" icon={<PackageCheck size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/visibility" label="Departing today" value={workflow.visibility?.departing_today ?? null} tone="info" icon={<Plane size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/delivery" label="Proof of delivery overdue" value={workflow.delivery?.pod_overdue ?? null} tone="danger" icon={<CircleAlert size={13} strokeWidth={1.8} />} />
-        <TodayItem href="/admin/tenders" label="Bookings to approve" value={workflow.tendering?.accepted_or_countered ?? null} tone="violet" icon={<Clock3 size={13} strokeWidth={1.8} />} />
+        {todayItems.map((item) => <TodayItem key={item.label} {...item} />)}
+        {todayItems.every((item) => item.value === 0) ? <p className={styles.todayNone}>Nothing due today.</p> : null}
       </div>
       {critical ? (
         <Link href="/admin/alerts" className={styles.todayCritical}>
@@ -339,7 +334,7 @@ function TodayPanel({ data, workflow, customs, arrivingToday }: { data: CommandC
           <span className={styles.todayFootCopy}><strong>{critical} critical problem{critical === 1 ? "" : "s"}</strong><span>Open Tasks & alerts</span></span>
           <ChevronRight size={14} strokeWidth={1.8} aria-hidden="true" />
         </Link>
-      ) : (
+      ) : critical === 0 ? null : (
         <Link href="/admin/alerts" className={styles.todayClear}>
           <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden="true" />
           <span className={styles.todayFootCopy}><strong>{critical === null ? "Couldn’t check for critical problems" : "No critical problems"}</strong><span>{critical === null ? "Open Tasks & alerts to check" : "Nothing critical is open in Tasks & alerts"}</span></span>
@@ -367,10 +362,9 @@ function Workload({ data, workflow }: { data: CommandCentreData; workflow: Workf
     <section className={styles.card} aria-labelledby="workload-title">
       <div className={styles.cardHead}>
         <div className={styles.cardTitleRow}><h2 id="workload-title">Shipment workload</h2></div>
-        <span className={styles.headMeta}>{data.totals.active_jobs} active</span>
       </div>
       <div className={styles.workloadBody}>
-        {rows.map((row) => (
+        {rows.filter((row) => row.count > 0).map((row) => (
           <Link key={row.label} href={row.href} className={styles.workloadRow}>
             <span className={styles.workloadLabel}>{row.label}</span>
             <span className={styles.workloadTrack} aria-hidden="true"><span className={styles.workloadFill} data-tone={row.tone} data-zero={row.count === 0 || undefined} style={{ width: `${Math.max(row.count ? 4 : 0, (row.count / max) * 100)}%` }} /></span>
@@ -709,12 +703,10 @@ export function V4OperationsOverview({ data, workflow, finance, note, exposureBy
       <header className={styles.pageHead}>
         <div className={styles.pageHeadCopy}>
           <h1>Overview</h1>
+          {/* The branch is in the bar's picker and the page refreshes itself;
+            * the day is the one fact the header adds. */}
           <p className={styles.pageHeadMeta}>
-            <span>{selectedBranch === "all" ? "All branches" : selectedBranch} operations</span>
-            <span className={styles.metaDot} aria-hidden="true" />
             <span>{formatOperationalDate(data.operational_date)}</span>
-            <span className={styles.metaDot} aria-hidden="true" />
-            <span>Updated {formatNepalTime(data.generated_at)} NPT</span>
           </p>
         </div>
         <div className={styles.pageHeadActions} data-page-actions>

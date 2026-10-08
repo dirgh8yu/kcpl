@@ -488,7 +488,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
                 {activeTab === "overview" ? <div className="enq-overview">
                   <div className="enq-overview-main">
-                    <OpsSurface density="compact" title="Cargo & route" description="The customer's original freight requirement.">
+                    <OpsSurface density="compact" title="Cargo & route">
                       <OpsFacts>
                         <OpsFact label="Route">{`${detail.origin || "Not recorded"} → ${detail.destination || "Not recorded"}`}</OpsFact>
                         <OpsFact label="Mode">{modeLabel(detail.mode)}</OpsFact>
@@ -512,10 +512,10 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
                   <aside className="enq-overview-side">
                     <CustomerControl detail={detail} saving={saving} manualCustomerId={manualCustomerId} onManualCustomerId={setManualCustomerId} onLink={linkCustomer} onCreate={createCustomerFromEnquiry}/>
-                    <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Accepted and locked to its shipment. Ownership can still be updated." : detail.customer_id ? "Customer confirmed. Commercial staff can progress through Quoted, Won or Lost." : "Confirm the customer record before marking this enquiry Won."}>
+                    <OpsSurface density="compact" title="Ownership & status" description={detail.status === "won" ? "Won and linked to its shipment." : undefined}>
                       <form onSubmit={saveQuote} className="ops-inspector-form enq-workflow">
                         <OpsField label="Status" className="col-span-full" hint={statusLocked ? detail.status === "won" ? "Won is final here. Continue from the Shipment or shipment record." : "Commercial access is required to change this status." : !canEditCommercial ? "You can move New and Reviewing enquiries while commercial states remain protected." : undefined}><select disabled={statusLocked} value={detail.status} onChange={(event) => setDetail({ ...detail, status: event.target.value as QuoteStatus })}>{workflowOptions.map((value) => <option value={value} key={value}>{statusLabels[value]}</option>)}</select></OpsField>
-                        <OpsField label="Assigned to" className="col-span-full" hint="From People & branches; name, email and phone fill automatically."><StaffAssignmentPicker compact value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField>
+                        <OpsField label="Assigned to" className="col-span-full"><StaffAssignmentPicker value={{ name: detail.assigned_to_name ?? detail.assigned_to ?? "", email: detail.assigned_to_email ?? "", phone: detail.assigned_to_phone ?? "" }} onChange={(staff) => setDetail({ ...detail, assigned_to: staff.name || staff.email || null, assigned_to_name: staff.name || null, assigned_to_email: staff.email || null, assigned_to_phone: staff.phone || null })}/></OpsField>
                         <div className="col-span-full"><OpsButton type="submit" variant="primary" size="sm" disabled={saving || (detail.status === "won" && !detail.customer_id)}>{saving ? "Saving…" : detail.status === "won" && !detail.customer_id ? "Confirm customer first" : "Save workflow"}</OpsButton></div>
                       </form>
                     </OpsSurface>
@@ -531,7 +531,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                   </aside>
                 </div> : null}
 
-                {activeTab === "pricing" && canViewCommercial ? <OpsSurface density="compact" title="Build the customer offer" description={canEditCommercial ? "Sell price, internal cost and margin stay visible together. Internal cost never enters the customer email." : "Commercial figures are visible to your role, but pricing changes require commercial edit access."}>
+                {activeTab === "pricing" && canViewCommercial ? <OpsSurface density="compact" title="Build the customer offer">
                   {!canEditCommercial ? <div className="plan-notice"><OpsInlineAlert tone="neutral">Pricing is read-only for your current KCPL role.</OpsInlineAlert></div> : null}
                   <form onSubmit={saveCommercial}>
                     <div className="ops-form-grid">
@@ -561,7 +561,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
                 {activeTab === "shipment" ? <OpsSurface density="compact" title="Shipment" description={detail.shipment ? "This enquiry’s shipment. Work it from its own page." : detail.customer_id ? "A shipment is created automatically when this enquiry is saved as Won." : "Confirm the customer record first; then Won will create the shipment automatically."}><AdminShipmentPanel shipment={detail.shipment} quoteStatus={detail.status}/></OpsSurface> : null}
 
-                {activeTab === "activity" ? <OpsSurface density="compact" title="Activity & communications" description="Customer quote emails and internal notes in one chronological history.">
+                {activeTab === "activity" ? <OpsSurface density="compact" title="Activity & communications">
                   <form onSubmit={addNote} className="enq-note-form">
                     <textarea className="ops-input" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Add an internal note, callback, pricing decision or follow-up…" maxLength={3000} aria-label="Internal note"/>
                     <OpsButton type="submit" variant="primary" size="sm" disabled={saving || !noteDraft.trim()}><MessageSquareText size={14} strokeWidth={1.75} aria-hidden="true"/>Add note</OpsButton>
@@ -593,12 +593,12 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
 
 function CustomerControl({ detail, saving, manualCustomerId, onManualCustomerId, onLink, onCreate }: { detail: QuoteDetail; saving: boolean; manualCustomerId: string; onManualCustomerId: (value: string) => void; onLink: (customerId: string) => void; onCreate: () => void }) {
   if (detail.customer_id) {
-    return <OpsSurface density="compact" title="Customer record" description="This relationship flows into the shipment, Job File, the customer’s page and Receivables." action={<a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Open customer<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>}>
+    return <OpsSurface density="compact" title="Customer record" action={<a href={`/admin/crm/${encodeURIComponent(detail.customer_id)}`} className="ops-button" data-variant="secondary" data-size="xs">Open customer<ArrowRight size={14} strokeWidth={1.75} aria-hidden="true"/></a>}>
       <OpsFacts><OpsFact label="Linked account"><span className="ops-mono">{detail.customer_id}</span></OpsFact></OpsFacts>
     </OpsSurface>;
   }
 
-  return <OpsSurface density="compact" title="Confirm customer before marking Won" description="Confirm a suggested account, enter a known KCPL customer reference, or create a new prospect only when no duplicate exists.">
+  return <OpsSurface density="compact" title="Confirm customer before marking Won">
     {detail.crm_matches.length ? <ul className="enq-matches">{detail.crm_matches.slice(0, 4).map((match) => <li key={match.id}><button type="button" disabled={saving} onClick={() => onLink(match.id)}>
       <span className="min-w-0"><strong>{match.display_name}</strong><span>{match.reason || "Existing customer details match"} · <span className="ops-mono">{match.id}</span></span></span>
       <span className="enq-match-action">Confirm</span>

@@ -30,7 +30,7 @@ export default async function CarrierIntegrationsPage() {
 
   if (!result) return <OperationsShell {...shell}><Gate title="Carrier connections didn’t load" detail="Provider status could not be loaded. Navigation remains available and no shipment records have been changed." embedded/></OperationsShell>;
   if (result.kind !== "ready") return <OperationsShell {...shell}><Gate title="Carrier connections didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
-  return <OperationsShell {...shell}><OpsPage><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} initialSummary={result.summary} canViewCommercial={staff.permissions.canViewCommercial}/></OpsPage></OperationsShell>;
+  return <OperationsShell {...shell}><OpsPage><CarrierIntegrationsWorkspace initialProviders={result.providers} initialRows={result.rows} canViewCommercial={staff.permissions.canViewCommercial}/></OpsPage></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

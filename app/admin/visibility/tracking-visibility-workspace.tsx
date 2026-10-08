@@ -25,12 +25,12 @@ import {
   OpsInspectorHeader,
   OpsInspectorNote,
   OpsInspectorSection,
-  OpsMono,
   OpsNoMatches,
   OpsNotice,
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsSkeleton,
@@ -293,44 +293,6 @@ export function TrackingVisibilityWorkspace({
       .slice(0, 5);
   }, [rows]);
 
-  const recentSignals = useMemo(
-    () =>
-      [...rows]
-        .filter((row) => row.last_event_at)
-        .sort(
-          (a, b) =>
-            Date.parse(b.last_event_at ?? "") -
-            Date.parse(a.last_event_at ?? ""),
-        )
-        .slice(0, 5),
-    [rows],
-  );
-
-  const featured = useMemo(() => {
-    if (selected) return selected;
-    return (
-      [...filtered].sort((a, b) => {
-        if (a.stale !== b.stale) return Number(b.stale) - Number(a.stale);
-        const aDelay = a.eta_delta_hours ?? 0;
-        const bDelay = b.eta_delta_hours ?? 0;
-        if (aDelay !== bDelay) return bDelay - aDelay;
-        return (
-          Date.parse(b.last_event_at ?? "") - Date.parse(a.last_event_at ?? "")
-        );
-      })[0] ??
-      rows[0] ??
-      null
-    );
-  }, [filtered, rows, selected]);
-
-  const lastUpdated = useMemo(() => {
-    const latest = rows
-      .map((row) => row.last_received_at || row.last_event_at || row.updated_at)
-      .filter(Boolean)
-      .sort((a, b) => Date.parse(b) - Date.parse(a))[0];
-    return latest ?? null;
-  }, [rows]);
-
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(
     pageCount,
@@ -457,11 +419,10 @@ export function TrackingVisibilityWorkspace({
       <OpsPageHeader
         title="Tracking"
         description="Where each shipment is, its latest update, and which have gone quiet."
-        meta={<span className="visibility-last-updated">Last updated <strong>{lastUpdated ? dateTime(lastUpdated) : "No tracking signal"}</strong></span>}
         actions={(
           <>
             {canSweep ? (
-              <OpsButton variant="primary" disabled={sweeping || refreshing} onClick={sweep}>
+              <OpsButton variant="secondary" disabled={sweeping || refreshing} onClick={sweep}>
                 <Activity size={16} strokeWidth={1.75} aria-hidden="true"/>
                 {sweeping ? "Sweeping…" : "Run health sweep"}
               </OpsButton>
@@ -482,7 +443,7 @@ export function TrackingVisibilityWorkspace({
               <OpsFilterSelect label="Destination" value={destinationFilter} allLabel="All destinations" options={destinations.map((destination) => ({ value: destination, label: destination }))} onChange={(value) => update({ destination: value === "all" ? null : value, page: null, selected: null })}/>
               {hasFilters ? <OpsButton size="xs" variant="ghost" onClick={resetFilters}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} shipments` : `${filtered.length} of ${rows.length}`}</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs label="Shipment visibility state" items={FOCUS_OPTIONS.map((option) => ({ ...option, count: focusCounts[option.value] }))} value={focus} onChange={setFocus}/>}
@@ -568,32 +529,9 @@ export function TrackingVisibilityWorkspace({
           )}
         </section>
 
-        {/* Context below the register: the most urgent movement, provider
-            health and the newest signals. */}
+        {/* Below the register: which carrier feeds have gone quiet. */}
         <div className="visibility-context">
-          <OpsSurface density="compact" title="Priority movement" description="The most urgent visible movement: stale feeds first, then the largest ETA slip." action={featured ? <OpsButton size="xs" variant="secondary" onClick={() => openInspector(featured)}>Inspect<ChevronRight size={13} strokeWidth={1.75} aria-hidden="true"/></OpsButton> : undefined}>
-            {featured ? (
-              <>
-                <div className="visibility-spotlight-head">
-                  <OpsMono>{featured.reference}</OpsMono>
-                  <OpsBadge tone={shipmentStatusTone(featured.status)}>{shipmentStatusLabels[featured.status]}</OpsBadge>
-                  {featured.stale ? <OpsBadge tone="danger" dot>Stale feed</OpsBadge> : null}
-                </div>
-                <p className="visibility-spotlight-customer">{featured.customer_name || "Customer not linked"}</p>
-                <OpsFacts>
-                  <OpsFact label="Route">{featured.origin} → {featured.destination}</OpsFact>
-                  <OpsFact label="Carrier" warning={!featured.carrier}>{featured.carrier || "Not assigned"}</OpsFact>
-                  <OpsFact label="Last signal">{shortDateTime(featured.last_event_at)} · {featured.current_location || "Location unknown"}</OpsFact>
-                  <OpsFact label="Milestone">{featured.last_milestone ? trackingMilestoneLabels[featured.last_milestone] : "Awaiting normalized event"}</OpsFact>
-                  <OpsFact label="ETA">{shortDateTime(featured.eta)}</OpsFact>
-                  <OpsFact label="Movement" warning={(featured.eta_delta_hours ?? 0) >= 24}>{delayText(featured.eta_delta_hours)}</OpsFact>
-                  <OpsFact label="Provider">{featured.last_provider || sourceLabel(featured.last_source) || "Not reported"}</OpsFact>
-                </OpsFacts>
-              </>
-            ) : <OpsEmptyState icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No active movement" description="Tracking movement will appear here when shipment visibility becomes available."/>}
-          </OpsSurface>
-
-          <OpsSurface density="compact" title="Feed health" description="Providers currently represented in shipment feeds." action={<Link href="/admin/carrier-integrations" className="ops-button" data-variant="ghost" data-size="xs">Manage integrations</Link>}>
+          <OpsSurface density="compact" title="Feed health" action={<Link href="/admin/carrier-integrations" className="ops-button" data-variant="ghost" data-size="xs">Manage integrations</Link>}>
             {providerHealth.length ? (
               <ul className="visibility-list">
                 {providerHealth.map((provider) => {
@@ -610,26 +548,6 @@ export function TrackingVisibilityWorkspace({
                 })}
               </ul>
             ) : <OpsEmptyState icon={<Radio size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No provider signals yet" description="Feeds appear here once a carrier, EDI or counterpart update is received."/>}
-            <div className="visibility-links"><Link href="/admin/edi">EDI 214 Gateway</Link><Link href="/admin/carrier-integrations">Carrier integrations</Link></div>
-          </OpsSurface>
-
-          <OpsSurface density="compact" title="Recent signals" description="Latest shipment-level tracking state.">
-            {recentSignals.length ? (
-              <ul className="visibility-list">
-                {recentSignals.map((row) => (
-                  <li key={row.reference}>
-                    <button type="button" className="visibility-list-button" onClick={() => openInspector(row)} aria-label={`Inspect ${row.reference}: ${row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Tracking signal"}${row.stale ? ", stale feed" : ""}`}>
-                      <span className="visibility-signal-dot" data-tone={signalTone(row)} aria-hidden="true"/>
-                      <span className="visibility-list-main">
-                        <span className="visibility-list-title">{row.last_milestone ? trackingMilestoneLabels[row.last_milestone] : "Tracking signal"}</span>
-                        <span className="visibility-list-meta ops-mono">{row.reference}</span>
-                      </span>
-                      <time className="visibility-list-time">{relativeSignal(row.last_event_at)}</time>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : <OpsEmptyState icon={<Radar size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No recent tracking signals" description="Signals appear as carriers and counterparts report movement."/>}
           </OpsSurface>
         </div>
       </div>
@@ -646,14 +564,6 @@ export function TrackingVisibilityWorkspace({
       ) : null}
     </OpsPage>
   );
-}
-
-/** A state dot for signal rows: red stale, green delivered, amber out for delivery, blue otherwise. */
-function signalTone(row: VisibilityShipment) {
-  if (row.stale) return "danger";
-  if (row.status === "delivered") return "success";
-  if (row.status === "out_for_delivery") return "warning";
-  return "info";
 }
 
 function TrackingVisibilityPanel({

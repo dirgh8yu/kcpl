@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, Clock3, History, LoaderCircle, RefreshCw } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsRailMetric, OpsSurface } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsNotice, OpsSurface } from "../operations-ui";
 import type { MigrationBatchDashboard, MigrationBatchStatus } from "./migration-batches";
 
 function dateTime(value: string | null) {
@@ -53,37 +53,24 @@ export function MigrationBatchHistory({ initialDashboard }: { initialDashboard: 
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     <OpsSurface
       density="compact"
-      title="Stage 4A · Migration Control Centre"
-      description="Every migration batch in one read-only ledger: Customer, Shipment, Receivables and Payables imports. The evidence trail comes before any rollback."
+      title="Import batches"
       action={<OpsButton variant="ghost" size="xs" disabled={busy} onClick={() => void refresh()}>{busy ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <RefreshCw size={14} strokeWidth={1.75} aria-hidden="true"/>}Refresh</OpsButton>}
       flush
     >
       {!dashboard ? <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Import history didn’t load" description="Import batches didn’t load. Try again in a minute."/> : <>
-        <div className="migration-counts"><OpsKpiRail label="Migration batch summary">
-          <Metric label="Batches" value={dashboard.total_batches}/>
-          <Metric label="Completed" value={dashboard.completed_batches} tone="success"/>
-          <Metric label="Partial failures" value={dashboard.partial_failure_batches} tone={dashboard.partial_failure_batches ? "danger" : "neutral"}/>
-          <Metric label="Interrupted" value={dashboard.interrupted_batches} tone={dashboard.interrupted_batches ? "warning" : "neutral"}/>
-          <Metric label="Records imported" value={dashboard.imported_records}/>
-        </OpsKpiRail></div>
-
-        {dashboard.batches.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table migration-table min-w-[1180px]"><thead><tr><th>Batch</th><th>Stage</th><th>Source</th><th>Rows</th><th>Imported</th><th>Actor</th><th>Completed</th><th>Status</th></tr></thead><tbody>{dashboard.batches.map((batch) => <tr key={batch.id}>
+        {dashboard.batches.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table migration-table min-w-[1180px]"><thead><tr><th>Batch</th><th>Records</th><th>Source</th><th>Rows</th><th>Imported</th><th>Actor</th><th>Completed</th><th>Status</th></tr></thead><tbody>{dashboard.batches.map((batch) => <tr key={batch.id}>
           <td><Link href={`/admin/migration/batches/${encodeURIComponent(batch.id)}`} className="ops-cell-primary ops-mono ops-cell-id org-link">{batch.id}</Link><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Created {dateTime(batch.created_at)}</p></td>
-          <td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.stage_label}</strong><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.type_label}</p></td>
+          <td><span className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.type_label}</span></td>
           <td><span className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.source_filename || "No source filename"}</span></td>
           <td><span className="text-[length:var(--app-label-size)]">{batch.total_rows} detected</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.ready_rows} ready · {batch.duplicate_rows} duplicate · {batch.invalid_rows} invalid</p></td>
-          <td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.imported_count}</strong>{batch.detail_metrics.length ? <p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.detail_metrics.map((item) => `${item.label} ${item.value}`).join(" · ")}</p> : null}</td>
-          <td><span className="text-[length:var(--app-label-size)]">{batch.created_by_name}</span><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{batch.created_by_email || "No email"}</p></td>
+          <td><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{batch.imported_count}</strong></td>
+          <td><span className="text-[length:var(--app-label-size)]">{batch.created_by_name}</span></td>
           <td><span className="text-[length:var(--app-label-size)]">{dateTime(batch.completed_at)}</span></td>
           <td><OpsBadge tone={tone(batch.status)}>{label(batch.status)}</OpsBadge>{batch.status === "interrupted" ? <p className="mt-1 flex items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-warning)]"><Clock3 size={9}/>Running for more than 30 minutes</p> : null}{batch.error ? <p className="mt-1 max-w-[220px] text-[length:var(--app-label-size)] leading-4 text-[var(--admin-danger)]">{batch.error}</p> : null}</td>
-        </tr>)}</tbody></table></div> : <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No migration batches yet" description="The first confirmed Stage 1–3 import will appear here automatically."/>}
+        </tr>)}</tbody></table></div> : <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No migration batches yet" description="Each confirmed import appears here."/>}
 
-        {dashboard.partial_failure_batches || dashboard.interrupted_batches ? <div className="migration-attention"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Recovery attention required.</strong> Stage 4A only surfaces the affected batches. Controlled rollback and recovery actions run from Undo an import.</OpsInlineAlert></div> : null}
+        {dashboard.partial_failure_batches || dashboard.interrupted_batches ? <div className="migration-attention"><OpsInlineAlert icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Some imports didn’t finish.</strong> Undo them from <Link href="/admin/migration/recovery" className="org-link">Undo an import</Link>.</OpsInlineAlert></div> : null}
       </>}
     </OpsSurface>
   </div>;
-}
-
-function Metric({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "success" | "warning" | "danger" }) {
-  return <OpsRailMetric label={label} value={value} tone={tone}/>;
 }

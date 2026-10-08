@@ -82,6 +82,13 @@ export function OpsScopeTabs<T extends string>({ label, items, value, onChange }
   );
 }
 
+/** How many rows a search matched. The scope tabs already carry every
+ * total, so the count speaks only while a search narrows the list; the empty
+ * live region stays mounted so a screen reader hears the first match count. */
+export function OpsResultCount({ count, searching }: { count: number; searching: boolean }) {
+  return <span className="ops-result-count" aria-live="polite">{searching ? `${count} ${count === 1 ? "match" : "matches"}` : ""}</span>;
+}
+
 /** Search left, controls right, scopes on their own row: one flat operating row, not a control card. */
 export function OpsRegisterToolbar({ search, actions, tabs, className }: { search: ReactNode; actions?: ReactNode; tabs?: ReactNode; className?: string }) {
   return (

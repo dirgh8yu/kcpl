@@ -44,7 +44,7 @@ export function BulkAssignBar({ references, onClear }: { references: string[]; o
   if (!references.length) return notice ? <div className="ops-bulk-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null;
   return <div className="ops-bulk-bar" role="region" aria-label="Selected shipments">
     <strong>{references.length} selected</strong>
-    <div className="ops-bulk-bar-picker"><StaffAssignmentPicker compact emptyLabel="Choose an owner…" value={owner} onChange={(value) => setOwner({ uid: value.uid ?? "", name: value.name, email: value.email, phone: value.phone })}/></div>
+    <div className="ops-bulk-bar-picker"><StaffAssignmentPicker emptyLabel="Choose an owner…" value={owner} onChange={(value) => setOwner({ uid: value.uid ?? "", name: value.name, email: value.email, phone: value.phone })}/></div>
     <OpsButton variant="primary" size="sm" disabled={busy || !owner.uid} onClick={() => void assign()}><UserRoundCheck size={13} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Assigning…" : "Give them this owner"}</OpsButton>
     <OpsButton variant="ghost" size="sm" disabled={busy} onClick={onClear}><X size={13} strokeWidth={1.75} aria-hidden="true"/>Clear</OpsButton>
     {notice ? <div className="ops-bulk-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}

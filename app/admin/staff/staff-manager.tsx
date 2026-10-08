@@ -91,7 +91,6 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
   }
 
   const suspended = profiles.length - activeCount;
-  const allBranchCount = profiles.filter((profile) => profile.branch_scope === "all").length;
   const compact = panelOpen;
   const filtersActive = Boolean(query.trim()) || roleFilter !== "all";
 
@@ -100,7 +99,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
       title="People & branches"
       description="Who can use KCPL Operations, their role and their branches."
       // One line for access review; the list below counts the people.
-      meta={<span>{activeCount} active{suspended ? <> · <span className="text-[var(--admin-danger)]">{suspended} suspended</span></> : null} · {allBranchCount} with all-branch access</span>}
+      meta={suspended ? <span className="text-[var(--admin-danger)]">{suspended} suspended</span> : undefined}
       actions={<OpsButton variant="primary" onClick={startNew}><UserPlus size={16} strokeWidth={1.75} aria-hidden="true"/>Add staff</OpsButton>}
     />
 

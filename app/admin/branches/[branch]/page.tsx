@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
-  CalendarDays,
   CheckCircle2,
   UserRound,
 } from "lucide-react";
@@ -21,7 +20,6 @@ import {
   OpsSurface,
 } from "../../operations-ui";
 import { getStaffContext } from "../../staff-directory.server";
-import { kcplStaffRoleLabels } from "../../staff-permissions";
 import { loadCommandCentre } from "../../command-centre/command-centre.server";
 import type { CommandCentreJob } from "../../command-centre/command-centre-data";
 
@@ -48,23 +46,16 @@ function dateOnly(value: string | null) {
     : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: value.length === 10 ? "UTC" : NEPAL_TIME_ZONE }).format(date);
 }
 
-function dateTimeNepal(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Time unavailable"
-    : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: NEPAL_TIME_ZONE }).format(date);
-}
-
 function ownerLabel(job: CommandCentreJob) {
   return job.assigned_to_name || job.assigned_to_email || "Unassigned";
 }
 
 function issueFor(job: CommandCentreJob) {
-  if (job.status === "exception") return { tone: "danger" as const, title: "Shipment exception", detail: "Movement is in exception status." };
-  if (job.overdue_tasks > 0) return { tone: "danger" as const, title: `${job.overdue_tasks} overdue task${job.overdue_tasks === 1 ? "" : "s"}`, detail: "Operational work is past due." };
-  if (job.required_customs_open > 0) return { tone: "warning" as const, title: `${job.required_customs_open} customs step${job.required_customs_open === 1 ? "" : "s"} open`, detail: "Required customs work remains incomplete." };
-  if (!job.assigned_to_name && !job.assigned_to_email) return { tone: "warning" as const, title: "No shipment owner", detail: "This movement has not been assigned." };
-  if (job.priority === "urgent" || job.priority === "high") return { tone: "warning" as const, title: `${job.priority === "urgent" ? "Urgent" : "High"} priority`, detail: "This shipment has elevated operational priority." };
+  if (job.status === "exception") return { tone: "danger" as const, title: "Shipment exception" };
+  if (job.overdue_tasks > 0) return { tone: "danger" as const, title: `${job.overdue_tasks} overdue task${job.overdue_tasks === 1 ? "" : "s"}` };
+  if (job.required_customs_open > 0) return { tone: "warning" as const, title: `${job.required_customs_open} customs step${job.required_customs_open === 1 ? "" : "s"} open` };
+  if (!job.assigned_to_name && !job.assigned_to_email) return { tone: "warning" as const, title: "No shipment owner" };
+  if (job.priority === "urgent" || job.priority === "high") return { tone: "warning" as const, title: `${job.priority === "urgent" ? "Urgent" : "High"} priority` };
   return null;
 }
 
@@ -95,11 +86,6 @@ export default async function BranchOperationsPage({ params }: { params: Promise
   const unassigned = jobs.filter((job) => !job.assigned_to_name && !job.assigned_to_email).length;
   const pressureJobs = jobs.filter((job) => issueFor(job));
 
-  const upcomingEtas = [...jobs]
-    .filter((job) => job.eta && job.eta.slice(0, 10) >= data.operational_date)
-    .sort((a, b) => (a.eta || "9999").localeCompare(b.eta || "9999"))
-    .slice(0, 8);
-
   const ownerMap = new Map<string, { key: string; name: string; jobs: number; openTasks: number; customsOpen: number; exceptions: number }>();
   for (const job of jobs) {
     const name = ownerLabel(job);
@@ -125,9 +111,7 @@ export default async function BranchOperationsPage({ params }: { params: Promise
         <OpsPageHeader
           eyebrow="Branch"
           title={branch}
-          description="Active shipments at this branch, who owns them, what is due and what is blocked."
-          meta={<><span>{kcplStaffRoleLabels[staff.permissions.role]}</span><span>Operational date {dateOnly(data.operational_date)}</span><span>Snapshot {dateTimeNepal(data.generated_at)} NPT</span></>}
-          actions={<div className="flex items-center gap-2"><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="primary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
+          actions={<div className="flex items-center gap-2"><Link href={`/admin/shipments?branch=${encodeURIComponent(branch)}`} className="ops-button" data-variant="secondary" data-size="md">Shipment queue<ArrowUpRight size={12}/></Link></div>}
         />
 
         <div className="ops-content ops-stack">
@@ -137,21 +121,20 @@ export default async function BranchOperationsPage({ params }: { params: Promise
             <OpsRailMetric label="Open tasks" value={openTasks} detail={overdueTasks ? `${overdueTasks} overdue` : undefined} tone={overdueTasks ? "danger" : "neutral"}/>
             <OpsRailMetric label="Customs steps open" value={customsOpen} tone={customsOpen ? "warning" : "neutral"}/>
           </OpsKpiRail>
-          <OpsSurface eyebrow="Live movements" title="Active shipments" description={`${jobs.length} active movement${jobs.length === 1 ? "" : "s"} connected to ${branch}.`} flush>
+          <OpsSurface title="Active shipments" flush>
               {jobs.length ? (
                 <div className="ops-scroll-x ops-table-wrap overflow-x-auto">
                   <table className="ops-table ops-register-table ops-stack-table min-w-[1050px] w-full">
-                    <thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Owner</th><th>ETA</th><th>Open tasks</th><th>Customs</th><th></th></tr></thead>
+                    <thead><tr><th>Route</th><th>Shipment</th><th>Status</th><th>Owner</th><th>ETA</th><th>Open tasks</th><th>Customs</th></tr></thead>
                     <tbody>{jobs.map((job) => (
                       <tr key={job.reference}>
                         <td><strong className="ops-route"><span>{job.origin || "Origin"}</span><ArrowRight size={11} className="ops-route-arrow"/><span>{job.destination || "Destination"}</span></strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name}</span></td>
-                        <td><OpsMono>{job.reference}</OpsMono><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.current_location || branch}</span></td>
+                        <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-cell-link"><OpsMono>{job.reference}</OpsMono></Link><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.current_location || branch}</span></td>
                         <td><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td>
                         <td className={!job.assigned_to_name && !job.assigned_to_email ? "font-semibold text-[var(--admin-warning)]" : ""}>{ownerLabel(job)}</td>
                         <td>{dateOnly(job.eta)}</td>
                         <td className={job.overdue_tasks ? "font-bold text-[var(--admin-danger)]" : ""}>{job.open_tasks}{job.overdue_tasks ? <span className="ml-1 text-[length:var(--app-label-size)]">({job.overdue_tasks} overdue)</span> : null}</td>
                         <td className={job.required_customs_open ? "font-semibold text-[var(--admin-warning)]" : ""}>{job.required_customs_open}/{job.required_customs_total}</td>
-                        <td><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="ops-button" data-variant="secondary" data-size="sm">Open Job File<ArrowUpRight size={11}/></Link></td>
                       </tr>
                     ))}</tbody>
                   </table>
@@ -159,21 +142,15 @@ export default async function BranchOperationsPage({ params }: { params: Promise
               ) : <OpsEmptyState kind="healthy" icon={<CheckCircle2 size={16}/>} title="No active movements" description={`There are currently no active shipments connected to ${branch}.`}/>} 
           </OpsSurface>
 
-          <div className="ops-grid-2">
-              <OpsSurface eyebrow="ETA watch" title="Upcoming ETAs" description="Next scheduled arrivals or deliveries for this branch." flush>
-                {upcomingEtas.length ? <div>{upcomingEtas.map((job) => <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><div className="min-w-0"><strong className="block truncate text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{job.origin || "Origin"} → {job.destination || "Destination"}</strong><span className="mt-1 block truncate text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {ownerLabel(job)}</span></div><div className="shrink-0 text-right"><strong className="text-[length:var(--app-text-sm)] text-[var(--admin-info)]">{dateOnly(job.eta)}</strong><span className="mt-1 block text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{shipmentStatusLabels[job.status]}</span></div></Link>)}</div> : <OpsEmptyState compact kind="healthy" icon={<CalendarDays size={15}/>} title="No upcoming ETA set" description="Active shipments at this branch do not currently have a future ETA recorded."/>}
-              </OpsSurface>
-
-              <OpsSurface eyebrow="Ownership" title="Owners" description="Active movement load by current shipment owner." flush>
+          <OpsSurface title="Owners" flush>
                 {owners.length ? <div className="ops-scroll-x ops-table-wrap overflow-x-auto"><table className="ops-table ops-register-table ops-stack-table w-full"><thead><tr><th>Owner</th><th>Jobs</th><th>Tasks</th><th>Customs</th><th>Exceptions</th></tr></thead><tbody>{owners.map((owner) => <tr key={owner.key}><td className={owner.key === "unassigned" ? "font-semibold text-[var(--admin-warning)]" : "font-semibold"}>{owner.name}</td><td>{owner.jobs}</td><td>{owner.openTasks}</td><td>{owner.customsOpen}</td><td className={owner.exceptions ? "font-bold text-[var(--admin-danger)]" : "text-[var(--admin-muted)]"}>{owner.exceptions}</td></tr>)}</tbody></table></div> : <OpsEmptyState compact kind="healthy" icon={<UserRound size={15}/>} title="No ownership load" description="There are no active movements to distribute across staff."/>}
-              </OpsSurface>
-          </div>
+          </OpsSurface>
 
-          <OpsSurface eyebrow="Attention" title="Exceptions & blockers" description="Movements at this branch with exceptions, overdue work, customs blockers, missing ownership or elevated priority." flush priority={pressureJobs.length ? "warning" : "success"}>
+          <OpsSurface title="Exceptions & blockers" flush priority={pressureJobs.length ? "warning" : "success"}>
             {pressureJobs.length ? <div>{pressureJobs.map((job) => {
               const issue = issueFor(job)!;
-              return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="grid grid-cols-[4px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><span className="ops-priority-rail" data-tone={issue.tone}/><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{issue.title}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {job.origin || "Origin"} → {job.destination || "Destination"} · {issue.detail}</p></div><ArrowUpRight size={13} className="text-[var(--admin-muted)]"/></Link>;
-            })}</div> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16}/>} title="Branch clear" description={`${branch} has no active exceptions, overdue tasks, customs blockers, unassigned movements or elevated-priority work.`}/>} 
+              return <Link key={job.reference} href={`/admin/jobs/${encodeURIComponent(job.reference)}`} className="grid grid-cols-[4px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--admin-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--admin-surface-soft)]"><span className="ops-priority-rail" data-tone={issue.tone}/><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-[length:var(--app-text-sm)] text-[var(--admin-ink)]">{issue.title}</strong><OpsBadge tone={statusTone(job.status)}>{shipmentStatusLabels[job.status]}</OpsBadge></div><p className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{job.customer_name} · {job.origin || "Origin"} → {job.destination || "Destination"}</p></div><ArrowUpRight size={13} className="text-[var(--admin-muted)]"/></Link>;
+            })}</div> : <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16}/>} title="Branch clear" description="Nothing overdue, blocked or unowned."/>} 
           </OpsSurface>
         </div>
       </OpsPage>

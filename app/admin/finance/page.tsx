@@ -1,5 +1,4 @@
 import { getAdminAccess } from "../admin-auth";
-import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext } from "../staff-directory.server";
 import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
@@ -37,7 +36,7 @@ export default async function FinancePage() {
   if (!staff.permissions.canManageFinance) return <OperationsShell {...shellProps}><Gate title="Finance access is restricted" detail="Receivables are available to Management and Accounts roles only." embedded/></OperationsShell>;
   const result = await loadDashboard(staff);
   if (result.kind !== "ready") return <OperationsShell {...shellProps}><Gate title={result.kind === "error" ? "Finance could not be loaded" : "Finance is unavailable"} detail="The records service isn’t responding. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
-  return <OperationsShell {...shellProps}><FinanceWorkspace dashboard={result.dashboard}/><div className="ops-content pb-6"><ForexReferencePanel/></div></OperationsShell>;
+  return <OperationsShell {...shellProps}><FinanceWorkspace dashboard={result.dashboard}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

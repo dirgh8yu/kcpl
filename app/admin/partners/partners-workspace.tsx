@@ -36,6 +36,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsSurface,
@@ -217,7 +218,6 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
         <OpsSurface
           density="compact"
           title={form.id ? `Edit ${form.displayName}` : "Add partner or vendor"}
-          description="Capture the service footprint and working contact first. Legal, contract and commercial detail can stay tucked away until needed."
           action={<button type="button" onClick={() => setFormOpen(false)} className="ops-inspector-close" aria-label="Close partner form"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
         >
           <form onSubmit={savePartner} className="network-form">
@@ -274,7 +274,7 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
             <OpsFilterSelect label="Type" value={typeFilter} allLabel="All types" options={partnerTypes.map((type) => ({ value: type, label: partnerTypeLabels[type] }))} onChange={(value) => setTypeFilter(value as "all" | PartnerType)}/>
             {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span className="ops-toolbar-divider" aria-hidden="true"/>
-            <span className="ops-result-count" aria-live="polite">{filtered.length === total ? `${total} records` : `${filtered.length} of ${total}`}</span>
+            <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
           </>}
           tabs={<OpsScopeTabs label="Partner status" items={[{ value: "all" as const, label: "All", count: total }, ...partnerStatuses.map((status) => ({ value: status, label: partnerStatusLabels[status], count: statusCounts[status] }))]} value={statusFilter} onChange={setStatusFilter}/>}
         />
@@ -331,7 +331,6 @@ export function PartnersWorkspace({ dashboard, canEdit, canEditGlobal, editableO
                 </tbody>
               </table>
             </OpsTableWrap> : <OpsNoMatches noun="partners" onClear={reset}/>}
-            {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} partner{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 
           {selected ? <PartnerInspector

@@ -68,7 +68,7 @@ export function ShipmentImportPanel() {
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} shipments imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> created {result.active_imported} active operational record{result.active_imported === 1 ? "" : "s"} and {result.historical_imported} historical record{result.historical_imported === 1 ? "" : "s"}. {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"} were skipped. <Link href="/admin/shipments" className="font-bold underline">Open active shipments</Link>.</OpsNotice> : null}
 
-    <OpsSurface density="compact" title="Stage 2 · Shipment history" description="CSV intake → resolve customers → validate → preview → confirm. Stage 2 imports shipment records only. It does not import invoices, supplier bills, scanned documents or paper Job File archives." action={<a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download shipment template</a>}>
+    <OpsSurface density="compact" title="Shipments" description="Shipments only. Invoices, bills and paper files import separately." action={<a href="/api/admin/migration/shipments" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download template</a>}>
       <div className="migration-intake">
         <div>
           <OpsFileDrop accept=".csv,text/csv" prompt="Choose the shipment CSV" hint="CSV only · up to 200 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
@@ -78,8 +78,8 @@ export function ShipmentImportPanel() {
           </div>
         </div>
 
-        <div className="migration-rules">
-          <p className="migration-rules-title">Stage 2 rules</p>
+        <details className="migration-rules">
+          <summary className="migration-rules-title">File rules</summary>
           <ul>
             <li>Every shipment must link to an existing Stage 1 customer record by <strong>customer_id</strong> or one exact, unique customer name.</li>
             <li><strong>active</strong> rows enter live Operations and receive the standard KCPL task, customs and document workflow.</li>
@@ -88,7 +88,7 @@ export function ShipmentImportPanel() {
             <li>Active owners, when supplied, must resolve to an eligible People & branches staff member.</li>
             <li>Dates use <strong>YYYY-MM-DD</strong>. Historical rows require a delivered date.</li>
           </ul>
-        </div>
+        </details>
       </div>
     </OpsSurface>
 

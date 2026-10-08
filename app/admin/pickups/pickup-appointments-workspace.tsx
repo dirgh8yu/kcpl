@@ -39,6 +39,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
@@ -498,7 +499,7 @@ export function PickupAppointmentsWorkspace({ initialRows, initialSummary, initi
                 <OpsFilterChoices label="Driver assignment" value={driverFilter} options={DRIVER_OPTIONS} onChange={(value) => updateFilters({ driver: value === "all" ? null : value })}/>
               </OpsFilterMenu>
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} pickups` : `${filtered.length} of ${rows.length}`}</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs label="Pickup status views" items={STATUS_TABS.map((item) => ({ ...item, count: tabCounts[item.value] }))} value={focus} onChange={(value) => updateFilters({ view: value === "all" ? null : value })}/>}

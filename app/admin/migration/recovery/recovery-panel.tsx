@@ -79,9 +79,7 @@ export function RecoveryPanel({ batchId, rollbackStatus }: { batchId: string; ro
   }
 
   return <OpsSurface
-    eyebrow="Stage 4C · Controlled recovery"
     title="Dry run first. Reverse only proven migration records."
-    description="Stage 4C never offers a force-delete switch. It proves batch ownership, checks post-import activity and dependencies, preserves Paper Archive evidence, then rechecks every record immediately before deletion."
     priority={rollbackStatus === "partial_failure" ? "warning" : rollbackStatus === "completed" ? "success" : "normal"}
     action={<OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void requestPlan()}>{busy === "plan" ? <LoaderCircle size={12} className="animate-spin"/> : <FileSearch size={12}/>}Run recovery dry run</OpsButton>}
   >

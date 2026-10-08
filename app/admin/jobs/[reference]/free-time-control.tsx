@@ -87,7 +87,6 @@ export function FreeTimeControl({
   return (
     <OpsSurface
       id="shipment-free-time"
-      eyebrow="Demurrage clock"
       title="Free time"
       description="What the carrier or terminal granted. The customer sees this as a countdown."
       priority={status?.state === "expired" ? "danger" : status?.state === "last_day" ? "warning" : "normal"}

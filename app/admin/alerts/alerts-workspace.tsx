@@ -15,6 +15,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
 } from "../operations-ui";
@@ -189,7 +190,7 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
       <OpsPageHeader
         title="Tasks & alerts"
         description="Problems and follow-ups, most urgent first."
-        actions={<><OpsButton variant="primary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
+        actions={<><OpsButton variant="secondary" onClick={() => void action("evaluate")} disabled={evaluating}><RefreshCw size={14} strokeWidth={1.75} className={evaluating ? "app-refreshing" : ""}/>{evaluating ? "Checking…" : "Check now"}</OpsButton></>}
       />
 
       <div className="px-4 pb-8 md:px-6">
@@ -203,7 +204,7 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
               <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{visible.length} showing</span>
+              <OpsResultCount count={visible.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs label="Alert status" items={STATUS_TABS.map((tab) => ({ value: tab.value, label: tab.label, count: statusCounts[tab.value] }))} value={status} onChange={setStatus}/>}
@@ -225,7 +226,9 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
               : alert.acknowledged_at ? `Seen by ${alert.acknowledged_by_name || alert.acknowledged_by_email || "a colleague"}` : null;
             return <div key={alert.id} className="alerts-row" data-resolved={resolved || undefined} data-critical={!resolved && alert.severity === "critical" ? "true" : undefined}>
               {resolved ? <span className="alerts-row-tick" aria-hidden="true"/> : <input type="checkbox" className="alerts-row-tick" checked={ticked.has(alert.id)} onChange={() => tick(alert.id)} aria-label={`Select ${alert.title} for ${alert.entity_id}`}/>}
-              <div className="alerts-row-icon" role="img" aria-label={`${alert.severity} severity`} title={`${alert.severity[0].toUpperCase()}${alert.severity.slice(1)}`}><SeverityIcon severity={alert.severity}/></div>
+              {/* Only a critical alert carries a mark; a column of identical
+                * warning triangles said nothing the list didn't. */}
+              {alert.severity === "critical" && !resolved ? <div className="alerts-row-icon" role="img" aria-label="Critical severity" title="Critical"><SeverityIcon severity={alert.severity}/></div> : <div className="alerts-row-icon" aria-hidden="true"/>}
               {/* Two lines: what and which record, then the detail, who, where and
                   when. The alert type repeated the title, so search keeps it instead. */}
               <div className="alerts-row-main">
@@ -240,8 +243,8 @@ export function AlertsWorkspace({ initialAlerts, currentStaff }: { initialAlerts
               </div>
               <div className="alerts-row-actions">
                 {/* One next step per alert: acknowledge it, then resolve it. */}
-                {alert.status === "open" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}
-                {alert.status === "acknowledged" ? <OpsButton size="sm" variant="secondary" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12} strokeWidth={1.75}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
+                {alert.status === "open" ? <OpsButton size="sm" variant="ghost" disabled={busy} onClick={() => void action("acknowledge", alert.id)}>{busy ? "Working…" : "Acknowledge"}</OpsButton> : null}
+                {alert.status === "acknowledged" ? <OpsButton size="sm" variant="ghost" disabled={busy} onClick={() => void action("resolve", alert.id)}><CheckCircle2 size={12} strokeWidth={1.75}/>{busy ? "Working…" : "Resolve"}</OpsButton> : null}
               </div>
             </div>;
           }) : (counts.active === 0 && status === "active" && !filtersActive ? <OpsEmptyState compact kind="healthy" icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No active alerts" description="The exception queue is clear. Resolved history stays available." action={counts.resolved ? <OpsButton size="sm" variant="secondary" onClick={() => setStatus("resolved")}>View resolved history</OpsButton> : undefined}/> : <OpsNoMatches noun="alerts" onClear={filtersActive ? reset : undefined}/>)}

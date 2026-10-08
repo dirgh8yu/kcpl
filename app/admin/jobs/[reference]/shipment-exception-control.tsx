@@ -171,9 +171,7 @@ export function ShipmentExceptionControl({
 
   return (
     <OpsSurface
-      eyebrow="Exception control"
       title="Shipment exceptions & incidents"
-      description="Accountable cases for delay, customs, cargo, carrier and delivery problems. SLA timing and resolution evidence are controlled by the server."
       priority={priority}
       action={<div className="flex flex-wrap gap-1.5"><OpsButton size="xs" variant="ghost" onClick={refresh} disabled={busy}><RefreshCw size={13} strokeWidth={1.75} aria-hidden="true"/>Refresh</OpsButton><OpsButton size="xs" variant="secondary" onClick={() => setShowForm((value) => !value)} aria-expanded={showForm}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>Open exception</OpsButton></div>}
     >

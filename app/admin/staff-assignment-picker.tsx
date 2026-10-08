@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Mail, Phone, UserRound } from "lucide-react";
 import { OpsNotice } from "./operations-ui";
 
 export type StaffAssignmentOption = {
@@ -31,7 +29,6 @@ type Props = {
   /** The empty choice's text; "Unassigned" where clearing the owner is meant. */
   emptyLabel?: string;
   disabled?: boolean;
-  compact?: boolean;
 };
 
 let cachedOptions: StaffAssignmentOption[] | null = null;
@@ -57,7 +54,7 @@ function appliesToBranch(option: StaffAssignmentOption, branch?: string) {
   return option.branches.includes(branch);
 }
 
-export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned = true, emptyLabel = "Unassigned", disabled = false, compact = false }: Props) {
+export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned = true, emptyLabel = "Unassigned", disabled = false }: Props) {
   const [options, setOptions] = useState<StaffAssignmentOption[]>(cachedOptions ?? []);
   const [loading, setLoading] = useState(!cachedOptions);
   const [error, setError] = useState("");
@@ -125,27 +122,12 @@ export function StaffAssignmentPicker({ value, onChange, branch, allowUnassigned
         {selectValue === "__current__" ? <option value="__current__">{value.name || value.email} · current assignment</option> : null}
         {visibleOptions.map((option) => (
           <option key={option.uid} value={option.uid}>
-            {option.display_name}{option.job_title ? ` · ${option.job_title}` : ""}{option.phone ? ` · ${option.phone}` : ""}{branch && !appliesToBranch(option, branch) ? " · outside selected branch" : ""}
+            {option.display_name}{option.job_title ? ` · ${option.job_title}` : ""}{branch && !appliesToBranch(option, branch) ? " · outside selected branch" : ""}
           </option>
         ))}
       </select>
 
       {error ? <OpsNotice tone="warning">{error} You can still leave the current assignment unchanged.</OpsNotice> : null}
-
-      {(selected || value.name || value.email || value.phone) ? (
-        <div className={`rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] ${compact ? "px-2.5 py-2" : "px-3 py-2.5"}`}>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">
-            {selected ? (
-              <Link href={`/admin/workload/${encodeURIComponent(selected.uid)}`} className="flex items-center gap-1.5 font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-crimson)] hover:underline">
-                <UserRound size={11}/>{selected.display_name}
-              </Link>
-            ) : <span className="flex items-center gap-1.5 font-semibold text-[var(--admin-ink)]"><UserRound size={11}/>{value.name || "Staff member"}</span>}
-            {(selected?.email || value.email) ? <a href={`mailto:${selected?.email || value.email}`} className="flex items-center gap-1.5 hover:text-[var(--admin-crimson)] hover:underline"><Mail size={10}/>{selected?.email || value.email}</a> : null}
-            {(selected?.phone || value.phone) ? <a href={`tel:${selected?.phone || value.phone}`} className="flex items-center gap-1.5 hover:text-[var(--admin-crimson)] hover:underline"><Phone size={10}/>{selected?.phone || value.phone}</a> : <span className="text-[var(--admin-faint)]">No phone saved</span>}
-          </div>
-          {selected ? <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[length:var(--app-label-size)] text-[var(--admin-faint)]"><span>{selected.job_title || "KCPL staff"}</span><span>·</span>{selected.branch_scope === "all" ? <span>All branches</span> : selected.branches.length ? selected.branches.map((staffBranch, index) => <span key={staffBranch} className="inline-flex items-center gap-1">{index ? <span>·</span> : null}<Link href={`/admin/branches/${encodeURIComponent(staffBranch)}`} className="hover:text-[var(--admin-crimson)] hover:underline">{staffBranch}</Link></span>) : <span>No branch recorded</span>}</div> : null}
-        </div>
-      ) : null}
     </div>
   );
 }

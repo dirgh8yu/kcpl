@@ -133,13 +133,12 @@
 
 .todayCard { display: flex; flex-direction: column; }
 .todayList { flex: 1; }
-.todayItem { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 14px; min-height: 34px; align-items: center; gap: 10px; border-bottom: 1px solid var(--overview-line); padding: 0 12px 0 14px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
+.todayItem { display: grid; grid-template-columns: minmax(0, 1fr) auto 14px; min-height: 34px; align-items: center; gap: 10px; border-bottom: 1px solid var(--overview-line); padding: 0 12px 0 14px; color: inherit; text-decoration: none; transition: background-color var(--app-duration-fast) var(--app-ease-out); }
 .todayItem:last-of-type { border-bottom: 0; }
+.todayNone { margin: 0; padding: 10px 14px; color: var(--overview-muted); font-size: 12.5px; }
 @media (hover: hover) and (pointer: fine) { .todayItem:hover { background: var(--overview-canvas); } }
-.todayItemIcon { display: grid; place-items: center; color: var(--overview-faint); }
 /* Colour only where it means something: an alerting row earns its red, the
  * rest stay quiet so zero-state rows never shout. */
-.todayItem[data-alert] .todayItemIcon { color: var(--overview-danger); }
 .todayItem strong { overflow: hidden; font-size: 12.5px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
 .todayItemCount { color: var(--overview-ink); font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .todayItemCount[data-zero] { color: var(--overview-faint); font-weight: 600; }

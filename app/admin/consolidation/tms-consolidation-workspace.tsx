@@ -1,10 +1,11 @@
 "use client";
 import { useWorkspaceRefresh } from "../use-workspace-refresh";
+import { nepalDateTime } from "../nepal-time";
 
 import Link from "next/link";
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Package, ArrowDown, ArrowRight, ArrowUp, PackagePlus, Trash2, X } from "lucide-react";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorNote, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder } from "../rating/tms-rating";
 import {
   consolidationSavings,
@@ -248,7 +249,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
           <OpsSurface
             density="compact"
             title="Create master load"
-            description="Choose at least two compatible orders. Same-branch, mode, equipment, temperature and capacity rules are enforced server-side."
+            description="Choose at least two orders that can travel together."
             action={<button type="button" className="ops-inspector-close" onClick={() => setShowCreate(false)} aria-label="Close create load"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
           >
             <form onSubmit={createLoad}>
@@ -291,7 +292,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
           search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search load, order, lane, customer…" aria-label="Search master loads"/>}
           actions={<>
             {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setScope("all"); }}>Reset</OpsButton> : null}
-            <span className="ops-result-count" aria-live="polite">{visibleLoads.length === loads.length ? `${loads.length} loads` : `${visibleLoads.length} of ${loads.length}`}</span>
+            <OpsResultCount count={visibleLoads.length} searching={Boolean(query.trim())}/>
           </>}
           tabs={<OpsScopeTabs label="Load status" items={scopeItems} value={scope} onChange={setScope}/>}
         />
@@ -320,14 +321,14 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
             <div className="min-w-0">
               <p className="ops-inspector-kicker">{selectedLoad.reference}</p>
               <h2>{selectedLoad.name}</h2>
-              <p className="load-detail-meta">{selectedLoad.branch} · {modeLabel(selectedLoad.mode)}{selectedLoad.equipment ? ` · ${selectedLoad.equipment}` : ""} · master movement with house-level commercial and shipment traceability</p>
+              <p className="load-detail-meta">{selectedLoad.branch} · {modeLabel(selectedLoad.mode)}{selectedLoad.equipment ? ` · ${selectedLoad.equipment}` : ""}</p>
             </div>
             <OpsBadge tone={statusTone(selectedLoad.status)}>{statusLabel(selectedLoad.status)}</OpsBadge>
           </header>
 
           <div className="load-detail-grid">
             <div className="load-detail-main">
-              <OpsSurface density="compact" title={`${selectedLoad.members.length} house orders`} description={selectedLoad.status === "draft" ? "Membership can change until the load is released. Adding or removing an order regenerates the default route." : "House membership is locked to preserve procurement and shipment truth."} flush>
+              <OpsSurface density="compact" title={`${selectedLoad.members.length} house orders`} description={selectedLoad.status === "draft" ? undefined : "Locked once the load was released."} flush>
                 <OpsTableWrap>
                   <table className="ops-table ops-register-table ops-stack-table load-members-table" aria-label="House orders in this load">
                     <thead><tr><th>Order</th><th>Customer</th><th className="ops-col-num">Weight · volume</th><th className="ops-col-num">Allocated</th><th><span className="sr-only">Actions</span></th></tr></thead>
@@ -349,7 +350,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                 </div> : null}
               </OpsSurface>
 
-              <OpsSurface className="load-route" density="compact" title={`${selectedLoad.stops.length} planned stops`} description={selectedLoad.status === "draft" ? "Sequence the route. The server blocks any plan that delivers an order before its pickup." : "Stop sequence is locked because procurement now references this route."} flush>
+              <OpsSurface className="load-route" density="compact" title={`${selectedLoad.stops.length} planned stops`} description={selectedLoad.status === "draft" ? "Set the order of stops. A delivery can’t come before its pickup." : "Locked once the load went to carriers."} flush>
                 <ol className="load-stops">
                   {sortedStops.map((stop, index) => {
                     const draft = stopDraft(stop);
@@ -359,7 +360,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                         <div className="min-w-0">
                           <div className="load-stop-title"><strong>{stop.location}</strong><OpsBadge tone={stop.kind === "pickup" ? "info" : stop.kind === "delivery" ? "success" : "neutral"}>{modeLabel(stop.kind)}</OpsBadge></div>
                           <p className="load-stop-meta">Orders: {stop.order_ids.join(", ")}</p>
-                          {!editable && (stop.planned_at || stop.instructions) ? <p className="load-stop-meta">{stop.planned_at ? new Date(stop.planned_at).toLocaleString("en-AU") : "Time not fixed"}{stop.instructions ? ` · ${stop.instructions}` : ""}</p> : null}
+                          {!editable && (stop.planned_at || stop.instructions) ? <p className="load-stop-meta">{stop.planned_at ? nepalDateTime(stop.planned_at) : "Time not fixed"}{stop.instructions ? ` · ${stop.instructions}` : ""}</p> : null}
                         </div>
                         {editable ? <div className="load-stop-move">
                           <OpsButton size="xs" variant="ghost" onClick={() => moveStop(index, -1)} disabled={busy || index === 0} aria-label={`Move stop ${stop.sequence} up`}><ArrowUp size={14} strokeWidth={1.75} aria-hidden="true"/></OpsButton>
@@ -398,7 +399,7 @@ export function TmsConsolidationWorkspace({ initialLoads, initialOrders, canMana
                 Rate the master order on the rate desk in Buy rates, then send it to carriers.
                 <span className="load-note-actions"><Link href="/admin/rating" className="ops-button" data-size="xs" data-variant="secondary">Rate master order</Link><Link href="/admin/tenders" className="ops-button" data-size="xs" data-variant="ghost">Tender Desk</Link></span>
               </OpsInspectorNote> : null}
-              {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each house order keeps its own shipment record while remaining linked to this master movement.</OpsInspectorNote> : null}
+              {selectedLoad.status === "booked" ? <OpsInspectorNote tone="success" title={`Master booking ${selectedLoad.master_booking_reference || "recorded"} · ${selectedLoad.procurement_partner_name || "Partner"}`}>Each order keeps its own shipment.</OpsInspectorNote> : null}
 
               {editable ? <div className="load-detail-actions">
                 <OpsButton variant="danger" size="sm" onClick={cancelLoad} disabled={busy}><Trash2 size={14} strokeWidth={1.75} aria-hidden="true"/>Cancel load</OpsButton>

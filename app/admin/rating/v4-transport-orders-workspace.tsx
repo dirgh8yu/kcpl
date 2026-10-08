@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, ChevronRight, X } from "lucide-react";
 import type { KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode, type TmsOrder, type TmsOrderStatus } from "./tms-rating";
 import { freightModeLabel } from "../freight-mode";
 
@@ -171,7 +171,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
         <Link href={`/admin/rating?view=rate-desk&order=${encodeURIComponent(createdOrderId)}`} className="font-semibold underline">Rate it now</Link> or <Link href={`/admin/rating/${encodeURIComponent(createdOrderId)}`} className="font-semibold underline">open the order</Link>.
       </OpsNotice></div> : null}
 
-      {showCreate ? <div className="px-4 pt-4 md:px-6"><OpsSurface title="New transport order" description="The planning record comes first; rating, carrier booking and confirmation follow as their own steps.">
+      {showCreate ? <div className="px-4 pt-4 md:px-6"><OpsSurface title="New transport order">
         <form onSubmit={createOrder} className="grid gap-x-4 gap-y-3 md:grid-cols-4">
           <Field label="Branch"><select className="ops-select" value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></Field>
           <Field label="Mode"><select className="ops-select" value={mode} onChange={(event) => setMode(event.target.value as TmsMode)}>{tmsModes.map((value) => <option key={value} value={value}>{modeLabel(value)}</option>)}</select></Field>
@@ -196,7 +196,7 @@ export function V4TransportOrdersWorkspace({ initialOrders, branches }: { initia
             <OpsFilterSelect label="Mode" value={modeFilter} allLabel="All modes" options={tmsModes.map((value) => ({ value, label: modeLabel(value) }))} onChange={(value) => setModeFilter(value === "all" ? "all" : value as TmsMode)}/>
             {query.trim() || status !== "active" || branch !== "all" || modeFilter !== "all" ? <button type="button" className="ops-inline-alert-action" onClick={() => { setQuery(""); setStatus("active"); setBranch("all"); setModeFilter("all"); }}>Reset</button> : null}
             <span className="ops-toolbar-divider" aria-hidden="true"/>
-            <span className="ops-result-count" aria-live="polite">{filtered.length === orders.length ? `${orders.length} orders` : `${filtered.length} of ${orders.length}`}</span>
+            <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
           </>
         )}
         tabs={<OpsScopeTabs label="Order status views" items={STATUS_TABS.map((tab) => ({ ...tab, count: statusCounts[tab.value] }))} value={status} onChange={(value) => setStatus(value)}/>}

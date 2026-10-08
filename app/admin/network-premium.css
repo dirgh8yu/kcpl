@@ -56,7 +56,6 @@
 .kcpl-admin-content .network-provider-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kcpl-admin-content .network-provider-head strong { color: var(--admin-ink); font-size: 13.5px; font-weight: 600; line-height: 20px; }
 .kcpl-admin-content .network-provider-meta { margin: 2px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
-.kcpl-admin-content .network-provider-note { max-width: 68ch; margin: 6px 0 0; color: var(--admin-muted); font-size: 12px; line-height: 17px; }
 .kcpl-admin-content .network-provider-message { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 6px 0 0; color: var(--admin-ink); font-size: 12px; line-height: 17px; }
 .kcpl-admin-content .network-provider-message > span { color: var(--admin-faint); }
 .kcpl-admin-content .network-provider-message code { padding: 1px 5px; border-radius: var(--app-radius-sm); background: var(--admin-surface-muted); font-size: 11.5px; }

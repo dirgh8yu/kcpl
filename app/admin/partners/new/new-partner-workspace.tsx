@@ -74,10 +74,10 @@ export function NewPartnerWorkspace({ ownerOptions }: { ownerOptions: PartnerOwn
   }
 
   return <OpsPage>
-    <OpsPageHeader title="New partner" description="Start with the name and contact. Add contracts and rates on the partner’s page afterwards." actions={<Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Cancel</Link>}/>
+    <OpsPageHeader title="New partner" description="Start with the name and contact. Add contracts and rates on the partner’s page afterwards."/>
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone="danger" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
-      <OpsSurface eyebrow="Partner identity" title="Add to the KCPL network" description="This uses the same Partner API, duplicate checks and branch permissions as the full Partner workspace.">
+      <OpsSurface title="Add to the KCPL network">
         <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <OpsField label="Partner / vendor name" className="md:col-span-2"><input required minLength={2} value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} placeholder="Agent, carrier, transporter or counterpart"/></OpsField>
           <OpsField label="Relationship type"><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as PartnerType })}>{partnerTypes.map((type) => <option key={type} value={type}>{partnerTypeLabels[type]}</option>)}</select></OpsField>

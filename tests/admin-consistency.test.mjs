@@ -324,3 +324,33 @@ test("the sidebar folds to an icon rail that keeps its width between pages and r
   assert.match(css, /\.app-topbar \.app-rail-toggle \{ display: none; \}\n@media \(min-width: 1024px\) \{\n {2}\.app-topbar \.app-rail-toggle \{ display: inline-grid;/);
   assert.match(css, /\.app-rail-tip\[data-instant\] \{ transition: none; \}/);
 });
+
+test("each total is said once: no per-view footer counts, and register counts speak only while searching", async () => {
+  const sources = await Promise.all((await files("app/admin")).map(async (path) => [path, await readFile(repo(path), "utf8")]));
+  for (const [path, source] of sources) {
+    assert.doesNotMatch(source, /in this view</, `${path} repeats the tab total in a footer`);
+    // A register with scope tabs uses OpsResultCount, which is empty until a search narrows the list.
+    if (/<OpsScopeTabs/.test(source)) assert.doesNotMatch(source, /className="ops-result-count"/, `${path} prints a total the tabs already carry`);
+  }
+  const register = await readFile(repo("app/admin/ops-register.tsx"), "utf8");
+  assert.match(register, /\{searching \? `\$\{count\} \$\{count === 1 \? "match" : "matches"\}` : ""\}/);
+});
+
+test("sections carry a title, not a kicker label above it", async () => {
+  for (const path of await files("app/admin")) {
+    const source = await readFile(repo(path), "utf8");
+    for (const match of source.matchAll(/<OpsSurface\b[^>]*?\seyebrow=("[^"]*"|\{)/g)) {
+      assert.equal(match[1], "\"Next step\"", `${path} gives a section the kicker ${match[1]}`);
+    }
+  }
+});
+
+test("header buttons don't repeat the hub's own tabs", async () => {
+  const pairs = [
+    ["app/admin/migration/archive/archive-workspace.tsx", /href="\/admin\/migration(\/recovery)?" className="ops-button"/],
+    ["app/admin/migration/recovery/page.tsx", /href="\/admin\/migration(\/archive)?" className="ops-button"/],
+    ["app/admin/partners/reconciliation/supplier-reconciliation-workspace.tsx", /href="\/admin\/(partners|payables)" className="ops-button"/],
+    ["app/admin/tenders/page.tsx", /href="\/admin\/tenders" className="ops-button"/],
+  ];
+  for (const [path, pattern] of pairs) assert.doesNotMatch(await readFile(repo(path), "utf8"), pattern, path);
+});

@@ -74,7 +74,7 @@ export function PayablesImportPanel() {
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} payables imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> created {result.bill_rows_imported} supplier bill{result.bill_rows_imported === 1 ? "" : "s"} and {result.opening_balance_rows_imported} supplier opening balance{result.opening_balance_rows_imported === 1 ? "" : "s"}. {result.duplicates} duplicate and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"} were skipped. <Link href="/admin/payables" className="font-bold underline">Open Payables</Link>.</OpsNotice> : null}
 
-    <OpsSurface density="compact" title="Stage 3B · Payables" description="Current supplier money KCPL owes. Import real outstanding supplier bills or a controlled opening payable when the paper ledger has a known balance but reconstructing old vendor invoices would create false history." action={<a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download Stage 3B template</a>}>
+    <OpsSurface density="compact" title="Supplier bills" description="Open supplier bills, or one opening balance per supplier." action={<a href="/api/admin/migration/payables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download template</a>}>
       <div className="migration-intake">
         <div>
           <OpsFileDrop accept=".csv,text/csv" prompt="Choose the payables CSV" hint="CSV only · up to 150 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
@@ -84,8 +84,8 @@ export function PayablesImportPanel() {
           </div>
         </div>
 
-        <div className="migration-rules">
-          <p className="migration-rules-title">Stage 3B rules</p>
+        <details className="migration-rules">
+          <summary className="migration-rules-title">File rules</summary>
           <ul>
             <li><strong>bill</strong> rows preserve a real supplier bill number and only import balances still outstanding.</li>
             <li><strong>opening_balance</strong> rows create a clearly labelled supplier opening payable, not a fabricated historical bill.</li>
@@ -95,7 +95,7 @@ export function PayablesImportPanel() {
             <li>Historical bill rows linked to shipments become locked Job File costs. Opening balances never become job costs.</li>
             <li>Pre-go-live supplier payments are stored as one auditable migration adjustment instead of invented settlement history.</li>
           </ul>
-        </div>
+        </details>
       </div>
     </OpsSurface>
 

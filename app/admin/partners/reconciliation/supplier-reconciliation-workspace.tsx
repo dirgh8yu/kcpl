@@ -5,7 +5,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, TriangleAlert } from "lucide-react";
 import { payableStatusLabels } from "../../payables/payables-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsKpiRail, OpsMono, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsInlineAlert, OpsMono, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface } from "../../operations-ui";
 import type { SupplierReconciliationBill, SupplierReconciliationSnapshot } from "./supplier-reconciliation";
 
 function money(amount: number, currency: string) {
@@ -33,7 +33,7 @@ function identityLabel(bill: SupplierReconciliationBill) {
   return "Name only";
 }
 
-export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snapshot: SupplierReconciliationSnapshot; roleLabel: string }) {
+export function SupplierReconciliationWorkspace({ snapshot }: { snapshot: SupplierReconciliationSnapshot }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "suggested" | "manual" | "customer_reference">("all");
@@ -57,6 +57,7 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
       return terms.every((term) => haystack.includes(term));
     });
   }, [snapshot.bills, query, filter]);
+  const tabCounts = { all: snapshot.unresolved_count, suggested: snapshot.exact_match_count, manual: snapshot.no_suggestion_count, customer_reference: snapshot.customer_reference_count };
 
   async function confirmLink(bill: SupplierReconciliationBill) {
     const partnerId = selections[bill.reference];
@@ -89,36 +90,25 @@ export function SupplierReconciliationWorkspace({ snapshot, roleLabel }: { snaps
   return <OpsPage>
     <OpsPageHeader
       title="Supplier records"
-      description="Link old bills to the right partner. Suggestions are only suggestions; nothing changes until you confirm."
-      meta={<><span>{roleLabel}</span><span>{snapshot.unresolved_count} unresolved</span></>}
-      actions={<><Link href="/admin/partners" className="ops-button" data-variant="secondary" data-size="md">Partners</Link><Link href="/admin/payables" className="ops-button" data-variant="secondary" data-size="md">Payables</Link></>}
+      description="Link old bills to the right partner. Nothing changes until you confirm."
     />
-
-    <div className="px-4 pt-3 md:px-6">
-      <OpsKpiRail label="Reconciliation summary">
-        <OpsRailMetric label="Unresolved bills" value={snapshot.unresolved_count} tone={snapshot.unresolved_count ? "warning" : "success"}/>
-        <OpsRailMetric label="Exact-name suggestions" value={snapshot.exact_match_count} tone="info" active={filter === "suggested"} onClick={() => setFilter(filter === "suggested" ? "all" : "suggested")}/>
-        <OpsRailMetric label="Old customer IDs" value={snapshot.customer_reference_count} tone="warning" active={filter === "customer_reference"} onClick={() => setFilter(filter === "customer_reference" ? "all" : "customer_reference")}/>
-        <OpsRailMetric label="Needs manual match" value={snapshot.no_suggestion_count} active={filter === "manual"} onClick={() => setFilter(filter === "manual" ? "all" : "manual")}/>
-      </OpsKpiRail>
-    </div>
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
-      <div className="mb-3"><OpsInlineAlert tone="warning" icon={<TriangleAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Exact-name suggestions are not automatic matches.</strong> Review the supplier name, bill reference, branch and job before confirming. Reconciliation never changes amounts, payment history, bill status or currency.</OpsInlineAlert></div>
+      {snapshot.bills.length ? <div className="mb-3"><OpsInlineAlert tone="warning" icon={<TriangleAlert size={14} strokeWidth={1.75} aria-hidden="true"/>}><strong>Exact-name suggestions are not automatic matches.</strong> Review the supplier name, bill reference, branch and job before confirming. Reconciliation never changes amounts, payment history, bill status or currency.</OpsInlineAlert></div> : null}
 
-      <OpsSurface eyebrow="Legacy supplier identity" title="Bills to link to a partner" description={`${filtered.length} of ${snapshot.bills.length} unresolved supplier bills shown.`} flush>
-        <OpsRegisterToolbar
+      <OpsSurface title="Bills to link to a partner" flush>
+        {snapshot.bills.length ? <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search bill, supplier, old ID, Partner, shipment or branch"/>}
           actions={(
             <>
               {query.trim() || filter !== "all" ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length === snapshot.bills.length ? `${snapshot.bills.length} bills` : `${filtered.length} of ${snapshot.bills.length}`}</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>
           )}
-          tabs={<OpsScopeTabs label="Reconciliation filters" items={FILTER_TABS} value={filter} onChange={(value) => setFilter(value)}/>}
-        />
+          tabs={<OpsScopeTabs label="Reconciliation filters" items={FILTER_TABS.map((tab) => ({ ...tab, count: tabCounts[tab.value] }))} value={filter} onChange={(value) => setFilter(value)}/>}
+        /> : null}
 
         {filtered.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table min-w-[1320px]"><thead><tr><th>Supplier bill</th><th>Current supplier identity</th><th>Job / branch</th><th>Amount</th><th>Due / status</th><th>Partner match</th><th></th></tr></thead><tbody>
           {filtered.map((bill) => {

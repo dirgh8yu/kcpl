@@ -19,6 +19,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
@@ -299,7 +300,7 @@ export function FreightDocumentsWorkspace({
                 <RefreshCw size={14} strokeWidth={1.75} className={refreshing ? "app-refreshing" : ""} aria-hidden="true"/>{refreshing ? "Refreshing…" : "Refresh"}
               </OpsButton>
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} shipments` : `${filtered.length} of ${rows.length}`}</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs label="Freight document filters" items={FOCUS_OPTIONS.map((option) => ({ ...option, count: focusCounts[option.value] }))} value={focus} onChange={setFocus}/>}

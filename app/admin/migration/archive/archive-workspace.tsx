@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { Archive, Download, FileText, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { kcplBranches } from "../../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFileDrop, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsFileDrop, OpsInlineAlert, OpsKpiRail, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsSearch, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import {
   archiveCategories,
   archiveCategoryLabels,
@@ -119,29 +119,23 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
   }
 
   const linkedCount = records.filter((record) => record.entity_type !== "general").length;
-  const recoveredCount = records.filter((record) => Boolean(record.recovery_id)).length;
   const branchCount = new Set(records.map((record) => record.branch)).size;
 
   return <OpsPage>
     <OpsPageHeader
       title="Paper archive"
-      description="Scanned paper files, each linked to its record. Undoing an import never deletes them."
-      meta={<span>Management only · 20 MB per file · no destructive archive actions</span>}
+      description="Scanned paper files, each linked to its record."
       actions={<>
-        <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
-        <Link href="/admin/migration/recovery" className="ops-button" data-variant="secondary" data-size="md">Undo an import</Link>
         <OpsButton variant="secondary" disabled={Boolean(busy)} onClick={() => void refresh()}>{busy === "refresh" ? <LoaderCircle size={16} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <RefreshCw size={16} strokeWidth={1.75} aria-hidden="true"/>}Refresh</OpsButton>
       </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
-      <OpsKpiRail label="Paper archive summary">
-        <OpsRailMetric label="Archived files" value={records.length} detail="Evidence retained"/>
-        <OpsRailMetric label="Linked records" value={linkedCount} detail="Connected to KCPL records"/>
-        <OpsRailMetric label="Recovery preserved" value={recoveredCount} detail="Re-linked by Stage 4C"/>
-        <OpsRailMetric label="Branches represented" value={branchCount}/>
-        <OpsRailMetric label="Storage" value={dashboard?.storage_available ? "Ready" : "Unavailable"} tone={dashboard?.storage_available ? "success" : "danger"} title="Firebase Storage"/>
-      </OpsKpiRail>
+      {records.length ? <OpsKpiRail label="Paper archive summary">
+        <OpsRailMetric label="Archived files" value={records.length}/>
+        <OpsRailMetric label="Linked to a record" value={linkedCount}/>
+        <OpsRailMetric label="Branches" value={branchCount}/>
+      </OpsKpiRail> : null}
 
       {error || notice || !dashboard || !dashboard.storage_available ? <div className="org-stack org-notices">
         {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
@@ -150,7 +144,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
         {dashboard && !dashboard.storage_available ? <OpsInlineAlert>Firebase metadata is available, but Storage is not configured. Existing archive metadata can be reviewed; new paper files cannot be uploaded.</OpsInlineAlert> : null}
       </div> : null}
 
-      <OpsSurface density="compact" title="Stage 4B intake" description="Scan → identify → link → preserve. Upload one source document at a time so its provenance stays explicit; operational, customer, partner and finance papers should link to the matching KCPL record.">
+      <OpsSurface density="compact" title="Add a paper file">
         <form onSubmit={upload} className="archive-intake">
           <div className="ops-form-grid archive-fields">
             <OpsField label="Archive title" className="ops-form-full"><input required maxLength={160} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="e.g. 2019 Birgunj customs file · ABC Trading"/></OpsField>
@@ -165,13 +159,12 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
 
           <div className="archive-side">
             <OpsFileDrop accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" prompt="Choose the scanned paper file" hint={file ? `${bytes(file.size)} · ${file.type || "type from its extension"}` : "PDF, image, Word, Excel, CSV or TXT · up to 20 MB"} chosen={file?.name ?? null} onFiles={(files) => setFile(files[0] ?? null)}/>
-            <OpsInspectorNote tone="neutral" icon={<ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} title="Archive integrity">KCPL stores a SHA-256 fingerprint with every file. Stage 4C cannot erase archived evidence; if its linked record is reversed, the archive keeps the original link metadata and moves its live link to the migration batch.</OpsInspectorNote>
             <OpsButton type="submit" variant="primary" size="sm" disabled={!file || !form.title.trim() || Boolean(busy) || dashboard?.storage_available === false}>{busy === "upload" ? <LoaderCircle size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true"/> : <Archive size={14} strokeWidth={1.75} aria-hidden="true"/>}Archive paper file</OpsButton>
           </div>
         </form>
       </OpsSurface>
 
-      <OpsSurface density="compact" title="Historical evidence" description={`${filtered.length} of ${records.length} archived file${records.length === 1 ? "" : "s"} shown.`} action={<OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search archive…" aria-label="Search paper archive"/>} flush>
+      <OpsSurface density="compact" title="Archived files" action={records.length ? <OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search archive…" aria-label="Search paper archive"/> : undefined} flush>
         {filtered.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table archive-table" aria-label="Paper archive"><thead><tr><th>Archive ID</th><th>Document</th><th>Linked record</th><th>Branch · folder</th><th>Integrity</th><th>Archived by</th><th><span className="sr-only">Download</span></th></tr></thead><tbody>{filtered.map((record) => {
           const href = archiveEntityHref(record);
           return <tr key={record.id}>
@@ -187,7 +180,7 @@ export function PaperArchiveWorkspace({ initialDashboard }: { initialDashboard: 
             <td><span className="ops-cell-primary">{record.uploaded_by_name}</span><span className="ops-cell-secondary ops-cell-clamp">{record.uploaded_by_email}</span>{record.recovery_relinked_by_name ? <span className="ops-cell-secondary">Recovery: {record.recovery_relinked_by_name}</span> : null}</td>
             <td className="ops-cell-actions"><a href={`/api/admin/migration/archive/${encodeURIComponent(record.id)}/download`} className="ops-button" data-variant="ghost" data-size="xs"><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download</a></td>
           </tr>;
-        })}</tbody></table></OpsTableWrap> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title={records.length ? "No archive matches" : "Paper archive is empty"} description={records.length ? "Try a different archive ID, title, branch, record reference, recovery ID or physical folder." : "Upload the first historical KCPL paper file above. It will appear here with its provenance and integrity fingerprint."}/>}
+        })}</tbody></table></OpsTableWrap> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title={records.length ? "No archive matches" : "Paper archive is empty"} description={records.length ? "Try a different archive ID, title, branch, record reference or folder." : "Files you add above appear here."}/>}
       </OpsSurface>
     </div>
   </OpsPage>;

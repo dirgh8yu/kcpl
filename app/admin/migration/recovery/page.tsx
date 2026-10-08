@@ -1,6 +1,6 @@
 import "../../organisation-premium.css";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, RotateCcw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, RotateCcw } from "lucide-react";
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
 import { OpsBadge, OpsEmptyState, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
@@ -32,29 +32,16 @@ export default async function RecoveryPage() {
       <OpsPageHeader
         title="Undo an import"
         description="Preview first, then undo one batch. A batch can’t be undone once its records have been worked on."
-        meta={<span>Management + finance authority · no force-delete mode · Paper Archive preserved</span>}
-        actions={<>
-          <Link href="/admin/migration/archive" className="ops-button" data-variant="secondary" data-size="md">Paper archive</Link>
-          <Link href="/admin/migration" className="ops-button" data-variant="secondary" data-size="md">Import old records</Link>
-        </>}
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
-        <OpsSurface density="compact" title="Recovery safeguards" description="Every rollback passes three checks, in order." flush>
-          <ol className="migration-stages recovery-rules">
-            <Rule icon={<ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true"/>} step="1" title="Dry run" detail="Every created record is revalidated against its batch ID, dependencies and post-import activity."/>
-            <Rule icon={<AlertTriangle size={14} strokeWidth={1.75} aria-hidden="true"/>} step="2" title="Exact confirmation" detail="Plans expire after 15 minutes, bind to one Management user and require the exact batch rollback phrase."/>
-            <Rule icon={<RotateCcw size={14} strokeWidth={1.75} aria-hidden="true"/>} step="3" title="Recheck before delete" detail="Each eligible record is inspected again immediately before reversal. Any state drift stops recovery."/>
-          </ol>
-        </OpsSurface>
-
-        <OpsSurface density="compact" title="Recovery queue" description="Open a batch to generate its live recovery dry run. Completed recoveries remain visible as permanent migration evidence." flush>
-          {dashboard?.batches.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table recovery-table" aria-label="Migration batches for recovery"><thead><tr><th>Batch</th><th>Stage</th><th>Migration state</th><th className="ops-col-num">Imported</th><th>Recovery</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{dashboard.batches.map((batch) => {
+        <OpsSurface density="compact" title="Import batches" flush>
+          {dashboard?.batches.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table recovery-table" aria-label="Migration batches for recovery"><thead><tr><th>Batch</th><th>Records</th><th>Import</th><th className="ops-col-num">Imported</th><th>Recovery</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{dashboard.batches.map((batch) => {
             const recoverable = batch.status === "completed" || batch.status === "partial_failure" || batch.status === "interrupted";
             const recoveryTone = batch.rollback_status === "completed" ? "success" : batch.rollback_status === "partial_failure" ? "warning" : batch.rollback_status === "running" ? "info" : "neutral";
             return <tr key={batch.id}>
               <td><span className="ops-cell-primary ops-mono ops-cell-id">{batch.id}</span><span className="ops-cell-secondary ops-cell-clamp" title={batch.source_filename || undefined}>{batch.source_filename || "No source filename"}</span></td>
-              <td><span className="ops-cell-primary">{batch.stage_label}</span><span className="ops-cell-secondary">{batch.type_label}</span></td>
+              <td><span className="ops-cell-primary">{batch.type_label}</span></td>
               <td><OpsBadge tone={batch.status === "completed" ? "success" : batch.status === "partial_failure" ? "danger" : batch.status === "interrupted" ? "warning" : "info"}>{sentence(batch.status)}</OpsBadge></td>
               <td className="ops-col-num"><span className="ops-num">{batch.imported_count}</span></td>
               <td>{batch.rollback_status ? <OpsBadge tone={recoveryTone}>{sentence(batch.rollback_status)}</OpsBadge> : <span className="ops-cell-muted">Not started</span>}</td>
@@ -70,10 +57,6 @@ export default async function RecoveryPage() {
 function sentence(value: string) {
   const words = value.replaceAll("_", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-function Rule({ icon, step, title, detail }: { icon: React.ReactNode; step: string; title: string; detail: string }) {
-  return <li className="migration-stage"><span className="migration-stage-head recovery-rule-head">{icon}<span className="ops-mono">Step {step}</span></span><strong>{title}</strong><span className="migration-stage-detail">{detail}</span></li>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

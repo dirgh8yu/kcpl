@@ -228,9 +228,9 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
   const handleExport = useCallback(() => exportShipmentsCsv(filtered), [filtered]);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // "Refreshed Xs ago": ticks once a minute alongside the poll so staff can
-  // trust the register is live. Turns quiet-stale past 90s (hidden tab, or a
-  // failed poll) without nagging. Shared with the pulse surfaces.
+  // "Refreshed Xs ago": ticks once a minute alongside the poll. A live
+  // register says nothing; the note appears only once the snapshot is stale
+  // past 90s (hidden tab, or a failed poll). Shared with the pulse surfaces.
   const freshness = useFreshnessLabel(Date.parse(data.generated_at) || 0);
 
   return (
@@ -364,8 +364,11 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                 </OpsPopover.Content>
                 </OpsPopover.Portal>
               </OpsPopover.Root>
-              <span className="shipments-result-count" aria-live="polite">{filtered.length === data.jobs.length ? `${data.jobs.length} results` : `${filtered.length} of ${data.jobs.length}`}</span>
-              <span className="shipments-freshness" data-stale={freshness.stale || undefined} title={`Snapshot ${formatNepalClock(data.generated_at)} NPT`}>{freshness.label}</span>
+              {/* The status tabs carry every total: the count speaks while a
+                * search narrows the list, and the snapshot time only once it
+                * has gone stale. */}
+              <span className="shipments-result-count" aria-live="polite">{query.trim() ? `${filtered.length} ${filtered.length === 1 ? "match" : "matches"}` : ""}</span>
+              {freshness.stale ? <span className="shipments-freshness" data-stale title={`Snapshot ${formatNepalClock(data.generated_at)} NPT`}>{freshness.label}</span> : null}
             </div>
           </div>
         </div>
@@ -451,7 +454,6 @@ export function ShipmentsWorkspace({ data: initialData, canStartShipment = false
                 </tbody>
               </table>
             </OpsTableWrap>
-            <div className="border-t border-[var(--admin-line)] px-4 py-2.5 text-xs text-[var(--admin-muted)]">{filtered.length} shipment{filtered.length === 1 ? "" : "s"} in this view</div>
           </section>
         )}
 

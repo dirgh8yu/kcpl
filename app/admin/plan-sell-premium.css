@@ -123,7 +123,6 @@
 .kcpl-admin-content .crm-create { scroll-margin-top: calc(var(--app-toolbar-height) + 12px); }
 .kcpl-admin-content .crm-form-section { margin: 16px 0 8px; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; line-height: 16px; text-transform: uppercase; }
 .kcpl-admin-content form > .crm-form-section:first-child { margin-top: 4px; }
-.kcpl-admin-content .crm-form-hint { margin-top: 8px; }
 .kcpl-admin-content .crm-duplicates { margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content .crm-duplicates .crm-form-section { margin-top: 4px; }
 .kcpl-admin-content .crm-duplicate-list { margin: 8px 0 0; padding: 0; list-style: none; }

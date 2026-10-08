@@ -75,24 +75,17 @@
   .kcpl-admin-content .readiness-checks { margin-inline: -14px; }
 }
 
-/* Migration Hub: the stage grid, then the batch ledger and the import lanes. */
+/* Migration Hub: the batch ledger, then the import lanes. */
 .kcpl-admin-content .org-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .kcpl-admin-content .org-stack > * { min-width: 0; }
-.kcpl-admin-content .migration-templates { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 2px; }
-.kcpl-admin-content .migration-templates > span { margin-right: 4px; color: var(--admin-muted); font-size: 12px; }
-.kcpl-admin-content .migration-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0; padding: 0; overflow: hidden; list-style: none; }
-.kcpl-admin-content .migration-stage { display: grid; align-content: start; gap: 3px; margin: 0 -1px -1px 0; padding: 10px 12px 12px; border-right: 1px solid var(--admin-line); border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
-.kcpl-admin-content .migration-stage-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 6px; }
-.kcpl-admin-content .migration-stage-head .ops-mono { color: var(--admin-muted); font-size: 11.5px; font-weight: 500; white-space: nowrap; }
-.kcpl-admin-content .migration-stage strong { color: var(--admin-ink); font-size: 12.5px; font-weight: 600; line-height: 17px; }
-.kcpl-admin-content .migration-stage-detail { color: var(--admin-muted); font-size: 11.5px; line-height: 16px; }
 .kcpl-admin-content .migration-counts .ops-kpi-rail { margin-bottom: 0; border-radius: 0; border-inline: 0; border-top: 0; }
 .kcpl-admin-content .migration-table td { padding-block: 6px; }
 .kcpl-admin-content .migration-attention { padding: 10px 16px 12px; border-top: 1px solid var(--admin-line); }
 .kcpl-admin-content .migration-intake { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: start; gap: 16px; }
 .kcpl-admin-content .migration-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .kcpl-admin-content .migration-rules { padding: 10px 12px 12px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-canvas); }
-.kcpl-admin-content .migration-rules-title { margin: 0 0 6px; color: var(--admin-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.kcpl-admin-content .migration-rules-title { margin: 0; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 600; cursor: pointer; }
+.kcpl-admin-content .migration-rules[open] .migration-rules-title { margin-bottom: 6px; }
 .kcpl-admin-content .migration-rules ul { display: grid; gap: 4px; margin: 0; padding-left: 16px; color: var(--admin-muted); font-size: 12px; line-height: 17px; list-style: disc; }
 .kcpl-admin-content .migration-rules strong { color: var(--admin-ink); font-weight: 600; }
 .kcpl-admin-content .migration-confirm { padding: 12px 16px 14px; border-top: 1px solid var(--admin-line); }
@@ -131,8 +124,6 @@
 }
 
 /* Migration Recovery. */
-.kcpl-admin-content .recovery-rules { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.kcpl-admin-content .recovery-rule-head { justify-content: flex-start; gap: 6px; color: var(--admin-muted); }
 .kcpl-admin-content .recovery-table { min-width: 760px; }
 .kcpl-admin-content .ops-register-table.recovery-table td { padding-block: 5px; }
 

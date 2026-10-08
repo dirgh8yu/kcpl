@@ -8,7 +8,7 @@ import { Plus, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import { crmCurrencies, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
 import type { TmsOrder } from "../rating/tms-rating";
-import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
+import { OpsActiveFilters, OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap, type OpsActiveFilter } from "../operations-ui";
 import {
   tenderCanBook,
   tenderCanCancel,
@@ -313,7 +313,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
             <OpsSurface
               density="compact"
               title="Create tender"
-              description="Tender only from a transport order with an authoritative selected procurement rate."
+              description="Choose a transport order with a selected buy rate."
               action={<button type="button" className="ops-inspector-close" onClick={() => setShowCreate(false)} aria-label="Close create tender"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
             >
               <form onSubmit={createTender}>
@@ -362,7 +362,7 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
             <OpsFilterSelect label="Channel" value={channelFilter} allLabel="All channels" options={(Object.keys(channelLabels) as TmsTenderChannel[]).map((value) => ({ value, label: channelLabels[value] }))} onChange={(value) => setChannelFilter(value as "all" | TmsTenderChannel)}/>
             {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}>Reset</OpsButton> : null}
             <span className="ops-toolbar-divider" aria-hidden="true"/>
-            <span className="ops-result-count" aria-live="polite">{filtered.length === tenders.length ? `${tenders.length} tenders` : `${filtered.length} of ${tenders.length}`}</span>
+            <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
           </>}
           tabs={<OpsScopeTabs<StatusFilter> label="Tender state" items={scopeOptions.map((option) => ({ value: option.value as StatusFilter, label: option.label, count: statusCounts[option.value as StatusFilter] }))} value={status} onChange={(value) => setStatus(value)}/>}
         />
@@ -408,7 +408,6 @@ export function V4TenderWorkspace({ initialOrders, initialTenders, customers, ca
                 </tbody>
               </table>
             </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="carrier bookings" onClear={() => { setQuery(""); setStatus("active"); setChannelFilter("all"); }}/> : <OpsEmptyState compact icon={<Send size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No carrier bookings yet" description="Send one from an eligible transport order."/>)}
-            {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} tender{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 
           {selected ? (

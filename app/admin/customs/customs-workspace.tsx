@@ -22,6 +22,7 @@ import {
   OpsPageHeader,
   OpsScopeTabs,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsSearch,
   OpsTableWrap,
 } from "../operations-ui";
@@ -348,7 +349,7 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
               <MineToggle mine={mine} onChange={setMine}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{visible.length === rows.length ? `${rows.length} shipments` : `${visible.length} of ${rows.length}`}</span>
+              <OpsResultCount count={visible.length} searching={Boolean(query.trim())}/>
             </>
           )}
           tabs={<OpsScopeTabs label="Clearance stage" items={STATE_TABS.map((tab) => ({ ...tab, count: stateCounts[tab.value] }))} value={state} onChange={setStateFilter}/>}
@@ -418,7 +419,6 @@ export function CustomsWorkspace({ initialRows, customsAgents, currentStaff }: {
                 </table>
               </OpsTableWrap>
             ) : (filtersActive ? <OpsNoMatches noun="customs entries" onClear={reset}/> : <OpsEmptyState compact icon={<ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No customs entries" description="No shipments are currently in customs clearance."/>)}
-            {visible.length ? <footer className="ops-register-footer"><span>{visible.length} shipment{visible.length === 1 ? "" : "s"} in this view</span></footer> : null}
           </section>
 
           {selected ? <Inspector row={selected} agents={customsAgents} busy={busy} onClose={() => updateSelectedReference(null)} onCompleteStep={completeStep} inspectorRef={inspectorRef}/> : null}

@@ -39,7 +39,6 @@ export function CustomerAccessPanel({
 
   return (
     <OpsSurface
-      eyebrow="Customer portal"
       title="Document access"
       description={
         releasedCount

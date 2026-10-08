@@ -1,6 +1,6 @@
 import { getAdminAccess } from "../../admin-auth";
 import { OperationsShell } from "../../operations-shell";
-import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../../staff-permissions";
+import { staffCapabilitiesForEmail, type StaffCapabilities } from "../../staff-permissions";
 import { getStaffContext } from "../../staff-directory.server";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { SupplierReconciliationWorkspace } from "./supplier-reconciliation-workspace";
@@ -48,7 +48,7 @@ export default async function SupplierReconciliationPage() {
   if (loaded.kind === "forbidden") return <OperationsShell {...shellProps}><Gate title="Supplier reconciliation is restricted" detail="Your role does not have Accounts Payable authority." embedded/></OperationsShell>;
   if (loaded.kind === "unavailable" || loaded.kind === "error") return <OperationsShell {...shellProps}><Gate title={loaded.kind === "error" ? "Supplier reconciliation could not be loaded" : "Supplier reconciliation is unavailable"} detail="Something went wrong fetching it. Try again in a minute; the menu and search still work." embedded/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><SupplierReconciliationWorkspace snapshot={loaded.snapshot} roleLabel={kcplStaffRoleLabels[staff.permissions.role]}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><SupplierReconciliationWorkspace snapshot={loaded.snapshot}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

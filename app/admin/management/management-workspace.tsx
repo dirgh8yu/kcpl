@@ -23,13 +23,11 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
   const trendCurrencies = [...new Set(analytics.trends.map((item) => item.currency))];
   const quality = analytics.data_quality;
   const dataQualityCount = quality.excluded_currency_records + quality.unassigned_branch_financial_records + quality.active_unassigned_branch_shipments + quality.unlinked_invoice_records + quality.orphaned_job_cost_records;
-  const generated = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(analytics.generated_at));
 
   return <OpsPage>
     <OpsPageHeader
       title="Management"
-      description="How the business is doing this period. Each currency is shown separately."
-      meta={<span>{analytics.range.label} · generated {generated}</span>}
+      description="How the business is doing in the period you pick."
       actions={<>
         <Link href={`/api/admin/management/export?${exportQuery}`} className="ops-button" data-variant="secondary" data-size="md"><Download size={16} strokeWidth={1.75} aria-hidden="true"/>Export CSV</Link>
       </>}
@@ -73,7 +71,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
         [quality.orphaned_job_cost_records, "orphaned costs"],
       ].filter(([count]) => Number(count) > 0).map(([count, label]) => `${count} ${label}`).join(" · ")}.</OpsInlineAlert></div> : null}
 
-      <SectionHead title="Period P&L and live working capital" detail="Revenue and recognised job cost follow the selected range. AR and AP are current open balances."/>
+      <SectionHead title="Period P&L and live working capital" detail="AR and AP are what’s open today, whatever the period."/>
       <div className="mgmt-cards">{analytics.financials.length ? analytics.financials.map((item) => <OpsSurface key={item.currency} density="compact" title={`${item.currency} · ${money(item.profit, item.currency)} gross profit`} description={`${item.invoice_count} invoices · ${item.cost_item_count} recognised costs`} action={<OpsBadge tone={item.profit >= 0 ? "success" : "danger"}>{percentage(item.margin_percent)} margin</OpsBadge>}>
         <OpsFacts columns={2}>
           <OpsFact label="Revenue">{money(item.revenue, item.currency)}</OpsFact>
@@ -86,22 +84,22 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
       </OpsSurface>) : <Empty text="No financial activity or live balances for this range."/>}</div>
 
       {trendCurrencies.length ? <>
-        <SectionHead title="Monthly revenue, cost and profit" detail="A compact trend view, separated by currency."/>
+        <SectionHead title="Monthly revenue, cost and profit"/>
         <div className="mgmt-cards">{trendCurrencies.map((currency) => <TrendChart key={currency} currency={currency} points={analytics.trends.filter((item) => item.currency === currency)}/>)}</div>
       </> : null}
 
-      <SectionHead title="Where value is created" detail="Selected-period economics by branch, customer and route."/>
+      <SectionHead title="Where value is created"/>
       <div className="mgmt-grid">
-        <OpsSurface density="compact" title="Branch performance" description="Selected-period P&L by branch and currency." flush>
+        <OpsSurface density="compact" title="Branch performance" flush>
           {analytics.branches.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Branch performance"><thead><tr><th>Branch</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th><th className="ops-col-num">Active jobs</th></tr></thead><tbody>{analytics.branches.map((row) => <tr key={`${row.branch}-${row.currency}`}>
-            <td>{row.branch === "Unassigned" ? <span className="ops-cell-primary">{row.branch}</span> : <Link href={`/admin/branches/${encodeURIComponent(row.branch)}`} className="ops-cell-primary org-link">{row.branch}</Link>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
+            <td>{row.branch === "Unassigned" ? <span className="ops-cell-primary">{row.branch}</span> : <Link href={`/admin/branches/${encodeURIComponent(row.branch)}`} className="ops-cell-primary org-link">{row.branch}</Link>}</td>
             <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.active_jobs}</span></td>
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No branch P&L in this period."/>}
         </OpsSurface>
-        <OpsSurface density="compact" title="Customer dependency" description="Revenue concentration inside each currency.">
+        <OpsSurface density="compact" title="Customer dependency">
           {analytics.concentration.length ? <ul className="mgmt-concentration">{analytics.concentration.map((risk) => {
             const riskTone = risk.top_customer_share_percent >= 40 ? "danger" : risk.top_customer_share_percent >= 25 ? "warning" : "success";
             return <li key={risk.currency}>
@@ -113,15 +111,15 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
             </li>;
           })}</ul> : <Empty text="Not enough customer revenue yet."/>}
         </OpsSurface>
-        <OpsSurface density="compact" title="Customer profitability" description="Selected-period P&L ranked by profit within currency." flush>
+        <OpsSurface density="compact" title="Customer profitability" flush>
           {topCustomers.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Customer profitability"><thead><tr><th>Customer</th><th className="ops-col-num">Revenue</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topCustomers.map((row) => <tr key={`${row.customer_id || row.customer_name}-${row.currency}`}>
-            <td>{row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-cell-primary ops-cell-clamp org-link" title={row.customer_name}>{row.customer_name}</Link> : <span className="ops-cell-primary ops-cell-clamp" title={row.customer_name}>{row.customer_name}</span>}<span className="ops-cell-secondary">{row.currency} · cost {money(row.cost, row.currency)}</span></td>
+            <td>{row.customer_id ? <Link href={`/admin/crm/${encodeURIComponent(row.customer_id)}`} className="ops-cell-primary ops-cell-clamp org-link" title={row.customer_name}>{row.customer_name}</Link> : <span className="ops-cell-primary ops-cell-clamp" title={row.customer_name}>{row.customer_name}</span>}</td>
             <td className="ops-col-num"><span className="ops-num">{money(row.revenue, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-num" data-negative={row.profit < 0 || undefined}>{money(row.profit, row.currency)}</span></td>
             <td className="ops-col-num"><span className="ops-cell-muted">{percentage(row.margin_percent)}</span></td>
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No customer P&L in this period."/>}
         </OpsSurface>
-        <OpsSurface density="compact" title="Route economics" description="Selected-period route performance." flush>
+        <OpsSurface density="compact" title="Route economics" flush>
           {topRoutes.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Route economics"><thead><tr><th>Route</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{topRoutes.map((row, index) => <tr key={`${row.origin}-${row.destination}-${freightModeLabel(row.mode)}-${row.currency}-${index}`}>
             <td><span className="ops-cell-primary ops-cell-clamp" title={`${row.origin} → ${row.destination}`}>{row.origin} → {row.destination}</span><span className="ops-cell-secondary">{freightModeLabel(row.mode)} · {row.currency}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.jobs}</span></td>
@@ -131,9 +129,9 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
         </OpsSurface>
       </div>
 
-      <SectionHead title="Exceptions and ownership" detail="Loss-making jobs in the period, and current staff workload independent of the financial range."/>
+      <SectionHead title="Exceptions and ownership"/>
       <div className="mgmt-grid">
-        <OpsSurface density="compact" title="Loss-making jobs" description="Negative lifetime economics with financial activity in the period." flush>
+        <OpsSurface density="compact" title="Loss-making jobs" description="Jobs that lost money and had money move this period." flush>
           {lossJobs.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Loss-making jobs"><thead><tr><th>Shipment</th><th>Customer</th><th className="ops-col-num">Profit</th><th className="ops-col-num">Margin</th></tr></thead><tbody>{lossJobs.map((job) => <tr key={`${job.shipment_reference}-${job.currency}`}>
             <td><Link href={`/admin/jobs/${encodeURIComponent(job.shipment_reference)}`} className="ops-cell-primary ops-mono ops-cell-id org-link">{job.shipment_reference}</Link><span className="ops-cell-secondary">{job.branch} · {job.currency}</span></td>
             <td><span className="ops-cell-clamp" title={job.customer_name}>{job.customer_name}</span></td>
@@ -141,7 +139,7 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
             <td className="ops-col-num"><span className="ops-num" data-negative>{percentage(job.margin_percent)}</span></td>
           </tr>)}</tbody></table></OpsTableWrap> : <Empty text="No loss-making jobs in the current slice."/>}
         </OpsSurface>
-        <OpsSurface density="compact" title="Staff workload" description="Current ownership pressure." flush>
+        <OpsSurface density="compact" title="Staff workload" flush>
           {workload.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table mgmt-table" aria-label="Staff workload"><thead><tr><th>Staff</th><th className="ops-col-num">Jobs</th><th className="ops-col-num">Tasks</th><th className="ops-col-num">Overdue</th><th className="ops-col-num">Urgent</th></tr></thead><tbody>{workload.map((row, index) => <tr key={`${row.staff_email || row.staff_name}-${index}`}>
             <td>{row.staff_email ? <Link href={`/admin/workload/${encodeURIComponent(row.staff_email)}`} className="ops-cell-primary org-link">{row.staff_name}</Link> : <span className="ops-cell-primary">{row.staff_name}</span>}<span className="ops-cell-secondary ops-cell-clamp">{row.staff_email || "No email"}</span></td>
             <td className="ops-col-num"><span className="ops-num">{row.active_jobs}</span></td>
@@ -157,11 +155,11 @@ export function ManagementWorkspace({ analytics, readiness }: { analytics: Manag
   </OpsPage>;
 }
 
-function SectionHead({ title, detail }: { title: string; detail: string }) { return <div className="org-section-head"><h2>{title}</h2><p>{detail}</p></div>; }
+function SectionHead({ title, detail }: { title: string; detail?: string }) { return <div className="org-section-head"><h2>{title}</h2>{detail ? <p>{detail}</p> : null}</div>; }
 function Empty({ text }: { text: string }) { return <p className="org-empty">{text}</p>; }
 function TrendChart({ currency, points }: { currency: CrmCurrency; points: TrendPoint[] }) {
   const max = Math.max(1, ...points.map((p) => Math.max(p.revenue, p.cost, Math.abs(p.profit))));
-  return <OpsSurface density="compact" title={`${currency} · monthly movement`} description="Revenue and cost proportions within this currency, with monthly profit.">
+  return <OpsSurface density="compact" title={`${currency} · monthly movement`}>
     <ol className="mgmt-trend">{points.slice(-12).map((p) => <li key={`${p.month}-${p.currency}`}>
       <span className="mgmt-trend-month">{p.month}</span>
       <span className="mgmt-trend-bars" aria-hidden="true">

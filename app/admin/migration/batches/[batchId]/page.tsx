@@ -73,15 +73,15 @@ export default async function MigrationBatchPage({ params }: { params: Promise<{
           <Card icon={<Archive size={14}/>} label="Recovery" value={batch.rollback_status ? readable(batch.rollback_status) : "Not started"} detail={batch.rollback_completed_at ? dateTime(batch.rollback_completed_at) : `${batch.duplicate_rows} duplicates · ${batch.invalid_rows} invalid`}/>
         </div>
 
-        {batch.detail_metrics.length ? <OpsSurface eyebrow="Batch composition" title="What this batch created"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{batch.detail_metrics.map((item) => <div key={item.label} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-faint)]">{item.label}</p><strong className="mt-1 block text-[length:var(--app-text-lg)] text-[var(--admin-ink)]">{item.value}</strong></div>)}</div></OpsSurface> : null}
+        {batch.detail_metrics.length ? <OpsSurface title="What this batch created"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{batch.detail_metrics.map((item) => <div key={item.label} className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface-muted)] p-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-faint)]">{item.label}</p><strong className="mt-1 block text-[length:var(--app-text-lg)] text-[var(--admin-ink)]">{item.value}</strong></div>)}</div></OpsSurface> : null}
 
-        <OpsSurface eyebrow="Created records" title="Objects written by this migration batch" description="This inventory is the recovery boundary. Stage 4C never expands it using fuzzy matching, filenames, customer names or supplier names." flush>
+        <OpsSurface title="Objects written by this migration batch" flush>
           {batch.created_records.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table min-w-[760px]"><thead><tr><th>Type</th><th>Record</th><th>Current system location</th></tr></thead><tbody>{batch.created_records.map((record) => <tr key={`${record.kind}-${record.id}`}><td><OpsBadge tone="neutral">{record.kind}</OpsBadge></td><td><OpsMono>{record.id}</OpsMono></td><td><Link href={record.href} className="font-bold text-[var(--admin-crimson)]">Open record</Link></td></tr>)}</tbody></table></div> : <div className="p-5"><OpsEmptyState icon={<Database size={17}/>} title="No created-record inventory" description="Automatic rollback is disabled when the batch cannot prove which objects it created."/></div>}
         </OpsSurface>
 
         {staff.permissions.canManageFinance ? <RecoveryPanel batchId={batch.id} rollbackStatus={batch.rollback_status}/> : <OpsNotice tone="warning">Stage 4C recovery also requires finance authority because a batch may contain receivables or payables.</OpsNotice>}
 
-        <OpsSurface eyebrow="Stage 4 safety model" title="Recovery that fails closed" description="A rollback is allowed only when the dry run proves the current records are still safe to reverse.">
+        <OpsSurface title="Recovery that fails closed">
           <div className="grid gap-3 md:grid-cols-3">
             <Safety title="Batch identity" detail="Every record must still carry the exact migration_batch_id recorded by the source batch."/>
             <Safety title="Post-import protection" detail="Edits, payments, shipment progress, documents, costs, customer dependencies and other activity turn into blockers instead of being deleted."/>

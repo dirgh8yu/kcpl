@@ -2,10 +2,10 @@ import "../plan-sell-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { ForexReferencePanel } from "../forex/forex-reference-panel";
 import { OperationsShell } from "../operations-shell";
-import { OpsKpiRail, OpsPage, OpsPageHeader, OpsRailMetric } from "../operations-ui";
+import { OpsInlineAlert, OpsPage, OpsPageHeader } from "../operations-ui";
 import { GoogleRoadRoutePanel } from "../routes/google-road-route-panel";
 import { getStaffContext } from "../staff-directory.server";
-import { kcplStaffRoleLabels, staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
+import { staffCapabilitiesForEmail, type StaffCapabilities } from "../staff-permissions";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { MarketEstimateWorkspace } from "./market-estimate-workspace";
 
@@ -46,28 +46,26 @@ export default async function MarketEstimatePage() {
   };
   if (!staff.permissions.canViewCommercial) return <OperationsShell {...shellProps}><Gate title="Commercial access required" detail="Market intelligence tools are available to Management, Accounts and Commercial roles." embedded/></OperationsShell>;
 
-  const roleLabel = kcplStaffRoleLabels[staff.permissions.role];
   const routesConfigured = Boolean(process.env.GOOGLE_MAPS_ROUTES_API_KEY?.trim());
   const placesConfigured = Boolean(process.env.GOOGLE_MAPS_PLACES_API_KEY?.trim());
   const emailConfigured = Boolean(process.env.SENDGRID_API_KEY?.trim() && process.env.KCPL_EMAIL_FROM?.trim());
+  const setupNeeded = [
+    ...(routesConfigured && placesConfigured ? [] : ["Road distances (Google)"]),
+    ...(emailConfigured ? [] : ["Quote email"]),
+  ];
 
   return (
     <OperationsShell {...shellProps}>
       <OpsPage>
         <OpsPageHeader
           title="Market rates"
-          description="Market freight prices, exchange rates and road distances, for reference. Nothing here changes a quote."
-          meta={<span>{roleLabel} · live integration workspace</span>}
+          description="Market freight prices, exchange rates and road distances, for reference."
         />
 
         <div className="px-4 pb-8 pt-4 md:px-6">
-          {/* Source state stays visible so an unavailable provider cannot masquerade as a blank result. */}
-          <OpsKpiRail label="Connected reference sources">
-            <OpsRailMetric label="Freight benchmark" value="Available" tone="success" detail="Freightos" title="Freightos public estimate adapter"/>
-            <OpsRailMetric label="NRB Forex" value="Available" tone="success" detail="Nepal Rastra Bank" title="Official Nepal Rastra Bank reference rates"/>
-            <OpsRailMetric label="Google Routes + Places" value={routesConfigured && placesConfigured ? "Available" : "Check setup"} tone={routesConfigured && placesConfigured ? "success" : "warning"} detail={routesConfigured && placesConfigured ? "Configured" : undefined} title={routesConfigured && placesConfigured ? "Firebase secrets detected" : "API code available · check Firebase secrets"}/>
-            <OpsRailMetric label="SendGrid quote email" value={emailConfigured ? "Available" : "Check setup"} tone={emailConfigured ? "success" : "warning"} detail={emailConfigured ? "Configured" : undefined} title={emailConfigured ? "Firebase email configuration detected" : "API code available · check Firebase secrets"}/>
-          </OpsKpiRail>
+          {/* A source that isn't set up says so, so its blank result can't pass
+            * for "no data"; sources that work need no announcement. */}
+          {setupNeeded.length ? <div className="mb-4"><OpsInlineAlert>{setupNeeded.join(" and ")} {setupNeeded.length === 1 ? "isn’t" : "aren’t"} set up yet, so {setupNeeded.length === 1 ? "it" : "they"} won’t return results here.</OpsInlineAlert></div> : null}
 
           <MarketEstimateWorkspace/>
           <div className="plan-section"><ForexReferencePanel compact/></div>

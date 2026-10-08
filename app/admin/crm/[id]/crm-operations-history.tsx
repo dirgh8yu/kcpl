@@ -50,7 +50,6 @@ export function CrmOperationsHistoryPanel({ history, showCommercial }: { history
   return (
     <OpsSurface
       title="Quotes and shipments"
-      description={`${shipments.length === 1 ? "1 shipment" : `${shipments.length} shipments`} · ${quotes.length === 1 ? "1 quote" : `${quotes.length} quotes`}, newest first, within your branch access.`}
       flush
     >
       {!quotes.length && !shipments.length ? (

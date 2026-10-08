@@ -74,9 +74,7 @@ function BookingRegister({ tenders, orders }: { tenders: TmsTender[]; orders: Tm
   return <OpsPage>
     <OpsPageHeader
       title="Confirmed bookings"
-      description="Carrier bookings the server has confirmed, newest first."
-      meta={<span>{sorted.length} {sorted.length === 1 ? "booking" : "bookings"}</span>}
-      actions={<Link href="/admin/tenders" className="ops-button" data-variant="secondary" data-size="md">Carrier booking</Link>}
+      description="Confirmed carrier bookings, newest first."
     />
     <div className="ops-content ops-stack">
       <section className="ops-surface" aria-label="Confirmed bookings">

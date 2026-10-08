@@ -27,6 +27,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsTableWrap,
@@ -297,7 +298,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   return <OpsPage className="document-vault-register">
     <OpsPageHeader
       title="Documents"
-      description="Every uploaded document. A new upload counts once someone else has checked it."
+      description="Every uploaded document, with its review and expiry."
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
@@ -313,7 +314,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
             <OpsFilterSelect label="Source" value={origin} allLabel="All sources" options={SOURCE_OPTIONS} onChange={(value) => update({ origin: value === "all" ? null : value, selected: null })}/>
             {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
             <span className="ops-toolbar-divider" aria-hidden="true"/>
-            <span className="ops-result-count" aria-live="polite">{visible.length === dashboard.rows.length ? `${dashboard.rows.length} documents` : `${visible.length} of ${dashboard.rows.length}`}</span>
+            <OpsResultCount count={visible.length} searching={Boolean(query.trim())}/>
           </>
         )}
         tabs={<OpsScopeTabs label="Status filter" items={STATUS_TABS.map((tab) => ({ ...tab, count: statusCounts[tab.value] }))} value={status} onChange={setStatusFilter}/>}
@@ -369,7 +370,6 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
               </table>
             </OpsTableWrap>
           ) : (filtersActive ? <OpsNoMatches noun="documents" onClear={reset}/> : <OpsEmptyState compact icon={<Folder size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No documents yet" description="No documents are in the vault yet."/>)}
-          {visible.length ? <footer className="ops-register-footer"><span>{visible.length} document{visible.length === 1 ? "" : "s"} in this view</span></footer> : null}
         </section>
 
         {selected ? <Inspector row={selected} role={role} currentUserEmail={currentUserEmail} busyId={busyId} reviewBusy={reviewBusy} onClose={() => update({ selected: null })} onDelete={deleteDocument} onSaveReview={saveReview} inspectorRef={inspectorRef}/> : null}

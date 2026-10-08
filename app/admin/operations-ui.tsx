@@ -22,6 +22,7 @@ export {
   OpsKpiRail,
   OpsRailMetric,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   type OpsActiveFilter,
   type OpsFilterOption,

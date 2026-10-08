@@ -57,27 +57,27 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
   }
 
   return <OpsPage>
-    <OpsPageHeader title="Supplier bill checks" description="Check each supplier bill against what we booked before paying it. Taxes are shown but not compared, and currencies are never converted."/>
+    <OpsPageHeader title="Supplier bill checks" description="Check each supplier bill against what we booked, before paying it."/>
     <div className="ops-content ops-stack">
 
     <OpsKpiRail label="Freight audit summary">
       <OpsRailMetric label="Bills audited" value={summary.total} title="Current payable queue"/>
-      <OpsRailMetric label="Matched" value={summary.matched} tone="success" detail="Within tolerance"/>
-      <OpsRailMetric label="Review" value={summary.review_required} tone="warning" detail="Blocking discrepancy"/>
-      <OpsRailMetric label="Disputed" value={summary.disputed} tone="danger" detail="Supplier resolution pending"/>
-      <OpsRailMetric label="Payment blocked" value={summary.blocked_from_payment} tone="danger" detail="Cannot pass Match-Pay"/>
+      <OpsRailMetric label="Matched" value={summary.matched} tone="success"/>
+      <OpsRailMetric label="Review" value={summary.review_required} tone="warning"/>
+      <OpsRailMetric label="Disputed" value={summary.disputed} tone="danger"/>
+      <OpsRailMetric label="Payment blocked" value={summary.blocked_from_payment} tone="danger"/>
     </OpsKpiRail>
     {notice ? <OpsNotice tone={notice.tone}>{notice.text}</OpsNotice> : null}
 
     <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <OpsSurface eyebrow="Audit queue" title="Supplier invoices">
+      <OpsSurface title="Supplier invoices">
         {!rows.length ? <OpsEmptyState compact icon={<BadgeCheck size={16} strokeWidth={1.75}/>} title="No supplier bills to audit" description="New supplier bills linked to TMS shipments will appear here automatically."/> : <div>{rows.map((row) => <button type="button" key={row.payable_reference} data-selected={selectedReference === row.payable_reference || undefined} onClick={() => setSelectedReference(row.payable_reference)} className="ops-list-select" aria-pressed={selectedReference === row.payable_reference}>
           <div className="flex items-start justify-between gap-3"><div><div className="ops-list-select-title ops-text-strong">{row.supplier_name}</div><div className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{row.payable_reference}{row.supplier_bill_reference ? ` · Invoice ${row.supplier_bill_reference}` : ""}</div></div><OpsBadge tone={tone(row.status)} dot>{freightAuditStatusLabels[row.status]}</OpsBadge></div>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--app-label-size)] tabular-nums text-[var(--admin-muted)]"><span>Booked {money(row.booked_currency, row.booked_cost)}</span><span>Invoice {money(row.invoice_currency, row.invoice_subtotal)}</span>{row.variance_amount !== null ? <span className={row.variance_amount > 0 ? "text-[var(--admin-danger)]" : "text-[var(--admin-success)]"}>Variance {row.variance_amount >= 0 ? "+" : ""}{row.variance_amount.toFixed(2)}</span> : null}</div>
         </button>)}</div>}
       </OpsSurface>
 
-      <OpsSurface eyebrow="Three-way match" title={selected ? selected.payable_reference : "Select a supplier bill"} description={selected ? `${selected.supplier_name}${selected.shipment_reference ? ` · ${selected.shipment_reference}` : ""}` : "Choose an invoice from the audit queue."}>
+      <OpsSurface title={selected ? selected.payable_reference : "Select a supplier bill"} description={selected ? `${selected.supplier_name}${selected.shipment_reference ? ` · ${selected.shipment_reference}` : ""}` : "Choose an invoice from the audit queue."}>
         {!selected ? <OpsEmptyState icon={<CircleDollarSign size={18}/>} title="No audit selected" description="Select a supplier invoice to inspect its booking match."/> : <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Metric label="Booked procurement" value={money(selected.booked_currency, selected.booked_cost)}/>
@@ -88,7 +88,7 @@ export function FreightAuditWorkspace({ initialRows, initialSummary, isManagemen
             <Metric label="Tolerance" value={`${selected.tolerance_percent.toFixed(2)}% or ${selected.invoice_currency} ${selected.tolerance_amount.toFixed(2)}`}/>
           </div>
 
-          {selected.expected_linehaul !== null ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="mb-3"><div className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">Booked rate-card baseline</div><div className="mt-1 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Reconstructed from the selected Partner rate card and the booked order quantity. This breakdown is hidden when a negotiated counter-offer replaced the original rate-card economics.</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Linehaul" value={money(selected.booked_currency, selected.expected_linehaul)}/><Metric label="Fuel surcharge" value={money(selected.booked_currency, selected.expected_fuel_surcharge)}/><Metric label="Accessorials" value={money(selected.booked_currency, selected.expected_accessorials)}/><Metric label="Rating unit" value={selected.expected_rate_unit ? readable(selected.expected_rate_unit) : "Not available"}/><Metric label="Booked quantity" value={selected.expected_quantity === null ? "Not available" : selected.expected_quantity.toLocaleString("en-AU")}/><Metric label="Minimum charge" value={selected.minimum_applied === null ? "Not available" : selected.minimum_applied ? "Applied" : "Not applied"}/></div></div> : null}
+          {selected.expected_linehaul !== null ? <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="mb-3"><div className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">Booked rate breakdown</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Linehaul" value={money(selected.booked_currency, selected.expected_linehaul)}/>{selected.expected_fuel_surcharge ? <Metric label="Fuel surcharge" value={money(selected.booked_currency, selected.expected_fuel_surcharge)}/> : null}{selected.expected_accessorials ? <Metric label="Accessorials" value={money(selected.booked_currency, selected.expected_accessorials)}/> : null}<Metric label="Rating unit" value={selected.expected_rate_unit ? readable(selected.expected_rate_unit) : "Not available"}/><Metric label="Booked quantity" value={selected.expected_quantity === null ? "Not available" : selected.expected_quantity.toLocaleString("en-AU")}/>{selected.minimum_applied ? <Metric label="Minimum charge" value="Applied"/> : null}</div></div> : null}
 
           <div className="rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] p-4"><div className="flex items-center justify-between gap-3"><div><div className="text-[length:var(--app-label-size)] font-bold text-[var(--admin-ink)]">Match-Pay status</div><div className="mt-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{selected.booked_partner_name ?? "No TMS carrier snapshot"}{selected.carrier_reference ? ` · Booking ${selected.carrier_reference}` : ""}</div></div><OpsBadge tone={tone(selected.status)}>{freightAuditStatusLabels[selected.status]}</OpsBadge></div></div>
 

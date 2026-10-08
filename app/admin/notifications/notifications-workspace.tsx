@@ -18,6 +18,7 @@ import {
   OpsPage,
   OpsPageHeader,
   OpsRegisterToolbar,
+  OpsResultCount,
   OpsScopeTabs,
   OpsSearch,
   OpsSkeleton,
@@ -222,7 +223,7 @@ export function NotificationsWorkspace() {
     <div className="notifications-workspace-page">
       <OpsPageHeader
         title="Notifications"
-        description={view === "transitions" ? "Status changes made today (Nepal time)." : "Messages the system has sent you. New ones appear on their own."}
+        description={view === "transitions" ? "Status changes made today (Nepal time)." : "Messages sent to you, newest first."}
         actions={(
           <>
             {view === "transitions" ? <OpsButton variant="secondary" size="sm" onClick={() => exportTransitionsCsv(filtered)} disabled={!filtered.length} title="Download today's transition history for shift handover"><Download size={13} strokeWidth={1.75}/>Export CSV</OpsButton> : null}
@@ -234,7 +235,8 @@ export function NotificationsWorkspace() {
       <div className="px-4 pb-8 md:px-6">
         {error ? <div className="mb-3"><OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice></div> : null}
 
-        <OpsRegisterToolbar
+        {/* Nothing to search or filter until something has arrived. */}
+        {notifications.length || counts.transitions ? <OpsRegisterToolbar
           search={<OpsSearch value={query} onChange={(event) => update({ q: event.target.value || null })} placeholder="Search notification, branch, reference…" aria-label="Search notifications"/>}
           actions={(
             <>
@@ -242,7 +244,7 @@ export function NotificationsWorkspace() {
               <OpsFilterSelect label="Severity" value={severity} allLabel="All severities" options={[{ value: "critical", label: `Critical (${counts.critical})` }, { value: "warning", label: `Warning (${counts.warning})` }, { value: "info", label: "Info" }]} onChange={(value) => setSeverity(value as SeverityFilter)}/>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={reset}>Reset</OpsButton> : null}
               <span className="ops-toolbar-divider" aria-hidden="true"/>
-              <span className="ops-result-count" aria-live="polite">{filtered.length} shown</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>
           )}
           // One row: what to show. Type and severity are dropdowns beside the search.
@@ -252,7 +254,7 @@ export function NotificationsWorkspace() {
             { value: "resolved", label: "Resolved", count: counts.resolved },
             { value: "transitions", label: "Today’s status changes", count: counts.transitions },
           ]}/>}
-        />
+        /> : null}
 
         {view === "transitions" ? <section className="notifications-sparkline" aria-label="Register transitions, last 7 days">
           <div className="notifications-sparkline-head">
@@ -291,7 +293,6 @@ export function NotificationsWorkspace() {
           }) : <OpsEmptyState compact kind={notifications.length ? "search" : "healthy"} icon={<Bell size={16} strokeWidth={1.75} aria-hidden="true"/>} title={notifications.length ? "No notifications match" : "No notifications yet"} description={notifications.length ? "Change the search or filters to widen the retained history." : "Assignment notices and automation alerts will appear here."} action={filtersActive ? <OpsButton variant="secondary" size="sm" onClick={reset}>Reset filters</OpsButton> : undefined}/>}
         </section>
 
-        <div className="mt-4"><OpsNotice tone="neutral">{data?.email_configured ? "In-app and email notification channels are configured." : "In-app notification history is active. Email delivery is not configured in this deployment."}</OpsNotice></div>
       </div>
     </div>
   </OpsPage>;

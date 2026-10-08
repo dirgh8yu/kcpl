@@ -153,16 +153,15 @@ export function PortalAccessWorkspace({
       <OpsPageHeader
         title="Customer portal logins"
         description="Who at each customer can sign in to see their shipments, documents and invoices."
-        meta={<span>{accounts.length} portal account{accounts.length === 1 ? "" : "s"} · {activeAccounts} active</span>}
       />
 
       <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
-        <OpsKpiRail label="Portal account summary">
+        {accounts.length ? <OpsKpiRail label="Portal account summary">
           <OpsRailMetric label="Portal accounts" value={accounts.length}/>
           <OpsRailMetric label="Active" value={activeAccounts}/>
           <OpsRailMetric label="Disabled" value={accounts.length - activeAccounts}/>
           <OpsRailMetric label="Never signed in" value={neverSignedIn} tone={neverSignedIn ? "warning" : "neutral"}/>
-        </OpsKpiRail>
+        </OpsKpiRail> : null}
 
         {notice || error || inviteLink ? <div className="org-stack org-notices">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
@@ -170,7 +169,8 @@ export function PortalAccessWorkspace({
           {inviteLink ? <OpsNotice tone="warning" onDismiss={() => setInviteLink("")}><span className="ops-mono portal-invite">{inviteLink}</span></OpsNotice> : null}
         </div> : null}
 
-        <div className="org-grid">
+        {/* Linking needs a login to link, so it waits for the first one. */}
+        <div className={accounts.length ? "org-grid" : undefined}>
           <OpsSurface density="compact" title="Grant portal access" description="The contact gets an email link to set their own password. KCPL never sees it.">
             <form onSubmit={submit} aria-busy={Boolean(busy)}>
               <div className="ops-form-grid portal-grid">
@@ -196,7 +196,7 @@ export function PortalAccessWorkspace({
             </form>
           </OpsSurface>
 
-          <OpsSurface density="compact" title="Linked customer accounts" description="Let one login see several KCPL customers, for an agent or group. Only Management can grant this; an account owner cannot link themselves to another company.">
+          {accounts.length ? <OpsSurface density="compact" title="Linked customer accounts" description="Let one login see several customers, for an agent or a group.">
             <form onSubmit={(event) => { event.preventDefault(); void changeLink("link"); }} aria-busy={busy === "link"}>
               <div className="ops-form-grid portal-grid">
                 <OpsField label="Portal login" className="ops-form-full">
@@ -218,14 +218,13 @@ export function PortalAccessWorkspace({
                 </OpsButton>
               </div>
             </form>
-          </OpsSurface>
+          </OpsSurface> : null}
         </div>
 
         <OpsSurface
           density="compact"
-          title="Provisioned portal logins"
-          description={`${rows.length} of ${accounts.length} shown.`}
-          action={<OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search email or customer…" aria-label="Search portal accounts"/>}
+          title="Portal logins"
+          action={accounts.length ? <OpsSearch className="org-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search email or customer…" aria-label="Search portal accounts"/> : undefined}
           flush
         >
           {rows.length ? (

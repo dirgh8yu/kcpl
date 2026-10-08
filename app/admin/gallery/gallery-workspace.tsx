@@ -97,9 +97,8 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
     } finally { setBusyId(null); }
   }
 
-  const published = items.filter((item) => item.published).length;
   return <OpsPage>
-    <OpsPageHeader title="Website gallery" description="Upload KCPL photography and choose what appears on the public site." meta={<span>{published} published · {items.length - published} {items.length - published === 1 ? "draft" : "drafts"}</span>} actions={<Link className="ops-button" data-variant="secondary" data-size="md" href="/gallery" target="_blank" rel="noopener noreferrer">View public gallery<ExternalLink size={14} strokeWidth={1.75} aria-hidden="true"/></Link>} />
+    <OpsPageHeader title="Website gallery" description="Upload KCPL photography and choose what appears on the public site." actions={<Link className="ops-button" data-variant="secondary" data-size="md" href="/gallery" target="_blank" rel="noopener noreferrer">View public gallery<ExternalLink size={14} strokeWidth={1.75} aria-hidden="true"/></Link>} />
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
       <OpsSurface title="Upload images" description="JPG, PNG or WebP, each up to 10 MB and at least 400 × 300 pixels. Location metadata is removed.">
@@ -113,7 +112,7 @@ export function GalleryWorkspace({ initialItems }: { initialItems: GalleryEntry[
         {busyId === "upload" && progress ? <div className="site-gallery-progress" role="status"><span>{progress.completed} of {progress.total} processed</span><progress value={progress.completed} max={progress.total} /></div> : null}
         {failedFiles.length ? <div className="site-gallery-failures"><p>Images needing another attempt</p><ul>{failedFiles.slice(0, 10).map(({ file, error }, index) => <li key={`${file.name}-${file.size}-${index}`}>{file.name}: {error}</li>)}</ul>{failedFiles.length > 10 ? <p>And {failedFiles.length - 10} more.</p> : null}</div> : null}
       </OpsSurface>
-      <OpsSurface title="Images" description="Newest first. Drafts stay off the public site until published.">
+      <OpsSurface title="Images">
         {items.length ? <div className="site-gallery-list">{items.map((item) => <GalleryRow key={item.id} item={item} busy={Boolean(busyId)} active={busyId === item.id} onUpdate={update} onDelete={remove} />)}</div> : <OpsEmptyState icon={<ImagePlus size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No gallery images yet" description="Upload the first KCPL photo to prepare it for publication." compact />}
       </OpsSurface>
     </div>

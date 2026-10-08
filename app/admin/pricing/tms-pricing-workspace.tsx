@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Calculator, CheckCircle2, CircleAlert, FilePlus2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "../crm/crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorNote, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import {
   deriveNrbMidpointFxRate,
@@ -38,7 +38,8 @@ function money(value: number, currency: string) {
   catch { return `${currency} ${value.toFixed(2)}`; }
 }
 function numberOrNull(value: string) { if (!value.trim()) return null; const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
-function title(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+/** Sentence case, the staff app's one label case: "approval_required" → "Approval required". */
+function title(value: string) { const words = value.replaceAll("_", " "); return words.charAt(0).toUpperCase() + words.slice(1); }
 function pricingTone(status: PricingOrderCandidate["pricing_status"]): "neutral" | "info" | "warning" | "success" {
   return status === "quoted" ? "success" : status === "approval_required" ? "warning" : status === "priced" ? "info" : "neutral";
 }
@@ -238,20 +239,20 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
       title="Pricing"
       description="What we charge customers: the carrier’s price plus our margin, with the minimum margin checked."
       actions={<>
-        {canManageRules ? <OpsButton variant="secondary" onClick={() => setShowRuleForm((value) => !value)} aria-expanded={showRuleForm}><SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/>Pricing rules</OpsButton> : null}
+        {canManageRules ? <OpsButton variant="secondary" onClick={() => setShowRuleForm((value) => !value)} aria-expanded={showRuleForm}><SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true"/>New pricing rule</OpsButton> : null}
       </>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6">
 
       {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
-      {showRuleForm && canManageRules ? <div className="plan-panel"><PricingRuleForm customers={customers} rules={rules} onClose={() => setShowRuleForm(false)} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}
+      {showRuleForm && canManageRules ? <div className="plan-panel"><PricingRuleForm customers={customers} onClose={() => setShowRuleForm(false)} onCreated={async () => { await refresh(); setShowRuleForm(false); }} /></div> : null}
 
       <OpsRegisterToolbar
         search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, lane, customer, quote…" aria-label="Search priceable orders"/>}
         actions={<>
           {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={resetFilters}>Reset</OpsButton> : null}
-          <span className="ops-result-count" aria-live="polite">{visible.length === orders.length ? `${orders.length} orders` : `${visible.length} of ${orders.length}`}</span>
+          <OpsResultCount count={visible.length} searching={Boolean(query.trim())}/>
         </>}
         tabs={<OpsScopeTabs label="Pricing status" items={PRICING_SCOPES.map((item) => ({ ...item, count: scopeCounts[item.value] }))} value={scope} onChange={setScope}/>}
       />
@@ -272,8 +273,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
                 </tr>;
               })}</tbody>
             </table>
-          </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="orders" onClear={resetFilters}/> : <OpsEmptyState compact icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No orders ready for sell pricing" description="Select a partner buy rate on the rate desk first. Only non-master orders with a selected procurement cost appear here."/>)}
-          {visible.length ? <footer className="ops-register-footer"><span>Only non-master orders with a selected procurement cost appear here.</span></footer> : null}
+          </OpsTableWrap> : (filtersActive ? <OpsNoMatches noun="orders" onClear={resetFilters}/> : <OpsEmptyState compact icon={<Calculator size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No orders ready for sell pricing" description="An order appears here once it has a selected buy rate."/>)}
         </section>
 
         {selectedOrder ? <aside ref={inspectorRef} className="ops-inspector" aria-label={`Sell pricing for ${selectedOrder.id}`}>
@@ -343,7 +343,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
         </aside> : null}
       </div>
 
-      <OpsSurface className="plan-section" density="compact" title="Pricing governance" description={`${rules.length} active and retained pricing rules. Customer and lane rules outrank broad branch or global rules; priority breaks ties.`} flush>
+      <OpsSurface className="plan-section" density="compact" title="Pricing rules" flush>
         {rules.length ? <OpsTableWrap>
           <table className="ops-table ops-register-table ops-stack-table pricing-rules-table" aria-label="Pricing rules">
             <thead><tr><th>Rule</th><th>Match</th><th>Sell basis</th><th>Floor</th><th>Status</th></tr></thead>
@@ -361,7 +361,7 @@ export function TmsPricingWorkspace({ initialOrders, initialCustomers, initialRu
   </OpsPage>;
 }
 
-function PricingRuleForm({ customers, rules, onCreated, onClose }: { customers: CustomerPricingProfile[]; rules: PricingRule[]; onCreated: () => Promise<void>; onClose: () => void }) {
+function PricingRuleForm({ customers, onCreated, onClose }: { customers: CustomerPricingProfile[]; onCreated: () => Promise<void>; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -395,7 +395,7 @@ function PricingRuleForm({ customers, rules, onCreated, onClose }: { customers: 
   return <OpsSurface
     density="compact"
     title="Create pricing rule"
-    description={`Rules currently stored: ${rules.length}. Customer and lane specificity outrank broad rules; priority breaks ties.`}
+    description="Customer and lane rules beat branch and global ones; priority breaks a tie."
     action={<button type="button" className="ops-inspector-close" onClick={onClose} aria-label="Close pricing rule form"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
   >
     {error ? <div className="plan-notice"><OpsNotice tone="danger">{error}</OpsNotice></div> : null}

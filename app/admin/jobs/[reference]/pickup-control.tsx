@@ -81,7 +81,7 @@ export function PickupControl({ reference, pickup, stepDone, onChanged }: { refe
 
   return <OpsSurface
     title="Pickup"
-    description={status ? pickupAppointmentStatusLabels[status] : stepDone ? "The cargo is already moving; no pickup was booked here." : "No pickup booked yet."}
+    description={status ? pickupAppointmentStatusLabels[status] : stepDone ? "The cargo is already moving; no pickup was booked here." : undefined}
     action={<Link className="ops-button" data-variant="ghost" data-size="xs" href={`/admin/pickups?shipment=${encodeURIComponent(reference)}`}>All pickup options<ArrowRight size={12} strokeWidth={1.75} aria-hidden="true"/></Link>}
   >
     {pickup && status !== "unscheduled" ? <dl className="job-pickup-facts">

@@ -87,7 +87,7 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
       eyebrow="Transport order"
       title={<span className="inline-flex flex-wrap items-center gap-2"><OpsMono>{order.id}</OpsMono><OpsBadge tone={statusTone(order.status)} dot>{statusLabels[order.status]}</OpsBadge></span>}
       description={`${order.origin} → ${order.destination}`}
-      meta={<><span>{order.customer_name || "Customer not linked"}</span><span>{order.branch}</span><span>{freightModeLabel(order.mode)}</span><span>Updated {dateTime(order.updated_at)}</span></>}
+      meta={<><span>{order.customer_name || "Customer not linked"}</span><span>{order.branch}</span><span>{freightModeLabel(order.mode)}</span></>}
       actions={action}
     />
     <div className="ops-content">
@@ -99,8 +99,8 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
             <OpsDetailItem label="Destination">{order.destination}</OpsDetailItem>
             <OpsDetailItem label="Mode">{freightModeLabel(order.mode)}</OpsDetailItem>
             <OpsDetailItem label="Pickup">{dateTime(order.pickup_date)}</OpsDetailItem>
-            <OpsDetailItem label="Delivery target">{dateTime(order.delivery_date)}</OpsDetailItem>
-            <OpsDetailItem label="Equipment">{order.equipment || "Not set"}</OpsDetailItem>
+            {order.delivery_date ? <OpsDetailItem label="Delivery target">{dateTime(order.delivery_date)}</OpsDetailItem> : null}
+            {order.equipment ? <OpsDetailItem label="Equipment">{order.equipment}</OpsDetailItem> : null}
           </OpsDetailGrid>
         </OpsSurface>
         <OpsSurface title="Cargo">
@@ -108,19 +108,19 @@ function TransportOrderDetail({ order, relatedTenders, bookedTender, liveTender 
             <OpsDetailItem label="Weight">{`${order.weight_kg.toLocaleString()} kg`}</OpsDetailItem>
             <OpsDetailItem label="Volume">{`${order.volume_cbm.toLocaleString()} CBM`}</OpsDetailItem>
             <OpsDetailItem label="Pieces">{order.pieces.toLocaleString()}</OpsDetailItem>
-            <OpsDetailItem label="Containers">{order.container_count.toLocaleString()}</OpsDetailItem>
-            <OpsDetailItem label="Temperature">{order.temperature_requirement || "Not set"}</OpsDetailItem>
-            <OpsDetailItem label="Carrier requirement">{order.carrier_requirement || "Not set"}</OpsDetailItem>
+            {order.container_count ? <OpsDetailItem label="Containers">{order.container_count.toLocaleString()}</OpsDetailItem> : null}
+            {order.temperature_requirement ? <OpsDetailItem label="Temperature">{order.temperature_requirement}</OpsDetailItem> : null}
+            {order.carrier_requirement ? <OpsDetailItem label="Carrier requirement">{order.carrier_requirement}</OpsDetailItem> : null}
           </OpsDetailGrid>
         </OpsSurface>
-        <OpsSurface title="Buy rate" description="The selected partner rate is the starting point. The carrier’s reply and the booking are separate steps.">
-          <OpsDetailGrid columns={3}>
+        <OpsSurface title="Buy rate">
+          {order.selected_cost == null && !order.selected_partner_id ? <p className="ops-cell-muted">No buy rate selected yet.</p> : <OpsDetailGrid columns={3}>
             <OpsDetailItem label="Selected buy rate">{money(order.selected_cost, order.selected_currency)}</OpsDetailItem>
             <OpsDetailItem label="Partner">{order.selected_partner_id || "No partner selected"}</OpsDetailItem>
             <OpsDetailItem label="Rate card">{order.selected_rate_card_id || "Not locked"}</OpsDetailItem>
-          </OpsDetailGrid>
+          </OpsDetailGrid>}
         </OpsSurface>
-        <OpsSurface title="Carrier requests" description={relatedTenders.length === 1 ? "1 request sent for this order." : `${relatedTenders.length} requests sent for this order.`} flush>
+        <OpsSurface title="Carrier requests" flush>
           {relatedTenders.length ? <OpsTableWrap>
             <table className="ops-table ops-register-table ops-stack-table">
               <thead><tr><th>Request</th><th>Partner</th><th>Offered</th><th>Reply due</th><th>Status</th></tr></thead>

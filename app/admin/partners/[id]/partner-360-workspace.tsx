@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, History,
+import { FileText,
   ExternalLink,
   Globe2,
   Mail,
@@ -81,7 +81,7 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
     <OpsPageHeader
       eyebrow="Partner"
       title={<span className="inline-flex flex-wrap items-center gap-2">{partner.display_name}<OpsBadge tone={statusTone(partner.status)} dot>{partnerStatusLabels[partner.status]}</OpsBadge></span>}
-      description={partner.legal_name || "Contacts, services, rates and bills for this partner."}
+      description={partner.legal_name || undefined}
       meta={<>
         {partner.preferred ? <OpsBadge tone="accent"><Star size={10} fill="currentColor"/>Preferred</OpsBadge> : null}
         {partner.types.slice(0, 4).map((type) => <OpsBadge key={type}>{partnerTypeLabels[type]}</OpsBadge>)}
@@ -98,13 +98,13 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
 
       <div className="ops-grid-main">
         <div className="ops-stack">
-          <OpsSurface title="Where and how KCPL works with this partner" description="Saved network coverage only. This is not live tracking or a claim of physical presence.">
+          <OpsSurface title="Where and how KCPL works with this partner">
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <Fact label="Base country" value={partner.country}/>
               <Fact label="KCPL owner" value={partner.owner_branch || "Needs owner repair"}/>
-              <Fact label="Countries served" value={partner.countries_served.join(", ") || "Not recorded"}/>
-              <Fact label="Cities served" value={partner.cities_served.join(", ") || "Not recorded"}/>
-              <Fact label="Ports / airports" value={partner.ports_served.join(", ") || "Not recorded"}/>
+              {partner.countries_served.length ? <Fact label="Countries served" value={partner.countries_served.join(", ")}/> : null}
+              {partner.cities_served.length ? <Fact label="Cities served" value={partner.cities_served.join(", ")}/> : null}
+              {partner.ports_served.length ? <Fact label="Ports / airports" value={partner.ports_served.join(", ")}/> : null}
               <Fact label="Service rating" value={partner.service_rating ? `${partner.service_rating}/5` : "Not rated"}/>
               <Fact label="Updated" value={dateTime(partner.updated_at)}/>
               <Fact label="Last linked activity" value={dateTime(partner.last_activity_at)}/>
@@ -113,13 +113,13 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
             {partner.tags.length ? <div className="mt-4 border-t border-[var(--admin-line)] pt-4"><p className="text-[length:var(--app-label-size)] font-bold uppercase tracking-[.04em] text-[var(--admin-muted)]">Tags</p><div className="mt-2 flex flex-wrap gap-1.5">{partner.tags.map((tag) => <OpsBadge key={tag} tone="accent">{tag}</OpsBadge>)}</div></div> : null}
           </OpsSurface>
 
-          <OpsSurface title="Jobs" description={snapshot.jobs.length ? `${snapshot.jobs.length} linked through this partner's supplier bills, newest first.` : "Shipments linked through this partner's supplier bills."} flush>
+          <OpsSurface title="Jobs" flush>
             {snapshot.jobs.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table" data-row-link=""><thead><tr><th>Shipment</th><th>Route</th><th>Status</th><th>ETA</th><th>Branch</th></tr></thead><tbody>{snapshot.jobs.slice(0, 20).map((job) => <tr key={job.reference}><td data-cell="primary"><Link href={`/admin/jobs/${encodeURIComponent(job.reference)}`}><OpsMono>{job.reference}</OpsMono></Link></td><td data-cell="route">{job.origin || "Origin"} → {job.destination || "Destination"}{job.current_location ? <span className="block text-[var(--admin-muted)]">Now at {job.current_location}</span> : null}</td><td data-cell="status"><OpsBadge tone={statusTone(job.status)} dot>{shipmentStatusLabels[job.status]}</OpsBadge></td><td data-cell="meta" data-label="ETA">{dateOnly(job.eta)}</td><td data-cell="meta" data-label="Branch">{job.primary_branch || "Needs repair"}</td></tr>)}</tbody></table></div> : <OpsEmptyState icon={<Ship size={18}/>} title="No linked jobs yet" description="A shipment appears here once a supplier bill for it carries this partner."/>}
           </OpsSurface>
 
-          <OpsSurface title="Partner activity" description="Network changes and, for authorised Finance roles, supplier bill lifecycle events.">
-            {snapshot.activity.length ? <div className="divide-y divide-[var(--admin-line)]">{snapshot.activity.slice(0, 30).map((item) => <article key={item.id} className="py-3.5"><div className="flex items-start gap-2.5"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--admin-crimson)]"/><div className="min-w-0"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{item.title}</strong>{item.detail ? <p className="mt-1.5 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{item.detail}</p> : null}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{dateTime(item.created_at)} NPT{item.actor_name || item.actor_email ? ` · ${item.actor_name || item.actor_email}` : ""}</p></div></div></article>)}</div> : <OpsEmptyState compact icon={<History size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No partner activity yet" description="Partner updates and linked financial lifecycle events will build this relationship trail over time."/>}
-          </OpsSurface>
+          {snapshot.activity.length ? <OpsSurface title="Partner activity">
+            <div className="divide-y divide-[var(--admin-line)]">{snapshot.activity.slice(0, 30).map((item) => <article key={item.id} className="py-3.5"><div className="flex items-start gap-2.5"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--admin-crimson)]"/><div className="min-w-0"><strong className="text-[length:var(--app-label-size)] text-[var(--admin-ink)]">{item.title}</strong>{item.detail ? <p className="mt-1.5 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{item.detail}</p> : null}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-faint)]">{dateTime(item.created_at)} NPT{item.actor_name || item.actor_email ? ` · ${item.actor_name || item.actor_email}` : ""}</p></div></div></article>)}</div>
+          </OpsSurface> : null}
         </div>
 
         <aside className="ops-stack xl:sticky xl:top-[76px]">
@@ -127,11 +127,11 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
             <div className="space-y-3"><Fact label="Contact" value={partner.primary_contact_name || "Not recorded"}/>{partner.primary_email ? <ContactLink icon={<Mail size={12}/>} href={`mailto:${partner.primary_email}`} label={partner.primary_email}/> : null}{partner.primary_phone ? <ContactLink icon={<Phone size={12}/>} href={`tel:${partner.primary_phone}`} label={partner.primary_phone}/> : null}{partner.whatsapp && whatsappHref(partner.whatsapp) ? <ContactLink icon={<MessageCircle size={12}/>} href={whatsappHref(partner.whatsapp)} label={`WhatsApp · ${partner.whatsapp}`} external/> : null}{partner.website ? <ContactLink icon={<Globe2 size={12}/>} href={partner.website} label="Website" external/> : null}</div>
           </OpsSurface>
 
-          {commercialVisible ? <OpsSurface title={`${partner.preferred_currency} relationship`} description="Commercial terms are visible only to authorised KCPL roles."><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><Fact label="Payment terms" value={`${partner.payment_terms_days} days`}/><Fact label="Preferred status" value={partner.preferred ? "Preferred partner" : "Standard partner"}/></div>{partner.commercial_terms ? <p className="mt-4 border-t border-[var(--admin-line)] pt-4 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{partner.commercial_terms}</p> : null}</OpsSurface> : null}
+          {commercialVisible ? <OpsSurface title={`${partner.preferred_currency} relationship`}><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><Fact label="Payment terms" value={`${partner.payment_terms_days} days`}/></div>{partner.commercial_terms ? <p className="mt-4 border-t border-[var(--admin-line)] pt-4 text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{partner.commercial_terms}</p> : null}</OpsSurface> : null}
 
           <OpsSurface title="Registration & contract">
             {expiryAttention ? <div className={`mb-4 rounded-[var(--app-radius)] border p-3 ${expiryDays !== null && expiryDays < 0 ? "border-[var(--admin-danger-line)] bg-[var(--admin-danger-bg)]" : "border-[var(--admin-warning-line)] bg-[var(--admin-warning-bg)]"}`}><strong className={`text-[length:var(--app-label-size)] ${expiryDays !== null && expiryDays < 0 ? "text-[var(--admin-danger)]" : "text-[var(--admin-warning)]"}`}>{expiryDays !== null && expiryDays < 0 ? `Contract expired ${Math.abs(expiryDays)} day${Math.abs(expiryDays) === 1 ? "" : "s"} ago` : `Contract expires in ${expiryDays} day${expiryDays === 1 ? "" : "s"}`}</strong></div> : null}
-            <div className="grid gap-4"><Fact label="Registration number" value={partner.registration_number || "Not recorded"}/><Fact label="Tax / VAT ID" value={partner.tax_id || "Not recorded"}/><Fact label="Contract reference" value={partner.contract_reference || "Not recorded"}/><Fact label="Contract expiry" value={dateOnly(partner.contract_expiry_date)}/></div>
+            {partner.registration_number || partner.tax_id || partner.contract_reference || partner.contract_expiry_date ? <div className="grid gap-4">{partner.registration_number ? <Fact label="Registration number" value={partner.registration_number}/> : null}{partner.tax_id ? <Fact label="Tax / VAT ID" value={partner.tax_id}/> : null}{partner.contract_reference ? <Fact label="Contract reference" value={partner.contract_reference}/> : null}{partner.contract_expiry_date ? <Fact label="Contract expiry" value={dateOnly(partner.contract_expiry_date)}/> : null}</div> : <p className="ops-cell-muted">Nothing recorded yet.</p>}
             {partner.document_url ? <a href={partner.document_url} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-2 border-t border-[var(--admin-line)] pt-4 text-[length:var(--app-label-size)] font-semibold text-[var(--admin-crimson)] hover:underline"><ExternalLink size={11}/>Open contract / document</a> : null}
           </OpsSurface>
 
@@ -146,9 +146,9 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
 
 function PartnerFinance({ summaries, bills }: { summaries: PartnerFinanceSummary[]; bills: Partner360Snapshot["bills"] }) {
   return <div className="ops-stack">
-    <div><p className="ops-eyebrow">Payables</p><h2 className="mt-1 text-[length:var(--app-text-lg)] font-semibold tracking-[-.025em] text-[var(--admin-ink)]">Supplier exposure</h2><p className="mt-1 max-w-3xl text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">Each currency stands alone. KCPL does not convert or combine supplier exposure using invented exchange rates.</p></div>
+    <div><h2 className="text-[length:var(--app-text-lg)] font-semibold tracking-[-.025em] text-[var(--admin-ink)]">Supplier exposure</h2></div>
     {summaries.length ? <div className="grid gap-3 xl:grid-cols-2">{summaries.map((summary) => <OpsSurface key={summary.currency} title={`${money(summary.outstanding, summary.currency)} outstanding`} description={`${summary.open_bill_count} open · ${summary.overdue_bill_count} overdue`}><div className="grid grid-cols-3 gap-3"><FinanceFact label="Billed" value={money(summary.billed, summary.currency)}/><FinanceFact label="Paid" value={money(summary.paid, summary.currency)}/><FinanceFact label="Overdue" value={money(summary.overdue, summary.currency)} danger={summary.overdue > 0}/></div></OpsSurface>)}</div> : <OpsEmptyState icon={<WalletCards size={18}/>} title="No confirmed payable exposure" description="Approved, paid and open supplier bills linked to this Partner ID will appear here by currency."/>}
-    <OpsSurface title="Bills linked to this partner" description={`${bills.length} visible bills, including explicitly flagged legacy name matches.`} flush>
+    <OpsSurface title="Bills linked to this partner" flush>
       {bills.length ? <div className="ops-table-wrap"><table className="ops-table ops-register-table ops-stack-table min-w-[1080px]"><thead><tr><th>Bill</th><th>Supplier reference</th><th>Job / branch</th><th>Date / due</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>{bills.map((bill) => <tr key={bill.reference}><td><Link href={`/admin/payables/bills/${encodeURIComponent(bill.reference)}`}><OpsMono>{bill.reference}</OpsMono></Link>{bill.legacy_name_link ? <div className="mt-1.5"><OpsBadge tone="warning">Legacy name link</OpsBadge></div> : null}</td><td>{bill.supplier_bill_reference || "Not recorded"}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{bill.description}</p></td><td>{bill.shipment_reference ? <Link href={`/admin/jobs/${encodeURIComponent(bill.shipment_reference)}`} className="hover:underline"><OpsMono>{bill.shipment_reference}</OpsMono></Link> : "General payable"}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{bill.branch || "Branch needs repair"}</p></td><td>{dateOnly(bill.bill_date)}<p className="mt-1.5 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Due {dateOnly(bill.due_date)}</p></td><td className="font-semibold">{money(bill.total, bill.currency)}</td><td className="font-semibold">{money(bill.balance_due, bill.currency)}</td><td><OpsBadge tone={statusTone(bill.status)}>{payableStatusLabels[bill.status]}</OpsBadge></td></tr>)}</tbody></table></div> : <OpsEmptyState compact icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No supplier bills" description="Create a supplier bill from this Partner record to establish a confirmed financial link."/>}
     </OpsSurface>
   </div>;

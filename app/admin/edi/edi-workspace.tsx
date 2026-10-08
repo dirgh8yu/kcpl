@@ -111,7 +111,6 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
       {canQueue204 ? <OpsSurface
         density="compact"
         title="204 tender handoff"
-        description="Sent manual tenders can be converted to EDI 204 before any email dispatch. The tender reference and commercial snapshot stay the same, so the carrier 990 returns to the existing procurement record."
         flush
       >
         {handoffShown.length ? <OpsTableWrap>
@@ -133,7 +132,6 @@ export function EdiWorkspace({ initialRows, initialSummary, initialConfigured, i
         className="network-section"
         density="compact"
         title="EDI transaction ledger"
-        description="Outbound and inbound message history. Duplicate or unmatched messages are held for review instead of silently changing freight records; raw X12 payloads never reach the browser."
         action={<div className="network-surface-tools">
           <OpsSearch className="network-surface-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search reference, partner, set" aria-label="Search the EDI transaction ledger"/>
           <span className="ops-result-count" aria-live="polite">{filtered.length === rows.length ? `${rows.length} transactions` : `${filtered.length} of ${rows.length}`}</span>

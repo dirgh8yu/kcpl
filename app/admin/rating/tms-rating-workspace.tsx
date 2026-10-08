@@ -178,7 +178,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
 
         {notice ? <div className="plan-notice"><OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice></div> : null}
 
-        {showOrder ? <div className="plan-panel"><OpsSurface density="compact" title="Create transport order" description="The planning object that later supports consolidation, tendering and booking." action={<button type="button" className="ops-inspector-close" onClick={() => setShowOrder(false)} aria-label="Close create order"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
+        {showOrder ? <div className="plan-panel"><OpsSurface density="compact" title="Create transport order" action={<button type="button" className="ops-inspector-close" onClick={() => setShowOrder(false)} aria-label="Close create order"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
           <form onSubmit={createOrder}>
             <div className="ops-form-grid">
               <OpsField label="Branch"><select value={orderBranch} onChange={(event) => setOrderBranch(event.target.value as KcplBranch)}>{branches.map((value) => <option key={value}>{value}</option>)}</select></OpsField>
@@ -196,7 +196,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
           </form>
         </OpsSurface></div> : null}
 
-        {showRate && canManageRateCards ? <div className="plan-panel"><OpsSurface density="compact" title="Add Partner buy rate" description="Use * or Any for a lane endpoint that should match every location. Currency is never silently converted." action={<button type="button" className="ops-inspector-close" onClick={() => setShowRate(false)} aria-label="Close Partner buy rate"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
+        {showRate && canManageRateCards ? <div className="plan-panel"><OpsSurface density="compact" title="Add Partner buy rate" description="Use * or Any for an end of the lane that matches everywhere." action={<button type="button" className="ops-inspector-close" onClick={() => setShowRate(false)} aria-label="Close Partner buy rate"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}>
           <form onSubmit={createRate}>
             <div className="ops-form-grid">
               <OpsField label="Partner"><select required value={partnerId} onChange={(event) => setPartnerId(event.target.value)}><option value="">Choose Partner</option>{partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}</select></OpsField>
@@ -221,7 +221,7 @@ export function TmsRatingWorkspace({ initialOrders, initialRateCards, partners, 
           </form>
         </OpsSurface></div> : null}
 
-        <OpsSurface className="rate-queue" density="compact" title="Transport orders" description="Rate an order whenever cargo facts or supplier pricing change." flush>
+        <OpsSurface className="rate-queue" density="compact" title="Transport orders" flush>
           {orders.length ? <OpsTableWrap>
             <table className="ops-table ops-register-table ops-stack-table rate-orders-table" aria-label="Transport orders">
               <thead><tr><th>Order</th><th>Lane</th><th>Cargo</th><th>Pickup</th><th>Status</th><th className="ops-col-num">Selected cost</th></tr></thead>

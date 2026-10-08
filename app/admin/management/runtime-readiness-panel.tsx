@@ -69,7 +69,7 @@ export function RuntimeReadinessPanel() {
     <OpsSurface
       density="compact"
       title="Runtime readiness"
-      description="Live configuration checks for the services KCPL Operations depends on. Reports configuration state only; never exposes credentials or secret values."
+      description="Whether the services KCPL Operations uses are set up."
       action={<OpsButton variant="ghost" size="xs" onClick={() => void load()} disabled={loading}><RefreshCw size={14} strokeWidth={1.75} className={loading ? "animate-spin" : undefined} aria-hidden="true"/>{loading ? "Checking" : "Refresh"}</OpsButton>}
     >
       {loading && !readiness ? <p className="org-empty">Checking the production runtime…</p> : error ? <OpsEmptyState compact icon={<ShieldAlert size={16} strokeWidth={1.75} aria-hidden="true"/>} title="Readiness check unavailable" description={error}/> : readiness ? <>

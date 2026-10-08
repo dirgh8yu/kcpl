@@ -125,7 +125,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
       <CrmOperationsHistoryPanel history={safeHistory} showCommercial={permissions.canViewCommercial}/>
     </section>
     <section className="ops-content-wide pb-12 pt-0">
-      <OpsSurface title="Account tools" description="Profile, rate cards, statement, documents and enquiry matching for this customer." flush>
+      <OpsSurface title="Account tools" flush>
       <div className="crm360-tools">
         <Tool title="Profile" detail="Names, contacts, owner, relationships and commercial settings."><CrmCustomerProfileEditor customer={reconciledCustomer} permissions={permissions}/></Tool>
         {permissions.canViewCommercial ? <Tool title="Rate cards" detail="Customer-specific lanes and rates."><CrmRateCardPanel customerId={reconciledCustomer.id} initialRateCards={rateCards} permissions={permissions}/></Tool> : null}

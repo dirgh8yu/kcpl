@@ -286,13 +286,13 @@ export function MarketEstimateWorkspace() {
   }
 
   return <div className="market-estimate">
-    <OpsSurface density="compact" title="Freight benchmark" description="Use the same route and cargo details you are considering for the KCPL quotation.">
+    <OpsSurface density="compact" title="Freight benchmark">
       <form onSubmit={calculate}>
         <div className="ops-form-grid">
           <LocationAutocomplete label="Origin" value={form.origin} onChange={(origin) => setForm((current) => ({ ...current, origin }))} placeholder="Start typing Kathmandu, KTM, CNSHA…"/>
           <LocationAutocomplete label="Destination" value={form.destination} onChange={(destination) => setForm((current) => ({ ...current, destination }))} placeholder="Start typing Melbourne, MEL, USLAX…"/>
         </div>
-        <p className="ops-inspector-hint market-hint">Select a dropdown location whenever possible. Freightos also accepts exact 3-letter IATA airport codes and 5-character UN/LOCODE seaport codes.</p>
+        <p className="ops-inspector-hint market-hint">Pick a suggested place, or type a 3-letter airport or 5-letter port code.</p>
 
         <div className="ops-form-grid market-cargo">
           <OpsField label="Mode"><select className={inputClass} value={form.mode} onChange={(event) => setMode(event.target.value as EstimateMode)}>{modes.map((mode) => <option key={mode} value={mode}>{modeLabels[mode]}</option>)}</select></OpsField>
@@ -305,7 +305,7 @@ export function MarketEstimateWorkspace() {
           <OpsField label="Width"><input required={!containerMode} min="0.01" step="0.01" type="number" className={inputClass} value={form.width} onChange={(event) => setForm({ ...form, width: event.target.value })} placeholder={containerMode ? "Optional" : "Required"}/></OpsField>
           <OpsField label="Height"><input required={!containerMode} min="0.01" step="0.01" type="number" className={inputClass} value={form.height} onChange={(event) => setForm({ ...form, height: event.target.value })} placeholder={containerMode ? "Optional" : "Required"}/></OpsField>
         </div>
-        {!containerMode ? <p className="ops-inspector-hint market-hint">Freightos requires weight plus length, width and height for boxes, crates and pallets.</p> : null}
+        {!containerMode ? <p className="ops-inspector-hint market-hint">Boxes, crates and pallets need a weight, length, width and height.</p> : null}
 
         <div className="ops-form-actions market-actions">
           <OpsButton type="submit" variant="primary" size="sm" disabled={busy}><Calculator size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Checking external market…" : "Get external estimate"}</OpsButton>
@@ -332,8 +332,8 @@ export function MarketEstimateWorkspace() {
           <OpsButton type="button" variant="secondary" size="sm" onClick={copyMidpoint}><Copy size={14} strokeWidth={1.75} aria-hidden="true"/>Copy midpoint</OpsButton>
           <a href={estimate.attribution_url} target="_blank" rel="noreferrer" className="ops-button" data-variant="ghost" data-size="sm">Powered by Freightos<ExternalLink size={14} strokeWidth={1.75} aria-hidden="true"/></a>
         </div>
-      </OpsSurface> : <OpsSurface density="compact" title="Benchmark before you quote">
-        <p className="ops-inspector-hint">Check the external range, compare it with KCPL partner and vendor rates, then price the customer from the real expected buy cost plus KCPL margin. A market estimate should never silently become the final quote.</p>
+      </OpsSurface> : <OpsSurface density="compact" title="Market range">
+        <p className="ops-inspector-hint">The estimate appears here. It’s a guide for pricing, never the quote itself.</p>
       </OpsSurface>}
     </aside>
   </div>;

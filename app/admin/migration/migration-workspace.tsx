@@ -71,42 +71,15 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
     <OpsPageHeader
       title="Import old records"
       description="Bring paper and spreadsheet records into KCPL in batches. Each batch can be checked and undone."
-      meta={<span>Management only · Stages 1–4 live · dry-run recovery, no force delete</span>}
     />
 
     <div className="px-4 pb-8 pt-4 md:px-6 org-stack">
-      <OpsSurface
-        density="compact"
-        title="Migration safety chain"
-        description="Import carefully, keep an authoritative batch inventory, preserve source evidence, then allow rollback only when live records prove they are safe to reverse."
-        action={<span className="migration-templates"><span>Templates</span>
-          <a href="/api/admin/migration/customers" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Customers</a>
-          <a href="/api/admin/migration/shipments" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Shipments</a>
-          <a href="/api/admin/migration/receivables" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Receivables</a>
-          <a href="/api/admin/migration/payables" className="ops-button" data-variant="ghost" data-size="xs" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Payables</a>
-        </span>}
-        flush
-      >
-        <ol className="migration-stages">
-          <Stage number="1" title="Customer master" detail="CSV preview, validation, duplicate detection and confirmed import." state="complete"/>
-          <Stage number="2" title="Shipment history" detail="Active movements and completed historical shipments linked to real customer records." state="complete"/>
-          <Stage number="3A" title="Receivables opening" detail="Open customer invoices and auditable customer opening balances." state="complete"/>
-          <Stage number="3B" title="Payables opening" detail="Open supplier bills and auditable supplier opening balances." state="complete"/>
-          <Stage number="4A" title="Batch control" detail="Authoritative migration ledger, created-record inventory and failure visibility." state="complete"/>
-          <Stage number="4B" title="Paper archive" detail="Scanned historical files with controlled metadata, integrity fingerprints and stable storage." state="complete"/>
-          <Stage number="4C" title="Recovery" detail="Expiring dry-run plans, dependency blockers, exact confirmation and audited reversal." state="active"/>
-        </ol>
-      </OpsSurface>
-
       <MigrationBatchHistory initialDashboard={initialBatchDashboard}/>
-      <PayablesImportPanel/>
-      <ReceivablesImportPanel/>
-      <ShipmentImportPanel/>
 
       {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
       {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} customers imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> recorded {result.duplicates} possible duplicate{result.duplicates === 1 ? "" : "s"} and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"}. <Link href="/admin/crm" className="font-bold underline">Open Customers</Link>.</OpsNotice> : null}
 
-      <OpsSurface density="compact" title="Stage 1 · Customer master" description="Customer CSV intake → validate → preview → confirm. Stage 1 stays available because shipment history and receivables still depend on a clean customer list. Supplier finance uses the separate Partner network as its identity source." action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download customer template</a>}>
+      <OpsSurface density="compact" title="Customers" action={<a href="/api/admin/migration/customers" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download template</a>}>
         <div className="migration-intake">
           <div>
             <OpsFileDrop accept=".csv,text/csv" prompt="Choose the customer CSV" hint="CSV only · up to 250 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
@@ -116,8 +89,8 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
             </div>
           </div>
 
-          <div className="migration-rules">
-            <p className="migration-rules-title">Stage 1 rules</p>
+          <details className="migration-rules">
+            <summary className="migration-rules-title">File rules</summary>
             <ul>
               <li>Required columns: <strong>display_name</strong> and <strong>primary_branch</strong>.</li>
               <li>Branch must match a KCPL branch in the template vocabulary.</li>
@@ -125,11 +98,15 @@ export function MigrationWorkspace({ initialBatchDashboard }: { initialBatchDash
               <li>Invalid and possible-duplicate rows are never imported automatically.</li>
               <li>Every confirmed import receives a migration batch ID and appears in the Migration Control Centre automatically.</li>
             </ul>
-          </div>
+          </details>
         </div>
       </OpsSurface>
 
       {preview ? <PreviewPanel preview={preview} confirmed={confirmed} busy={busy} onConfirmed={setConfirmed} onImport={() => void submit("import")}/> : null}
+      {/* Import order: customers, then the shipments that need them, then money. */}
+      <ShipmentImportPanel/>
+      <ReceivablesImportPanel/>
+      <PayablesImportPanel/>
     </div>
   </OpsPage>;
 }
@@ -155,10 +132,3 @@ function PreviewCount({ label, value, tone = "neutral" }: { label: string; value
   return <OpsRailMetric label={label} value={value} tone={tone}/>;
 }
 
-function Stage({ number, title, detail, state = "later" }: { number: string; title: string; detail: string; state?: "active" | "complete" | "later" }) {
-  return <li className="migration-stage">
-    <span className="migration-stage-head"><span className="ops-mono">Stage {number}</span><OpsBadge tone={state === "active" ? "info" : state === "complete" ? "success" : "neutral"}>{state === "active" ? "Active" : state === "complete" ? "Complete" : "Later"}</OpsBadge></span>
-    <strong>{title}</strong>
-    <span className="migration-stage-detail">{detail}</span>
-  </li>;
-}

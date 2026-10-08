@@ -131,7 +131,7 @@ export function ShipmentInvoiceForm({
     <div className="ops-content ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
 
-      {customerId ? <OpsNotice tone="success"><strong>Customer confirmed:</strong> {customerName || customerId} <OpsMono>{customerId}</OpsMono></OpsNotice> : <OpsSurface priority="warning" eyebrow="Before invoicing" title="Confirm who this shipment belongs to" description="Finance links the quote and shipment to the customer you confirm. A new customer can be created straight from the quote.">
+      {customerId ? <OpsNotice tone="success"><strong>Customer confirmed:</strong> {customerName || customerId} <OpsMono>{customerId}</OpsMono></OpsNotice> : <OpsSurface priority="warning" title="Confirm who this shipment belongs to">
         {candidateCustomers.length ? <div className="grid gap-3 md:grid-cols-2">{candidateCustomers.map((item) => <div key={item.id} className="ops-inset-group grid gap-2">
           <strong className="text-[var(--admin-ink)]">{item.display_name}</strong>
           <p className="m-0 text-[length:var(--app-text-sm)] text-[var(--admin-muted)]"><OpsMono>{item.id}</OpsMono> · matched by {item.reason}</p>

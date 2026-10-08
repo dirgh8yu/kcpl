@@ -73,7 +73,7 @@ export function ReceivablesImportPanel() {
     {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
     {result ? <OpsNotice tone="success" onDismiss={() => setResult(null)}><strong>{result.imported} receivables imported.</strong> Batch <OpsMono>{result.batch_id}</OpsMono> created {result.invoice_rows_imported} invoice receivable{result.invoice_rows_imported === 1 ? "" : "s"} and {result.opening_balance_rows_imported} opening balance{result.opening_balance_rows_imported === 1 ? "" : "s"}. {result.duplicates} duplicate and {result.invalid} invalid row{result.invalid === 1 ? "" : "s"} were skipped. <Link href="/admin/finance" className="font-bold underline">Open Receivables</Link>.</OpsNotice> : null}
 
-    <OpsSurface density="compact" title="Stage 3A · Receivables" description="Current customer money owed to KCPL. Import open customer invoices or a controlled opening balance when the paper ledger has a known amount due but the old invoice detail should not be reconstructed." action={<a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download Stage 3A template</a>}>
+    <OpsSurface density="compact" title="Customer invoices" description="Open customer invoices, or one opening balance per customer." action={<a href="/api/admin/migration/receivables" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download template</a>}>
       <div className="migration-intake">
         <div>
           <OpsFileDrop accept=".csv,text/csv" prompt="Choose the receivables CSV" hint="CSV only · up to 150 rows · up to 2 MB" chosen={file?.name ?? null} onFiles={(files) => chooseFile(files[0] ?? null)}/>
@@ -83,8 +83,8 @@ export function ReceivablesImportPanel() {
           </div>
         </div>
 
-        <div className="migration-rules">
-          <p className="migration-rules-title">Stage 3A rules</p>
+        <details className="migration-rules">
+          <summary className="migration-rules-title">File rules</summary>
           <ul>
             <li><strong>invoice</strong> rows preserve a real external invoice number and only import balances still outstanding.</li>
             <li><strong>opening_balance</strong> rows create a clearly labelled opening receivable, not a fabricated historical invoice.</li>
@@ -94,7 +94,7 @@ export function ReceivablesImportPanel() {
             <li>Amount already collected before go-live is recorded as one auditable migration adjustment, not reconstructed payment history.</li>
             <li>Stage 3B supplier payables are intentionally not included yet.</li>
           </ul>
-        </div>
+        </details>
       </div>
     </OpsSurface>
 

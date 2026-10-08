@@ -18,7 +18,7 @@ import {
   type CrmCustomerSummary,
   type CrmDuplicateMatch,
 } from "./crm-data";
-import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
+import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInspectorHeader, OpsInspectorSection, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsResultCount, OpsScopeTabs, OpsSearch, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 import { readable } from "../readable";
@@ -139,10 +139,10 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
     <OpsPage>
       <OpsPageHeader
         title="Customers"
-        description="Accounts that buy KCPL freight and logistics services. Carriers, agents and suppliers live in Partners."
+        description="Accounts that buy from KCPL. Carriers and suppliers are in Partners."
         actions={<>
           {jump}
-          <OpsButton variant="primary" onClick={openNew} aria-expanded={showCreate}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New customer</OpsButton>
+          {showCreate ? null : <OpsButton variant="primary" onClick={openNew}><Plus size={16} strokeWidth={1.75} aria-hidden="true"/>New customer</OpsButton>}
         </>}
       />
 
@@ -156,7 +156,7 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
             search={<OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, contact, branch or tag" aria-label="Search customers"/>}
             actions={<>
               {filtersActive ? <OpsButton size="xs" variant="ghost" onClick={() => { setQuery(""); setStatusFilter("all"); }}>Reset</OpsButton> : null}
-              <span className="ops-result-count" aria-live="polite">{filtered.length === customers.length ? `${customers.length} customers` : `${filtered.length} of ${customers.length}`}</span>
+              <OpsResultCount count={filtered.length} searching={Boolean(query.trim())}/>
             </>}
             tabs={<OpsScopeTabs<CrmAccountStatus | "all"> label="Account status" items={[{ value: "all", label: "All", count: customers.length }, ...crmAccountStatuses.map((status) => ({ value: status, label: crmAccountStatusLabels[status], count: statusCounts[status] }))]} value={statusFilter} onChange={setStatusFilter}/>}
           />
@@ -180,7 +180,6 @@ export function CrmDashboard({ initialCustomers, userName, userEmail, commercial
                   })}</tbody>
                 </table>
               </OpsTableWrap> : <OpsNoMatches noun="customers" onClear={() => { setQuery(""); setStatusFilter("all"); }}/>}
-              {filtered.length ? <footer className="ops-register-footer"><span>{filtered.length} customer{filtered.length === 1 ? "" : "s"} in this view</span></footer> : null}
             </section>
 
             {selected ? <CustomerInspector customer={selected} commercialVisible={commercialVisible} inspectorRef={inspectorRef} onClose={() => setSelectedId("")}/> : null}
@@ -261,7 +260,6 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
   return <OpsSurface
     density="compact"
     title="New customer"
-    description="Name, contact and owner first. Terms and preferences are optional, below."
     action={<button type="button" onClick={onCancel} className="ops-inspector-close" aria-label="Close create customer"><X size={16} strokeWidth={1.75} aria-hidden="true"/></button>}
   >
     {duplicates.length ? <div className="crm-duplicates">
@@ -279,7 +277,6 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
         <OpsField label="Primary email"><input type="email" value={form.primaryEmail} onChange={(event) => setField("primaryEmail", event.target.value)}/></OpsField>
         <OpsField label="Primary phone"><input value={form.primaryPhone} onChange={(event) => setField("primaryPhone", event.target.value)}/></OpsField>
       </div>
-      <p className="ops-inspector-hint crm-form-hint">This workspace is for buyers of KCPL services. Operational suppliers and counterparts belong in Partners.</p>
 
       <p className="crm-form-section">Ownership</p>
       <div className="ops-form-grid">
@@ -287,7 +284,7 @@ function CreateCustomerForm({ form, setField, tagDraft, setTagDraft, carrierDraf
         <OpsField label="Lead stage"><select value={form.leadStage} onChange={(event) => setField("leadStage", event.target.value as CrmCreateCustomerInput["leadStage"])}>{crmLeadStages.map((stage) => <option value={stage} key={stage}>{crmLeadStageLabels[stage]}</option>)}</select></OpsField>
         <OpsField label="Lead source"><select value={form.leadSource} onChange={(event) => setField("leadSource", event.target.value as CrmCreateCustomerInput["leadSource"])}><option value="">Not set</option>{crmLeadSources.map((source) => <option value={source} key={source}>{readable(source)}</option>)}</select></OpsField>
         <OpsField label="Primary branch"><select value={form.primaryBranch} onChange={(event) => setField("primaryBranch", event.target.value as CrmCreateCustomerInput["primaryBranch"])}>{kcplBranches.map((branch) => <option key={branch}>{branch}</option>)}</select></OpsField>
-        <OpsField label="Account manager" hint="From People & branches; name, email and phone fill automatically." className="ops-form-wide"><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => { setField("accountManagerName", staff.name); setField("accountManagerEmail", staff.email); setField("accountManagerPhone", staff.phone); }}/></OpsField>
+        <OpsField label="Account manager" className="ops-form-wide"><StaffAssignmentPicker branch={form.primaryBranch} value={{ name: form.accountManagerName, email: form.accountManagerEmail, phone: form.accountManagerPhone }} onChange={(staff) => { setField("accountManagerName", staff.name); setField("accountManagerEmail", staff.email); setField("accountManagerPhone", staff.phone); }}/></OpsField>
         <OpsField label="Internal summary" className="ops-form-wide"><textarea value={form.internalSummary} onChange={(event) => setField("internalSummary", event.target.value)} placeholder="What should another KCPL staff member know before speaking with this account?"/></OpsField>
       </div>
 

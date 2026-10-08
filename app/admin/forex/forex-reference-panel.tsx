@@ -173,7 +173,7 @@ export function ForexReferencePanel({ compact = false }: { compact?: boolean }) 
     <OpsSurface
       density="compact"
       title="Nepal Rastra Bank reference rates"
-      description="Official reference rates normalised to NPR per one foreign-currency unit. Informational only; they never overwrite historical transaction rates."
+      description="NPR for one unit of each currency, for reference only."
       action={<>{snapshot ? <span className="fx-rate-date">Rate date {snapshot.date}</span> : null}<OpsButton variant="ghost" size="xs" onClick={() => void refresh()} disabled={loading} aria-label="Refresh NRB reference rates"><RefreshCw size={14} strokeWidth={1.75} className={loading ? "animate-spin" : undefined} aria-hidden="true"/>{compact ? null : "Refresh"}</OpsButton></>}
       flush
     >

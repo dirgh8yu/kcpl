@@ -88,24 +88,21 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
             <Link href={`/admin/pickups?shipment=${encodeURIComponent(shipment)}`} className="ops-button" data-variant="secondary" data-size="sm">Open pickup</Link>
           </div> : null}
         </OpsSurface>
-        <OpsSurface title="What was booked" description="Taken from the accepted offer. Later changes to partner rates don’t change it.">
+        <OpsSurface title="What was booked">
           <OpsDetailGrid columns={3}>
             <OpsDetailItem label="Transport order"><Link href={`/admin/rating/${encodeURIComponent(tender.order_id)}`}><OpsMono>{tender.order_id}</OpsMono></Link></OpsDetailItem>
             <OpsDetailItem label="Carrier request"><Link href={`/admin/tenders?tender=${encodeURIComponent(tender.tender_reference)}`}><OpsMono>{tender.tender_reference}</OpsMono></Link></OpsDetailItem>
             <OpsDetailItem label="Partner">{tender.partner_name}</OpsDetailItem>
             <OpsDetailItem label="Outcome">{commercialBasis}</OpsDetailItem>
             <OpsDetailItem label="Agreed buy rate">{bookedAmount}</OpsDetailItem>
-            <OpsDetailItem label="Rate card">{tender.rate_card_id || "Not recorded"}</OpsDetailItem>
           </OpsDetailGrid>
         </OpsSurface>
         <OpsSurface title="Booking details">
           <OpsDetailGrid columns={3}>
-            <OpsDetailItem label="Partner booking reference">{tender.booking_reference || "Not recorded"}</OpsDetailItem>
             <OpsDetailItem label="Pickup confirmation">{tender.pickup_confirmation || "Not recorded"}</OpsDetailItem>
             <OpsDetailItem label="Planned pickup">{shortDate(tender.pickup_date || order?.pickup_date || null)}</OpsDetailItem>
-            <OpsDetailItem label="Mode">{freightModeLabel(tender.mode)}</OpsDetailItem>
-            <OpsDetailItem label="Service">{tender.service || "Not specified"}</OpsDetailItem>
-            <OpsDetailItem label="Equipment">{tender.equipment || order?.equipment || "Not specified"}</OpsDetailItem>
+            {tender.service ? <OpsDetailItem label="Service">{tender.service}</OpsDetailItem> : null}
+            {tender.equipment || order?.equipment ? <OpsDetailItem label="Equipment">{tender.equipment || order?.equipment}</OpsDetailItem> : null}
           </OpsDetailGrid>
         </OpsSurface>
         {order ? <OpsSurface title="Cargo">
@@ -113,7 +110,7 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
             <OpsDetailItem label="Weight">{`${order.weight_kg.toLocaleString()} kg`}</OpsDetailItem>
             <OpsDetailItem label="Volume">{`${order.volume_cbm.toLocaleString()} CBM`}</OpsDetailItem>
             <OpsDetailItem label="Pieces">{order.pieces.toLocaleString()}</OpsDetailItem>
-            <OpsDetailItem label="Containers">{order.container_count.toLocaleString()}</OpsDetailItem>
+            {order.container_count ? <OpsDetailItem label="Containers">{order.container_count.toLocaleString()}</OpsDetailItem> : null}
           </OpsDetailGrid>
         </OpsSurface> : null}
         <OpsSurface title="Carrier’s reply">
@@ -121,7 +118,7 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
             <OpsDetailItem label="Channel">{channelLabel(tender.channel)}</OpsDetailItem>
             <OpsDetailItem label="Sent">{dateTime(tender.sent_at)}</OpsDetailItem>
             <OpsDetailItem label="Replied">{dateTime(tender.responded_at)}</OpsDetailItem>
-            <OpsDetailItem label="Reply due">{dateTime(tender.response_due_at)}</OpsDetailItem>
+            {tender.responded_at ? null : <OpsDetailItem label="Reply due">{dateTime(tender.response_due_at)}</OpsDetailItem>}
             {tender.response_note ? <OpsDetailItem label="Note" wide><span className="whitespace-pre-wrap">{tender.response_note}</span></OpsDetailItem> : null}
           </OpsDetailGrid>
         </OpsSurface>
@@ -131,7 +128,6 @@ function BookingConfirmation({ tender, order }: { tender: TmsTender; order: TmsO
             <OpsDetailItem label="Created by">{tender.created_by_name || tender.created_by_email}</OpsDetailItem>
             <OpsDetailItem label="Customer">{order?.customer_name || "Not linked"}</OpsDetailItem>
             <OpsDetailItem label="Shipment">{shipment ? <Link href={`/admin/jobs/${encodeURIComponent(shipment)}`}><OpsMono>{shipment}</OpsMono></Link> : "Not linked"}</OpsDetailItem>
-            <OpsDetailItem label="Booked">{dateTime(tender.booked_at)}</OpsDetailItem>
             <OpsDetailItem label="Updated">{dateTime(tender.updated_at)}</OpsDetailItem>
           </OpsDetailGrid>
         </OpsSurface>
