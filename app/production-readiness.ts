@@ -1,4 +1,5 @@
 import { adminSecurityConfigIssues } from "./admin/admin-security-config.ts";
+import { backupDestination, companyPanValid, opsAlertRecipients } from "./ops-monitoring.ts";
 
 type RuntimeEnv = Record<string, string | undefined>;
 
@@ -188,6 +189,29 @@ export function productionRuntimeReadiness(env: RuntimeEnv = process.env): Produ
     { key: "WHATSAPP_ACCESS_TOKEN", value: text(env, "WHATSAPP_ACCESS_TOKEN") },
     { key: "WHATSAPP_PHONE_NUMBER_ID", value: text(env, "WHATSAPP_PHONE_NUMBER_ID") },
   ], "WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are missing; customers are not offered WhatsApp notices. The approved template is WHATSAPP_TEMPLATE (default kcpl_update).");
+
+  // A VAT invoice in Nepal carries the seller's PAN. It is read when an
+  // invoice is issued and kept on it, so it can't be added afterwards.
+  const pan = text(env, "KCPL_COMPANY_PAN");
+  checks.push(companyPanValid(pan)
+    ? check("company-pan", "Company PAN on invoices", "ready", "Invoices are issued with KCPL's PAN.")
+    : check("company-pan", "Company PAN on invoices", "warning", pan
+      ? "KCPL_COMPANY_PAN isn't nine digits. Invoices issued now print it as it is."
+      : "KCPL_COMPANY_PAN is missing. Invoices issued now carry no PAN, which a VAT invoice needs."));
+
+  const backup = backupDestination(text(env, "KCPL_BACKUP_BUCKET"));
+  checks.push(backup
+    ? check("backup-bucket", "Backup destination", "ready", `Daily Firestore exports go to ${backup.uri}.`)
+    : check("backup-bucket", "Backup destination", "warning", text(env, "KCPL_BACKUP_BUCKET")
+      ? "KCPL_BACKUP_BUCKET isn't a Cloud Storage bucket name (gs://bucket or gs://bucket/folder)."
+      : "KCPL_BACKUP_BUCKET is missing, so KCPL's own daily exports don't run. See docs/backups-and-alerts.md."));
+
+  const alertRecipients = opsAlertRecipients(text(env, "KCPL_ALERT_EMAIL"));
+  checks.push(alertRecipients.length && emailReady
+    ? check("ops-alerts", "Error and backup alerts", "ready", `Server errors, failed backups and failed automation runs are emailed to ${alertRecipients.join(", ")}.`)
+    : check("ops-alerts", "Error and backup alerts", "warning", alertRecipients.length
+      ? "KCPL_ALERT_EMAIL is set, but transactional email isn't, so alerts can't be sent."
+      : "KCPL_ALERT_EMAIL is missing. Server errors and failed backups are only in the logs, where nobody is told."));
 
   const rateLimitSalt = text(env, "KCPL_RATE_LIMIT_SALT");
   checks.push(rateLimitSalt

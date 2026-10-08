@@ -1,4 +1,4 @@
-import type { PortalInvoiceView } from "./portal-access-policy";
+import { portalInvoiceNumber, type PortalInvoiceView } from "./portal-access-policy.ts";
 
 /*
  * A customer's statement of account: what is owed, how overdue, and what has
@@ -106,7 +106,7 @@ export function buildStatement(input: { invoices: PortalInvoiceView[]; payments:
     else if (late <= 90) ageing.days61to90 += balance;
     else ageing.over90 += balance;
     entry.open.push({
-      invoice: invoice.external_invoice_number || invoice.reference,
+      invoice: portalInvoiceNumber(invoice),
       issued: invoice.issue_date,
       due: invoice.due_date,
       total: invoice.total,

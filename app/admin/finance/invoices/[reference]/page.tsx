@@ -3,7 +3,7 @@ import { getAdminAccess } from "../../../admin-auth";
 import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
-import { getFinanceInvoice } from "../../finance.server";
+import { companyPan, getFinanceInvoice } from "../../finance.server";
 import { mockFinanceDashboard, qaMockDataEnabled } from "../../../qa-fixtures";
 import { InvoiceWorkspace } from "./invoice-workspace";
 import { recordTitle } from "../../../../record-title";
@@ -48,7 +48,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
     return [];
   });
 
-  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances}/></OperationsShell>;
+  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} companyPan={companyPan()}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

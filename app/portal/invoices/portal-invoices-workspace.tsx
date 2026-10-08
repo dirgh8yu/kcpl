@@ -11,7 +11,7 @@ import {
   OpsSurface,
   OpsTableWrap,
 } from "../../admin/operations-ui";
-import type { PortalInvoiceView } from "../portal-access-policy";
+import { portalInvoiceNumber, type PortalInvoiceView } from "../portal-access-policy";
 import type { PortalFinanceSummary } from "../portal-data.server";
 import { portalDate, portalInvoiceStatusLabel, portalInvoiceTone, portalMoney } from "../portal-format";
 import { portalTranslator, type PortalLocale } from "../portal-i18n";
@@ -75,7 +75,7 @@ export function PortalInvoicesWorkspace({
                       <tr key={invoice.reference}>
                         <td data-cell="primary">
                           <Link href={`/portal/invoices/${encodeURIComponent(invoice.reference)}`} className="portal-row-link">
-                            <OpsMono>{invoice.external_invoice_number ?? invoice.reference}</OpsMono>
+                            <OpsMono>{portalInvoiceNumber(invoice)}</OpsMono>
                           </Link>
                           {invoice.record_type === "opening_balance"
                             ? <span className="portal-cell-detail">{t("inv.opening_balance")}</span>

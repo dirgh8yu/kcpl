@@ -8,7 +8,7 @@ import { FilePlus2, UserCheck, UserPlus } from "lucide-react";
 import { OpsButton, OpsField, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../../operations-ui";
 import { crmCurrencies, type CrmCurrency } from "../../../crm/crm-data";
 import type { AgreedShipmentPrice, FinanceCustomerSuggestion } from "../../finance-customer-resolution";
-import { TaxChoiceField, taxRateFromChoice, type TaxChoice } from "../../invoice-tax-field";
+import { InvoiceLinesEditor, invoiceLinesForSubmit, newInvoiceLine, type InvoiceLineDraft } from "../../invoice-lines-editor";
 
 function priceLabel(amount: number, currency: string) {
   try { return new Intl.NumberFormat("en-AU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
@@ -42,17 +42,16 @@ export function ShipmentInvoiceForm({
     issueDate: today,
     dueDate: "",
     currency: (agreedPrice && crmCurrencies.includes(agreedPrice.currency as CrmCurrency) ? agreedPrice.currency : "NPR") as CrmCurrency,
-    description: "Freight and Logistics",
-    amount: agreedPrice ? String(agreedPrice.amount) : "",
-    taxChoice: "" as TaxChoice,
-    taxRate: "",
     notes: "",
   });
+  const [lines, setLines] = useState<InvoiceLineDraft[]>(() => [newInvoiceLine({ description: "Freight and logistics services", unitPrice: agreedPrice ? String(agreedPrice.amount) : "" })]);
   // Said, not blocked: a price can legitimately change after the quote
   // (extra charges, a waiver), but nobody should change it by mistyping.
-  const enteredAmount = Number(form.amount);
-  const priceDifference = agreedPrice && form.amount.trim() && Number.isFinite(enteredAmount) && form.currency === agreedPrice.currency
-    ? Math.round((enteredAmount - agreedPrice.amount) * 100) / 100
+  // KCPL's own charges are compared; duty passed on at cost is not part of it.
+  const serviceTotal = lines.filter((line) => line.type !== "disbursement" && line.unitPrice.trim())
+    .reduce((sum, line) => sum + (Number(line.quantity || "1") || 0) * (Number(line.unitPrice) || 0), 0);
+  const priceDifference = agreedPrice && serviceTotal > 0 && form.currency === agreedPrice.currency
+    ? Math.round((serviceTotal - agreedPrice.amount) * 100) / 100
     : null;
 
   async function confirmCustomer(targetCustomerId: string) {
@@ -113,9 +112,9 @@ export function ShipmentInvoiceForm({
       setNotice({ text: "Confirm or create the customer record before creating the invoice.", tone: "warning" });
       return;
     }
-    const taxRate = taxRateFromChoice(form.taxChoice, form.taxRate);
-    if (taxRate === null) {
-      setNotice({ text: "Choose the tax for this invoice.", tone: "warning" });
+    const ready = invoiceLinesForSubmit(lines);
+    if (!ready.ok) {
+      setNotice({ text: ready.error, tone: "warning" });
       return;
     }
     setBusy(true);
@@ -128,8 +127,7 @@ export function ShipmentInvoiceForm({
           ...form,
           customerId,
           shipmentReference,
-          amount: Number(form.amount),
-          taxRate,
+          lines: ready.lines,
         }),
       });
       const data = await response.json() as { reference?: string; error?: string };
@@ -172,11 +170,12 @@ export function ShipmentInvoiceForm({
           <Field label="Issue date"><input required disabled={!customerId} type="date" className="ops-input" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></Field>
           <Field label="Due date"><input disabled={!customerId} type="date" className="ops-input" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></Field>
           <Field label="Currency"><select disabled={!customerId} className="ops-select" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency}>{currency}</option>)}</select></Field>
-          <OpsField label="Amount before tax" hint={agreedPrice ? `Agreed price: ${priceLabel(agreedPrice.amount, agreedPrice.currency)}${agreedPrice.source === "booking" ? " (booked)" : agreedPrice.quote_reference ? ` (quote ${agreedPrice.quote_reference})` : ""}` : undefined}><input required disabled={!customerId} min="0.01" step="0.01" type="number" inputMode="decimal" className="ops-input" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></OpsField>
-          <TaxChoiceField disabled={!customerId} choice={form.taxChoice} rate={form.taxRate} onChange={(next) => setForm({ ...form, taxChoice: next.choice, taxRate: next.rate })}/>
-          <Field label="Description"><input disabled={!customerId} className="ops-input" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></Field>
+          <div className="md:col-span-2 xl:col-span-4">
+            {agreedPrice ? <p className="mb-2 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Agreed price: {priceLabel(agreedPrice.amount, agreedPrice.currency)} before tax{agreedPrice.source === "booking" ? " (booked)" : agreedPrice.quote_reference ? ` (quote ${agreedPrice.quote_reference})` : ""}.</p> : null}
+            <InvoiceLinesEditor lines={lines} currency={form.currency} disabled={!customerId} onChange={setLines}/>
+          </div>
           {agreedPrice && form.currency !== agreedPrice.currency ? <div className="md:col-span-2 xl:col-span-4"><OpsNotice tone="warning">The customer agreed a price in {agreedPrice.currency}. This invoice is in {form.currency}.</OpsNotice></div>
-            : priceDifference ? <div className="md:col-span-2 xl:col-span-4"><OpsNotice tone="warning">That is {priceLabel(Math.abs(priceDifference), form.currency)} {priceDifference > 0 ? "more" : "less"} than the agreed price. Check it before you create the invoice.</OpsNotice></div> : null}
+            : priceDifference ? <div className="md:col-span-2 xl:col-span-4"><OpsNotice tone="warning">KCPL&apos;s charges come to {priceLabel(Math.abs(priceDifference), form.currency)} {priceDifference > 0 ? "more" : "less"} than the agreed price. Check them before you create the invoice.</OpsNotice></div> : null}
           <div className="md:col-span-2 xl:col-span-4"><Field label="Invoice notes"><textarea disabled={!customerId} className="ops-textarea min-h-24" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></Field></div>
           <div className="md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy || !customerId}><FilePlus2 size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Creating…" : "Create invoice draft"}</OpsButton></div>
         </form>

@@ -41,6 +41,10 @@ function completeEnv() {
     WHATSAPP_PHONE_NUMBER_ID: "1234567890",
     CLOUDFLARE_TURNSTILE_SECRET_KEY: "turnstile-secret-value",
     NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: "turnstile-site-key-value",
+    // Invoices, backups and the people told when something breaks.
+    KCPL_COMPANY_PAN: "123456789",
+    KCPL_BACKUP_BUCKET: "gs://kcpl-production-backups",
+    KCPL_ALERT_EMAIL: "operations@example.com",
   };
 }
 

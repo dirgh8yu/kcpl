@@ -2,6 +2,7 @@ import { mockFinanceDashboard, qaMockDataEnabled } from "../qa-fixtures";
 import { randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { effectiveInvoiceStatus, invoiceDatesOnIssue, nepalOperationalDate } from "../../invoice-effective-status";
+import { nepalFiscalYear } from "../../nepali-calendar";
 import { readAllDocuments } from "../firestore-scan";
 import { loadDocumentsById } from "../operational-shipments.server";
 import { loadNprRateTable } from "./fx-rates.server";
@@ -23,7 +24,11 @@ import {
   type FinancePaymentMethod,
   type FinanceReceivableRecordType,
   type FinanceToInvoiceRow,
+  type FinanceCreditNote,
+  creditNoteSplit,
+  invoiceTotals,
   shipmentBillingCounts,
+  taxDocumentNumber,
 } from "./finance-data";
 
 type Actor = { name: string; email: string };
@@ -93,6 +98,7 @@ function lineFromData(value: unknown, index: number): FinanceInvoiceLine {
   const data = typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
   return {
     id: text(data.id, `line-${index + 1}`),
+    kind: data.kind === "disbursement" ? "disbursement" : "service",
     description: text(data.description, "Freight services"),
     quantity: numberValue(data.quantity) || 1,
     unit_price: numberValue(data.unit_price),
@@ -121,9 +127,12 @@ function paymentFromDoc(invoiceReference: string, id: string, data: Record<strin
 
 async function invoiceFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot, includePayments = true): Promise<FinanceInvoice> {
   const data = snapshot.data() as Record<string, unknown>;
-  const paymentsSnapshot = includePayments
-    ? await snapshot.ref.collection("payments").orderBy("payment_date", "desc").limit(500).get()
-    : null;
+  const [paymentsSnapshot, creditNotesSnapshot] = includePayments
+    ? await Promise.all([
+      snapshot.ref.collection("payments").orderBy("payment_date", "desc").limit(500).get(),
+      snapshot.ref.collection("credit_notes").orderBy("created_at", "asc").limit(200).get(),
+    ])
+    : [null, null];
   const storedStatus = invoiceStatus(data.status);
   const balanceDue = numberValue(data.balance_due);
   const dueDate = text(data.due_date);
@@ -145,15 +154,58 @@ async function invoiceFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     line_items: Array.isArray(data.line_items) ? data.line_items.map(lineFromData) : [],
     subtotal: numberValue(data.subtotal),
     tax_total: numberValue(data.tax_total),
+    disbursement_total: numberValue(data.disbursement_total),
+    credit_total: numberValue(data.credit_total),
     total: numberValue(data.total),
     amount_paid: numberValue(data.amount_paid),
     balance_due: balanceDue,
     notes: nullable(data.notes),
+    tax_invoice_number: nullable(data.tax_invoice_number),
+    fiscal_year: nullable(data.fiscal_year),
+    seller_pan: nullable(data.seller_pan),
+    customer_tax_id: nullable(data.customer_tax_id),
     created_by_name: text(data.created_by_name, "KCPL Accounts"),
     created_by_email: text(data.created_by_email),
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
     payments: paymentsSnapshot?.docs.map((doc) => paymentFromDoc(snapshot.id, doc.id, doc.data() as Record<string, unknown>)) ?? [],
+    credit_notes: creditNotesSnapshot?.docs.map((doc) => creditNoteFromDoc(snapshot.id, doc.id, doc.data() as Record<string, unknown>)) ?? [],
+  };
+}
+
+function creditNoteFromDoc(invoiceReference: string, id: string, data: Record<string, unknown>): FinanceCreditNote {
+  return {
+    id,
+    number: text(data.number, id),
+    invoice_reference: invoiceReference,
+    credit_date: text(data.credit_date),
+    amount: numberValue(data.amount),
+    tax_amount: numberValue(data.tax_amount),
+    disbursement_amount: numberValue(data.disbursement_amount),
+    reason: text(data.reason),
+    created_by_name: text(data.created_by_name, "KCPL Accounts"),
+    created_at: text(data.created_at),
+  };
+}
+
+/** KCPL's PAN/VAT number for its tax invoices, from configuration. */
+export function companyPan() {
+  return process.env.KCPL_COMPANY_PAN?.trim() || null;
+}
+
+/**
+ * The next number in a fiscal year's series, inside the caller's
+ * transaction so two invoices issued at once can't share one. Read before
+ * any write in the transaction, as Firestore requires.
+ */
+async function nextTaxDocumentNumber(transaction: FirebaseFirestore.Transaction, kind: "invoice" | "credit_note", fiscalYear: string) {
+  const ref = firebaseAdminDb().collection("tax_document_series").doc(`${kind}-${fiscalYear}`);
+  const series = await transaction.get(ref);
+  const sequence = Math.max(0, Math.floor(numberValue(series.get("last_sequence")))) + 1;
+  return {
+    number: taxDocumentNumber(kind, fiscalYear, sequence),
+    sequence,
+    commit: () => transaction.set(ref, { kind, fiscal_year: fiscalYear, last_sequence: sequence, updated_at: new Date().toISOString() }, { merge: true }),
   };
 }
 
@@ -451,27 +503,18 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
   const issueDate = safeDate(input.issueDate, operationalDate());
   const paymentTerms = Math.max(0, Math.floor(numberValue(customer.get("payment_terms_days"))));
   const dueDate = safeDate(input.dueDate, addDays(issueDate, paymentTerms));
-  const amount = Number(input.amount);
-  const taxRate = Number(input.taxRate);
-  if (!Number.isFinite(amount) || amount <= 0) return { kind: "invalid_amount" as const };
-  if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) return { kind: "invalid_tax" as const };
-
-  const subtotal = Math.round(amount * 100) / 100;
-  const tax = Math.round(subtotal * (taxRate / 100) * 100) / 100;
-  const total = Math.round((subtotal + tax) * 100) / 100;
-  const description = input.description.trim() || (quote?.exists
+  // Lines are priced here, never trusted from the browser's arithmetic.
+  const priced = invoiceTotals(input.lines);
+  if (!priced.ok) return { kind: priced.reason === "invalid_tax" ? "invalid_tax" as const : priced.reason === "invalid_amount" ? "invalid_amount" as const : "invalid_lines" as const };
+  const defaultDescription = quote?.exists
     ? `Freight services: ${text(quoteData.origin, "Origin")} to ${text(quoteData.destination, "Destination")}`
-    : "Freight and logistics services");
-  const line: FinanceInvoiceLine = {
+    : "Freight and logistics services";
+  const lines: FinanceInvoiceLine[] = priced.lines.map((line, index) => ({
+    ...line,
     id: childId("line"),
-    description,
-    quantity: 1,
-    unit_price: subtotal,
-    tax_rate: taxRate,
-    subtotal,
-    tax_amount: tax,
-    total,
-  };
+    description: input.lines[index]?.description.trim() ? line.description : line.kind === "service" ? defaultDescription : line.description,
+  }));
+  const { subtotal, tax_total: tax, disbursement_total: disbursementTotal, total } = priced;
   const reference = invoiceReference();
   const now = new Date().toISOString();
   const document = {
@@ -489,13 +532,22 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
     issue_date: issueDate,
     due_date: dueDate,
     currency: input.currency,
-    line_items: [line],
+    line_items: lines,
     subtotal,
     tax_total: tax,
+    disbursement_total: disbursementTotal,
+    credit_total: 0,
+    credit_tax_total: 0,
+    credit_disbursement_total: 0,
+    adjustment_total: 0,
     total,
     amount_paid: 0,
     balance_due: total,
     notes: input.notes.trim() || null,
+    tax_invoice_number: null,
+    fiscal_year: null,
+    customer_tax_id: nullable(customer.get("tax_id")),
+    seller_pan: null,
     created_by_name: actor.name,
     created_by_email: actor.email,
     created_at: now,
@@ -515,19 +567,99 @@ export async function issueFinanceInvoice(reference: string, actor: Actor, conte
   const today = operationalDate();
   const dates = invoiceDatesOnIssue(loaded.invoice.issue_date, loaded.invoice.due_date, today);
   const nextStatus = dates.dueDate < today ? "overdue" : "issued";
-  const now = new Date().toISOString();
-  await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({
-    status: nextStatus,
-    issue_date: dates.issueDate,
-    due_date: dates.dueDate,
-    ...(dates.moved ? { drafted_issue_date: loaded.invoice.issue_date, drafted_due_date: loaded.invoice.due_date } : {}),
-    issued_at: now, issued_by_name: actor.name, issued_by_email: actor.email, updated_at: now,
+  const fiscalYear = nepalFiscalYear(dates.issueDate);
+  if (!fiscalYear) return { kind: "invalid_status" as const };
+  const db = firebaseAdminDb();
+  const invoiceRef = db.collection("invoices").doc(loaded.invoice.reference);
+  const customerRef = db.collection("customers").doc(loaded.invoice.customer_id);
+  // The number is the next in this fiscal year's series and is given only
+  // here, at issue: drafts are working copies, and an issued invoice keeps
+  // its number for good, even if it is later voided.
+  const issued = await db.runTransaction(async (transaction) => {
+    const [current, customer] = await Promise.all([transaction.get(invoiceRef), transaction.get(customerRef)]);
+    if (!current.exists || current.get("status") !== "draft") return null;
+    const series = await nextTaxDocumentNumber(transaction, "invoice", fiscalYear);
+    const now = new Date().toISOString();
+    series.commit();
+    transaction.update(invoiceRef, {
+      status: nextStatus,
+      issue_date: dates.issueDate,
+      due_date: dates.dueDate,
+      ...(dates.moved ? { drafted_issue_date: loaded.invoice.issue_date, drafted_due_date: loaded.invoice.due_date } : {}),
+      tax_invoice_number: series.number,
+      tax_invoice_sequence: series.sequence,
+      fiscal_year: fiscalYear,
+      seller_pan: companyPan(),
+      customer_tax_id: nullable(customer.get("tax_id")) ?? nullable(current.get("customer_tax_id")),
+      issued_at: now, issued_by_name: actor.name, issued_by_email: actor.email, updated_at: now,
+    });
+    return series.number;
   });
+  if (!issued) return { kind: "invalid_status" as const };
   await recomputeCustomerFinance(loaded.invoice.customer_id);
   await syncShipmentBilling(loaded.invoice.shipment_reference);
-  await writeCustomerActivity(loaded.invoice.customer_id, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)} · due ${dates.dueDate}${dates.moved ? ` · dated ${dates.issueDate}, the day it was issued` : ""}`, actor);
-  await writeJobActivity(loaded.invoice.shipment_reference, `Invoice issued: ${loaded.invoice.reference}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
-  return { kind: "updated" as const };
+  await writeCustomerActivity(loaded.invoice.customer_id, `Invoice issued: ${issued}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)} · due ${dates.dueDate}${dates.moved ? ` · dated ${dates.issueDate}, the day it was issued` : ""}`, actor);
+  await writeJobActivity(loaded.invoice.shipment_reference, `Invoice issued: ${issued}`, `${loaded.invoice.currency} ${loaded.invoice.total.toFixed(2)}`, actor);
+  return { kind: "updated" as const, taxInvoiceNumber: issued };
+}
+
+/**
+ * Withdraw part or all of what is still owed on an issued invoice, with a
+ * numbered credit note. Before this an issued invoice could only be voided,
+ * and not at all once anything was paid. A refund of money already received
+ * is not this: credits stop at the outstanding balance.
+ */
+export async function createCreditNote(reference: string, input: { amount: number; reason: string }, actor: Actor, context: KcplStaffContext) {
+  const loaded = await getFinanceInvoice(reference, context);
+  if (loaded.kind !== "ready") return loaded;
+  const reason = input.reason.trim().slice(0, 500);
+  if (reason.length < 4) return { kind: "reason_required" as const };
+  if (!["issued", "partially_paid", "overdue"].includes(loaded.invoice.status) || loaded.invoice.record_type !== "invoice") return { kind: "invalid_status" as const };
+  const today = operationalDate();
+  const fiscalYear = nepalFiscalYear(today);
+  if (!fiscalYear) return { kind: "invalid_status" as const };
+  const db = firebaseAdminDb();
+  const invoiceRef = db.collection("invoices").doc(loaded.invoice.reference);
+  const result = await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(invoiceRef);
+    if (!current.exists) return { kind: "missing" as const };
+    const status = text(current.get("status"));
+    if (!["issued", "partially_paid", "overdue"].includes(status)) return { kind: "invalid_status" as const };
+    const data = current.data() as Record<string, unknown>;
+    const split = creditNoteSplit({
+      total: numberValue(data.total), tax_total: numberValue(data.tax_total), disbursement_total: numberValue(data.disbursement_total),
+      balance_due: numberValue(data.balance_due), credit_tax_total: numberValue(data.credit_tax_total), credit_disbursement_total: numberValue(data.credit_disbursement_total),
+    }, input.amount);
+    if (!split.ok) return { kind: split.reason };
+    const series = await nextTaxDocumentNumber(transaction, "credit_note", fiscalYear);
+    const now = new Date().toISOString();
+    const round = (value: number) => Math.round(value * 100) / 100;
+    const nextTotal = round(numberValue(data.total) - split.amount);
+    const nextBalance = round(numberValue(data.balance_due) - split.amount);
+    const id = childId("credit");
+    series.commit();
+    transaction.create(invoiceRef.collection("credit_notes").doc(id), {
+      number: series.number, sequence: series.sequence, fiscal_year: fiscalYear, invoice_reference: loaded.invoice.reference,
+      tax_invoice_number: nullable(data.tax_invoice_number), credit_date: today, amount: split.amount, tax_amount: split.tax_amount,
+      disbursement_amount: split.disbursement_amount, currency: text(data.currency), reason,
+      created_by_name: actor.name, created_by_email: actor.email, created_at: now,
+    });
+    transaction.update(invoiceRef, {
+      total: nextTotal,
+      balance_due: nextBalance,
+      credit_total: round(numberValue(data.credit_total) + split.amount),
+      credit_tax_total: round(numberValue(data.credit_tax_total) + split.tax_amount),
+      credit_disbursement_total: round(numberValue(data.credit_disbursement_total) + split.disbursement_amount),
+      ...(nextBalance <= 0.00001 ? { status: "paid", payment_status: "paid" } : {}),
+      updated_at: now,
+    });
+    return { kind: "created" as const, number: series.number, amount: split.amount };
+  });
+  if (result.kind !== "created") return result;
+  await recomputeCustomerFinance(loaded.invoice.customer_id);
+  await writeCustomerActivity(loaded.invoice.customer_id, `Credit note ${result.number}`, `${loaded.invoice.currency} ${result.amount.toFixed(2)} off ${loaded.invoice.tax_invoice_number ?? loaded.invoice.reference} · ${reason}`, actor);
+  await writeJobActivity(loaded.invoice.shipment_reference, `Credit note ${result.number}`, `${loaded.invoice.currency} ${result.amount.toFixed(2)} · ${reason}`, actor);
+  return result;
 }
 
 export async function voidFinanceInvoice(reference: string, actor: Actor, context: KcplStaffContext) {
@@ -535,6 +667,8 @@ export async function voidFinanceInvoice(reference: string, actor: Actor, contex
   if (loaded.kind !== "ready") return loaded;
   if (loaded.invoice.status === "void") return { kind: "updated" as const };
   if (loaded.invoice.amount_paid > 0) return { kind: "has_payments" as const };
+  // Credit notes point at this invoice; it is corrected through them now.
+  if (loaded.invoice.credit_total > 0) return { kind: "has_credit_notes" as const };
   const now = new Date().toISOString();
   await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({ status: "void", balance_due: 0, voided_at: now, voided_by_name: actor.name, voided_by_email: actor.email, updated_at: now });
   await recomputeCustomerFinance(loaded.invoice.customer_id);

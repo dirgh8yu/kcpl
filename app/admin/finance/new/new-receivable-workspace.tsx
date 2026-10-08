@@ -6,7 +6,7 @@ import { FormEvent, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import { crmCurrencies, type CrmCurrency } from "../../crm/crm-data";
 import { OpsButton, OpsField, OpsNotice, OpsPage, OpsPageHeader, OpsSurface } from "../../operations-ui";
-import { TaxChoiceField, taxRateFromChoice, type TaxChoice } from "../invoice-tax-field";
+import { InvoiceLinesEditor, invoiceLinesForSubmit, newInvoiceLine, type InvoiceLineDraft } from "../invoice-lines-editor";
 
 function nepalToday() {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kathmandu", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()).map((part) => [part.type, part.value]));
@@ -18,20 +18,21 @@ export function NewReceivableWorkspace() {
   const today = nepalToday();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const [form, setForm] = useState({ shipmentReference: "", customerId: "", issueDate: today, dueDate: "", currency: "NPR" as CrmCurrency, description: "Freight and logistics services", amount: "", taxChoice: "" as TaxChoice, taxRate: "", notes: "" });
+  const [form, setForm] = useState({ shipmentReference: "", customerId: "", issueDate: today, dueDate: "", currency: "NPR" as CrmCurrency, notes: "" });
+  const [lines, setLines] = useState<InvoiceLineDraft[]>(() => [newInvoiceLine({ description: "Freight and logistics services" })]);
   const shipmentMode = Boolean(form.shipmentReference.trim());
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const taxRate = taxRateFromChoice(form.taxChoice, form.taxRate);
-    if (taxRate === null) { setNotice("Choose the tax for this invoice."); return; }
+    const ready = invoiceLinesForSubmit(lines);
+    if (!ready.ok) { setNotice(ready.error); return; }
     setBusy(true);
     setNotice("");
     try {
       const response = await fetch("/api/admin/finance/invoices", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...form, shipmentReference: form.shipmentReference.trim().toUpperCase(), customerId: form.customerId.trim().toUpperCase(), amount: Number(form.amount), taxRate }),
+        body: JSON.stringify({ ...form, shipmentReference: form.shipmentReference.trim().toUpperCase(), customerId: form.customerId.trim().toUpperCase(), lines: ready.lines }),
       });
       const data = await response.json() as { reference?: string; error?: string; resolutionPath?: string };
       if (!response.ok && data.resolutionPath) { router.push(data.resolutionPath); return; }
@@ -55,9 +56,7 @@ export function NewReceivableWorkspace() {
           <OpsField label="Issue date"><input required type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })}/></OpsField>
           <OpsField label="Due date"><input type="date" min={form.issueDate || undefined} value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })}/></OpsField>
           <OpsField label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as CrmCurrency })}>{crmCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></OpsField>
-          <OpsField label="Amount before tax"><input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })}/></OpsField>
-          <TaxChoiceField choice={form.taxChoice} rate={form.taxRate} onChange={(next) => setForm({ ...form, taxChoice: next.choice, taxRate: next.rate })}/>
-          <OpsField label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })}/></OpsField>
+          <div className="md:col-span-2 xl:col-span-4"><InvoiceLinesEditor lines={lines} currency={form.currency} onChange={setLines}/></div>
           <OpsField label="Invoice notes" className="md:col-span-2 xl:col-span-4"><textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })}/></OpsField>
           <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4"><OpsButton type="submit" variant="primary" disabled={busy}><ReceiptText size={13}/>{busy ? "Creating…" : "Create invoice draft"}</OpsButton><Link href="/admin/finance" className="ops-button" data-variant="ghost" data-size="md">Cancel</Link></div>
         </form>

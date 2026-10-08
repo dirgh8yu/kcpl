@@ -333,7 +333,11 @@ export async function getPortalInvoice(session: PortalSession, reference: string
     if (!snapshot.exists || String(snapshot.get("customer_id") ?? "") !== session.customerId) return { kind: "missing" };
     const record = { ...(snapshot.data() as Record<string, unknown>), reference: snapshot.id };
     if (!portalInvoiceVisible(record)) return { kind: "missing" };
-    return { kind: "ready", invoice: portalInvoiceView(record, nepalOperationalDate()) };
+    // Credit notes are the customer's documents too: each has its own number to file.
+    const creditNotes = Number(snapshot.get("credit_total")) > 0
+      ? (await snapshot.ref.collection("credit_notes").orderBy("created_at").get()).docs.map((note) => note.data())
+      : [];
+    return { kind: "ready", invoice: portalInvoiceView({ ...record, credit_notes: creditNotes }, nepalOperationalDate()) };
   } catch (error) {
     console.error("KCPL portal invoice read failed", error);
     return { kind: "unavailable" };

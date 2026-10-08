@@ -723,6 +723,15 @@ export type PortalInvoiceLineView = {
   quantity: number;
   unit_price: number;
   total: number;
+  /** "disbursement" is money KCPL paid for the customer, passed on at cost. */
+  kind: "service" | "disbursement";
+};
+
+export type PortalCreditNoteView = {
+  number: string;
+  credit_date: string;
+  amount: number;
+  reason: string;
 };
 
 export type PortalInvoiceView = {
@@ -739,8 +748,24 @@ export type PortalInvoiceView = {
   balance_due: number;
   shipment_reference: string | null;
   external_invoice_number: string | null;
+  /** The numbered tax invoice, from when it was issued. */
+  tax_invoice_number: string | null;
+  fiscal_year: string | null;
+  seller_pan: string | null;
+  customer_tax_id: string | null;
+  /** Paid for the customer at cost, inside subtotal and total. */
+  disbursement_total: number;
+  /** What credit notes took off; total and balance_due are already net of it. */
+  credit_total: number;
   line_items: PortalInvoiceLineView[];
+  /** Filled where one invoice is read; the list leaves it empty. */
+  credit_notes: PortalCreditNoteView[];
 };
+
+/** The number a customer files an invoice under. */
+export function portalInvoiceNumber(invoice: Pick<PortalInvoiceView, "tax_invoice_number" | "external_invoice_number" | "reference">) {
+  return invoice.tax_invoice_number || invoice.external_invoice_number || invoice.reference;
+}
 
 /**
  * [today] is Nepal's operational date. The status is the one admin finance
@@ -763,12 +788,25 @@ export function portalInvoiceView(data: Record<string, unknown>, today: string):
     balance_due: money(data.balance_due),
     shipment_reference: nullableText(data.shipment_reference),
     external_invoice_number: nullableText(data.external_invoice_number),
+    tax_invoice_number: nullableText(data.tax_invoice_number),
+    fiscal_year: nullableText(data.fiscal_year),
+    seller_pan: nullableText(data.seller_pan),
+    customer_tax_id: nullableText(data.customer_tax_id),
+    disbursement_total: money(data.disbursement_total),
+    credit_total: money(data.credit_total),
     line_items: lines.map((line, index) => ({
       id: String(line.id ?? index),
       description: text(line.description, "Charge"),
       quantity: money(line.quantity),
       unit_price: money(line.unit_price),
       total: money(line.total),
+      kind: line.kind === "disbursement" ? "disbursement" : "service",
+    })),
+    credit_notes: (Array.isArray(data.credit_notes) ? data.credit_notes as Array<Record<string, unknown>> : []).map((note) => ({
+      number: text(note.number),
+      credit_date: text(note.credit_date),
+      amount: money(note.amount),
+      reason: text(note.reason),
     })),
   };
 }

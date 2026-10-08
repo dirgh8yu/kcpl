@@ -11,14 +11,21 @@ function finite(value: unknown) {
 }
 
 /**
- * What an invoice earns KCPL: the amount before tax. VAT on the invoice is
- * collected for the tax office, so counting it as revenue overstated every
- * margin by the tax rate. Adjustments and credits stay in.
+ * What an invoice earns KCPL: the amount before tax, less anything paid for
+ * the customer at cost (disbursements) and less what credit notes withdrew.
+ * VAT on the invoice is collected for the tax office, so counting it as
+ * revenue overstated every margin by the tax rate.
  */
 export function invoiceNetRevenue(data: Record<string, unknown>) {
   const total = finite(data.total);
   const tax = finite(data.tax_total);
-  if (total !== null && tax !== null) return total - tax;
+  if (total !== null && tax !== null) {
+    // total is already net of credits; the credits' own VAT and at-cost
+    // shares are added back so only KCPL's charge is withdrawn.
+    const netTax = tax - (finite(data.credit_tax_total) ?? 0);
+    const netDisbursement = (finite(data.disbursement_total) ?? 0) - (finite(data.credit_disbursement_total) ?? 0);
+    return total - netTax - netDisbursement;
+  }
   const subtotal = finite(data.subtotal);
   if (subtotal !== null) return subtotal;
   return total ?? 0;

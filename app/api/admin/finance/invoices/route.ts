@@ -3,7 +3,31 @@ import { getStaffContext } from "../../../../admin/staff-directory.server";
 import { crmCurrencies, type CrmCurrency } from "../../../../admin/crm/crm-data";
 import { resolveInvoiceCustomerFromShipment } from "../../../../admin/finance/finance-linking.server";
 import { createFinanceInvoice } from "../../../../admin/finance/finance.server";
+import { INVOICE_MAX_LINES, type InvoiceLineInput } from "../../../../admin/finance/finance-data";
 import { isTrustedSameOriginRequest } from "../../../../request-security";
+
+/** The invoice's lines; an older single-amount request is one service line. */
+function invoiceLinesFromBody(body: Record<string, unknown>): InvoiceLineInput[] {
+  if (Array.isArray(body.lines)) {
+    return body.lines.slice(0, INVOICE_MAX_LINES + 1).map((raw) => {
+      const line = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+      return {
+        kind: line.kind === "disbursement" ? "disbursement" : "service",
+        description: typeof line.description === "string" ? line.description : "",
+        quantity: Number(line.quantity ?? 1),
+        unitPrice: Number(line.unitPrice),
+        taxRate: Number(line.taxRate ?? 0),
+      };
+    });
+  }
+  return [{
+    kind: "service",
+    description: typeof body.description === "string" ? body.description : "",
+    quantity: 1,
+    unitPrice: Number(body.amount),
+    taxRate: Number(body.taxRate ?? 0),
+  }];
+}
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -50,9 +74,7 @@ export async function POST(request: Request) {
     issueDate: typeof body.issueDate === "string" ? body.issueDate : "",
     dueDate: typeof body.dueDate === "string" ? body.dueDate : "",
     currency: currency as CrmCurrency,
-    description: typeof body.description === "string" ? body.description : "",
-    amount: Number(body.amount),
-    taxRate: Number(body.taxRate ?? 0),
+    lines: invoiceLinesFromBody(body),
     notes: typeof body.notes === "string" ? body.notes : "",
   }, { name: access.user.displayName, email: access.user.email }, staff);
 
@@ -63,6 +85,7 @@ export async function POST(request: Request) {
   if (result.kind === "relationship_mismatch") return json({ ok: false, error: "The shipment, quote and customer must all belong to the same branch." }, 409);
   if (result.kind === "invalid_amount") return json({ ok: false, error: "Enter an invoice amount greater than zero." }, 400);
   if (result.kind === "invalid_tax") return json({ ok: false, error: "Tax rate must be between 0 and 100%." }, 400);
+  if (result.kind === "invalid_lines") return json({ ok: false, error: `An invoice needs between 1 and ${INVOICE_MAX_LINES} lines.` }, 400);
   if (result.kind === "forbidden") return json({ ok: false, error: "This record is outside your finance or branch access." }, 403);
   return json({ ok: false, error: "Invoice creation is unavailable." }, 503);
 }

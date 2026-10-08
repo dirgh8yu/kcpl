@@ -1226,8 +1226,11 @@ const INVOICE_STATUS: FinanceInvoiceStatus[] = ["paid", "issued", "overdue", "pa
 export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()): FinanceDashboard {
   const invoices: FinanceInvoice[] = mockCommandCentre(staff, now).jobs.map((job, index) => {
     const status = INVOICE_STATUS[index % INVOICE_STATUS.length];
-    const subtotal = 240_000 + index * 38_500;
-    const tax = Math.round(subtotal * 0.13);
+    const service = 240_000 + index * 38_500;
+    // Every fourth invoice also passes on customs duty paid for the customer.
+    const duty = index % 4 === 1 ? 18_500 : 0;
+    const subtotal = service + duty;
+    const tax = Math.round(service * 0.13);
     const total = subtotal + tax;
     const paid = status === "paid" ? total : status === "partially_paid" ? Math.round(total * 0.4) : 0;
     const dueDays = status === "overdue" ? -(12 + (index % 40)) : 14 - (index % 10);
@@ -1248,20 +1251,37 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
       currency: "NPR",
       line_items: [{
         id: `line-${index + 1}`,
+        kind: "service" as const,
         description: `${job.mode} freight ${job.origin} to ${job.destination}`,
         quantity: 1,
-        unit_price: subtotal,
+        unit_price: service,
         tax_rate: 13,
-        subtotal,
+        subtotal: service,
         tax_amount: tax,
-        total,
-      }],
+        total: service + tax,
+      }, ...(duty ? [{
+        id: `line-${index + 1}-duty`,
+        kind: "disbursement" as const,
+        description: "Customs duty paid on your behalf",
+        quantity: 1,
+        unit_price: duty,
+        tax_rate: 0,
+        subtotal: duty,
+        tax_amount: 0,
+        total: duty,
+      }] : [])],
       subtotal,
       tax_total: tax,
+      disbursement_total: duty,
+      credit_total: 0,
       total,
       amount_paid: paid,
       balance_due: total - paid,
       notes: null,
+      tax_invoice_number: status === "draft" ? null : `KCPL/2083-84/${String(index + 1).padStart(5, "0")}`,
+      fiscal_year: status === "draft" ? null : "2083-84",
+      seller_pan: null,
+      customer_tax_id: index % 3 === 0 ? `60${String(1234567 + index * 7).slice(0, 7)}` : null,
       created_by_name: "Prakash Adhikari",
       created_by_email: "prakash.adhikari@kcpl.com.np",
       created_at: iso(now, -(index + 10) * DAY),
@@ -1281,6 +1301,7 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
             created_at: iso(now, -(index + 2) * DAY),
           }]
         : [],
+      credit_notes: [],
     };
   });
 

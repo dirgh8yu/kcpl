@@ -473,6 +473,15 @@ const en = {
   "invd.issued_on": "Issued {date}",
   "invd.due_on": "Due {date}",
   "invd.tax": "Tax",
+  "invd.at_cost": "Paid on your behalf, at cost",
+  "invd.paid_on_behalf": "Paid on your behalf",
+  "invd.invoice_total": "Invoice total",
+  "invd.credit_notes": "Credit notes",
+  "invd.col_credit_note": "Credit note",
+  "invd.col_date": "Date",
+  "invd.col_reason": "Reason",
+  "invd.seller_pan": "{company} PAN/VAT {pan}",
+  "invd.buyer_pan": "Your PAN/VAT {pan}",
 
   /* Notification emails. These are the reason the language lives on the
    * account rather than in a cookie: the scheduled sweep has no browser. */
@@ -951,6 +960,15 @@ const ne: Record<PortalTextKey, string> = {
   "invd.issued_on": "{date} मा जारी",
   "invd.due_on": "भुक्तानी मिति {date}",
   "invd.tax": "कर",
+  "invd.at_cost": "तपाईंको तर्फबाट तिरिएको, लागत मूल्यमा",
+  "invd.paid_on_behalf": "तपाईंको तर्फबाट तिरिएको",
+  "invd.invoice_total": "बिलको जम्मा",
+  "invd.credit_notes": "क्रेडिट नोट",
+  "invd.col_credit_note": "क्रेडिट नोट",
+  "invd.col_date": "मिति",
+  "invd.col_reason": "कारण",
+  "invd.seller_pan": "{company} को प्यान/भ्याट नं. {pan}",
+  "invd.buyer_pan": "तपाईंको प्यान/भ्याट नं. {pan}",
 
   "mail.brand": "कपिलेश्वर कार्गो",
   "mail.sent_because": "यो ढुवानी तपाईंको KCPL खातामा भएकाले {customer} लाई पठाइएको। यी इमेल पोर्टलको सूचना सेटिङबाट बन्द गर्न सकिन्छ।",

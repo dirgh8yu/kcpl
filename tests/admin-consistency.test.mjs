@@ -131,7 +131,9 @@ test("record pages read the same way: type, reference with status, route", async
   // The reference, a button that copies it, then the status.
   assert.match(job, /title=\{<span className="job-record-title"><span className="ops-mono">\{job\.reference\}<\/span><OpsCopyButton value=\{job\.reference\}[^>]*\/><OpsBadge/);
   const invoice = await readFile(repo("app/admin/finance/invoices/[reference]/invoice-workspace.tsx"), "utf8");
-  assert.match(invoice, /eyebrow="Invoice" title=\{<span[^>]*><OpsMono>\{invoice\.reference\}<\/OpsMono><OpsCopyButton value=\{invoice\.reference\}[^>]*\/><OpsBadge/);
+  // The number is the tax invoice number once issued, the reference before.
+  assert.match(invoice, /const displayNumber = invoice\.tax_invoice_number \?\? invoice\.reference;/);
+  assert.match(invoice, /eyebrow="Invoice" title=\{<span[^>]*><OpsMono>\{displayNumber\}<\/OpsMono><OpsCopyButton value=\{displayNumber\}[^>]*\/><OpsBadge/);
   for (const path of ["app/admin/rating/[order]/page.tsx", "app/admin/tenders/[tender]/page.tsx", "app/admin/payables/bills/[reference]/payable-workspace.tsx"]) {
     assert.match(await readFile(repo(path), "utf8"), /<\/OpsMono><OpsCopyButton value=/, path);
   }

@@ -2614,3 +2614,34 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 /* A table in a half-width column (ops-grid-2) is a short summary; it fits
  * its column instead of scrolling sideways with nothing to focus. */
 .kcpl-admin-content .ops-grid-2 .ops-table { min-width: 0; }
+
+/* Invoice lines: one row per charge on desktop, stacked on phones. */
+.kcpl-admin-content .invoice-lines { display: grid; gap: 8px; }
+.kcpl-admin-content .invoice-lines-head,
+.kcpl-admin-content .invoice-line { display: grid; grid-template-columns: minmax(0, 1fr) 84px 140px 230px 32px; gap: 8px; align-items: end; }
+.kcpl-admin-content .invoice-lines-head { color: var(--admin-muted); font-size: var(--app-label-size); font-weight: 600; }
+.kcpl-admin-content .invoice-line { margin: 0; padding: 0; border: 0; min-width: 0; }
+.kcpl-admin-content .invoice-line-field { display: grid; gap: 4px; min-width: 0; }
+/* Visually the column heads label the fields on wide screens; each field keeps its own label for screen readers. */
+.kcpl-admin-content .invoice-line-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; color: var(--admin-muted); font-size: var(--app-label-size); font-weight: 600; }
+.kcpl-admin-content .invoice-line-rate { grid-column: 4; }
+.kcpl-admin-content :is(.invoice-line-remove, .invoice-line-spacer) { grid-column: 5; grid-row: 1; }
+.kcpl-admin-content .invoice-line-remove { display: inline-grid; place-items: center; width: 32px; height: var(--app-field-height); border: 0; border-radius: var(--app-radius); background: transparent; color: var(--admin-muted); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .kcpl-admin-content .invoice-line-remove:hover { background: var(--admin-surface-muted); color: var(--admin-ink); } }
+.kcpl-admin-content .invoice-lines-foot { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.kcpl-admin-content .invoice-lines-totals { display: grid; gap: 4px; min-width: 220px; margin: 0; font-size: var(--app-label-size); }
+.kcpl-admin-content .invoice-lines-totals div { display: flex; justify-content: space-between; gap: 16px; }
+.kcpl-admin-content .invoice-lines-totals dt { color: var(--admin-muted); }
+.kcpl-admin-content .invoice-lines-totals dd { margin: 0; font-variant-numeric: tabular-nums; color: var(--admin-ink); }
+.kcpl-admin-content .invoice-lines-totals div[data-strong] { padding-top: 4px; border-top: 1px solid var(--admin-line); font-weight: 600; }
+@media (max-width: 760px) {
+  .kcpl-admin-content .invoice-lines-head { display: none; }
+  .kcpl-admin-content .invoice-line { position: relative; grid-template-columns: 1fr 1fr; padding-bottom: 10px; border-bottom: 1px solid var(--admin-line); }
+  /* Description and how it is charged each get the full width, so "Paid for the customer, at cost" reads whole. */
+  .kcpl-admin-content :is(.invoice-line-description, .invoice-line-charge, .invoice-line-rate) { grid-column: 1 / -1; }
+  .kcpl-admin-content .invoice-line-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; }
+  .kcpl-admin-content .invoice-line-spacer { display: none; }
+  /* Remove sits beside the line's first label rather than on a row of its own. */
+  .kcpl-admin-content .invoice-line-remove { position: absolute; top: -9px; right: -6px; width: 36px; height: 36px; }
+  .kcpl-admin-content .invoice-lines-totals { width: 100%; }
+}

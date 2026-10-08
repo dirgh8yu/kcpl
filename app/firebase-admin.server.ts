@@ -78,3 +78,21 @@ export function firebaseStorageBucketName() {
 export function firebaseAdminMessaging() {
   return getMessaging(adminApp());
 }
+
+/** The Google Cloud project the Admin SDK runs against, or "" when none is configured. */
+export function firebaseProjectId() {
+  return configuredValue(process.env.FIREBASE_PROJECT_ID)
+    || configuredValue(process.env.GOOGLE_CLOUD_PROJECT)
+    || configuredValue(process.env.GCLOUD_PROJECT);
+}
+
+/**
+ * An OAuth access token from the Admin SDK's own credential, for the Google
+ * APIs it has no client for (starting a Firestore export). On App Hosting this
+ * is the backend's service account; nothing is read from a key file.
+ */
+export async function firebaseAccessToken() {
+  const credential = adminApp().options.credential;
+  if (!credential) throw new Error("No Google credential is available to the server.");
+  return (await credential.getAccessToken()).access_token;
+}

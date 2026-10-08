@@ -5,6 +5,7 @@ import { dispatchPendingAlertEmails } from "../../../admin/notifications/notific
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
 import { dispatchPortalNotifications } from "../../../portal/portal-notifications.server";
 import { automationMachineAuthorized } from "../../../machine-auth-policy";
+import { sendOpsAlert } from "../../../ops-monitoring.server";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -21,7 +22,12 @@ export async function POST(request: Request) {
       evaluatePayablesAlerts(),
       evaluateFreightAutomation(),
     ]);
-    if (result.kind !== "completed" || payables.kind !== "completed" || freight.kind !== "completed") return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+    if (result.kind !== "completed" || payables.kind !== "completed" || freight.kind !== "completed") {
+      await sendOpsAlert("automation-unavailable", "Scheduled checks couldn't reach the database", [
+        "The automation run (alerts, payables, freight tasks and customer notices) found Firestore unavailable and did nothing this time.",
+      ]);
+      return json({ ok: false, error: "Automation storage is unavailable." }, 503);
+    }
     const [alertEmails, assignmentEmails, portalEmails] = await Promise.all([
       dispatchPendingAlertEmails(),
       dispatchAllAssignmentEmails(),
@@ -46,6 +52,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("KCPL scheduled automation failed", error);
+    await sendOpsAlert("automation-failed", "Scheduled checks failed", [
+      "The automation run (alerts, payables, freight tasks and customer notices) stopped with an error.",
+      `Error: ${error instanceof Error ? error.message.slice(0, 500) : "not given"}`,
+    ]);
     return json({ ok: false, error: "Automation checks could not be completed." }, 500);
   }
 }

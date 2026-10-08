@@ -75,7 +75,9 @@ test("an invoice issued after it was drafted is dated the day it is issued and k
 test("the shipment invoice form starts from the agreed price and makes tax a choice", () => {
   const form = read("app/admin/finance/new/[shipmentReference]/shipment-invoice-form.tsx");
   assert.match(form, /agreedPrice/);
-  assert.match(form, /TaxChoiceField/);
+  // Each line says how it is charged, and nothing is chosen until someone chooses.
+  assert.match(form, /InvoiceLinesEditor/);
+  assert.match(read("app/admin/finance/invoice-lines-editor.tsx"), /quantity: "1", unitPrice: "", type: "", rate: ""/);
   assert.doesNotMatch(form, /taxRate: "0"/);
   for (const path of ["app/admin/finance/finance-workspace.tsx", "app/admin/finance/new/new-receivable-workspace.tsx", "app/admin/payables/payables-workspace.tsx"]) {
     assert.doesNotMatch(read(path), /taxRate: "0"/, path);
