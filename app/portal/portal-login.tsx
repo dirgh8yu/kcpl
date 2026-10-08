@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 import {
   GoogleAuthProvider,
@@ -147,7 +147,7 @@ export function PortalLogin() {
   async function resetPassword() {
     const address = email.trim();
     if (!address) {
-      setError("Enter your email address first, then choose Reset password.");
+      setError("Enter your email address first, then choose Forgot password.");
       return;
     }
     setError("");
@@ -158,21 +158,21 @@ export function PortalLogin() {
   }
 
   const messages = (
-    <div aria-live="polite" className="portal-login-messages">
-      {error ? <p className="portal-login-error" role="alert">{error}</p> : null}
-      {notice ? <p className="portal-login-notice">{notice}</p> : null}
+    <div aria-live="polite" className="sign-in-messages">
+      {error ? <p className="sign-in-error" role="alert">{error}</p> : null}
+      {notice ? <p className="sign-in-notice">{notice}</p> : null}
     </div>
   );
 
   return (
-    <div className="portal-login-form" aria-busy={Boolean(busy)}>
+    <div className="sign-in-form" aria-busy={Boolean(busy)}>
       {providers.length > 0 ? (
-        <div className="portal-login-providers">
+        <div className="sign-in-providers">
           {providers.map((provider) => (
             <button
               key={provider}
               type="button"
-              className="portal-login-provider"
+              className="sign-in-provider"
               data-provider={provider}
               onClick={() => continueWith(provider)}
               disabled={Boolean(busy)}
@@ -187,33 +187,38 @@ export function PortalLogin() {
       {showEmail ? null : messages}
 
       {providers.length > 0 && !showEmail ? (
-        <button type="button" className="portal-login-link" onClick={() => setShowEmail(true)} disabled={Boolean(busy)}>
-          Sign in with email
+        <button type="button" className="sign-in-link" onClick={() => setShowEmail(true)} disabled={Boolean(busy)}>
+          Sign in with email instead
         </button>
       ) : null}
 
       {showEmail ? (
-        <form onSubmit={submit} className="portal-login-email">
-          {providers.length > 0 ? <p className="portal-login-divider"><span>or with your email</span></p> : null}
+        <form onSubmit={submit} className="sign-in-form">
+          {providers.length > 0 ? <p className="sign-in-divider"><span>or with your email</span></p> : null}
           <label className="ops-field" htmlFor="portal-email">
-            <span className="ops-field-label">Email address</span>
+            <span className="ops-field-label">Email</span>
             <input
               id="portal-email"
               type="email"
               inputMode="email"
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               aria-invalid={Boolean(error) || undefined}
-              placeholder="you@company.com"
               disabled={Boolean(busy)}
             />
           </label>
 
-          <label className="ops-field" htmlFor="portal-password">
-            <span className="ops-field-label">Password</span>
-            <span className="portal-password-control">
+          {/* "Forgot password?" sits with the field it is about. */}
+          <div className="ops-field">
+            <span className="sign-in-field-head">
+              <label className="ops-field-label" htmlFor="portal-password">Password</label>
+              <button type="button" className="sign-in-link" onClick={resetPassword} disabled={Boolean(busy)}>Forgot password?</button>
+            </span>
+            <span className="sign-in-password">
               <input
                 id="portal-password"
                 type={showPassword ? "text" : "password"}
@@ -226,7 +231,7 @@ export function PortalLogin() {
               />
               <button
                 type="button"
-                className="portal-password-toggle"
+                className="sign-in-password-toggle"
                 onClick={() => setShowPassword((visible) => !visible)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
@@ -235,17 +240,12 @@ export function PortalLogin() {
                 {showPassword ? <EyeOff size={16} aria-hidden="true"/> : <Eye size={16} aria-hidden="true"/>}
               </button>
             </span>
-          </label>
+          </div>
 
           {messages}
 
-          <button type="submit" className="ops-button portal-login-submit" data-variant="primary" data-size="md" disabled={Boolean(busy)}>
-            <span>{busy === "email" ? "Signing in…" : "Sign in"}</span>
-            {busy === "email" ? null : <ArrowRight size={16} strokeWidth={1.75} aria-hidden="true"/>}
-          </button>
-
-          <button type="button" className="portal-login-link" onClick={resetPassword} disabled={Boolean(busy)}>
-            Reset password
+          <button type="submit" className="ops-button sign-in-submit" data-variant="primary" data-size="md" disabled={Boolean(busy)}>
+            {busy === "email" ? "Signing in…" : "Sign in"}
           </button>
         </form>
       ) : null}

@@ -2,8 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { OpsEmptyState, OpsPage, OpsPageHeader } from "../admin/operations-ui";
 import { portalText, type PortalLocale } from "./portal-i18n";
+import { SignInLayout } from "../admin/sign-in-layout";
 
-/** Shown when Firebase is not configured for this deployment at all. */
+/** Shown when Firebase is not configured for this deployment at all, on the
+ *  sign-in page's own layout: it stands where that page would. */
 export function PortalUnavailable({
   title = "The customer portal is not available",
   detail = "KCPL's customer portal is not configured on this deployment. Please contact your KCPL account manager.",
@@ -12,23 +14,11 @@ export function PortalUnavailable({
   detail?: string;
 }) {
   return (
-    <main className="kcpl-admin-shell portal-login">
-      <div className="kcpl-admin-content portal-login-content">
-        <section className="portal-login-card">
-          <div className="portal-login-head">
-            <div>
-              <p className="portal-login-eyebrow">Kapileshwor Cargo</p>
-              <h1>{title}</h1>
-            </div>
-          </div>
-          <p className="portal-login-intro">{detail}</p>
-          <div className="portal-login-footnote">
-            <Link href="/">Public website</Link>
-            <Link href="/track">Track a shipment</Link>
-          </div>
-        </section>
-      </div>
-    </main>
+    <SignInLayout
+      title={title}
+      lead={detail}
+      help={<>To follow a single shipment, <Link href="/track">track it without signing in</Link>.</>}
+    />
   );
 }
 

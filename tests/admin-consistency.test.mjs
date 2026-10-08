@@ -413,3 +413,27 @@ test("a register row has one way in, and a create page is titled for what it mak
   assert.match(crm, /title=\{newOnly \? "New customer" : "Customers"\}/);
   assert.match(await readFile(repo("app/admin/crm/new/page.tsx"), "utf8"), / newOnly\/>/);
 });
+
+test("staff and customers sign in on one plain page, in the app's own fields", async () => {
+  // The staff page had a dark panel with a grid and blurred glows, a
+  // marketing headline, a "Private access" pill, "Firebase-authenticated
+  // access" and a warning that attempts "may be logged". Both pages now share
+  // one layout: the mark, a title, the fields, a button, who to ask.
+  const staff = await readFile(repo("app/admin/admin-login-page.tsx"), "utf8");
+  const portal = await readFile(repo("app/portal/portal-login-page.tsx"), "utf8");
+  for (const source of [staff, portal]) {
+    assert.match(source, /<SignInLayout/);
+    assert.doesNotMatch(source, /blur-|background-image|rounded-full|ShieldCheck|LockKeyhole/);
+  }
+  const forms = [await readFile(repo("app/admin/admin-login.tsx"), "utf8"), await readFile(repo("app/portal/portal-login.tsx"), "utf8")];
+  for (const form of forms) {
+    assert.match(form, /className="ops-field"/);
+    assert.match(form, /className="ops-button sign-in-submit" data-variant="primary"/);
+    assert.doesNotMatch(form, /ArrowRight|uppercase|shadow-\[/);
+  }
+  // Nobody signing in is told which vendor checks their password, and a
+  // Firebase error code never reaches the page as text.
+  for (const source of [staff, portal, ...forms]) assert.doesNotMatch(visible(source), /Firebase-authenticated|verifies your credentials|may be logged/i);
+  assert.match(forms[0], /function signInError\(reason: unknown\)/);
+  assert.match(forms[0], /setError\(signInError\(reason\)\)/);
+});

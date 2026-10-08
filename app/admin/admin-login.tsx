@@ -2,9 +2,32 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 import { firebaseClientAuth } from "../firebase-client";
+
+/** What went wrong, in words. Firebase's own messages ("Firebase: Error
+ *  (auth/invalid-credential).") are for developers; the session route's are
+ *  already written for staff and pass through. */
+function signInError(reason: unknown) {
+  if (!(reason instanceof FirebaseError)) return reason instanceof Error ? reason.message : "Sign-in didn’t work. Try again.";
+  switch (reason.code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+    case "auth/invalid-email":
+      return "That email and password don’t match a KCPL staff account.";
+    case "auth/user-disabled":
+      return "This account has been switched off. Ask a manager.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Wait a few minutes, then try again.";
+    case "auth/network-request-failed":
+      return "No connection. Check your internet, then try again.";
+    default:
+      return "Sign-in isn’t available right now. Try again in a minute.";
+  }
+}
 
 export function AdminLogin() {
   const router = useRouter();
@@ -44,7 +67,7 @@ export function AdminLogin() {
       router.replace("/admin");
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "KCPL sign-in failed.");
+      setError(signInError(reason));
       // Only released on failure: on success the form stays disabled until the
       // navigation unmounts it, so the fields cannot flash back to editable.
       setBusy(false);
@@ -52,36 +75,28 @@ export function AdminLogin() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-8 grid gap-5" aria-busy={busy}>
-      <div className="grid gap-2">
-        <label htmlFor="admin-email" className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">
-          Staff email
-        </label>
-        <div className="group relative">
-          <Mail aria-hidden="true" size={17} strokeWidth={1.8} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--admin-faint)] transition-colors group-focus-within:text-[var(--admin-crimson)]" />
-          <input
-            id="admin-email"
-            type="email"
-            inputMode="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? "admin-login-error" : undefined}
-            placeholder="name@kapileshwor.com"
-            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] pl-11 pr-4 text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)] outline-none transition placeholder:text-[var(--admin-faint)] hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
-            disabled={busy}
-          />
-        </div>
-      </div>
+    <form onSubmit={submit} className="sign-in-form admin-login-form" aria-busy={busy}>
+      <label className="ops-field" htmlFor="admin-email">
+        <span className="ops-field-label">Email</span>
+        <input
+          id="admin-email"
+          type="email"
+          inputMode="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          aria-invalid={Boolean(error) || undefined}
+          aria-describedby={error ? "admin-login-error" : undefined}
+          disabled={busy}
+        />
+      </label>
 
-      <div className="grid gap-2">
-        <label htmlFor="admin-password" className="text-[length:var(--app-label-size)] font-semibold uppercase tracking-[.04em] text-[var(--admin-muted)]">
-          Password
-        </label>
-        <div className="group relative">
-          <LockKeyhole aria-hidden="true" size={17} strokeWidth={1.8} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--admin-faint)] transition-colors group-focus-within:text-[var(--admin-crimson)]" />
+      <div className="ops-field">
+        <label className="ops-field-label" htmlFor="admin-password">Password</label>
+        <span className="sign-in-password">
           <input
             id="admin-password"
             type={showPassword ? "text" : "password"}
@@ -89,39 +104,29 @@ export function AdminLogin() {
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={Boolean(error)}
+            aria-invalid={Boolean(error) || undefined}
             aria-describedby={error ? "admin-login-error" : undefined}
-            className="h-[52px] w-full rounded-[var(--app-radius)] border border-[var(--admin-line)] bg-[var(--admin-surface)] pl-11 pr-12 text-[length:var(--app-font-size)] font-medium text-[var(--admin-ink)] outline-none transition hover:border-[var(--admin-line-strong)] focus:border-[var(--admin-crimson)] focus:ring-4 focus:ring-[var(--admin-crimson)]/10 disabled:cursor-not-allowed disabled:bg-[var(--admin-surface-muted)]"
             disabled={busy}
           />
           <button
             type="button"
+            className="sign-in-password-toggle"
             onClick={() => setShowPassword((visible) => !visible)}
-            className="absolute right-2.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[var(--app-radius)] text-[var(--admin-muted)] transition hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-crimson)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
             disabled={busy}
           >
-            {showPassword ? <EyeOff aria-hidden="true" size={16} /> : <Eye aria-hidden="true" size={16} />}
+            {showPassword ? <EyeOff aria-hidden="true" size={16} strokeWidth={1.75}/> : <Eye aria-hidden="true" size={16} strokeWidth={1.75}/>}
           </button>
-        </div>
+        </span>
       </div>
 
-      <div aria-live="polite" className="min-h-[1px]">
-        {error ? (
-          <div id="admin-login-error" role="alert" className="rounded-[var(--app-radius)] border border-[var(--admin-crimson)]/20 bg-[var(--admin-crimson)]/[0.055] px-4 py-3 text-[length:var(--app-text-sm)] font-semibold leading-5 text-[var(--admin-crimson-dark)]">
-            {error}
-          </div>
-        ) : null}
+      <div aria-live="polite" className="sign-in-messages">
+        {error ? <p id="admin-login-error" className="sign-in-error" role="alert">{error}</p> : null}
       </div>
 
-      <button
-        disabled={busy}
-        type="submit"
-        className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[var(--app-radius)] bg-[var(--admin-crimson)] px-5 text-[length:var(--app-text-base)] font-semibold text-[var(--admin-on-crimson)] shadow-[0_10px_28px_rgba(220,20,60,0.18)] transition hover:bg-[var(--admin-crimson-dark)] hover:shadow-[0_12px_32px_rgba(220,20,60,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-crimson)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
-      >
-        <span>{busy ? "Signing in…" : "Open KCPL Operations"}</span>
-        {!busy ? <ArrowRight aria-hidden="true" size={16} className="transition-transform group-hover:translate-x-0.5" /> : null}
+      <button type="submit" className="ops-button sign-in-submit" data-variant="primary" data-size="md" disabled={busy}>
+        {busy ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );

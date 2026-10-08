@@ -1,31 +1,16 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { SignInLayout } from "../admin/sign-in-layout";
 import { PortalLogin } from "./portal-login";
 
 export function PortalLoginPage({ notice }: { notice?: string }) {
   return (
-    <main className="kcpl-admin-shell portal-login">
-      <div className="kcpl-admin-content portal-login-content">
-        <section className="portal-login-card">
-          <div className="portal-login-head">
-            <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={34} height={34} priority/>
-            <div>
-              <p className="portal-login-eyebrow">Kapileshwor Cargo</p>
-              <h1>Customer portal</h1>
-            </div>
-          </div>
-          <p className="portal-login-intro">
-            Track your shipments, download released documents and review your account with KCPL.
-          </p>
-          {notice ? <p className="portal-login-notice">{notice}</p> : null}
-          <PortalLogin/>
-          <div className="portal-login-footnote">
-            <span><ShieldCheck size={14} aria-hidden="true"/> Access is provisioned by your KCPL account manager.</span>
-            <Link href="/track">Track without signing in</Link>
-          </div>
-        </section>
-      </div>
-    </main>
+    <SignInLayout
+      title="Sign in to the customer portal"
+      lead="Your shipments, documents and invoices with KCPL."
+      help={<>No login yet? Your KCPL account manager can set one up. To follow a single shipment, <Link href="/track">track it without signing in</Link>.</>}
+    >
+      {notice ? <p className="sign-in-notice">{notice}</p> : null}
+      <PortalLogin/>
+    </SignInLayout>
   );
 }

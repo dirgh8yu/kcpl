@@ -1646,50 +1646,55 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--app-space-3); }
 .kcpl-admin-content .portal-form-actions { display: flex; justify-content: flex-end; }
 
-/* Sign-in ------------------------------------------------------------------ */
-.portal-login { min-height: 100dvh; background: var(--admin-canvas); }
-.kcpl-admin-content.portal-login-content { display: grid; place-items: center; min-height: 100dvh; padding: var(--app-space-5) var(--app-space-4); }
-.kcpl-admin-content .portal-login-card {
-  width: min(460px, 100%);
-  border: 1px solid var(--admin-line);
-  border-radius: var(--app-radius-xl);
-  background: var(--admin-surface);
-  padding: var(--app-space-6);
-  box-shadow: var(--app-shadow-lg);
+/* Sign-in ------------------------------------------------------------------
+ * Staff and customers sign in on one page: the mark, a title, the fields and
+ * one button on the app's own canvas, in the app's own fields and buttons.
+ * No card, panel or artwork. */
+.sign-in { min-height: 100dvh; background: var(--admin-canvas); }
+.kcpl-admin-content.sign-in-page { display: grid; grid-template-rows: 1fr auto; min-height: 100dvh; padding: 0 var(--app-space-4); }
+.kcpl-admin-content .sign-in-column { width: min(360px, 100%); margin: 0 auto; padding: clamp(40px, 14vh, 136px) 0 48px; }
+.kcpl-admin-content .sign-in-brand { display: inline-flex; align-items: center; gap: 10px; border-radius: var(--app-radius-sm); color: var(--admin-ink); font-size: 14px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; }
+.kcpl-admin-content .sign-in-column h1 { margin: 32px 0 0; color: var(--admin-ink); font-size: var(--app-title-size); font-weight: 600; line-height: 1.25; letter-spacing: -0.02em; text-wrap: balance; }
+.kcpl-admin-content .sign-in-lead { margin: 6px 0 0; color: var(--admin-muted); font-size: var(--app-text-base); line-height: 20px; }
+.kcpl-admin-content .sign-in-body { display: grid; gap: var(--app-space-4); margin-top: 24px; }
+.kcpl-admin-content .sign-in-form { display: grid; gap: var(--app-space-4); }
+.kcpl-admin-content .sign-in-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.kcpl-admin-content .sign-in-password { position: relative; display: block; }
+.kcpl-admin-content .sign-in-password input { padding-right: 40px; }
+.kcpl-admin-content .sign-in-password-toggle { position: absolute; top: 50%; right: 2px; display: grid; place-items: center; width: 36px; height: 36px; transform: translateY(-50%); border: 0; border-radius: var(--app-radius-sm); background: none; color: var(--admin-muted); cursor: pointer; }
+.kcpl-admin-content .sign-in-submit { width: 100%; margin-top: 4px; }
+.kcpl-admin-content .sign-in-messages { display: grid; gap: 6px; }
+.kcpl-admin-content .sign-in-messages:empty { display: none; }
+.kcpl-admin-content :is(.sign-in-error, .sign-in-notice) { margin: 0; border-radius: var(--app-radius); padding: 9px 12px; font-size: var(--app-text-base); line-height: 18px; }
+.kcpl-admin-content .sign-in-error { background: var(--admin-danger-bg); color: var(--admin-danger); }
+.kcpl-admin-content .sign-in-notice { background: var(--admin-info-bg); color: var(--admin-info); }
+.kcpl-admin-content .sign-in-link { justify-self: start; padding: 0; border: 0; background: none; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 500; cursor: pointer; }
+.kcpl-admin-content .sign-in-providers { display: grid; gap: 8px; }
+.kcpl-admin-content .sign-in-provider { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: var(--app-control-height); padding: 0 16px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-ink); font-size: var(--app-font-size); font-weight: 500; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), transform 100ms var(--app-ease-out); }
+.kcpl-admin-content .sign-in-provider[data-provider="apple"] { border-color: #000; background: #000; color: #fff; }
+.kcpl-admin-content .sign-in-provider:active:not(:disabled) { transform: scale(.98); }
+.kcpl-admin-content .sign-in-provider:disabled { opacity: .6; cursor: default; }
+.kcpl-admin-content .sign-in-divider { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--admin-faint); font-size: var(--app-text-sm); }
+.kcpl-admin-content .sign-in-divider::before,
+.kcpl-admin-content .sign-in-divider::after { content: ""; flex: 1; border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .sign-in-help { margin: 28px 0 0; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 19px; }
+.kcpl-admin-content .sign-in-help a { color: var(--admin-ink); font-weight: 500; text-decoration: underline; text-decoration-color: var(--admin-line-strong); text-underline-offset: 3px; }
+.kcpl-admin-content .sign-in-footer { width: min(360px, 100%); margin: 0 auto; padding: 20px 0 calc(20px + env(safe-area-inset-bottom, 0px)); color: var(--admin-faint); font-size: var(--app-text-sm); }
+@media (pointer: coarse) {
+  .kcpl-admin-content .sign-in-password-toggle { width: 44px; height: 44px; right: 0; }
+  .kcpl-admin-content .sign-in-password input { padding-right: 48px; }
+  .kcpl-admin-content .sign-in-link { min-height: 32px; }
 }
-.kcpl-admin-content .portal-login-head { display: flex; align-items: center; gap: var(--app-space-3); }
-.kcpl-admin-content .portal-login-head h1 { margin: 0; font-size: var(--app-text-2xl); font-weight: 600; letter-spacing: -.02em; }
-.kcpl-admin-content .portal-login-eyebrow { margin: 0 0 2px; color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 500; }
-.kcpl-admin-content .portal-login-intro { margin: var(--app-space-4) 0 0; color: var(--admin-muted); font-size: var(--app-text-md); line-height: 21px; }
-.kcpl-admin-content .portal-login-form { display: grid; gap: var(--app-space-4); margin-top: var(--app-space-5); }
-.kcpl-admin-content .portal-login-email { display: grid; gap: var(--app-space-4); }
-.kcpl-admin-content .portal-login-providers { display: grid; gap: 10px; }
-.kcpl-admin-content .portal-login-provider { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 16px; border: 1px solid var(--admin-line-strong); border-radius: var(--app-radius); background: var(--admin-surface); color: var(--admin-ink); font-size: 15px; font-weight: 500; line-height: 20px; cursor: pointer; transition: background-color var(--app-duration-fast) var(--app-ease-out), transform 100ms var(--app-ease-out); }
-.kcpl-admin-content .portal-login-provider[data-provider="apple"] { border-color: #000; background: #000; color: #fff; }
-.kcpl-admin-content .portal-login-provider:active:not(:disabled) { transform: scale(.98); }
-.kcpl-admin-content .portal-login-provider:disabled { opacity: .6; cursor: default; }
-.kcpl-admin-content .portal-login-divider { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--admin-faint); font-size: var(--app-text-sm); }
-.kcpl-admin-content .portal-login-divider::before,
-.kcpl-admin-content .portal-login-divider::after { content: ""; flex: 1; border-top: 1px solid var(--admin-line); }
 @media (prefers-reduced-motion: reduce) {
-  .kcpl-admin-content .portal-login-provider:active:not(:disabled) { transform: none; }
+  .kcpl-admin-content .sign-in-provider:active:not(:disabled) { transform: none; }
 }
-.kcpl-admin-content .portal-login-messages { display: grid; gap: 6px; }
-.kcpl-admin-content .portal-login-error { margin: 0; border: 1px solid var(--admin-danger-line); border-radius: var(--app-radius); background: var(--admin-danger-bg); padding: 10px 12px; color: var(--admin-danger); font-size: var(--app-text-base); font-weight: 500; }
-.kcpl-admin-content .portal-login-notice { margin: var(--app-space-3) 0 0; border: 1px solid var(--admin-info-line); border-radius: var(--app-radius); background: var(--admin-info-bg); padding: 10px 12px; color: var(--admin-info); font-size: var(--app-text-base); font-weight: 500; }
-.kcpl-admin-content .portal-login-submit { width: 100%; }
-.kcpl-admin-content .portal-login-link { justify-self: center; min-height: 44px; padding-inline: 12px; border: 0; background: none; color: var(--admin-muted); font-size: var(--app-text-base); font-weight: 500; text-decoration: underline; cursor: pointer; }
-.kcpl-admin-content .portal-login-footnote { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--app-space-3); margin-top: var(--app-space-5); border-top: 1px solid var(--admin-line); padding-top: var(--app-space-4); color: var(--admin-faint); font-size: var(--app-text-sm); }
-.kcpl-admin-content .portal-login-footnote span { display: inline-flex; align-items: center; gap: 6px; }
-.kcpl-admin-content .portal-login-footnote a { display: inline-flex; align-items: center; min-height: 44px; color: var(--admin-ink); font-weight: 500; }
-.kcpl-admin-content .portal-password-control { position: relative; display: block; }
-.kcpl-admin-content .portal-password-control input { padding-right: 44px; }
-.kcpl-admin-content .portal-password-toggle { position: absolute; top: 50%; right: 4px; display: grid; place-items: center; width: 44px; height: 44px; transform: translateY(-50%); border: 0; border-radius: var(--app-radius-sm); background: none; color: var(--admin-muted); cursor: pointer; }
 
 @media (hover: hover) and (pointer: fine) {
   .portal-nav-link:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
   .portal-signout:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
-  .kcpl-admin-content .portal-password-toggle:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+  .kcpl-admin-content .sign-in-password-toggle:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+  .kcpl-admin-content :is(.sign-in-link, .sign-in-help a):hover { color: var(--admin-ink); text-decoration-color: currentColor; }
+  .kcpl-admin-content .sign-in-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 
 @media (max-width: 860px) {
@@ -1697,7 +1702,6 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
   .portal-nav { order: 3; width: 100%; padding-bottom: 2px; }
   .portal-account-meta { display: none; }
   .portal-footer { padding-inline: var(--app-space-4); }
-  .kcpl-admin-content .portal-login-card { padding: var(--app-space-5); }
   .kcpl-admin-content .portal-document-list li { flex-wrap: wrap; }
   /* The words stay beside their icon; the buttons drop to one line under them. */
   .kcpl-admin-content .portal-document-list li > .portal-document-main { flex: 1 1 calc(100% - 44px); margin-right: 0; }
