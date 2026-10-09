@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { nepalOperationalDate } from "../../invoice-effective-status";
 import { nepalFiscalYear } from "../../nepali-calendar";
@@ -8,7 +8,7 @@ import { applySettlementPayment, resolveSettlementBasis } from "../financial-set
 import { readAllDocuments } from "../firestore-scan";
 import { mockCustomerCredits, qaMockDataEnabled } from "../qa-fixtures";
 import type { KcplStaffContext } from "../staff-directory.server";
-import { CUSTOMER_CREDITS, CUSTOMER_REFUNDS, nextTaxDocumentNumber, writeCreditEvent } from "./customer-credit-ledger.server";
+import { CUSTOMER_CREDITS, CUSTOMER_REFUNDS, nextTaxDocumentNumber, writeCreditEvent, writeNewCustomerCredit } from "./customer-credit-ledger.server";
 import {
   financePaymentMethods,
   type FinanceCreditEvent,
@@ -68,6 +68,9 @@ function creditFromDoc(id: string, data: Record<string, unknown>): FinanceCustom
     source_invoice_number: text(data.source_invoice_number) || text(data.source_invoice_reference),
     source_document: nullable(data.source_document),
     note: nullable(data.note),
+    receipt_number: nullable(data.receipt_number),
+    received_on: nullable(data.received_on),
+    linked_invoice_reference: nullable(data.linked_invoice_reference),
     created_by_name: text(data.created_by_name, "KCPL Accounts"),
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
@@ -394,4 +397,86 @@ export async function applyCustomerCredit(creditId: string, input: { invoiceRefe
     await writeCustomerActivity(result.customerId, `Credit used on ${result.invoiceNumber}`, `${money(result.amount, result.currency)} · ${money(result.remaining, result.currency)} still owed`, actor);
   }
   return result;
+}
+
+type AdvanceInput = {
+  customerId: string;
+  currency: string;
+  amount: number;
+  receivedOn: string;
+  method: string;
+  reference: string;
+  notes: string;
+  /** A draft invoice (shown to the customer as a proforma) the advance is for. */
+  forInvoiceReference: string;
+  idempotencyKey: string;
+};
+
+/**
+ * Money a customer pays before they are invoiced. It is held as their credit
+ * under a numbered receipt; if it is for a draft invoice, it is used on that
+ * invoice the moment the invoice is issued, and otherwise it can be used on
+ * any of their invoices or refunded like any other credit.
+ */
+export async function recordAdvance(input: AdvanceInput, actor: Actor, context: KcplStaffContext) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  if (!context.permissions.canManageFinance) return { kind: "forbidden" as const };
+  const customerId = input.customerId.trim().toUpperCase();
+  if (!customerId) return { kind: "missing" as const };
+  const currency = input.currency.trim().toUpperCase();
+  if (!crmCurrencies.includes(currency as CrmCurrency)) return { kind: "invalid_currency" as const };
+  const amount = Math.round(Number(input.amount) * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) return { kind: "invalid_amount" as const };
+  if (!(refundMethods as readonly string[]).includes(input.method)) return { kind: "invalid_method" as const };
+  const today = nepalOperationalDate();
+  const receivedOn = input.receivedOn.trim() || today;
+  if (!validDate(receivedOn) || receivedOn > today) return { kind: "invalid_date" as const };
+  const fiscalYear = nepalFiscalYear(receivedOn);
+  if (!fiscalYear) return { kind: "invalid_date" as const };
+  const forInvoice = input.forInvoiceReference.trim().toUpperCase();
+  const key = input.idempotencyKey.trim() || randomBytes(12).toString("hex");
+  const creditId = `advance-${createHash("sha256").update(`${customerId}|${key}`).digest("hex").slice(0, 32)}`;
+
+  const db = firebaseAdminDb();
+  const creditRef = db.collection(CUSTOMER_CREDITS).doc(creditId);
+  const result = await db.runTransaction(async (transaction) => {
+    const [existing, customer, invoice] = await Promise.all([
+      transaction.get(creditRef),
+      transaction.get(db.collection("customers").doc(customerId)),
+      forInvoice ? transaction.get(db.collection("invoices").doc(forInvoice)) : Promise.resolve(null),
+    ]);
+    if (existing.exists) return { kind: "idempotent" as const, creditId, receiptNumber: text(existing.get("receipt_number")), customerId };
+    if (!customer.exists) return { kind: "missing" as const };
+    const branch = strictBranchValue(customer.get("primary_branch"));
+    if (!branch || !canAccessBranchValue(context, branch)) return { kind: "forbidden" as const };
+    if (invoice) {
+      if (!invoice.exists || text(invoice.get("customer_id")).toUpperCase() !== customerId) return { kind: "invoice_mismatch" as const };
+      if (text(invoice.get("status")) !== "draft") return { kind: "invoice_not_draft" as const };
+      if (text(invoice.get("currency")) !== currency) return { kind: "currency_mismatch" as const };
+    }
+    const series = await nextTaxDocumentNumber(transaction, "advance", fiscalYear);
+    const now = new Date().toISOString();
+    series.commit();
+    writeNewCustomerCredit(transaction, {
+      id: creditId, customerId, customerName: text(customer.get("display_name")) || text(customer.get("legal_name")) || customerId,
+      branch, currency, amount, source: "advance",
+      sourceInvoiceReference: forInvoice, sourceInvoiceNumber: forInvoice ? `${forInvoice} (proforma)` : series.number,
+      sourceDocument: series.number, note: input.notes.trim().slice(0, 500) || null, actor, now,
+      advance: { receiptNumber: series.number, receivedOn, method: input.method, paymentReference: input.reference.trim().slice(0, 200) || null, linkedInvoiceReference: forInvoice || null },
+    });
+    return { kind: "created" as const, creditId, receiptNumber: series.number, customerId };
+  });
+  if (result.kind === "created") {
+    await recomputeCustomerFinance(result.customerId).catch(() => undefined);
+    await writeCustomerActivity(result.customerId, `Advance received: ${result.receiptNumber}`, `${money(amount, currency)}${forInvoice ? ` for ${forInvoice}` : ""}`, actor);
+  }
+  return result;
+}
+
+/** Advances held for a draft invoice, shown on it and applied when it is issued. */
+export async function advancesForInvoice(invoiceReference: string) {
+  if (qaMockDataEnabled() || !firebaseRuntimeConfigured()) return [];
+  const snapshot = await firebaseAdminDb().collection(CUSTOMER_CREDITS)
+    .where("linked_invoice_reference", "==", invoiceReference.trim().toUpperCase()).get();
+  return snapshot.docs.map((doc) => creditFromDoc(doc.id, doc.data() as Record<string, unknown>));
 }

@@ -121,7 +121,8 @@ test("the statement counts only money received, lists refunds and says what is h
   assert.equal(npr.refunded, 4_000);
   assert.equal(npr.creditHeld, 6_000);
   assert.equal(npr.refunds[0].number, "KCPL/RF/2083-84/00001");
-  assert.match(read("app/portal/portal-statement.server.ts"), /invoiceLedgerKind\(row\.get\("kind"\)\) === "payment"/);
+  // Cash and TDS the customer withheld settle the invoice; credit moving in or out of it isn't money received.
+  assert.match(read("app/portal/portal-statement.server.ts"), /\["payment", "tds_withheld"\]\.includes\(invoiceLedgerKind\(row\.get\("kind"\)\)\)/);
 });
 
 // Wiring
@@ -145,7 +146,7 @@ test("credit notes on paid invoices and kept overpayments create the credit in t
   const finance = read("app/admin/finance/finance.server.ts");
   assert.match(finance, /export async function createCreditNote[\s\S]{0,3500}writeNewCustomerCredit\(transaction/);
   const settlement = read("app/admin/financial-settlement/receivables-settlement.server.ts");
-  assert.match(settlement, /paymentAllocation\(settled \? 0 : outstanding, input\.amount, keepExcess\)/);
+  assert.match(settlement, /settlementWithTds\(settled \? 0 : outstanding, input\.amount, tdsRequested, keepExcess\)/);
   assert.match(settlement, /writeNewCustomerCredit\(transaction/);
   // Online payments are never kept as credit automatically: accounts review them.
   assert.doesNotMatch(read("app/payments/payments.server.ts"), /keepExcessAsCredit/);

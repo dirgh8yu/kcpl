@@ -4,6 +4,7 @@ import { OperationsShell } from "../../../operations-shell";
 import { getStaffContext } from "../../../staff-directory.server";
 import { V4WorkspaceGate } from "../../../v4-workspace-gate";
 import { companyPan, getFinanceInvoice } from "../../finance.server";
+import { advancesForInvoice } from "../../customer-credits.server";
 import { mockFinanceDashboard, qaMockDataEnabled } from "../../../qa-fixtures";
 import { InvoiceWorkspace } from "./invoice-workspace";
 import { recordTitle } from "../../../../record-title";
@@ -48,7 +49,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
     return [];
   });
 
-  return <OperationsShell {...shellProps} detailLabel={result.invoice.tax_invoice_number ?? undefined}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} companyPan={companyPan()}/></OperationsShell>;
+  // Advances paid against a draft, shown on it as a proforma.
+  const advances = result.invoice.status === "draft" ? await advancesForInvoice(result.invoice.reference).catch(() => []) : [];
+
+  return <OperationsShell {...shellProps} detailLabel={result.invoice.tax_invoice_number ?? undefined}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} companyPan={companyPan()} advances={advances}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

@@ -42,6 +42,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     notes: typeof body.notes === "string" ? body.notes : "",
     currency: typeof body.currency === "string" ? body.currency : null,
     idempotencyKey,
+    withheldTax: Number(body.tdsAmount) > 0 ? { amount: Number(body.tdsAmount) } : null,
   }, { name: access.user.displayName, email: access.user.email }, staff);
 
   if (result.kind === "updated" || result.kind === "idempotent") return json({ ok: true, idempotent: result.kind === "idempotent" });

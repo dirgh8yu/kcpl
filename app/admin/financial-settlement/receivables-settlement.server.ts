@@ -4,7 +4,8 @@ import { crmCurrencies } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { recomputeCustomerFinance } from "../finance/finance.server";
 import { writeMovedToCredit, writeNewCustomerCredit } from "../finance/customer-credit-ledger.server";
-import { paymentAllocation } from "../finance/refund-policy";
+import { settlementWithTds } from "../finance/withheld-tax-policy";
+import { writeWithheldTax } from "../finance/withheld-tax-ledger.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import {
   applySettlementPayment,
@@ -26,6 +27,8 @@ type PaymentInput = {
   idempotencyKey?: string | null;
   /** Accounts chose to keep anything above what is owed as the customer's credit. Without it, more than is owed is refused. */
   keepExcessAsCredit?: boolean;
+  /** TDS the customer withheld from this payment and deposited with the tax office. */
+  withheldTax?: { amount: number; certificateNumber: string } | null;
 };
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
@@ -115,7 +118,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     // used to be refused as an overpayment or as already paid.
     const requestFingerprint = settlementRequestFingerprint({
       accountReference: normalizedReference, amount: input.amount, currency: invoiceCurrency, paymentDate, method: input.method,
-      externalReference: input.reference,
+      externalReference: input.withheldTax?.amount ? `${input.reference}|tds:${input.withheldTax.amount}` : input.reference,
     });
     const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "");
     const paymentRef = invoiceRef.collection("payments").doc(paymentId);
@@ -134,12 +137,15 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     const keepExcess = input.keepExcessAsCredit === true;
     const outstanding = numberValue(invoice.balance_due);
     const settled = currentStatus === "paid" || outstanding <= 0;
+    const tdsRequested = input.withheldTax?.amount ?? 0;
     // Money for an invoice already settled (paid twice, say) can still be
     // received, but only into the customer's credit, and only when asked.
-    if (settled && !keepExcess) return { kind: "already_paid" as const };
+    // TDS can never be withheld from nothing.
+    if (settled && (!keepExcess || tdsRequested > 0)) return { kind: "already_paid" as const };
     if (!["issued", "partially_paid", "overdue", ...(keepExcess ? ["paid"] : [])].includes(currentStatus)) return { kind: "invalid_status" as const };
-    const allocation = paymentAllocation(settled ? 0 : outstanding, input.amount, keepExcess);
-    if (!allocation.ok) return { kind: allocation.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+    const split = settlementWithTds(settled ? 0 : outstanding, input.amount, tdsRequested, keepExcess);
+    if (!split.ok) return { kind: split.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+    const allocation = { amount: split.cash, applied: split.applied, excess: split.excess };
 
     let nextPaid = numberValue(invoice.amount_paid);
     let nextOutstanding = settled ? 0 : outstanding;
@@ -160,12 +166,30 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     const now = new Date().toISOString();
     const nextStatus = nextOutstanding <= 0.00001 ? "paid" : text(invoice.due_date) < operationalDate() ? "overdue" : "partially_paid";
     const creditId = allocation.excess > 0 ? `credit-${paymentId}` : null;
-    transaction.create(paymentRef, {
+    // TDS is its own row: it settles the invoice but no cash came in. With no
+    // cash at all, it takes the payment's own id so a retry is still caught.
+    const tdsRowId = split.tds > 0 ? (split.cash > 0 ? `${paymentId}-tds` : paymentId) : null;
+    if (tdsRowId) {
+      const certificateNumber = (input.withheldTax?.certificateNumber ?? "").trim().slice(0, 120);
+      transaction.create(invoiceRef.collection("payments").doc(tdsRowId), {
+        kind: "tds_withheld", invoice_reference: normalizedReference, amount: split.tds, currency: invoiceCurrency, payment_date: paymentDate,
+        method: "adjustment", reference: certificateNumber || null, notes: "TDS withheld by the customer", tds_certificate_number: certificateNumber || null,
+        request_fingerprint: requestFingerprint, idempotency_key: input.idempotencyKey?.trim() || null,
+        recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
+      });
+      writeWithheldTax(transaction, {
+        id: `invoice-${normalizedReference}-${tdsRowId}`, direction: "by_customer", documentKind: "invoice", documentReference: normalizedReference,
+        documentNumber: text(invoice.tax_invoice_number) || normalizedReference, ledgerRowId: tdsRowId, counterpartyId: customerId,
+        counterpartyName: text(invoice.customer_name, "Customer"), counterpartyPan: nullable(invoice.customer_tax_id), branch, currency: invoiceCurrency,
+        amount: split.tds, settledAmount: split.applied, withheldOn: paymentDate, certificateNumber, actor, now,
+      });
+    }
+    if (split.cash > 0) transaction.create(paymentRef, {
       kind: "payment",
       invoice_reference: normalizedReference, amount: allocation.amount, currency: invoiceCurrency, payment_date: paymentDate, method: input.method,
       reference: input.reference.trim() || null, notes: input.notes.trim() || null, request_fingerprint: requestFingerprint,
       idempotency_key: input.idempotencyKey?.trim() || null, balance_before: settled ? 0 : outstanding,
-      balance_after: nextOutstanding, applied_amount: allocation.applied, excess_to_credit: allocation.excess, customer_credit_id: creditId,
+      balance_after: nextOutstanding, applied_amount: Math.round((allocation.applied - split.tds) * 100) / 100, excess_to_credit: allocation.excess, customer_credit_id: creditId,
       settlement_basis_amount: basisAmount, settlement_basis_currency: invoiceCurrency,
       settlement_basis_version: 1, recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
     });
@@ -192,7 +216,7 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     return {
       kind: "updated" as const, paymentId, customerId, shipmentReference,
       currency: invoiceCurrency, amount: applied.amount, remaining: applied.nextOutstanding,
-      excessToCredit: applied.excess, customerCreditId: applied.creditId,
+      excessToCredit: applied.excess, customerCreditId: applied.creditId, tds: split.tds,
     };
   });
 

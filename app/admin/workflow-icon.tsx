@@ -1,8 +1,10 @@
 import {
+  ArrowLeftRight,
   BarChart2,
   BarChart3,
   Bell,
   BellRing,
+  BookOpen,
   Calendar,
   CheckSquare,
   ClipboardList,
@@ -12,6 +14,7 @@ import {
   Folder,
   Globe,
   Home,
+  Landmark,
   Layers,
   Map,
   MessageSquare,
@@ -26,6 +29,7 @@ import {
   Undo2,
   Users,
   Users2,
+  Wallet,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -60,6 +64,10 @@ const workspaceIcons: Record<WorkspaceIconName, LucideIcon> = {
   BarChart2,
   Database,
   Users2,
+  Landmark,
+  BookOpen,
+  Wallet,
+  ArrowLeftRight,
 };
 
 export function WorkspaceIcon({ name, size = 16 }: { name: WorkspaceIconName; size?: number }) {

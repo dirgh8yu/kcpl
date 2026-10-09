@@ -31,12 +31,13 @@ async function statementFor(customerId: string, asOf = nepalOperationalDate()): 
   const payments: StatementPayment[] = (await Promise.all(paid.map(async (doc) => {
     const rows = await doc.ref.collection("payments").limit(100).get();
     const invoice = [doc.get("tax_invoice_number"), doc.get("external_invoice_number")].find((value) => typeof value === "string" && value) as string | undefined ?? doc.id;
-    return rows.docs.filter((row: FirebaseFirestore.QueryDocumentSnapshot) => invoiceLedgerKind(row.get("kind")) === "payment").map((row: FirebaseFirestore.QueryDocumentSnapshot): StatementPayment => ({
+    // TDS the customer withheld settles the invoice as far as they are concerned, so it is listed with what they paid.
+    return rows.docs.filter((row: FirebaseFirestore.QueryDocumentSnapshot) => ["payment", "tds_withheld"].includes(invoiceLedgerKind(row.get("kind")))).map((row: FirebaseFirestore.QueryDocumentSnapshot): StatementPayment => ({
       invoice,
       date: String(row.get("payment_date") || row.get("created_at") || "").slice(0, 10),
       amount: Number(row.get("amount") ?? 0),
       currency: String(row.get("currency") ?? doc.get("currency") ?? "NPR"),
-      method: String(row.get("method") ?? ""),
+      method: invoiceLedgerKind(row.get("kind")) === "tds_withheld" ? "TDS withheld" : String(row.get("method") ?? ""),
       reference: typeof row.get("reference") === "string" ? String(row.get("reference")) : null,
     }));
   }))).flat();

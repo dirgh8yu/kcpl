@@ -35,7 +35,11 @@ export type WorkspaceIconName =
   | "Scale"
   | "BarChart2"
   | "Database"
-  | "Users2";
+  | "Users2"
+  | "Landmark"
+  | "BookOpen"
+  | "Wallet"
+  | "ArrowLeftRight";
 
 /*
  * The sidebar shows a handful of hubs, not every page. Pages that serve one
@@ -136,6 +140,10 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "receivables", href: "/admin/finance", label: "Receivables", hub: "finance", tab: "Receivables", group: "Finance", hint: "Customer invoices and who owes what", keywords: ["receivable", "invoice", "customer billing", "collections"], permission: "finance", icon: "CreditCard", prefixes: ["/admin/finance"] },
   { id: "credits", href: "/admin/finance/credits", label: "Credits & refunds", hub: "finance", tab: "Credits & refunds", group: "Finance", hint: "Money held for customers, and paying it back", keywords: ["refund", "credit", "customer credit", "overpayment", "paid twice", "money back", "credit note"], permission: "finance", icon: "Undo2", prefixes: ["/admin/finance/credits"] },
   { id: "payables", href: "/admin/payables", label: "Payables", hub: "finance", tab: "Payables", group: "Finance", hint: "Supplier bills and what we owe", keywords: ["payable", "supplier bill", "ap", "payment"], permission: "finance", icon: "Receipt", prefixes: ["/admin/payables"] },
+  { id: "bank", href: "/admin/finance/bank", label: "Bank", hub: "finance", tab: "Bank", group: "Finance", hint: "Upload the bank statement and match receipts to invoices", keywords: ["bank", "statement", "reconcile", "bank reconciliation", "match receipt", "csv"], permission: "finance", icon: "Landmark", prefixes: ["/admin/finance/bank"] },
+  { id: "cash-flow", href: "/admin/finance/cash-flow", label: "Cash flow", hub: "finance", tab: "Cash flow", group: "Finance", hint: "Money in and out over the next 13 weeks", keywords: ["cash flow", "forecast", "cash position", "liquidity", "weeks"], permission: "finance", icon: "ArrowLeftRight", prefixes: ["/admin/finance/cash-flow"] },
+  { id: "tax-books", href: "/admin/finance/tax", label: "Tax & books", hub: "finance", tab: "Tax & books", group: "Finance", hint: "VAT books, TDS and the Tally export by Nepali month", keywords: ["vat", "tds", "tax", "sales book", "purchase book", "tally", "ird", "vat return", "withholding"], permission: "finance", icon: "BookOpen", prefixes: ["/admin/finance/tax"] },
+  { id: "staff-cash", href: "/admin/finance/staff-cash", label: "Staff cash", hub: "finance", tab: "Staff cash", group: "Finance", hint: "Cash given to staff, their receipts and settling up", keywords: ["staff cash", "petty cash", "advance", "imprest", "field cash", "receipts"], permission: "finance", icon: "Wallet", prefixes: ["/admin/finance/staff-cash"] },
   { id: "freight-audit", href: "/admin/freight-audit", label: "Supplier bill checks", hub: "finance", tab: "Bill checks", group: "Finance", hint: "Check supplier bills against what we booked before paying", keywords: ["freight audit", "match pay", "match-pay", "variance", "supplier invoice", "overcharge"], permission: "finance", icon: "Scale", prefixes: ["/admin/freight-audit"] },
   { id: "supplier-reconciliation", href: "/admin/partners/reconciliation", label: "Supplier records", hub: "finance", tab: "Supplier records", group: "Finance", hint: "Tidy supplier details and link old bills", keywords: ["supplier", "reconciliation", "supplier reconciliation", "legacy", "bills"], permission: "finance", icon: "Scale", prefixes: ["/admin/partners/reconciliation"] },
 

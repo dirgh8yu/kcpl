@@ -11,6 +11,8 @@ import { canAccessPartnerOwner, isPartnerReference, partnerOwnerCompatibleWithBr
 import type { CreatePayableInput } from "../payables/payables-data";
 import { normalizeSupplierBillReference, payableDateError, supplierIdentityKey, validPayableCalendarDate } from "../payables/payables-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
+import { settlementWithTds } from "../finance/withheld-tax-policy";
+import { writeWithheldTax } from "../finance/withheld-tax-ledger.server";
 import {
   applySettlementPayment,
   freightAuditEconomicFingerprint,
@@ -33,6 +35,8 @@ type PaymentInput = {
   notes: string;
   currency?: string | null;
   idempotencyKey?: string | null;
+  /** TDS KCPL withheld from this payment, owed to the tax office by the 25th of the next Nepali month. */
+  withheldTax?: { amount: number } | null;
 };
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
@@ -228,16 +232,19 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     const billBranch = strictBranchValue(bill.branch);
     if (!billBranch || !canAccess(context, billBranch)) return { kind: "forbidden" as const };
     const supplierId = nullable(bill.supplier_id)?.toUpperCase() ?? null;
+    let supplierPan: string | null = null;
     if (supplierId && isPartnerReference(supplierId)) {
       const supplier = await transaction.get(db.collection("partners").doc(supplierId));
       if (!supplier.exists || !partnerOwnerCompatibleWithBranch(supplier.get("owner_branch"), billBranch)) return { kind: "relationship_mismatch" as const };
+      supplierPan = nullable(supplier.get("tax_id"));
     }
     const billCurrency = normalizeSettlementCurrency(bill.currency);
     if (!billCurrency || !crmCurrencies.includes(billCurrency as (typeof crmCurrencies)[number])) return { kind: "invalid_financial_state" as const, reason: "invalid_currency" as const };
     if (requestCurrency && !settlementCurrenciesMatch(requestCurrency, billCurrency)) return { kind: "currency_mismatch" as const };
 
     // A retry is recognised before the balance is checked again, as for receivables.
-    const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: input.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: input.reference });
+    const tdsRequested = input.withheldTax?.amount ?? 0;
+    const requestFingerprint = settlementRequestFingerprint({ accountReference: normalizedReference, amount: input.amount, currency: billCurrency, paymentDate, method: input.method, externalReference: tdsRequested ? `${input.reference}|tds:${tdsRequested}` : input.reference });
     const paymentId = paymentDocumentId(normalizedReference, input.idempotencyKey?.trim() ?? "");
     const paymentRef = billRef.collection("payments").doc(paymentId);
     const existingPayment = await transaction.get(paymentRef);
@@ -255,7 +262,10 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
     if (!["approved", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
     const basisResult = resolveSettlementBasis({ subtotal: bill.subtotal, taxes: bill.tax_total, adjustments: bill.adjustment_total, credits: bill.credit_total, storedTotal: bill.total, amountAlreadyPaid: bill.amount_paid, storedOutstanding: bill.balance_due });
     if (!basisResult.ok) return { kind: "invalid_financial_state" as const, reason: basisResult.reason };
-    const applied = applySettlementPayment(basisResult.basis, input.amount);
+    // Cash paid and TDS withheld together settle the bill.
+    const split = settlementWithTds(basisResult.basis.outstandingAmount, input.amount, tdsRequested);
+    if (!split.ok) return { kind: split.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+    const applied = applySettlementPayment(basisResult.basis, split.applied);
     if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
 
 
@@ -304,8 +314,22 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
 
     const now = new Date().toISOString();
     const nextStatus = applied.nextOutstanding <= 0.00001 ? "paid" : text(bill.due_date) < operationalDate() ? "overdue" : "partially_paid";
-    transaction.create(paymentRef, {
-      payable_reference: normalizedReference, amount: applied.amount, currency: billCurrency, payment_date: paymentDate, method: input.method,
+    const tdsRowId = split.tds > 0 ? (split.cash > 0 ? `${paymentId}-tds` : paymentId) : null;
+    if (tdsRowId) {
+      transaction.create(billRef.collection("payments").doc(tdsRowId), {
+        kind: "tds_withheld", payable_reference: normalizedReference, amount: split.tds, currency: billCurrency, payment_date: paymentDate,
+        method: "adjustment", reference: null, notes: "TDS withheld by KCPL, owed to the tax office", request_fingerprint: requestFingerprint,
+        idempotency_key: input.idempotencyKey?.trim() || null, recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
+      });
+      writeWithheldTax(transaction, {
+        id: `payable-${normalizedReference}-${tdsRowId}`, direction: "by_kcpl", documentKind: "payable", documentReference: normalizedReference,
+        documentNumber: text(bill.supplier_bill_reference) || normalizedReference, ledgerRowId: tdsRowId, counterpartyId: supplierId,
+        counterpartyName: text(bill.supplier_name, "Supplier"), counterpartyPan: supplierPan, branch: billBranch, currency: billCurrency,
+        amount: split.tds, settledAmount: split.applied, withheldOn: paymentDate, certificateNumber: "", actor, now,
+      });
+    }
+    if (split.cash > 0) transaction.create(paymentRef, {
+      kind: "payment", payable_reference: normalizedReference, amount: split.cash, currency: billCurrency, payment_date: paymentDate, method: input.method,
       reference: input.reference.trim() || null, notes: input.notes.trim() || null, request_fingerprint: requestFingerprint,
       idempotency_key: input.idempotencyKey?.trim() || null, approved_settlement_amount: basisResult.basis.totalPayable,
       approved_settlement_currency: billCurrency, settlement_basis_version: 1, balance_before: basisResult.basis.outstandingAmount,
@@ -322,7 +346,7 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       last_payment_commercial_version_id: commercialVersionId, last_payment_commercial_fingerprint: commercialFingerprint,
       updated_at: now,
     });
-    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId, commercialVersionId, commercialFingerprint };
+    return { kind: "updated" as const, paymentId, currency: billCurrency, amount: applied.amount, remaining: applied.nextOutstanding, shipmentReference, supplierId, commercialVersionId, commercialFingerprint, tds: split.tds };
   });
 
   if (outcome.kind === "updated") {

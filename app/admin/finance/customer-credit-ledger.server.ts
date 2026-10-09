@@ -63,6 +63,8 @@ export function writeNewCustomerCredit(transaction: FirebaseFirestore.Transactio
   note: string | null;
   actor: Actor;
   now: string;
+  /** An advance's receipt and the draft invoice it is for. */
+  advance?: { receiptNumber: string; receivedOn: string; method: string; paymentReference: string | null; linkedInvoiceReference: string | null };
 }) {
   const ref = firebaseAdminDb().collection(CUSTOMER_CREDITS).doc(input.id);
   transaction.create(ref, {
@@ -81,6 +83,11 @@ export function writeNewCustomerCredit(transaction: FirebaseFirestore.Transactio
     source_invoice_number: input.sourceInvoiceNumber,
     source_document: input.sourceDocument,
     note: input.note,
+    receipt_number: input.advance?.receiptNumber ?? null,
+    received_on: input.advance?.receivedOn ?? null,
+    method: input.advance?.method ?? null,
+    payment_reference: input.advance?.paymentReference ?? null,
+    linked_invoice_reference: input.advance?.linkedInvoiceReference ?? null,
     created_by_name: input.actor.name,
     created_by_email: input.actor.email,
     created_at: input.now,
@@ -91,7 +98,9 @@ export function writeNewCustomerCredit(transaction: FirebaseFirestore.Transactio
     amount: input.amount,
     detail: input.source === "credit_note"
       ? `From credit note ${input.sourceDocument ?? ""} on ${input.sourceInvoiceNumber}, already paid`.replace("  ", " ")
-      : `Paid more than ${input.sourceInvoiceNumber} owed${input.sourceDocument ? ` (${input.sourceDocument})` : ""}`,
+      : input.source === "advance"
+        ? `Advance received, receipt ${input.advance?.receiptNumber ?? ""}${input.advance?.linkedInvoiceReference ? `, for ${input.sourceInvoiceNumber}` : ""}${input.advance?.paymentReference ? ` (${input.advance.paymentReference})` : ""}`
+        : `Paid more than ${input.sourceInvoiceNumber} owed${input.sourceDocument ? ` (${input.sourceDocument})` : ""}`,
     refund_id: null,
     invoice_reference: input.sourceInvoiceReference,
   }, input.actor, input.now);

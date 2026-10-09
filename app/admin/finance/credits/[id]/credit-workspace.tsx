@@ -62,7 +62,9 @@ export function CreditWorkspace({ credit, refunds, history, openInvoices, viewer
     <OpsPageHeader
       eyebrow="Customer credit"
       title={<span className="inline-flex flex-wrap items-center gap-2">{credit.customer_name}<OpsBadge tone={credit.status === "open" ? "info" : "neutral"} dot>{credit.status === "open" ? `${money(held, credit.currency)} held` : "Settled"}</OpsBadge></span>}
-      description={<>{customerCreditSourceLabels[credit.source]}: <Link href={`/admin/finance/invoices/${encodeURIComponent(credit.source_invoice_reference)}`} className="ops-cell-link"><OpsMono>{credit.source_invoice_number}</OpsMono></Link>{credit.source_document ? <> · {credit.source_document}</> : null}</>}
+      description={credit.source === "advance"
+        ? <>Advance payment: receipt <OpsMono>{credit.receipt_number ?? credit.source_document ?? "—"}</OpsMono>{credit.linked_invoice_reference ? <> · for <Link href={`/admin/finance/invoices/${encodeURIComponent(credit.linked_invoice_reference)}`} className="ops-cell-link"><OpsMono>{credit.linked_invoice_reference}</OpsMono></Link>, used on it when it is issued</> : null}</>
+        : <>{customerCreditSourceLabels[credit.source]}: <Link href={`/admin/finance/invoices/${encodeURIComponent(credit.source_invoice_reference)}`} className="ops-cell-link"><OpsMono>{credit.source_invoice_number}</OpsMono></Link>{credit.source_document ? <> · {credit.source_document}</> : null}</>}
     />
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}

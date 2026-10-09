@@ -1206,7 +1206,7 @@ export function mockCustomerCredits(now = Date.now()) {
   const accounts = { name: "Prakash Adhikari", email: "prakash.adhikari@kcpl.com.np" };
   const credit = (values: Partial<FinanceCustomerCredit> & Pick<FinanceCustomerCredit, "id" | "customer_name" | "amount" | "available" | "source" | "source_invoice_number">): FinanceCustomerCredit => ({
     customer_id: `cust-${values.id}`, branch: "Kathmandu", currency: "NPR", reserved: 0, refunded: 0, applied: 0, status: "open",
-    source_invoice_reference: values.source_invoice_number, source_document: null, note: null,
+    source_invoice_reference: values.source_invoice_number, source_document: null, note: null, receipt_number: null, received_on: null, linked_invoice_reference: null,
     created_by_name: accounts.name, created_at: at(6), updated_at: at(2), ...values,
   });
   const credits: FinanceCustomerCredit[] = [
@@ -1662,6 +1662,7 @@ export function mockPayablesDashboard(staff: KcplStaffContext, now = Date.now())
           ? [{
               id: `appay-${index + 1}`,
               payable_reference: `AP-${job.reference.slice(5)}`,
+              kind: "payment" as const,
               amount: paid,
               currency: "USD" as CrmCurrency,
               payment_date: nepalDay(now, -(index + 1)),

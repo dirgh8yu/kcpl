@@ -104,3 +104,35 @@ export function nepalFiscalYear(ad: string) {
   const start = bs.month >= 4 ? bs.year : bs.year - 1;
   return `${start}-${String((start + 1) % 100).padStart(2, "0")}`;
 }
+
+function adFromDayNumber(day: number) {
+  return new Date(day * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** A BS day as an AD calendar day, or null outside the table or for a day the month doesn't have. */
+export function bsToAd(year: number, month: number, day: number) {
+  const months = BS_MONTH_DAYS.get(year);
+  if (!months || month < 1 || month > 12 || day < 1 || day > months[month - 1]) return null;
+  let offset = 0;
+  for (let y = BS_ANCHOR.year; y < year; y += 1) {
+    const lengths = BS_MONTH_DAYS.get(y);
+    if (!lengths) return null;
+    offset += lengths.reduce((sum, days) => sum + days, 0);
+  }
+  for (let m = 0; m < month - 1; m += 1) offset += months[m];
+  return adFromDayNumber(dayNumber(BS_ANCHOR.ad) + offset + day - 1);
+}
+
+/** The first and last AD days of a BS month, as tax returns are filed by them. */
+export function bsMonthRange(year: number, month: number) {
+  const months = BS_MONTH_DAYS.get(year);
+  if (!months || month < 1 || month > 12) return null;
+  const start = bsToAd(year, month, 1);
+  const end = bsToAd(year, month, months[month - 1]);
+  return start && end ? { start, end, label: `${bsMonthNames[month - 1]} ${year}` } : null;
+}
+
+/** The BS month after this one. */
+export function nextBsMonth(year: number, month: number) {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}

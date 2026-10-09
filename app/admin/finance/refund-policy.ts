@@ -10,12 +10,13 @@
  * never exceeds their total.
  */
 
-export const customerCreditSources = ["credit_note", "overpayment"] as const;
+export const customerCreditSources = ["credit_note", "overpayment", "advance"] as const;
 export type CustomerCreditSource = (typeof customerCreditSources)[number];
 
 export const customerCreditSourceLabels: Record<CustomerCreditSource, string> = {
   credit_note: "Credit note on a paid invoice",
   overpayment: "Paid more than was owed",
+  advance: "Advance payment",
 };
 
 /** How a refund goes out: any way a payment comes in, except a book adjustment. */
@@ -37,13 +38,14 @@ export const refundStatusLabels: Record<RefundStatus, string> = {
  * What a row in an invoice's payments is. A payment is money received; a
  * credit applied is the customer's credit used here; moved to credit takes
  * money already received off this invoice and into the customer's credit
- * (it is negative). The invoice's amount_paid is their sum.
+ * (it is negative); TDS withheld is tax the customer kept back and paid to
+ * the tax office for KCPL. The invoice's amount_paid is their sum.
  */
-export const invoiceLedgerKinds = ["payment", "credit_applied", "moved_to_credit"] as const;
+export const invoiceLedgerKinds = ["payment", "credit_applied", "moved_to_credit", "tds_withheld"] as const;
 export type InvoiceLedgerKind = (typeof invoiceLedgerKinds)[number];
 
 export function invoiceLedgerKind(value: unknown): InvoiceLedgerKind {
-  return value === "credit_applied" || value === "moved_to_credit" ? value : "payment";
+  return value === "credit_applied" || value === "moved_to_credit" || value === "tds_withheld" ? value : "payment";
 }
 
 function money(value: number) {

@@ -31,9 +31,10 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     currency: typeof body.currency === "string" ? body.currency : null,
     idempotencyKey,
     keepExcessAsCredit: body.keepExcessAsCredit === true,
+    withheldTax: Number(body.tdsAmount) > 0 ? { amount: Number(body.tdsAmount), certificateNumber: typeof body.tdsCertificate === "string" ? body.tdsCertificate : "" } : null,
   }, { name: access.user.displayName, email: access.user.email }, staff);
 
-  if (result.kind === "updated") return json({ ok: true, idempotent: false, excessToCredit: result.excessToCredit, customerCredit: result.customerCreditId });
+  if (result.kind === "updated") return json({ ok: true, idempotent: false, excessToCredit: result.excessToCredit, customerCredit: result.customerCreditId, tds: result.tds });
   if (result.kind === "idempotent") return json({ ok: true, idempotent: true });
   if (result.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);

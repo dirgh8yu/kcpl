@@ -29,8 +29,8 @@ import {
   invoiceTotals,
   shipmentBillingCounts,
 } from "./finance-data";
-import { CUSTOMER_CREDITS, nextTaxDocumentNumber, writeMovedToCredit, writeNewCustomerCredit } from "./customer-credit-ledger.server";
-import { creditNoteAllocation, invoiceLedgerKind } from "./refund-policy";
+import { CUSTOMER_CREDITS, nextTaxDocumentNumber, writeCreditEvent, writeMovedToCredit, writeNewCustomerCredit } from "./customer-credit-ledger.server";
+import { applyCreditToInvoice, creditNoteAllocation, customerCreditBalanceFromData, customerCreditOpen, invoiceLedgerKind } from "./refund-policy";
 
 type Actor = { name: string; email: string };
 
@@ -578,13 +578,51 @@ export async function issueFinanceInvoice(reference: string, actor: Actor, conte
   // here, at issue: drafts are working copies, and an issued invoice keeps
   // its number for good, even if it is later voided.
   const issued = await db.runTransaction(async (transaction) => {
-    const [current, customer] = await Promise.all([transaction.get(invoiceRef), transaction.get(customerRef)]);
+    const [current, customer, advances] = await Promise.all([
+      transaction.get(invoiceRef),
+      transaction.get(customerRef),
+      // Advances paid against this invoice as a proforma.
+      transaction.get(db.collection(CUSTOMER_CREDITS).where("linked_invoice_reference", "==", loaded.invoice.reference).where("status", "==", "open")),
+    ]);
     if (!current.exists || current.get("status") !== "draft") return null;
     const series = await nextTaxDocumentNumber(transaction, "invoice", fiscalYear);
     const now = new Date().toISOString();
     series.commit();
+
+    // Each advance in the invoice's currency is used on it, oldest first, up
+    // to what it owes; what is left stays the customer's credit.
+    const total = numberValue(current.get("total"));
+    let paid = numberValue(current.get("amount_paid"));
+    let applied = 0;
+    const currency = text(current.get("currency"));
+    for (const advance of [...advances.docs].sort((a, b) => text(a.get("created_at")).localeCompare(text(b.get("created_at"))))) {
+      if (text(advance.get("currency")) !== currency || text(advance.get("customer_id")) !== text(current.get("customer_id"))) continue;
+      const balance = customerCreditBalanceFromData(advance.data() as Record<string, unknown>);
+      const owed = Math.round((total - paid) * 100) / 100;
+      const take = Math.min(balance.available, owed);
+      if (take <= 0.005) continue;
+      const moved = applyCreditToInvoice(balance, Math.round(take * 100) / 100, owed);
+      if (!moved.ok) continue;
+      paid = Math.round((paid + moved.amount) * 100) / 100;
+      applied = Math.round((applied + moved.amount) * 100) / 100;
+      const rowId = `advance-${advance.id}`;
+      transaction.create(invoiceRef.collection("payments").doc(rowId), {
+        kind: "credit_applied", invoice_reference: loaded.invoice.reference, amount: moved.amount, currency, payment_date: dates.issueDate,
+        method: "adjustment", reference: `Advance ${text(advance.get("receipt_number"))}`.trim(), notes: null, customer_credit_id: advance.id,
+        balance_before: owed, balance_after: Math.round((total - paid) * 100) / 100,
+        recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
+      });
+      transaction.update(advance.ref, { ...moved.next, status: customerCreditOpen(moved.next) ? "open" : "used", updated_at: now });
+      writeCreditEvent(transaction, advance.id, `${rowId}-applied`, {
+        kind: "applied", amount: moved.amount, detail: `${currency} ${moved.amount.toFixed(2)} used on ${series.number} when it was issued`, refund_id: null, invoice_reference: loaded.invoice.reference,
+      }, actor, now);
+    }
+    const balanceDue = Math.round((total - paid) * 100) / 100;
     transaction.update(invoiceRef, {
-      status: nextStatus,
+      amount_paid: paid,
+      balance_due: balanceDue,
+      ...(applied > 0 ? { payment_status: balanceDue <= 0.00001 ? "paid" : "partially_paid", last_payment_at: now } : {}),
+      status: applied > 0 && balanceDue <= 0.00001 ? "paid" : applied > 0 && nextStatus === "issued" ? "partially_paid" : nextStatus,
       issue_date: dates.issueDate,
       due_date: dates.dueDate,
       ...(dates.moved ? { drafted_issue_date: loaded.invoice.issue_date, drafted_due_date: loaded.invoice.due_date } : {}),

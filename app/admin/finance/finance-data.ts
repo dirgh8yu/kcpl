@@ -233,11 +233,11 @@ export function invoiceTotals(lines: readonly InvoiceLineInput[]):
   return { ok: true, lines: priced, subtotal, tax_total: taxTotal, disbursement_total: disbursementTotal, total };
 }
 
-export type TaxDocumentKind = "invoice" | "credit_note" | "refund";
+export type TaxDocumentKind = "invoice" | "credit_note" | "refund" | "advance" | "staff_advance";
 
-const taxDocumentPrefixes: Record<TaxDocumentKind, string> = { invoice: "", credit_note: "CN/", refund: "RF/" };
+const taxDocumentPrefixes: Record<TaxDocumentKind, string> = { invoice: "", credit_note: "CN/", refund: "RF/", advance: "AR/", staff_advance: "SA/" };
 
-/** "KCPL/2083-84/00012" for invoices, "KCPL/CN/2083-84/00003" for credit notes, "KCPL/RF/2083-84/00001" for refunds paid. */
+/** "KCPL/2083-84/00012" for invoices, "KCPL/CN/2083-84/00003" for credit notes, "KCPL/RF/2083-84/00001" for refunds paid, "KCPL/AR/2083-84/00001" for advances received. */
 export function taxDocumentNumber(kind: TaxDocumentKind, fiscalYear: string, sequence: number) {
   return `KCPL/${taxDocumentPrefixes[kind]}${fiscalYear}/${String(sequence).padStart(5, "0")}`;
 }
@@ -262,6 +262,10 @@ export type FinanceCustomerCredit = {
   /** The credit note's number, or the payment's reference. */
   source_document: string | null;
   note: string | null;
+  /** An advance: its receipt, and the draft invoice it is for, applied when that invoice is issued. */
+  receipt_number: string | null;
+  received_on: string | null;
+  linked_invoice_reference: string | null;
   created_by_name: string;
   created_at: string;
   updated_at: string;

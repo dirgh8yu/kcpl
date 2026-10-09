@@ -18,6 +18,8 @@ export const payableStatusLabels: Record<PayableStatus, string> = {
 export type PayablePayment = {
   id: string;
   payable_reference: string;
+  /** Cash paid, or TDS KCPL withheld from it for the tax office. */
+  kind: "payment" | "tds_withheld";
   amount: number;
   currency: CrmCurrency;
   payment_date: string;

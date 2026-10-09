@@ -38,6 +38,7 @@ export const creditErrors: Record<string, [string, number]> = {
   currency_mismatch: ["A credit can only be used on an invoice in the same currency.", 409],
   nothing_owed: ["That invoice owes nothing now.", 409],
   invalid_financial_state: ["That invoice's totals are inconsistent and need Accounts review.", 422],
+  deposit_reference_required: ["Enter the deposit voucher or reference number.", 400],
 };
 
 export function creditError(kind: string) {

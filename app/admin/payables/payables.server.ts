@@ -105,6 +105,7 @@ function paymentFromDoc(payableReferenceValue: string, id: string, data: Record<
   return {
     id,
     payable_reference: payableReferenceValue,
+    kind: data.kind === "tds_withheld" ? "tds_withheld" : "payment",
     amount: numberValue(data.amount),
     currency: currencyValue(data.currency),
     payment_date: text(data.payment_date),
