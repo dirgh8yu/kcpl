@@ -1727,5 +1727,39 @@
         "type": "String"
       }
     }
-  }
+  },
+  "invdIssuedBoth": "Issued {date} ({bsDate})",
+  "@invdIssuedBoth": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "bsDate": {
+        "type": "String"
+      }
+    }
+  },
+  "invdPaidOnBehalf": "Paid on your behalf",
+  "invdInvoiceTotal": "Invoice total",
+  "invdCreditNotes": "Credit notes",
+  "invdMovedToCredit": "Moved to your account credit",
+  "invCreditHeldTitle": "KCPL holds {amount} for you",
+  "@invCreditHeldTitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "invCreditHeldBody": "From a credit note on a paid invoice, or a payment above what was owed. KCPL refunds it or uses it on your next invoice; tell your account manager which you prefer.",
+  "opsTwoStepTitle": "Enter your code",
+  "opsTwoStepSubtitle": "Management and Accounts confirm sign-in with the 6-digit code from their authenticator app. This phone is then trusted for 30 days.",
+  "opsTwoStepCode": "6-digit code",
+  "opsTwoStepRecovery": "Recovery code",
+  "opsTwoStepUseRecovery": "Use a recovery code",
+  "opsTwoStepUseApp": "Use the code from the app",
+  "opsTwoStepConfirm": "Confirm",
+  "opsTwoStepSetupTitle": "Set up two-step sign-in first",
+  "opsTwoStepSetupBody": "Your role signs in with a code from an authenticator app. Set it up once on the KCPL Operations website, then come back here.",
+  "opsTwoStepSetupDone": "I’ve set it up"
 }

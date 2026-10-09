@@ -22,6 +22,8 @@ export async function withStaffSession(request: Request, handler: (session: OpsS
   const access = await getAdminAccessFromBearer(request);
   if (access.kind === "unconfigured") return opsJson({ ok: false, code: "unconfigured", error: "KCPL Operations is not configured." }, 503);
   if (access.kind === "signed-out") return opsJson({ ok: false, code: "signed_out", error: "Sign in is required." }, 401);
+  // Management and Accounts pass a second step; the app asks for the code and retries with its device token.
+  if (access.kind === "two-step") return opsJson({ ok: false, code: access.step === "enrol" ? "two_step_enrol_on_web" : "two_step_required", error: access.step === "enrol" ? "Set up two-step sign-in on the KCPL Operations website first." : "Enter the code from your authenticator app." }, 403);
 
   let staff: KcplStaffContext;
   try {

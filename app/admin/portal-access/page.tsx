@@ -1,6 +1,7 @@
 import "../organisation-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { AdminLoginPage } from "../admin-login-page";
+import { AdminTwoStepPage } from "../admin-two-step-page";
 import { listCrmCustomers } from "../crm/crm-data.server";
 import { getStaffContext } from "../staff-directory.server";
 import { OperationsShell } from "../operations-shell";
@@ -20,6 +21,7 @@ export default async function PortalAccessPage() {
     />;
   }
   if (access.kind === "signed-out") return <AdminLoginPage/>;
+  if (access.kind === "two-step") return <AdminTwoStepPage step={access.step} email={access.pending.email}/>;
 
   const staff = await getStaffContext(access.user);
   const shellProps = {

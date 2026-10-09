@@ -53,11 +53,12 @@ export const shipmentDocumentReviewStatusLabels: Record<ShipmentDocumentReviewSt
   deleted: "Deleted",
 };
 
-export const shipmentDocumentSources = ["staff", "customer_portal"] as const;
+/** Who filed a document: KCPL staff, the customer through the portal, or an overseas agent or partner through theirs. */
+export const shipmentDocumentSources = ["staff", "customer_portal", "partner"] as const;
 export type ShipmentDocumentSource = (typeof shipmentDocumentSources)[number];
 
 export function shipmentDocumentSourceValue(value: unknown): ShipmentDocumentSource {
-  return value === "customer_portal" ? "customer_portal" : "staff";
+  return value === "customer_portal" || value === "partner" ? value : "staff";
 }
 
 export type ShipmentDocument = {

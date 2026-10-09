@@ -25,6 +25,7 @@ import 'ops_l10n.dart';
 import 'ops_controller.dart';
 import 'ops_demo.dart';
 import 'screens/ops_shell.dart';
+import 'screens/second_step_screen.dart';
 
 /// KCPL Ops: the staff app. Built from the same project as the customer app
 /// with `-t lib/ops/main.dart` (see README).
@@ -54,7 +55,7 @@ Future<void> main() async {
     final auth = FirebaseRestAuth(apiKey: config.firebaseApiKey, store: store);
     controller = OpsController(
       auth: auth,
-      api: HttpOpsApi(base: config.apiBase, auth: auth, cache: FileOfflineCache()),
+      api: HttpOpsApi(base: config.apiBase, auth: auth, cache: FileOfflineCache(), deviceStore: store),
       configured: config.configured,
       push: await FcmPushService.create(store),
       notes: NoteQueue(store: FileNoteQueueStore()),
@@ -121,6 +122,8 @@ class OpsApp extends StatelessWidget {
                   OpsStatus.signedOut => Builder(
                     builder: (context) => SignInScreen(title: context.l.opsSignInTitle, subtitle: context.l.opsSignInSubtitle),
                   ),
+                  OpsStatus.secondStep => const SecondStepScreen(),
+                  OpsStatus.secondStepSetup => const SecondStepScreen(setupOnWeb: true),
                   OpsStatus.signedIn => OpsShell(demo: demo, version: opsVersion),
                 },
               ),

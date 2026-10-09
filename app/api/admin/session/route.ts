@@ -1,10 +1,12 @@
 import {
+  ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_TTL_MS,
   adminSessionCookie,
   clearAdminSessionCookie,
   firebaseAdminConfigured,
   isAuthorizedAdminUser,
 } from "../../../admin/admin-auth";
+import { endTwoStepSession } from "../../../admin/two-step.server";
 import { firebaseAdminAuth } from "../../../firebase-admin.server";
 import { isTrustedSameOriginRequest } from "../../../request-security";
 
@@ -55,5 +57,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  // The second-step pass belongs to this session and ends with it.
+  const session = request.headers.get("cookie")?.split(/;\s*/).find((item) => item.startsWith(`${ADMIN_SESSION_COOKIE}=`))?.slice(ADMIN_SESSION_COOKIE.length + 1);
+  if (session && firebaseAdminConfigured()) await endTwoStepSession(session);
   return redirectTo(request, "/", clearAdminSessionCookie());
 }

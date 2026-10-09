@@ -159,7 +159,7 @@ void main() {
     await close(tester);
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
-    await tester.tap(ref('KCPL-I-20260918-011').first);
+    await tester.tap(ref('KCPL/2083-84/00041').first);
     await settle(tester);
     await audit(tester, 'invoice');
     await tester.tap(find.text('Pay online'));

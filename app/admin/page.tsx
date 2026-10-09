@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAdminAccess } from "./admin-auth";
 import { AdminLoginPage } from "./admin-login-page";
+import { AdminTwoStepPage } from "./admin-two-step-page";
 import { V4WorkspaceGate } from "./v4-workspace-gate";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function AdminPage() {
   }
 
   if (access.kind === "signed-out") return <AdminLoginPage />;
+  if (access.kind === "two-step") return <AdminTwoStepPage step={access.step} email={access.pending.email}/>;
 
   redirect("/admin/command-centre");
 }

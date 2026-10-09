@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { PartnerLoginsControl } from "./partner-logins-control";
+import type { PartnerLogin } from "../../../partner/partner-accounts.server";
 import { FileText,
   ExternalLink,
   Globe2,
@@ -68,10 +70,13 @@ function whatsappHref(value: string) {
   return digits ? `https://wa.me/${digits}` : "";
 }
 
-export function Partner360Workspace({ snapshot, commercialVisible, financialVisible }: {
+export function Partner360Workspace({ snapshot, commercialVisible, financialVisible, logins, canEditLogins }: {
   snapshot: Partner360Snapshot;
   commercialVisible: boolean;
   financialVisible: boolean;
+  /** Partner portal logins; null where they couldn't be read. */
+  logins: PartnerLogin[] | null;
+  canEditLogins: boolean;
 }) {
   const partner = snapshot.partner;
   const expiryDays = daysUntil(partner.contract_expiry_date);
@@ -123,6 +128,7 @@ export function Partner360Workspace({ snapshot, commercialVisible, financialVisi
         </div>
 
         <aside className="ops-stack xl:sticky xl:top-[76px]">
+          <PartnerLoginsControl partnerId={partner.id} logins={logins} canEdit={canEditLogins}/>
           <OpsSurface title="Primary contact">
             <div className="space-y-3"><Fact label="Contact" value={partner.primary_contact_name || "Not recorded"}/>{partner.primary_email ? <ContactLink icon={<Mail size={12}/>} href={`mailto:${partner.primary_email}`} label={partner.primary_email}/> : null}{partner.primary_phone ? <ContactLink icon={<Phone size={12}/>} href={`tel:${partner.primary_phone}`} label={partner.primary_phone}/> : null}{partner.whatsapp && whatsappHref(partner.whatsapp) ? <ContactLink icon={<MessageCircle size={12}/>} href={whatsappHref(partner.whatsapp)} label={`WhatsApp · ${partner.whatsapp}`} external/> : null}{partner.website ? <ContactLink icon={<Globe2 size={12}/>} href={partner.website} label="Website" external/> : null}</div>
           </OpsSurface>

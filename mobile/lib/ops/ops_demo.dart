@@ -134,7 +134,25 @@ class DemoOpsApi implements OpsApi {
   ];
 
   @override
-  Future<OpsSession> session() => _later(_session);
+  Future<OpsSession> session() async {
+    if (askSecondStep && !_secondStepPassed) throw const SecondStepRequired(message: 'Enter the code from your authenticator app.');
+    return _later(_session);
+  }
+
+  /// Set to have the demo ask for the second step, as KCPL does for
+  /// Management and Accounts; 123456 passes it.
+  bool askSecondStep = false;
+  bool _secondStepPassed = false;
+
+  @override
+  void Function(bool enrolOnWeb)? onSecondStep;
+
+  @override
+  Future<void> verifyTwoStep(String code) async {
+    await _later(null);
+    if (code.trim() != '123456') throw const ApiException(400, 'wrong', 'That code isn’t right. Use the newest code in the app.');
+    _secondStepPassed = true;
+  }
 
   @override
   Future<TodayBundle> today() => _later(

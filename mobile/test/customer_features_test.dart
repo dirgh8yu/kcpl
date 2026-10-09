@@ -216,6 +216,8 @@ void main() {
       expect(await controller.prefs.read('kcpl.calendar'), 'bs');
       await tester.tap(find.text('Invoices').last);
       await settle(tester);
+      // The overdue invoice, below the balances and the money held.
+      await scrollTo(tester, find.textContaining('KCPL/2083-84/00027', findRichText: true));
       expect(find.textContaining('Ashwin'), findsWidgets);
     });
   });
@@ -256,7 +258,7 @@ void main() {
     };
     final api = DemoApi();
     await _pump(tester, api);
-    await _invoice(tester, 'KCPL-I-20260918-011');
+    await _invoice(tester, 'KCPL/2083-84/00041');
     await tester.tap(find.text('Pay online'));
     await settle(tester);
     await tester.tap(find.text('Khalti'));
@@ -268,13 +270,26 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await settle(tester);
     expect(find.text('Payment received'), findsOneWidget);
-    expect(find.textContaining('was applied to KCPL-I-20260918-011'), findsOneWidget);
+    expect(find.textContaining('was applied to KCPL/2083-84/00041'), findsOneWidget);
+  });
+
+  testWidgets('invoices go by their tax invoice number; a credited one shows its credit note and the money KCPL holds', (tester) async {
+    await _pump(tester, DemoApi());
+    await tester.tap(find.text('Invoices').last);
+    await settle(tester);
+    expect(find.text('KCPL holds ${formatMoney(5650, 'NPR')} for you'), findsOneWidget);
+    expect(find.textContaining('KCPL-I-20260809-002'), findsNothing, reason: 'the internal reference is not what the customer files');
+    await _invoice(tester, 'KCPL/2083-84/00019');
+    await sheetScrollTo(tester, find.text('Moved to your account credit'));
+    expect(find.text('−${formatMoney(5650, 'NPR')}'), findsWidgets);
+    await sheetScrollTo(tester, find.text('KCPL/CN/2083-84/00003'));
+    expect(find.textContaining('Storage charged twice'), findsOneWidget);
   });
 
   testWidgets('a failed payment says so and offers the gateways again', (tester) async {
     final api = DemoApi()..nextPaymentOutcome = 'failed';
     await _pump(tester, api);
-    await _invoice(tester, 'KCPL-I-20260918-011');
+    await _invoice(tester, 'KCPL/2083-84/00041');
     await tester.tap(find.text('Pay online'));
     await settle(tester);
     await tester.tap(find.text('eSewa'));
@@ -289,7 +304,7 @@ void main() {
   testWidgets('part of a balance can be paid; more than is owed cannot', (tester) async {
     final api = DemoApi();
     await _pump(tester, api);
-    await _invoice(tester, 'KCPL-I-20260918-011');
+    await _invoice(tester, 'KCPL/2083-84/00041');
     await tester.tap(find.text('Pay online'));
     await settle(tester);
     await tester.tap(find.text('Part of it'));
@@ -313,7 +328,7 @@ void main() {
     PaymentBrowser.open = (_) async => true;
     final api = DemoApi();
     await _pump(tester, api);
-    await _invoice(tester, 'KCPL-I-20260821-004');
+    await _invoice(tester, 'KCPL/2083-84/00027');
     expect(find.text('Send payment receipt'), findsOneWidget, reason: 'a bank transfer is still offered');
     await tester.tap(find.text('Pay online'));
     await settle(tester);

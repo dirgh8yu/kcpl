@@ -13,7 +13,8 @@ import {
   OpsTimeline,
 } from "../../../admin/operations-ui";
 import { getPortalAccess } from "../../portal-auth";
-import { getPortalShipment, type PortalShipmentDetail } from "../../portal-data.server";
+import { getPortalShipment, type PortalContainerView, type PortalShipmentDetail } from "../../portal-data.server";
+import { containerSizeTypeLabels } from "../../../shipment-containers";
 import { freeTimeSummary } from "../../../shipment-free-time";
 import { portalConfirmableDeliveryStatus } from "../../portal-access-policy";
 import { portalTranslator, type PortalLocale } from "../../portal-i18n";
@@ -163,6 +164,18 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
             </OpsSurface>
           ) : null}
 
+          {detail.containers.length ? <PortalContainers containers={detail.containers} locale={locale}/> : null}
+
+          {detail.dutyEstimate ? <OpsSurface title={t("ship.duty_title")} description={t("ship.duty_lead")}>
+            <OpsDetailGrid columns={4}>
+              <OpsDetailItem label={t("ship.duty_customs")}>{portalNpr(detail.dutyEstimate.duty)}</OpsDetailItem>
+              {detail.dutyEstimate.excise ? <OpsDetailItem label={t("ship.duty_excise")}>{portalNpr(detail.dutyEstimate.excise)}</OpsDetailItem> : null}
+              <OpsDetailItem label={t("ship.duty_vat")}>{portalNpr(detail.dutyEstimate.vat)}</OpsDetailItem>
+              {detail.dutyEstimate.levies ? <OpsDetailItem label={t("ship.duty_other")}>{portalNpr(detail.dutyEstimate.levies)}</OpsDetailItem> : null}
+              <OpsDetailItem label={t("ship.duty_total")}><strong>{portalNpr(detail.dutyEstimate.total)}</strong></OpsDetailItem>
+            </OpsDetailGrid>
+          </OpsSurface> : null}
+
           {/* On a shipment that needs attention the note is the reason, and it
               sits in the alert under the title. */}
           {shipment.customer_note && !exception ? (
@@ -263,4 +276,45 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
       </div>
     </OpsPage>
   );
+}
+
+/** Each container, where it is, and the days left to return the empty when that is the customer's to do. */
+function PortalContainers({ containers, locale }: { containers: PortalContainerView[]; locale: PortalLocale }) {
+  const t = portalTranslator(locale);
+  const counting = containers.filter((container) => container.detention && container.detention.state !== "not_set");
+  const overdue = counting.some((container) => container.stage !== "returned" && container.detention?.state === "expired");
+  const lastDay = counting.some((container) => container.stage !== "returned" && container.detention?.state === "last_day");
+  const depot = containers.find((container) => container.return_depot)?.return_depot ?? null;
+  function line(container: PortalContainerView) {
+    const status = container.detention;
+    if (!status || status.state === "not_set" || container.stage === "at_port") return null;
+    const amount = status.projectedCharge;
+    if (container.stage === "returned") {
+      return status.daysOverdue > 0 && amount !== null ? { tone: "danger" as const, text: t("ship.container_returned_late", { days: status.daysOverdue, currency: container.detention_currency ?? "", amount }) } : null;
+    }
+    if (status.state === "expired") return { tone: "danger" as const, text: amount !== null ? t("ship.container_overdue", { days: status.daysOverdue, currency: container.detention_currency ?? "", amount }) : t("ship.container_overdue_no_rate", { days: status.daysOverdue }) };
+    if (status.state === "last_day") return { tone: "warning" as const, text: t("ship.container_last_day") };
+    return { tone: status.daysRemaining <= 2 ? "warning" as const : "info" as const, text: status.daysRemaining === 1 ? t("ship.container_one_day") : t("ship.container_days_left", { days: status.daysRemaining }) };
+  }
+  const stageLabel = { at_port: t("ship.container_at_port"), out: t("ship.container_out"), returned: t("ship.container_returned") };
+  return <OpsSurface
+    title={t("ship.containers_title")}
+    description={counting.length ? (depot ? t("ship.containers_lead", { depot }) : t("ship.containers_lead_no_depot")) : undefined}
+    priority={overdue ? "danger" : lastDay ? "warning" : "normal"}
+  >
+    <ul className="portal-container-list">{containers.map((container) => {
+      const status = line(container);
+      return <li key={container.number}>
+        <div className="min-w-0">
+          <strong><OpsMono>{container.number}</OpsMono></strong>
+          <span>{containerSizeTypeLabels[container.size_type]} · {stageLabel[container.stage]}</span>
+        </div>
+        {status ? <OpsBadge tone={status.tone} dot>{status.text}</OpsBadge> : null}
+      </li>;
+    })}</ul>
+  </OpsSurface>;
+}
+
+function portalNpr(value: number) {
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "NPR", maximumFractionDigits: 0 }).format(value);
 }

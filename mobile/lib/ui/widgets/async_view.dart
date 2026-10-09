@@ -32,6 +32,7 @@ class AsyncPage<T> extends StatefulWidget {
     this.leading = 0,
     this.actions = const [],
     this.dataActions,
+    this.titleOf,
   }) : layout = null;
 
   /// A page with a layout of its own (the map home), sharing the loading,
@@ -44,7 +45,8 @@ class AsyncPage<T> extends StatefulWidget {
       placeholder = null,
       leading = 0,
       actions = const [],
-      dataActions = null;
+      dataActions = null,
+      titleOf = null;
 
   static List<Widget> _noBody(BuildContext context, Object? data) => const [];
 
@@ -74,6 +76,10 @@ class AsyncPage<T> extends StatefulWidget {
   /// Title bar buttons that need what has loaded, such as Share. They
   /// appear once it has.
   final List<Widget> Function(BuildContext context, T data)? dataActions;
+
+  /// The title once loaded, where the record names itself better than what
+  /// opened it (an invoice by its tax invoice number).
+  final String Function(T data)? titleOf;
 
   @override
   State<AsyncPage<T>> createState() => _AsyncPageState<T>();
@@ -314,7 +320,7 @@ class _AsyncPageState<T> extends State<AsyncPage<T>> with WidgetsBindingObserver
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         LargeTitleBar(
-          title: widget.title,
+          title: data != null && widget.titleOf != null ? widget.titleOf!(data) : widget.title,
           actions: [...widget.actions, if (data != null && widget.dataActions != null) ...widget.dataActions!(context, data)],
         ),
         ...body,

@@ -211,6 +211,8 @@ class DemoApi extends KcplApi {
       amountPaid: 0,
       balanceDue: 210180,
       shipmentReference: 'KCPL-S-24091',
+      taxInvoiceNumber: 'KCPL/2083-84/00041',
+      fiscalYear: '2083-84',
       lines: const [
         InvoiceLine(id: '1', description: 'Ocean freight Kolkata to Birgunj ICD, 1 x 20ft', quantity: 1, unitPrice: 142000, total: 142000),
         InvoiceLine(id: '2', description: 'Customs clearance and documentation', quantity: 1, unitPrice: 28000, total: 28000),
@@ -230,6 +232,8 @@ class DemoApi extends KcplApi {
       amountPaid: 800,
       balanceDue: 1040,
       shipmentReference: 'KCPL-S-24077',
+      taxInvoiceNumber: 'KCPL/2083-84/00027',
+      fiscalYear: '2083-84',
       lines: const [InvoiceLine(id: '1', description: 'Sea freight Haldia to Biratnagar', quantity: 1, unitPrice: 1840, total: 1840)],
     ),
     Invoice(
@@ -241,21 +245,28 @@ class DemoApi extends KcplApi {
       currency: 'NPR',
       subtotal: 96500,
       taxTotal: 12545,
-      total: 109045,
-      amountPaid: 109045,
+      // A credit note after it was paid: the 5,650 went to the account credit.
+      total: 103395,
+      amountPaid: 103395,
       balanceDue: 0,
       shipmentReference: 'KCPL-S-24012',
+      taxInvoiceNumber: 'KCPL/2083-84/00019',
+      fiscalYear: '2083-84',
+      creditTotal: 5650,
+      movedToCreditTotal: 5650,
       lines: const [],
+      creditNotes: [CreditNote(number: 'KCPL/CN/2083-84/00003', date: _day(-30), amount: 5650, reason: 'Storage charged twice')],
     ),
   ];
 
   FinanceSummary get _summary => const FinanceSummary(
     balances: [
-      CurrencyBalance(currency: 'NPR', invoiced: 319225, paid: 109045, outstanding: 210180, overdue: 0),
+      CurrencyBalance(currency: 'NPR', invoiced: 313575, paid: 103395, outstanding: 210180, overdue: 0),
       CurrencyBalance(currency: 'USD', invoiced: 1840, paid: 800, outstanding: 1040, overdue: 1040),
     ],
     openInvoices: 2,
     overdueInvoices: 1,
+    accountCredit: [CurrencyAmount(currency: 'NPR', amount: 5650)],
   );
 
   @override

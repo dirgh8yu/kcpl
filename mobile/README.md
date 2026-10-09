@@ -92,6 +92,11 @@ The staff app is the operations desk in a pocket. It talks to `/api/mobile/ops/v
 - **Alerts:** the web notification centre's feed. Opening an alert marks it read and
   goes to its job; the tab badge counts unread.
 - **Me:** role, branches and sign-out.
+- **Two-step sign-in** (Management and Accounts): after the password, the 6-digit code
+  from their authenticator app (or a recovery code). Six digits go on their own. KCPL
+  then trusts the phone for 30 days with a device token kept in the keychain and sent as
+  `x-kcpl-two-step`; when it runs out, or Management resets it, the app asks again. The
+  authenticator app is set up once on the website; until then the app says so.
 
 Access is the web admin's own: a Firebase login that `isAuthorizedAdminUser` accepts, with
 role, permissions and branch scope from `getStaffContext`. Every change the app makes (a
@@ -264,6 +269,10 @@ They appear only to logins that may send things to KCPL.
   pickup desk schedules it once the booking is confirmed.
 - **Account statement** (Invoices): a PDF of what is owed, how overdue, and payments
   received over the last 12 months, opened in the phone's viewer.
+- **Tax invoices** (Invoices): each goes by its tax invoice number, dated in BS beside the
+  AD date, with its credit notes, what was paid on the customer's behalf, and money moved
+  to account credit, set out as the web portal does. Money KCPL holds for the customer
+  (to refund or use on the next invoice) leads the list.
 - **SMS and WhatsApp** (Account, when KCPL has a channel switched on): the same updates as
   one short message, to a number the customer gives, with their agreement ticked.
 - **"KCPL needs your packing list"**: the push opens the shipment with the send sheet on

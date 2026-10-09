@@ -457,16 +457,30 @@ class CurrencyBalance {
   );
 }
 
+/// An amount in one currency: money KCPL holds for the customer, say.
+class CurrencyAmount {
+  const CurrencyAmount({required this.currency, required this.amount});
+  final String currency;
+  final double amount;
+
+  factory CurrencyAmount.fromJson(Map<String, dynamic> json) => CurrencyAmount(currency: _s(json['currency'], 'NPR'), amount: _n(json['amount']));
+}
+
 class FinanceSummary {
-  const FinanceSummary({required this.balances, required this.openInvoices, required this.overdueInvoices});
+  const FinanceSummary({required this.balances, required this.openInvoices, required this.overdueInvoices, this.accountCredit = const []});
   final List<CurrencyBalance> balances;
   final int openInvoices;
   final int overdueInvoices;
+
+  /// Money KCPL holds for the customer, per currency: from a credit note on
+  /// a paid invoice or a payment above what was owed, to refund or use.
+  final List<CurrencyAmount> accountCredit;
 
   factory FinanceSummary.fromJson(Map<String, dynamic> json) => FinanceSummary(
     balances: _list(json['balances']).map(CurrencyBalance.fromJson).toList(),
     openInvoices: _i(json['openInvoices']),
     overdueInvoices: _i(json['overdueInvoices']),
+    accountCredit: _list(json['accountCredit']).map(CurrencyAmount.fromJson).where((credit) => credit.amount > 0.004).toList(),
   );
 }
 
@@ -620,12 +634,15 @@ class Overview {
 }
 
 class InvoiceLine {
-  const InvoiceLine({required this.id, required this.description, required this.quantity, required this.unitPrice, required this.total});
+  const InvoiceLine({required this.id, required this.description, required this.quantity, required this.unitPrice, required this.total, this.disbursement = false});
   final String id;
   final String description;
   final double quantity;
   final double unitPrice;
   final double total;
+
+  /// Paid for the customer at cost (duty, port charges), not KCPL's own charge.
+  final bool disbursement;
 
   factory InvoiceLine.fromJson(Map<String, dynamic> json) => InvoiceLine(
     id: _s(json['id']),
@@ -633,7 +650,20 @@ class InvoiceLine {
     quantity: _n(json['quantity']),
     unitPrice: _n(json['unit_price']),
     total: _n(json['total']),
+    disbursement: json['kind'] == 'disbursement',
   );
+}
+
+/// A credit note against an invoice: its own number, to file like the invoice.
+class CreditNote {
+  const CreditNote({required this.number, required this.date, required this.amount, required this.reason});
+  final String number;
+  final String date;
+  final double amount;
+  final String reason;
+
+  factory CreditNote.fromJson(Map<String, dynamic> json) =>
+      CreditNote(number: _s(json['number']), date: _s(json['credit_date']), amount: _n(json['amount']), reason: _s(json['reason']));
 }
 
 class Invoice {
@@ -651,7 +681,13 @@ class Invoice {
     required this.balanceDue,
     this.shipmentReference,
     this.externalInvoiceNumber,
+    this.taxInvoiceNumber,
+    this.fiscalYear,
+    this.disbursementTotal = 0,
+    this.creditTotal = 0,
+    this.movedToCreditTotal = 0,
     required this.lines,
+    this.creditNotes = const [],
   });
 
   final String reference;
@@ -667,7 +703,30 @@ class Invoice {
   final double balanceDue;
   final String? shipmentReference;
   final String? externalInvoiceNumber;
+
+  /// "KCPL/2083-84/00012": the numbered tax invoice, given when it was issued.
+  final String? taxInvoiceNumber;
+  final String? fiscalYear;
+
+  /// Paid for the customer at cost; inside [subtotal] and [total].
+  final double disbursementTotal;
+
+  /// What credit notes took off; [total] and [balanceDue] are already net of it.
+  final double creditTotal;
+
+  /// Paid on this invoice and since moved to the customer's account credit;
+  /// [amountPaid] is already net of it.
+  final double movedToCreditTotal;
   final List<InvoiceLine> lines;
+
+  /// Filled where one invoice is read; the list leaves it empty.
+  final List<CreditNote> creditNotes;
+
+  /// The number the customer files it under, as the web portal shows it.
+  String get number => taxInvoiceNumber ?? externalInvoiceNumber ?? reference;
+
+  /// The total as issued, before credit notes.
+  double get issuedTotal => total + creditTotal;
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
     reference: _s(json['reference']),
@@ -683,7 +742,13 @@ class Invoice {
     balanceDue: _n(json['balance_due']),
     shipmentReference: _ns(json['shipment_reference']),
     externalInvoiceNumber: _ns(json['external_invoice_number']),
+    taxInvoiceNumber: _ns(json['tax_invoice_number']),
+    fiscalYear: _ns(json['fiscal_year']),
+    disbursementTotal: _n(json['disbursement_total']),
+    creditTotal: _n(json['credit_total']),
+    movedToCreditTotal: _n(json['moved_to_credit_total']),
     lines: _list(json['line_items']).map(InvoiceLine.fromJson).toList(),
+    creditNotes: _list(json['credit_notes']).map(CreditNote.fromJson).toList(),
   );
 }
 

@@ -36,6 +36,12 @@ import { StaffAssignmentPicker } from "../../staff-assignment-picker";
 import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocument } from "../../../shipment-document-types";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFileDrop, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSkeleton, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
+import { ContainerControl } from "./container-control";
+import { DocumentReadingsControl } from "./document-readings-control";
+import { PartnerAccessControl } from "./partner-access-control";
+import type { PartnerShipmentAccess } from "../../../partner/partner-access-policy";
+import type { StoredReading } from "../../document-reading.server";
+import type { ShipmentContainer } from "../../../shipment-containers";
 import { ShipmentThread } from "../../../shipment-thread";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments, canVerifyOwnShipmentDocument } from "../../../shipment-document-policy";
 
@@ -72,6 +78,12 @@ export function JobFileWorkspace({
   currentUserEmail,
   nowIso,
   freeTime,
+  containers,
+  today,
+  readings,
+  readingConfigured,
+  shipmentPartners,
+  partnerOptions,
   canManageJobFile,
 }: {
   initialJob: DigitalJobFile;
@@ -83,6 +95,13 @@ export function JobFileWorkspace({
   currentUserEmail: string;
   nowIso: string;
   freeTime: FreeTimePanelData | null;
+  /** Null where the containers couldn't be read; air shipments don't show the panel. */
+  containers: ShipmentContainer[] | null;
+  today: string;
+  readings: StoredReading[];
+  readingConfigured: boolean;
+  shipmentPartners: PartnerShipmentAccess[] | null;
+  partnerOptions: Array<{ id: string; name: string }>;
   canManageJobFile: boolean;
 }) {
   const router = useRouter();
@@ -427,10 +446,13 @@ export function JobFileWorkspace({
               <OpsButton type="submit" variant="secondary" size="sm" disabled={documentBusy || !storageAvailable}><Upload size={14} strokeWidth={1.75} aria-hidden="true"/>{documentBusy ? "Uploading…" : "Upload"}</OpsButton>
             </form>
             {documentsLoading ? <OpsSkeleton lines={2} label="Loading documents" className="mt-3"/> : documents.length ? <ul className="job-rows mt-2">{documents.map((document) => <DocumentRow key={document.id} document={document} jobReference={job.reference} documentBusy={documentBusy} role={role} currentUserEmail={currentUserEmail} onDelete={() => deleteDocument(document)} onReview={(status, note) => reviewDocument(document, status, note)}/>)}</ul> : <OpsEmptyState icon={<FileText size={16} strokeWidth={1.75} aria-hidden="true"/>} compact title="No documents yet" description="Upload the AWB or BL, invoice, packing list and customs papers here."/>}
+            {!documentsLoading ? <DocumentReadingsControl reference={job.reference} documents={documents} readings={readings} configured={readingConfigured} canEdit={canManageJobFile}/> : null}
           </OpsSurface>
         </div>
 
+        <div data-panel="booking"><PartnerAccessControl reference={job.reference} partners={shipmentPartners} options={partnerOptions} canEdit={canManageJobFile}/></div>
         <div data-panel="transit" id="shipment-free-time"><FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/></div>
+        {job.mode !== "air" ? <div data-panel="transit"><ContainerControl reference={job.reference} initial={containers} canEdit={canManageJobFile} today={today}/></div> : null}
 
         <div data-panel="tasks">
           <OpsSurface id="shipment-tasks" title="Tasks" description={overdueTasks.length ? <span className="job-overdue">{overdueTasks.length} overdue</span> : undefined} action={<OpsButton variant="secondary" size="xs" onClick={() => setTaskOpen((value) => !value)} aria-expanded={taskOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>

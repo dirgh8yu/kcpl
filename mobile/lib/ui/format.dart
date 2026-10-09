@@ -53,6 +53,18 @@ String formatDate(String? value) {
   return _date.format(day);
 }
 
+/// A day in Bikram Sambat whatever the reader chose: a tax invoice is dated
+/// in BS, so it carries both.
+String formatBsDate(String? value) {
+  final parsed = _parse(value);
+  if (parsed == null) return value == null || value.isEmpty ? '—' : value;
+  final day = value!.length <= 10 ? parsed.toUtc() : parsed.toLocal();
+  return _bsDay(DateTime.utc(day.year, day.month, day.day));
+}
+
+/// Whether dates are being shown in Bikram Sambat.
+bool get showingBs => _bs;
+
 String formatDateTime(String? value) {
   final parsed = _parse(value);
   if (parsed == null) return value == null || value.isEmpty ? '—' : value;

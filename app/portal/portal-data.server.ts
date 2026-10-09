@@ -32,6 +32,8 @@ import {
   type FreeTimeStatus,
   type ShipmentFreeTime,
 } from "../shipment-free-time";
+import { containerDetention, containerFromRecord, containerStage, type ContainerSizeType, type ContainerStage } from "../shipment-containers";
+import { storedDutyEstimate } from "../shipment-duty-estimate";
 import { readAllDocuments } from "../admin/firestore-scan";
 
 /*
@@ -117,6 +119,16 @@ export type PortalDeliveryConfirmation = {
   received_by: string | null;
 };
 
+/** A container as the customer sees it: where it is, and detention only when they bear it. */
+export type PortalContainerView = {
+  number: string;
+  size_type: ContainerSizeType;
+  stage: ContainerStage;
+  return_depot: string | null;
+  detention: FreeTimeStatus | null;
+  detention_currency: string | null;
+};
+
 export type PortalShipmentDetail = {
   shipment: PortalShipmentView;
   /** This account's own confirmation of receipt, when it has given one. */
@@ -127,6 +139,9 @@ export type PortalShipmentDetail = {
   /** Released by KCPL, plus the customer's own submissions. */
   documents: PortalDocumentRow[];
   checklist: PortalRequirementRow[];
+  containers: PortalContainerView[];
+  /** Only when staff chose to show it; the totals, not the working. */
+  dutyEstimate: { duty: number; excise: number; vat: number; levies: number; total: number; updated_at: string } | null;
 };
 
 export async function getPortalShipment(session: PortalSession, reference: string): Promise<
@@ -162,12 +177,14 @@ export async function getPortalShipment(session: PortalSession, reference: strin
     }
 
     const confirmationId = `${session.email.replace(/[^a-z0-9]+/gi, "-")}`.slice(0, 120);
-    const [eventSnapshot, documents, requirementSnapshot, confirmationSnapshot] = await Promise.all([
+    const [eventSnapshot, documents, requirementSnapshot, confirmationSnapshot, containerSnapshot] = await Promise.all([
       snapshot.ref.collection("events").orderBy("event_time", "desc").limit(200).get(),
       listShipmentDocuments(normalized),
       snapshot.ref.collection("document_requirements").limit(100).get(),
       snapshot.ref.collection("customer_confirmations").doc(confirmationId).get(),
+      snapshot.ref.collection("containers").limit(200).get(),
     ]);
+    const today = nepalOperationalDate();
 
     const documentRecords = documents.kind === "ready"
       ? documents.documents.map((document) => document as unknown as Record<string, unknown>)
@@ -194,6 +211,23 @@ export async function getPortalShipment(session: PortalSession, reference: strin
         // The checklist is derived from every live document, including ones the
         // customer may not see, so a line cannot read "still needed" because the
         // paper KCPL holds has not been released back to them.
+        // Detention is shown to the customer only where it is theirs to pay;
+        // KCPL's own terms and notes stay internal.
+        containers: containerSnapshot.docs
+          .map((doc) => containerFromRecord(doc.id, doc.data() as Record<string, unknown>))
+          .sort((a, b) => a.number.localeCompare(b.number))
+          .map((container) => ({
+            number: container.number,
+            size_type: container.size_type,
+            stage: containerStage(container),
+            return_depot: container.return_depot,
+            detention: container.detention_bearer === "customer" ? containerDetention(container, today) : null,
+            detention_currency: container.detention_bearer === "customer" ? container.detention_currency : null,
+          })),
+        dutyEstimate: (() => {
+          const estimate = storedDutyEstimate(record.duty_estimate);
+          return estimate?.shared_with_customer ? { duty: estimate.result.duty, excise: estimate.result.excise, vat: estimate.result.vat, levies: estimate.result.levy_total, total: estimate.result.total, updated_at: estimate.updated_at } : null;
+        })(),
         checklist: portalDocumentChecklist({
           requirements: requirementSnapshot.docs.map((requirement) => requirement.data() as Record<string, unknown>),
           documents: documentRecords,

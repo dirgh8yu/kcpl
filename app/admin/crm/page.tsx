@@ -40,7 +40,7 @@ async function loadCustomers(staff: Awaited<ReturnType<typeof getStaffContext>>)
 export default async function CrmPage() {
   const access = await getAdminAccess();
   if (access.kind === "unconfigured") return <CrmGate title="Customers need configuration" detail="Firebase and KCPL staff access must be configured before Customers can load."/>;
-  if (access.kind === "signed-out") return <CrmGate title="Sign in to KCPL Operations" detail="Customers are private and available only to authorised KCPL staff." signIn/>;
+  if (access.kind === "signed-out" || access.kind === "two-step") return <CrmGate title="Sign in to KCPL Operations" detail="Customers are private and available only to authorised KCPL staff." signIn/>;
 
   const staffResult = await resolveStaff(access.user);
   if (staffResult.kind === "error") {

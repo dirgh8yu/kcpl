@@ -2890,4 +2890,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String needsValidUntil(String date) {
     return 'valid until $date';
   }
+
+  @override
+  String invdIssuedBoth(String date, String bsDate) {
+    return 'Issued $date ($bsDate)';
+  }
+
+  @override
+  String get invdPaidOnBehalf => 'Paid on your behalf';
+
+  @override
+  String get invdInvoiceTotal => 'Invoice total';
+
+  @override
+  String get invdCreditNotes => 'Credit notes';
+
+  @override
+  String get invdMovedToCredit => 'Moved to your account credit';
+
+  @override
+  String invCreditHeldTitle(String amount) {
+    return 'KCPL holds $amount for you';
+  }
+
+  @override
+  String get invCreditHeldBody =>
+      'From a credit note on a paid invoice, or a payment above what was owed. KCPL refunds it or uses it on your next invoice; tell your account manager which you prefer.';
+
+  @override
+  String get opsTwoStepTitle => 'Enter your code';
+
+  @override
+  String get opsTwoStepSubtitle =>
+      'Management and Accounts confirm sign-in with the 6-digit code from their authenticator app. This phone is then trusted for 30 days.';
+
+  @override
+  String get opsTwoStepCode => '6-digit code';
+
+  @override
+  String get opsTwoStepRecovery => 'Recovery code';
+
+  @override
+  String get opsTwoStepUseRecovery => 'Use a recovery code';
+
+  @override
+  String get opsTwoStepUseApp => 'Use the code from the app';
+
+  @override
+  String get opsTwoStepConfirm => 'Confirm';
+
+  @override
+  String get opsTwoStepSetupTitle => 'Set up two-step sign-in first';
+
+  @override
+  String get opsTwoStepSetupBody =>
+      'Your role signs in with a code from an authenticator app. Set it up once on the KCPL Operations website, then come back here.';
+
+  @override
+  String get opsTwoStepSetupDone => 'I’ve set it up';
 }

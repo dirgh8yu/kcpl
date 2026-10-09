@@ -146,7 +146,9 @@ export async function uploadShipmentDocument(
      * the review queue can tell an inbound customer document from one a staff
      * member filed, and so the portal can show the sender their own upload
      * before it has been released. */
-    source?: "staff" | "customer_portal";
+    source?: "staff" | "customer_portal" | "partner";
+    /** For a partner's upload, which partner sent it, so their portal lists only their own documents. */
+    uploadedByPartnerId?: string;
   },
 ) {
   if (!configured()) return { kind: "unavailable" as const };
@@ -222,6 +224,7 @@ export async function uploadShipmentDocument(
     const batch = firebaseAdminDb().batch();
     batch.create(shipment.ref.collection("documents").doc(String(id)), {
       ...document,
+      uploaded_by_partner_id: values.uploadedByPartnerId ?? null,
       storage_path: key,
       storage_deleted_at: null,
       storage_delete_pending: false,
@@ -238,12 +241,14 @@ export async function uploadShipmentDocument(
     batch.create(shipment.ref.collection("job_activity").doc(activityId("document-upload")), {
       type: supersededSnapshot
         ? "document_superseded"
-        : source === "customer_portal" ? "document_received_from_customer" : "document_uploaded",
+        : source === "customer_portal" ? "document_received_from_customer" : source === "partner" ? "document_received_from_partner" : "document_uploaded",
       title: supersededSnapshot
         ? `${shipmentDocumentTypeLabels[values.documentType]} replacement uploaded`
         : source === "customer_portal"
           ? `${shipmentDocumentTypeLabels[values.documentType]} received from the customer`
-          : `${shipmentDocumentTypeLabels[values.documentType]} uploaded`,
+          : source === "partner"
+            ? `${shipmentDocumentTypeLabels[values.documentType]} received from ${values.uploadedBy}`
+            : `${shipmentDocumentTypeLabels[values.documentType]} uploaded`,
       detail: values.filename,
       actor_name: values.uploadedBy,
       actor_email: values.uploadedByEmail || null,

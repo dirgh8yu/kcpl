@@ -11,7 +11,9 @@ import 'route_order.dart';
 import 'ops_api.dart';
 import 'ops_models.dart';
 
-enum OpsStatus { starting, unconfigured, signedOut, signedIn }
+/// [secondStep]: signed in, and KCPL wants the code from the authenticator
+/// app. [secondStepSetup]: it wants one, but the app isn't set up yet.
+enum OpsStatus { starting, unconfigured, signedOut, secondStep, secondStepSetup, signedIn }
 
 /// The staff app's state: who is signed in and their role and branches.
 class OpsController extends SessionHost {
@@ -29,7 +31,17 @@ class OpsController extends SessionHost {
        routes = routes ?? MemoryRouteOrderStore(),
        notes = notes ?? NoteQueue(),
        deliveries = deliveries ?? DeliveryQueue(),
-      _status = configured ? OpsStatus.starting : OpsStatus.unconfigured;
+      _status = configured ? OpsStatus.starting : OpsStatus.unconfigured {
+    api.onSecondStep = _askSecondStep;
+  }
+
+  /// KCPL asked for the second step part way through: the code screen
+  /// replaces the app until it is entered.
+  void _askSecondStep(bool enrolOnWeb) {
+    if (_status == OpsStatus.signedIn || _status == OpsStatus.secondStep || _status == OpsStatus.secondStepSetup) {
+      _set(enrolOnWeb ? OpsStatus.secondStepSetup : OpsStatus.secondStep);
+    }
+  }
 
   /// Field notes written without signal, waiting to go.
   final NoteQueue notes;
@@ -112,6 +124,8 @@ class OpsController extends SessionHost {
       _attachNotes();
     } on SignedOutException {
       _set(OpsStatus.signedOut);
+    } on SecondStepRequired catch (error) {
+      _set(error.enrolOnWeb ? OpsStatus.secondStepSetup : OpsStatus.secondStep);
     } on ApiException catch (error) {
       if (error.code == 'denied') {
         await auth.signOut();
@@ -130,12 +144,40 @@ class OpsController extends SessionHost {
     await auth.signIn(email, password);
     try {
       _session = await api.session();
+    } on SecondStepRequired catch (error) {
+      // The password was right; the code comes next.
+      sessionEnded = false;
+      return _set(error.enrolOnWeb ? OpsStatus.secondStepSetup : OpsStatus.secondStep);
     } catch (_) {
       // Firebase accepted the password but KCPL does not know this login as
       // staff. Leave nothing behind.
       await auth.signOut();
       rethrow;
     }
+    sessionEnded = false;
+    _set(OpsStatus.signedIn);
+    _resumePush();
+    _attachNotes();
+  }
+
+  /// The code from the authenticator app (or a recovery code). Throws the
+  /// server's refusal, worded for the person, when it isn't right.
+  Future<void> confirmSecondStep(String code) async {
+    await api.verifyTwoStep(code);
+    await _enter();
+  }
+
+  /// After setting the authenticator app up on the website.
+  Future<void> recheckSecondStep() async {
+    try {
+      await _enter();
+    } on SecondStepRequired catch (error) {
+      _set(error.enrolOnWeb ? OpsStatus.secondStepSetup : OpsStatus.secondStep);
+    }
+  }
+
+  Future<void> _enter() async {
+    _session = await api.session();
     sessionEnded = false;
     _set(OpsStatus.signedIn);
     _resumePush();

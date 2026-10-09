@@ -144,8 +144,8 @@ void main() {
     await signIn(tester);
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
-    await scrollTo(tester, find.textContaining('KCPL-I-20260821-004', findRichText: true));
-    await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+    await scrollTo(tester, find.textContaining('KCPL/2083-84/00027', findRichText: true));
+    await tester.tap(find.textContaining('KCPL/2083-84/00027', findRichText: true).first);
     await settle(tester);
 
     await tester.tap(find.text('Send payment receipt'));
@@ -241,8 +241,8 @@ void main() {
 
     await tester.tap(find.byType(TabBarItem).at(3));
     await settle(tester);
-    await scrollTo(tester, find.textContaining('KCPL-I-20260821-004', findRichText: true));
-    await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+    await scrollTo(tester, find.textContaining('KCPL/2083-84/00027', findRichText: true));
+    await tester.tap(find.textContaining('KCPL/2083-84/00027', findRichText: true).first);
     await settle(tester);
     await sheetScrollTo(tester, find.text('भुक्तानी रसिद पठाउनुहोस्'));
     await tester.tap(find.text('भुक्तानी रसिद पठाउनुहोस्'));

@@ -6,6 +6,8 @@ import { getPartner360Snapshot } from "../partner-360.server";
 import { mockPartner360Snapshot, qaMockDataEnabled } from "../../qa-fixtures";
 import { Partner360Workspace } from "./partner-360-workspace";
 import { recordTitle } from "../../../record-title";
+import { listPartnerLogins } from "../../../partner/partner-accounts.server";
+import { canEditPartnerNetwork } from "../partner-policy";
 
 export const dynamic = "force-dynamic";
 /** The tab names the record, so a row of open tabs and the history read as
@@ -46,7 +48,8 @@ export default async function Partner360Page({ params }: { params: Promise<{ id:
   if (result.kind === "missing") return <OperationsShell {...shellProps}><Gate embedded title="Partner not found" detail="This partner or vendor record does not exist."/></OperationsShell>;
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Partner access restricted" detail="This partner belongs to a KCPL branch outside your assigned access."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps} detailLabel={result.snapshot.partner.display_name}><Partner360Workspace snapshot={result.snapshot} commercialVisible={staff.permissions.canViewCommercial} financialVisible={staff.permissions.canManageFinance}/></OperationsShell>;
+  const logins = qaMockDataEnabled() ? [] : await listPartnerLogins(partnerId).catch(() => null);
+  return <OperationsShell {...shellProps} detailLabel={result.snapshot.partner.display_name}><Partner360Workspace snapshot={result.snapshot} commercialVisible={staff.permissions.canViewCommercial} financialVisible={staff.permissions.canManageFinance} logins={logins} canEditLogins={canEditPartnerNetwork(staff.permissions)}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

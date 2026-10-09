@@ -122,7 +122,7 @@ class _SendReceiptScreenState extends State<SendReceiptScreen> {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     final sent = _sent;
-    if (sent != null) return DoneView(title: l.sentTitle, body: sent.message, reference: widget.invoice.reference);
+    if (sent != null) return DoneView(title: l.sentTitle, body: sent.message, reference: widget.invoice.number);
     final invoice = widget.invoice;
     return ComposeScaffold(
       title: l.receiptTitle,
@@ -132,7 +132,7 @@ class _SendReceiptScreenState extends State<SendReceiptScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
           child: Text(
-            '${invoice.reference} · ${l.invdBalanceDue} ${formatMoney(invoice.balanceDue, invoice.currency)}',
+            '${invoice.number} · ${l.invdBalanceDue} ${formatMoney(invoice.balanceDue, invoice.currency)}',
             style: context.type.bodyMedium?.copyWith(color: p.secondary),
           ),
         ),

@@ -103,6 +103,7 @@ const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
 
 const SOURCE_OPTIONS = [
   { value: "customer", label: "From customers" },
+  { value: "partner", label: "From partners" },
   { value: "staff", label: "Staff uploads" },
 ];
 
@@ -209,7 +210,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const branchValue = params.get("branch");
   const branch: "all" | KcplBranch = kcplBranches.includes(branchValue as KcplBranch) ? branchValue as KcplBranch : "all";
   const originValue = params.get("origin");
-  const origin: "all" | "customer" | "staff" = originValue === "customer" || originValue === "staff" ? originValue : "all";
+  const origin: "all" | "customer" | "partner" | "staff" = originValue === "customer" || originValue === "partner" || originValue === "staff" ? originValue : "all";
   const selectedKey = params.get("selected");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -223,7 +224,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
     return dashboard.rows.filter((row) => {
       if (!matchesStatus(row, status)) return false;
       if (type !== "all" && row.document_type !== type) return false;
-      if (origin !== "all" && row.uploaded_by_source !== (origin === "customer" ? "customer_portal" : "staff")) return false;
+      if (origin !== "all" && row.uploaded_by_source !== (origin === "customer" ? "customer_portal" : origin)) return false;
       if (branch !== "all" && !row.handling_branches.includes(branch)) return false;
       if (!terms.length) return true;
       const haystack = [row.shipment_reference, row.customer_id ?? "", row.customer_name, row.filename, shipmentDocumentTypeLabels[row.document_type], row.uploaded_by, row.uploaded_by_email ?? "", row.reviewed_by ?? "", row.reviewed_by_email ?? "", row.verified_by ?? "", row.verified_by_email ?? "", row.review_note ?? "", row.origin, row.destination, row.mode, row.branch ?? "", statusLabel(row.effective_status), row.sha256 ?? ""].join(" ").toLowerCase();
@@ -293,7 +294,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
   const activeFilters: OpsActiveFilter[] = [];
   if (type !== "all") activeFilters.push({ key: "type", label: shipmentDocumentTypeLabels[type], title: `Type: ${shipmentDocumentTypeLabels[type]}`, onRemove: () => update({ type: null }) });
   if (branch !== "all") activeFilters.push({ key: "branch", label: branch, title: `Branch: ${branch}`, onRemove: () => update({ branch: null }) });
-  if (origin !== "all") activeFilters.push({ key: "origin", label: origin === "customer" ? "From customers" : "Staff uploads", title: `Source: ${origin}`, onRemove: () => update({ origin: null, selected: null }) });
+  if (origin !== "all") activeFilters.push({ key: "origin", label: origin === "customer" ? "From customers" : origin === "partner" ? "From partners" : "Staff uploads", title: `Source: ${origin}`, onRemove: () => update({ origin: null, selected: null }) });
 
   return <OpsPage className="document-vault-register">
     <OpsPageHeader
@@ -347,7 +348,7 @@ export function DocumentsWorkspace({ dashboard, role, currentUserEmail }: { dash
                       <tr key={key} data-selected={rowSelected || undefined} data-inactive={inactive || undefined} aria-current={rowSelected || undefined} tabIndex={0} onClick={() => openRow(key)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openRow(key); } }}>
                         <td data-cell="primary">
                           <span className="ops-cell-primary ops-cell-clamp" title={row.filename}>{row.filename}</span>
-                          <span className="ops-cell-secondary ops-cell-clamp">{row.uploaded_by_source === "customer_portal" ? <span className="document-vault-source">From customer · </span> : null}by {row.uploaded_by} · {bytes(row.size_bytes)}</span>
+                          <span className="ops-cell-secondary ops-cell-clamp">{row.uploaded_by_source === "customer_portal" ? <span className="document-vault-source">From customer · </span> : row.uploaded_by_source === "partner" ? <span className="document-vault-source">From partner · </span> : null}by {row.uploaded_by} · {bytes(row.size_bytes)}</span>
                         </td>
                         <td data-cell="meta" data-label="Type"><span className="ops-cell-primary document-vault-type">{shipmentDocumentTypeLabels[row.document_type]}</span></td>
                         <td data-cell="meta" data-label="Shipment">

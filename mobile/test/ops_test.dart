@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kcpl_customer/api/kcpl_api.dart' show ApiException;
 import 'package:kcpl_customer/auth/auth_repository.dart';
+import 'package:kcpl_customer/auth/token_store.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart' show DemoAuth;
 import 'package:kcpl_customer/ops/main.dart';
 import 'package:kcpl_customer/ops/ops_api.dart';
@@ -129,6 +130,43 @@ void main() {
       expect(seen.every((r) => r.method == 'POST' && r.headers['authorization'] == 'Bearer stale'), isTrue);
       expect(jsonDecode(seen[0].body), {'completed': true});
       expect(jsonDecode(seen[1].body), {'completed': false});
+    });
+
+    test('the second step: the code is sent, and its device token goes with every request after', () async {
+      final seen = <http.Request>[];
+      final store = MemoryTokenStore();
+      final api = HttpOpsApi(
+        base: Uri.parse('https://kcpl.example'),
+        auth: _Auth(),
+        deviceStore: store,
+        client: MockClient((request) async {
+          seen.add(request);
+          if (request.url.path.endsWith('/two-step')) return http.Response('{"ok":true,"deviceToken":"dev-1","expiresInDays":30}', 200);
+          return http.Response('{"ok":true}', 200);
+        }),
+      );
+      await api.verifyTwoStep(' 123456 ');
+      await api.markRead('a1');
+      expect(seen.first.url.path, '/api/mobile/ops/v1/two-step');
+      expect(jsonDecode(seen.first.body), {'code': '123456'});
+      expect(seen.last.headers['x-kcpl-two-step'], 'dev-1');
+      expect(await store.read('kcpl.ops.two_step_device'), 'dev-1');
+    });
+
+    test('when KCPL asks for the second step, the old token is dropped and the app is told', () async {
+      final store = MemoryTokenStore()..values['kcpl.ops.two_step_device'] = 'old';
+      bool? enrol;
+      final api = HttpOpsApi(
+        base: Uri.parse('https://kcpl.example'),
+        auth: _Auth(),
+        deviceStore: store,
+        client: MockClient(
+          (request) async => http.Response('{"ok":false,"code":"two_step_required","error":"Enter the code from your authenticator app."}', 403),
+        ),
+      )..onSecondStep = (value) => enrol = value;
+      await expectLater(api.today(), throwsA(isA<SecondStepRequired>()));
+      expect(enrol, isFalse);
+      expect(await store.read('kcpl.ops.two_step_device'), isNull);
     });
 
     test('a 401 is retried once with a fresh token, and a second signs out', () async {
@@ -296,6 +334,24 @@ void main() {
     await settle(tester);
     expect(controller.unread, 2);
     expect(find.byType(JobDetailScreen), findsOneWidget);
+  });
+
+  testWidgets('Management enters the code from the authenticator app after the password', (tester) async {
+    final api = DemoOpsApi()
+      ..askSecondStep = true
+      ..management = true;
+    final controller = await pumpOps(tester, api: api);
+    await signIn(tester);
+    expect(controller.status, OpsStatus.secondStep);
+    expect(find.text('Enter your code'), findsOneWidget);
+    // Six digits go on their own, without a tap.
+    await tester.enterText(find.byType(TextField), '111111');
+    await settle(tester);
+    expect(find.text('That code isn’t right. Use the newest code in the app.'), findsOneWidget);
+    expect(controller.status, OpsStatus.secondStep);
+    await tester.enterText(find.byType(TextField), '123456');
+    await settle(tester);
+    expect(controller.status, OpsStatus.signedIn);
   });
 
   testWidgets('a login KCPL does not know as staff is left signed out', (tester) async {

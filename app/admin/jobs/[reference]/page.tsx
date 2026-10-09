@@ -10,6 +10,13 @@ import { getStaffContext, staffCanAccessBranch } from "../../staff-directory.ser
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { readShipmentFreeTime } from "../../../shipment-free-time.server";
+import { readShipmentContainers } from "../../../shipment-containers.server";
+import { readShipmentDutyEstimate } from "../../../shipment-duty-estimate.server";
+import { loadNprRateTable } from "../../finance/fx-rates.server";
+import { documentReadingConfigured, listDocumentReadings } from "../../document-reading.server";
+import { readShipmentPartners } from "../../shipment-partners.server";
+import { dutyLinesFromReading } from "../../../document-reading";
+import { nepalOperationalDate } from "../../../invoice-effective-status";
 import { qaMockDataEnabled } from "../../qa-fixtures";
 import { shipmentCustomerAccessView } from "../../../portal/portal-access-log.server";
 import { CustomerAccessPanel } from "./customer-access-panel";
@@ -64,7 +71,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
   if (result.kind === "forbidden") return shellGate("Outside your branch access", "This shipment belongs to a branch you don’t have access to. Ask Management if you need it.");
 
   const workflowStaff = { ...staff, can_access_all_branches: true };
-  const [job, workflow, activity, exceptionCases, delivery, customerAccess, stepContext, partnerOptions] = await Promise.all([
+  const [job, workflow, activity, exceptionCases, delivery, customerAccess, stepContext, partnerOptions, dutyEstimate, rateTable, readings, shipmentPartners] = await Promise.all([
     withCombinedMargin(result.job),
     getShipmentWorkflowReadiness(result.job.reference, workflowStaff),
     getShipmentActivityTimeline(result.job.reference, staff),
@@ -73,7 +80,13 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
     qaMockDataEnabled() ? Promise.resolve({ kind: "ready" as const, summaries: [], pending: [], releasedCount: 0 }) : shipmentCustomerAccessView(result.job.reference),
     getJobStepContext(result.job.reference).catch(() => ({ clearance: null, pickupStatus: null, pickup: null })),
     listPartnerOptions(staff).catch(() => null),
+    readShipmentDutyEstimate(result.job.reference),
+    staff.permissions.canManageJobFile ? loadNprRateTable() : Promise.resolve(null),
+    qaMockDataEnabled() ? Promise.resolve([]) : listDocumentReadings(result.job.reference),
+    qaMockDataEnabled() ? Promise.resolve(null) : readShipmentPartners(result.job.reference),
   ]);
+  // The newest commercial invoice read with HS codes starts a duty estimate that hasn't been made yet.
+  const invoiceReading = readings.find((reading) => reading.document_type === "commercial_invoice" && dutyLinesFromReading(reading).length);
   if (workflow.kind !== "ready") return shellGate("Shipment can’t be opened right now", "Its progress checks didn’t load. Try again in a minute.");
 
   const customsAgents = (partnerOptions ?? [])
@@ -94,6 +107,9 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
       openProblems={exceptionCases.kind === "ready" ? exceptionCases.summary.open : 0}
       canManageFinance={staff.permissions.canManageFinance}
       canMessageCustomer={staff.permissions.canManageJobFile}
+      dutyEstimate={dutyEstimate}
+      dutySuggestion={!dutyEstimate && invoiceReading ? { currency: invoiceReading.currency, incoterm: invoiceReading.incoterm, freight: invoiceReading.freight, insurance: invoiceReading.insurance, lines: dutyLinesFromReading(invoiceReading), source: invoiceReading.filename } : null}
+      rates={rateTable ? { rates: rateTable.rates, date: rateTable.date ?? null } : null}
     >
       <div id="shipment-work" className="job-record-workspace">
         <JobFileWorkspace
@@ -106,6 +122,12 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
           currentUserEmail={access.user.email}
           nowIso={new Date().toISOString()}
           freeTime={await readShipmentFreeTime(result.job.reference)}
+          containers={await readShipmentContainers(result.job.reference)}
+          today={nepalOperationalDate()}
+          readings={readings}
+          readingConfigured={documentReadingConfigured()}
+          shipmentPartners={shipmentPartners}
+          partnerOptions={(partnerOptions ?? []).map((partner) => ({ id: partner.id, name: partner.name }))}
           canManageJobFile={staff.permissions.canManageJobFile}
         />
       </div>

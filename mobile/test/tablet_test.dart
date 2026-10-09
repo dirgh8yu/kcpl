@@ -58,8 +58,8 @@ void main() {
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
     expect(find.text('Choose an invoice'), findsOneWidget);
-    await scrollTo(tester, ref('KCPL-I-20260918-011'));
-    await tester.tap(ref('KCPL-I-20260918-011').first);
+    await scrollTo(tester, ref('KCPL/2083-84/00041'));
+    await tester.tap(ref('KCPL/2083-84/00041').first);
     await settle(tester);
     expect(find.byType(InvoiceDetailScreen), findsOneWidget);
     expect(sheetOpen(tester), isFalse);

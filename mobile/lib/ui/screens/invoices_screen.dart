@@ -7,6 +7,7 @@ import '../../app_controller.dart';
 import '../../auth/auth_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/file_opener.dart';
+import '../format.dart';
 import '../motion.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
@@ -28,6 +29,15 @@ class InvoicesScreen extends StatelessWidget {
           RowGroup(children: [for (final balance in page.summary.balances) BalanceFigure(balance: balance, detail: true)]),
         if (page.summary.balances.length > 1) Footnote(l.invPositionDescription),
         if (page.summary.balances.isNotEmpty) const SizedBox(height: 20),
+        // Money KCPL holds for the customer: refunded or used on an invoice.
+        if (page.summary.accountCredit.isNotEmpty) ...[
+          Notice(
+            title: l.invCreditHeldTitle(page.summary.accountCredit.map((credit) => formatMoney(credit.amount, credit.currency)).join(' · ')),
+            body: l.invCreditHeldBody,
+            emphasis: Emphasis.normal,
+          ),
+          const SizedBox(height: 20),
+        ],
         const RowGroup(indent: RowGroup.iconIndent, children: [StatementRow()]),
         SectionHeader(l.invBillingTitle),
         if (page.invoices.isEmpty)

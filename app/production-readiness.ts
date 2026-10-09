@@ -179,6 +179,12 @@ export function productionRuntimeReadiness(env: RuntimeEnv = process.env): Produ
     { key: "SEARATES_FREIGHT_INDEX_API_KEY", value: text(env, "SEARATES_FREIGHT_INDEX_API_KEY") },
   ], "SEARATES_FREIGHT_INDEX_API_KEY is missing; market rate estimates are unavailable.");
 
+  // Reading shipping documents with Claude. Optional: without the key the
+  // Job File says it isn't set up and nothing is sent anywhere.
+  capability(checks, "document-reading", "Reading documents automatically", [
+    { key: "ANTHROPIC_API_KEY", value: text(env, "ANTHROPIC_API_KEY") },
+  ], "ANTHROPIC_API_KEY is missing; staff fill shipments from bills of lading and invoices by hand. With it, a document staff choose to read is sent to Anthropic.");
+
   // Customers' SMS and WhatsApp notices. Each is optional; the portal only
   // offers a channel that is configured.
   capability(checks, "sms-notices", "SMS notices (Sparrow SMS)", [

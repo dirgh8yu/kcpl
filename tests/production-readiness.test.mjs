@@ -35,6 +35,7 @@ function completeEnv() {
     SEARATES_FREIGHT_INDEX_API_KEY: "searates-key-value",
     KCPL_RATE_LIMIT_SALT: "rate-limit-salt-value",
     // Customers' SMS and WhatsApp notices, each optional.
+    ANTHROPIC_API_KEY: "anthropic-key-value",
     SPARROW_SMS_TOKEN: "sparrow-token-value",
     SPARROW_SMS_FROM: "KCPL",
     WHATSAPP_ACCESS_TOKEN: "whatsapp-token-value",

@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Monitor,
   Network,
+  Percent,
   Receipt,
   Scale,
   Shield,
@@ -68,6 +69,7 @@ const workspaceIcons: Record<WorkspaceIconName, LucideIcon> = {
   BookOpen,
   Wallet,
   ArrowLeftRight,
+  Percent,
 };
 
 export function WorkspaceIcon({ name, size = 16 }: { name: WorkspaceIconName; size?: number }) {

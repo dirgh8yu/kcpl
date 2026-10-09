@@ -17,7 +17,7 @@ import 'package:kcpl_customer/ui/format.dart';
 import 'package:kcpl_customer/ui/screens/quotes_screen.dart';
 import 'package:kcpl_customer/ui/screens/text_notices_screen.dart';
 
-import 'app_flow_test.dart' show settle, signIn;
+import 'app_flow_test.dart' show scrollTo, settle, signIn;
 import 'push_ui_test.dart' show FakePush;
 import 'send_flows_test.dart' show openShipment, sheetScrollTo, useSource;
 
@@ -232,6 +232,8 @@ void main() {
     await _pump(tester, DemoApi());
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
+    // Below the balances and the money KCPL holds for the customer.
+    await scrollTo(tester, find.text('Account statement'));
     await tester.tap(find.text('Account statement'));
     await settle(tester);
     expect(opened.single.contentType, 'application/pdf');

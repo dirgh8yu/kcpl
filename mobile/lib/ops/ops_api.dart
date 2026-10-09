@@ -9,10 +9,29 @@ import '../api/models.dart' show Attachment, SendProgress, ShipmentMessage;
 import '../api/offline_cache.dart';
 import '../api/upload.dart';
 import '../auth/auth_repository.dart';
+import '../auth/token_store.dart';
 import 'ops_models.dart';
+
+/// KCPL wants the second step before anything else: Management and Accounts
+/// confirm sign-in with a code from an authenticator app. [enrolOnWeb] when
+/// they have not set the app up yet, which is done once on the website.
+class SecondStepRequired extends ApiException {
+  const SecondStepRequired({this.enrolOnWeb = false, String message = ''})
+    : super(403, enrolOnWeb ? 'two_step_enrol_on_web' : 'two_step_required', message);
+  final bool enrolOnWeb;
+}
 
 abstract class OpsApi {
   Future<OpsSession> session();
+
+  /// The second step: the 6-digit code from the authenticator app, or a
+  /// recovery code. The phone is then trusted for 30 days.
+  Future<void> verifyTwoStep(String code);
+
+  /// Told when KCPL asks for the second step part way through (the 30 days
+  /// ran out, or Management reset it), so the app can ask for the code.
+  void Function(bool enrolOnWeb)? onSecondStep;
+
   Future<TodayBundle> today();
   Future<JobFile> job(String reference);
   Future<void> setTask(String reference, String taskId, bool completed);
@@ -95,11 +114,41 @@ abstract class OpsApi {
 /// [OpsApi] over `/api/mobile/ops/v1`. Same retry rule as the customer app:
 /// a 401 is retried once with a forced token refresh, then signs out.
 class HttpOpsApi implements OpsApi {
-  HttpOpsApi({required this.base, required this.auth, http.Client? client, this.cache}) : _client = client ?? http.Client();
+  HttpOpsApi({required this.base, required this.auth, http.Client? client, this.cache, TokenStore? deviceStore})
+    : _client = client ?? http.Client(),
+      _deviceStore = deviceStore ?? MemoryTokenStore();
 
   final Uri base;
   final AuthRepository auth;
   final http.Client _client;
+
+  @override
+  void Function(bool enrolOnWeb)? onSecondStep;
+
+  /// The token KCPL gave this phone for passing the second step, sent with
+  /// every request as x-kcpl-two-step. Kept in the keychain for its 30 days.
+  final TokenStore _deviceStore;
+  static const _deviceKey = 'kcpl.ops.two_step_device';
+  String? _device;
+  bool _deviceRead = false;
+
+  Future<String?> _deviceToken() async {
+    if (!_deviceRead) {
+      _device = await _deviceStore.read(_deviceKey);
+      _deviceRead = true;
+    }
+    return _device;
+  }
+
+  Future<void> _setDeviceToken(String? token) async {
+    _device = token;
+    _deviceRead = true;
+    if (token == null) {
+      await _deviceStore.delete(_deviceKey);
+    } else {
+      await _deviceStore.write(_deviceKey, token);
+    }
+  }
 
   /// The last answer to each read, for when there is no signal. Kept for the
   /// signed-in login only and deleted at sign-out.
@@ -143,9 +192,11 @@ class HttpOpsApi implements OpsApi {
   Future<Map<String, dynamic>> _dispatch(http.BaseRequest Function() build, {Duration timeout = const Duration(seconds: 30)}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await auth.idToken(forceRefresh: attempt > 0);
+      final device = await _deviceToken();
       final http.Response response;
       try {
-        final request = build()..headers.addAll({'authorization': 'Bearer $token', 'accept': 'application/json'});
+        final request = build()
+          ..headers.addAll({'authorization': 'Bearer $token', 'accept': 'application/json', 'x-kcpl-two-step': ?device});
         response = await _client.send(request).then(http.Response.fromStream).timeout(timeout);
       } on TimeoutException {
         throw const ApiException(0, 'network', 'KCPL could not be reached.');
@@ -160,6 +211,13 @@ class HttpOpsApi implements OpsApi {
         decoded = const {};
       }
       if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
+      if (decoded['code'] == 'two_step_required' || decoded['code'] == 'two_step_enrol_on_web') {
+        // Whatever token was sent no longer counts; ask for a code again.
+        final enrol = decoded['code'] == 'two_step_enrol_on_web';
+        if (device != null) await _setDeviceToken(null);
+        onSecondStep?.call(enrol);
+        throw SecondStepRequired(enrolOnWeb: enrol, message: '${decoded['error'] ?? ''}');
+      }
       if (decoded['code'] == 'CLOSEOUT_BLOCKED') {
         throw CloseoutBlocked(
           decoded['blockers'] is List ? (decoded['blockers'] as List).whereType<String>().toList() : const [],
@@ -176,6 +234,13 @@ class HttpOpsApi implements OpsApi {
 
   @override
   Future<OpsSession> session() async => OpsSession.fromJson(((await _read('session'))['session'] as Map).cast<String, dynamic>());
+
+  @override
+  Future<void> verifyTwoStep(String code) async {
+    final body = await _send('two-step', body: {'code': code.trim()});
+    final token = body['deviceToken'];
+    if (token is String && token.isNotEmpty) await _setDeviceToken(token);
+  }
 
   @override
   Future<TodayBundle> today() async => TodayBundle.fromJson(await _read('today'));

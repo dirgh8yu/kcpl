@@ -2,6 +2,7 @@ import "../organisation-premium.css";
 import "./gallery-workspace.css";
 import { getAdminAccess } from "../admin-auth";
 import { AdminLoginPage } from "../admin-login-page";
+import { AdminTwoStepPage } from "../admin-two-step-page";
 import { getStaffContext } from "../staff-directory.server";
 import { OperationsShell } from "../operations-shell";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
@@ -16,6 +17,7 @@ export default async function AdminGalleryPage() {
   const access = await getAdminAccess();
   if (access.kind === "unconfigured") return <V4WorkspaceGate title="KCPL admin access needs configuration" detail="Gallery editing isn’t set up on this site yet. Ask Management." />;
   if (access.kind === "signed-out") return <AdminLoginPage />;
+  if (access.kind === "two-step") return <AdminTwoStepPage step={access.step} email={access.pending.email}/>;
 
   const staff = await getStaffContext(access.user);
   const shellProps = {

@@ -16,8 +16,11 @@ import 'pay_screen.dart';
 import 'send_receipt_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
-  const InvoiceDetailScreen({super.key, required this.reference});
+  const InvoiceDetailScreen({super.key, required this.reference, this.title});
   final String reference;
+
+  /// The number the customer files it under, when the list already knew it.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +28,9 @@ class InvoiceDetailScreen extends StatelessWidget {
     final api = AppScope.of(context).api;
     return Scaffold(
       body: AsyncPage<(Invoice, List<Remittance>, PaymentOptions)>(
-        title: reference,
+        title: title ?? reference,
+        // The tax invoice number, as the web portal titles it.
+        titleOf: (loaded) => loaded.$1.number,
         load: () async {
           final invoice = api.invoice(reference);
           // Receipts are a courtesy on the invoice: if they can't be read,
@@ -46,13 +51,20 @@ class InvoiceDetailScreen extends StatelessWidget {
     final p = context.palette;
     String money(double value) => formatMoney(value, invoice.currency);
     const tabular = [FontFeature.tabularFigures()];
+    final settled = invoice.amountPaid != 0 || invoice.creditTotal != 0 || invoice.movedToCreditTotal != 0;
+    // Everything received, including what has since moved to account credit.
+    final received = invoice.amountPaid + invoice.movedToCreditTotal;
 
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: kGutter + 4),
         child: Text(
           [
-            l.invdIssuedOn(formatDate(invoice.issueDate)),
+            // A tax invoice is dated in BS: shown beside the AD date unless
+            // the reader already reads every date in BS.
+            showingBs || invoice.taxInvoiceNumber == null
+                ? l.invdIssuedOn(formatDate(invoice.issueDate))
+                : l.invdIssuedBoth(formatDate(invoice.issueDate), formatBsDate(invoice.issueDate)),
             if (invoice.dueDate.isNotEmpty) l.invdDueOn(formatDate(invoice.dueDate)),
           ].join(' · '),
           style: context.type.bodyMedium?.copyWith(color: p.secondary),
@@ -130,20 +142,42 @@ class InvoiceDetailScreen extends StatelessWidget {
           ],
         ),
       const SizedBox(height: 20),
+      // Each sum once, as the web portal sets them out: a subtotal only
+      // beside the tax or at-cost charges that make it differ from the
+      // total, and a balance only once something was received or credited.
       RowGroup(
         children: [
-          DetailRow(l.invdSubtotal, money(invoice.subtotal)),
-          DetailRow(l.invdTax, money(invoice.taxTotal)),
-          DetailRow(l.invColTotal, money(invoice.total), strong: true),
-          DetailRow(l.invdReceipted, money(invoice.amountPaid)),
-          DetailRow(
-            l.invdBalanceDue,
-            money(invoice.balanceDue),
-            strong: true,
-            emphasis: invoice.status == 'overdue' ? Emphasis.attention : Emphasis.normal,
-          ),
+          if (invoice.taxTotal != 0 || invoice.disbursementTotal != 0) ...[
+            DetailRow(l.invdSubtotal, money(invoice.subtotal - invoice.disbursementTotal)),
+            if (invoice.taxTotal != 0) DetailRow(l.invdTax, money(invoice.taxTotal)),
+            if (invoice.disbursementTotal != 0) DetailRow(l.invdPaidOnBehalf, money(invoice.disbursementTotal)),
+          ],
+          DetailRow(invoice.creditTotal != 0 ? l.invdInvoiceTotal : l.invColTotal, money(invoice.issuedTotal), strong: !settled),
+          if (invoice.creditTotal != 0) DetailRow(l.invdCreditNotes, '−${money(invoice.creditTotal)}'),
+          if (received != 0) DetailRow(l.invdReceipted, money(received)),
+          if (invoice.movedToCreditTotal != 0) DetailRow(l.invdMovedToCredit, '−${money(invoice.movedToCreditTotal)}'),
+          if (settled)
+            DetailRow(
+              l.invdBalanceDue,
+              money(invoice.balanceDue),
+              strong: true,
+              emphasis: invoice.status == 'overdue' ? Emphasis.attention : Emphasis.normal,
+            ),
         ],
       ),
+      if (invoice.creditNotes.isNotEmpty) ...[
+        SectionHeader(l.invdCreditNotes),
+        RowGroup(
+          children: [
+            for (final note in invoice.creditNotes)
+              RowTile(
+                title: Text(note.number, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text([formatDate(note.date), if (note.reason.isNotEmpty) note.reason].join(' · ')),
+                trailing: Text('−${money(note.amount)}', style: context.type.bodyLarge?.copyWith(fontFeatures: tabular)),
+              ),
+          ],
+        ),
+      ],
       Footnote(l.invFootnote),
       if (receipts.isNotEmpty) ...[
         SectionHeader(l.receiptsTitle),

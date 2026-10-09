@@ -21,6 +21,8 @@ import type { PortalCapabilities } from "../portal-access-policy";
 import { portalQuoteBookingBlock, portalQuoteExpired } from "../portal-access-policy";
 import { portalDate, portalMoney } from "../portal-format";
 import { portalTranslator, type PortalLocale } from "../portal-i18n";
+import type { PortalPriceCard } from "../portal-instant-price";
+import { PortalInstantPrice } from "./portal-instant-price";
 
 type FormState = {
   origin: string;
@@ -49,11 +51,14 @@ export function PortalRequestsWorkspace({
   requests,
   capabilities,
   locale,
+  prices,
 }: {
   quotes: PortalQuoteView[];
   requests: PortalQuoteView[];
   capabilities: PortalCapabilities;
   locale: PortalLocale;
+  /** The customer's agreed lanes, sell side only. */
+  prices: PortalPriceCard[];
 }) {
   const t = portalTranslator(locale);
   const router = useRouter();
@@ -145,6 +150,7 @@ export function PortalRequestsWorkspace({
       <div className="ops-content">
         <div className="ops-stack portal-stack">
           {notice ? <OpsNotice tone="success" onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
+          {prices.length ? <PortalInstantPrice prices={prices} locale={locale} canBook={capabilities.canSubmitRequests}/> : null}
           {error ? <OpsNotice tone="danger" onDismiss={() => setError("")}>{error}</OpsNotice> : null}
 
           {capabilities.canSubmitRequests ? (

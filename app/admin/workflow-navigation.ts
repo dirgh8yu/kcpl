@@ -38,6 +38,7 @@ export type WorkspaceIconName =
   | "Users2"
   | "Landmark"
   | "BookOpen"
+  | "Percent"
   | "Wallet"
   | "ArrowLeftRight";
 
@@ -148,6 +149,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "supplier-reconciliation", href: "/admin/partners/reconciliation", label: "Supplier records", hub: "finance", tab: "Supplier records", group: "Finance", hint: "Tidy supplier details and link old bills", keywords: ["supplier", "reconciliation", "supplier reconciliation", "legacy", "bills"], permission: "finance", icon: "Scale", prefixes: ["/admin/partners/reconciliation"] },
 
   { id: "management", href: "/admin/management", label: "Management", hub: "reports", tab: "Management", group: "Organisation", hint: "How the business and each branch is doing", keywords: ["management", "analytics", "performance"], permission: "management", icon: "BarChart2", prefixes: ["/admin/management"] },
+  { id: "commission", href: "/admin/management/commission", label: "Margin by manager", hub: "reports", tab: "By manager", group: "Organisation", hint: "Margin and commission for each account manager", keywords: ["commission", "margin", "account manager", "sales", "incentive", "profit by manager"], permission: "management", icon: "Percent", prefixes: ["/admin/management/commission"] },
 
   { id: "staff", href: "/admin/staff", label: "People & branches", hub: "settings", tab: "People & branches", group: "Organisation", hint: "Who can sign in, their role and branches", keywords: ["staff", "people", "branches", "permissions", "rbac"], permission: "staff", icon: "Users2", prefixes: ["/admin/staff"] },
   { id: "site-gallery", href: "/admin/gallery", label: "Website gallery", hub: "settings", tab: "Website gallery", group: "Organisation", hint: "Photos on the public website", keywords: ["gallery", "website", "photo", "image", "publish"], permission: "management", icon: "Folder", prefixes: ["/admin/gallery"] },

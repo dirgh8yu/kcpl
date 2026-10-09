@@ -2848,4 +2848,62 @@ class AppLocalizationsNe extends AppLocalizations {
   String needsValidUntil(String date) {
     return '$date सम्म मान्य';
   }
+
+  @override
+  String invdIssuedBoth(String date, String bsDate) {
+    return '$date ($bsDate) मा जारी';
+  }
+
+  @override
+  String get invdPaidOnBehalf => 'तपाईंको तर्फबाट तिरिएको';
+
+  @override
+  String get invdInvoiceTotal => 'बिलको जम्मा';
+
+  @override
+  String get invdCreditNotes => 'क्रेडिट नोट';
+
+  @override
+  String get invdMovedToCredit => 'तपाईंको खाताको क्रेडिटमा सारिएको';
+
+  @override
+  String invCreditHeldTitle(String amount) {
+    return 'KCPL सँग तपाईंको $amount जम्मा छ';
+  }
+
+  @override
+  String get invCreditHeldBody =>
+      'भुक्तानी भइसकेको बिलको क्रेडिट नोट वा तिर्नुपर्नेभन्दा बढी भुक्तानीबाट। KCPL ले यो फिर्ता गर्छ वा तपाईंको अर्को बिलमा मिलाउँछ; कुन चाहनुहुन्छ आफ्नो खाता प्रबन्धकलाई भन्नुहोस्।';
+
+  @override
+  String get opsTwoStepTitle => 'आफ्नो कोड हाल्नुहोस्';
+
+  @override
+  String get opsTwoStepSubtitle =>
+      'व्यवस्थापन र लेखाले आफ्नो प्रमाणीकरण एपको ६ अङ्कको कोडले साइन इन पक्का गर्छन्। त्यसपछि यो फोन ३० दिनसम्म विश्वसनीय रहन्छ।';
+
+  @override
+  String get opsTwoStepCode => '६ अङ्कको कोड';
+
+  @override
+  String get opsTwoStepRecovery => 'रिकभरी कोड';
+
+  @override
+  String get opsTwoStepUseRecovery => 'रिकभरी कोड प्रयोग गर्नुहोस्';
+
+  @override
+  String get opsTwoStepUseApp => 'एपको कोड प्रयोग गर्नुहोस्';
+
+  @override
+  String get opsTwoStepConfirm => 'पक्का गर्नुहोस्';
+
+  @override
+  String get opsTwoStepSetupTitle => 'पहिले दुई-चरण साइन इन मिलाउनुहोस्';
+
+  @override
+  String get opsTwoStepSetupBody =>
+      'तपाईंको भूमिकाले प्रमाणीकरण एपको कोडले साइन इन गर्छ। KCPL Operations वेबसाइटमा एक पटक मिलाउनुहोस्, अनि यहाँ फर्कनुहोस्।';
+
+  @override
+  String get opsTwoStepSetupDone => 'मिलाइसकेँ';
 }

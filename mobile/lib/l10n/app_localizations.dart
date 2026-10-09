@@ -5017,6 +5017,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'valid until {date}'**
   String needsValidUntil(String date);
+
+  /// No description provided for @invdIssuedBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued {date} ({bsDate})'**
+  String invdIssuedBoth(String date, String bsDate);
+
+  /// No description provided for @invdPaidOnBehalf.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid on your behalf'**
+  String get invdPaidOnBehalf;
+
+  /// No description provided for @invdInvoiceTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice total'**
+  String get invdInvoiceTotal;
+
+  /// No description provided for @invdCreditNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit notes'**
+  String get invdCreditNotes;
+
+  /// No description provided for @invdMovedToCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to your account credit'**
+  String get invdMovedToCredit;
+
+  /// No description provided for @invCreditHeldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'KCPL holds {amount} for you'**
+  String invCreditHeldTitle(String amount);
+
+  /// No description provided for @invCreditHeldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From a credit note on a paid invoice, or a payment above what was owed. KCPL refunds it or uses it on your next invoice; tell your account manager which you prefer.'**
+  String get invCreditHeldBody;
+
+  /// No description provided for @opsTwoStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your code'**
+  String get opsTwoStepTitle;
+
+  /// No description provided for @opsTwoStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Management and Accounts confirm sign-in with the 6-digit code from their authenticator app. This phone is then trusted for 30 days.'**
+  String get opsTwoStepSubtitle;
+
+  /// No description provided for @opsTwoStepCode.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get opsTwoStepCode;
+
+  /// No description provided for @opsTwoStepRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery code'**
+  String get opsTwoStepRecovery;
+
+  /// No description provided for @opsTwoStepUseRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a recovery code'**
+  String get opsTwoStepUseRecovery;
+
+  /// No description provided for @opsTwoStepUseApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the code from the app'**
+  String get opsTwoStepUseApp;
+
+  /// No description provided for @opsTwoStepConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get opsTwoStepConfirm;
+
+  /// No description provided for @opsTwoStepSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up two-step sign-in first'**
+  String get opsTwoStepSetupTitle;
+
+  /// No description provided for @opsTwoStepSetupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your role signs in with a code from an authenticator app. Set it up once on the KCPL Operations website, then come back here.'**
+  String get opsTwoStepSetupBody;
+
+  /// No description provided for @opsTwoStepSetupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'I’ve set it up'**
+  String get opsTwoStepSetupDone;
 }
 
 class _AppLocalizationsDelegate

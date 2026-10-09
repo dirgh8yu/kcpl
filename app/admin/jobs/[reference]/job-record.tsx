@@ -1,5 +1,7 @@
 "use client";
 
+import { DutyEstimateControl, type DutySuggestion } from "./duty-estimate-control";
+import type { StoredDutyEstimate } from "../../../shipment-duty-estimate";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -80,6 +82,9 @@ export function JobRecord({
   openProblems,
   canManageFinance,
   canMessageCustomer,
+  dutyEstimate,
+  dutySuggestion,
+  rates,
   children,
 }: {
   job: DigitalJobFile;
@@ -92,6 +97,9 @@ export function JobRecord({
   openProblems: number;
   canManageFinance: boolean;
   canMessageCustomer: boolean;
+  dutyEstimate: StoredDutyEstimate | null;
+  dutySuggestion: DutySuggestion | null;
+  rates: { rates: Record<string, number>; date: string | null } | null;
   children?: ReactNode;
 }) {
   const router = useRouter();
@@ -203,6 +211,7 @@ export function JobRecord({
           <OpsSurface title="Customs release" description={readiness.customs_release_required ? "This route needs a recorded customs release before final delivery." : "This route does not need a recorded release."}>
             <CustomsClearanceEditor row={{ reference: job.reference, clearance, release_required: readiness.customs_release_required }} agents={customsAgents}/>
           </OpsSurface>
+          <DutyEstimateControl reference={job.reference} initial={dutyEstimate} suggestion={dutySuggestion} rates={rates?.rates ?? null} ratesDate={rates?.date ?? null}/>
         </div> : null}
 
         <div data-panel="transit">

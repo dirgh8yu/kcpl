@@ -21,9 +21,10 @@ import 'split_view.dart';
 /// Opens a shipment. [preview] is what the caller already knows, so the
 /// detail page draws its journey on the first frame instead of a skeleton.
 /// Beside the list on a tablet; as a sheet otherwise.
-void openInvoice(BuildContext context, String reference) {
+/// [title] is the number the customer knows it by, when the caller has it.
+void openInvoice(BuildContext context, String reference, {String? title}) {
   if (SplitView.select(context, reference)) return;
-  Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: reference)));
+  Navigator.of(context).push(SheetRoute<void>(builder: (_) => InvoiceDetailScreen(reference: reference, title: title)));
 }
 
 /// Beside the list on a tablet; as a sheet otherwise.
@@ -182,8 +183,8 @@ class InvoiceRow extends StatelessWidget {
     return SplitSelected(
       id: invoice.reference,
       child: RowTile(
-        onTap: () => openInvoice(context, invoice.reference),
-        title: Text(invoice.externalInvoiceNumber ?? invoice.reference, maxLines: 1, overflow: TextOverflow.ellipsis),
+        onTap: () => openInvoice(context, invoice.reference, title: invoice.number),
+        title: Text(invoice.number, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
           open && invoice.dueDate.isNotEmpty
               ? l.invdDueOn(formatShortDate(invoice.dueDate))

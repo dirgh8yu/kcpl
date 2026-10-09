@@ -220,3 +220,38 @@
 .kcpl-admin-content .job-pickup-facts > div:first-child { border-top: 0; padding-top: 0; }
 .kcpl-admin-content .job-pickup-facts dt { color: var(--admin-muted); }
 .kcpl-admin-content .job-pickup-facts dd { margin: 0; color: var(--admin-ink); }
+
+/* Containers: one row per box, its dates and the detention count. */
+.kcpl-admin-content .job-container-list { margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .job-container-list > li + li { border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .job-container { display: grid; gap: var(--app-space-3); padding: 12px 0; }
+.kcpl-admin-content .job-container-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; }
+.kcpl-admin-content .job-container-number { margin: 0; color: var(--admin-ink); font-size: var(--app-text-md); font-weight: 550; }
+.kcpl-admin-content .job-container-number span { color: var(--admin-muted); font-size: var(--app-text-sm); font-weight: 400; }
+.kcpl-admin-content .job-container-dates { margin: 2px 0 0; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 19px; }
+.kcpl-admin-content .job-container-actions { display: flex; align-items: center; gap: 8px; }
+.kcpl-admin-content .job-container-all { display: flex; align-items: flex-start; gap: 8px; color: var(--admin-ink); font-size: var(--app-text-sm); }
+
+/* Duty estimate: one row of fields per HS line or levy. */
+.kcpl-admin-content .duty-lines { display: grid; gap: var(--app-space-3); margin: 0; padding: 0; border: 0; }
+.kcpl-admin-content .duty-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .7fr) auto; align-items: end; gap: var(--app-space-2); }
+.kcpl-admin-content .duty-line[data-levy] { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 1fr) auto; }
+@media (max-width: 760px) {
+  .kcpl-admin-content .duty-line, .kcpl-admin-content .duty-line[data-levy] { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: var(--app-space-3); border-bottom: 1px solid var(--admin-line); }
+}
+
+/* Documents read automatically: what was found, and what to apply. */
+.kcpl-admin-content .doc-readings { display: grid; gap: var(--app-space-3); margin-top: var(--app-space-4); padding-top: var(--app-space-4); border-top: 1px solid var(--admin-line); }
+.kcpl-admin-content .doc-readings-candidates { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.kcpl-admin-content .doc-readings-candidates li { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--admin-ink); font-size: var(--app-text-sm); }
+.kcpl-admin-content .doc-reading { border: 1px solid var(--admin-line); border-radius: var(--app-radius); padding: 10px 12px; }
+.kcpl-admin-content .doc-reading summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; color: var(--admin-ink); font-size: var(--app-text-sm); }
+.kcpl-admin-content .doc-reading-file { color: var(--admin-muted); }
+.kcpl-admin-content .doc-reading-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; margin: 12px 0 0; }
+.kcpl-admin-content .doc-reading-fields dt { color: var(--admin-muted); font-size: 11px; font-weight: 600; }
+.kcpl-admin-content .doc-reading-fields dd { margin: 2px 0 0; color: var(--admin-ink); font-size: var(--app-text-sm); overflow-wrap: anywhere; }
+.kcpl-admin-content .doc-reading-line { margin: 10px 0 0; color: var(--admin-ink); font-size: var(--app-text-sm); line-height: 20px; }
+.kcpl-admin-content .doc-reading-invalid { color: var(--admin-danger); }
+.kcpl-admin-content .doc-reading-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; }
+.kcpl-admin-content .doc-reading-apply label { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-ink); font-size: var(--app-text-sm); }
+.kcpl-admin-content .job-partner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; color: var(--admin-ink); font-size: var(--app-text-sm); }

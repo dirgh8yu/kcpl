@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Check, UserPlus, X } from "lucide-react";
+import { Check, ShieldOff, UserPlus, X } from "lucide-react";
 import { kcplBranches, type KcplBranch } from "../crm/crm-data";
 import { kcplStaffRoleLabels, kcplStaffRoles, type KcplStaffRole } from "../staff-permissions";
+import { twoStepRequiredForRole } from "../two-step-policy";
 import type { KcplStaffProfile } from "../staff-directory";
 import { OpsActiveFilters, OpsBadge, OpsButton, OpsField, OpsFilterSelect, OpsInspectorHeader, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRegisterToolbar, OpsSearch, OpsTableWrap } from "../operations-ui";
 
@@ -23,8 +24,11 @@ const SIDE_BY_SIDE_QUERY = "(min-width: 1180px), (min-width: 900px) and (max-wid
 
 const emptyDraft: Draft = { email: "", displayName: "", jobTitle: "", phone: "", role: "operations", branchScope: "selected", branches: ["Kathmandu"], active: true };
 
-export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffProfile[] }) {
+type TwoStepState = Record<string, { enabled: boolean; enrolled_at: string | null; recovery_left: number }>;
+
+export function StaffManager({ initialProfiles, twoStep: initialTwoStep, viewerUid }: { initialProfiles: KcplStaffProfile[]; twoStep: TwoStepState | null; viewerUid: string }) {
   const [profiles, setProfiles] = useState(initialProfiles);
+  const [twoStep, setTwoStep] = useState(initialTwoStep);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -90,6 +94,20 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
     finally { setBusy(false); }
   }
 
+  async function resetTwoStepFor(profile: KcplStaffProfile) {
+    if (!window.confirm(`Reset two-step sign-in for ${profile.display_name}? Their authenticator and recovery codes stop working, and they set it up again at their next sign-in. Only do this when you know it's them asking.`)) return;
+    setBusy(true); setNotice("");
+    try {
+      const response = await fetch("/api/admin/staff/two-step", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uid: profile.uid }) });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Could not reset two-step sign-in.");
+      setTwoStep((current) => current ? { ...current, [profile.uid]: { enabled: false, enrolled_at: null, recovery_left: 0 } } : current);
+      setNotice(`Two-step sign-in reset for ${profile.display_name}. They set it up again at their next sign-in.`);
+    } catch (error) { setNotice(error instanceof Error ? `Could not reset: ${error.message}` : "Could not reset two-step sign-in."); }
+    finally { setBusy(false); }
+  }
+
+  const editing = editingUid && editingUid !== "new" ? profiles.find((profile) => profile.uid === editingUid) ?? null : null;
   const suspended = profiles.length - activeCount;
   const compact = panelOpen;
   const filtersActive = Boolean(query.trim()) || roleFilter !== "all";
@@ -127,7 +145,7 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
                   <td><span className="ops-cell-primary ops-cell-clamp" title={profile.display_name}>{profile.display_name}</span><span className="ops-cell-secondary ops-cell-clamp">{profile.email}</span></td>
                   <td><span className="ops-cell-primary">{kcplStaffRoleLabels[profile.role]}</span></td>
                   <td><span className="ops-cell-clamp" title={profile.branch_scope === "all" ? "All branches" : profile.branches.join(", ")}>{profile.branch_scope === "all" ? "All branches" : profile.branches.join(" · ") || "No branches"}</span></td>
-                  <td><OpsBadge tone={profile.active ? "success" : "danger"}>{profile.active ? "Active" : "Suspended"}</OpsBadge></td>
+                  <td><OpsBadge tone={profile.active ? "success" : "danger"}>{profile.active ? "Active" : "Suspended"}</OpsBadge>{twoStep && twoStepRequiredForRole(profile.role) ? <span className="ops-cell-secondary">{twoStep[profile.uid]?.enabled ? "Two-step on" : "Two-step at next sign-in"}</span> : null}</td>
                   {compact ? null : <td><span className="ops-cell-primary ops-cell-clamp">{profile.job_title || "KCPL Staff"}</span>{profile.phone ? <span className="ops-cell-secondary">{profile.phone}</span> : null}</td>}
                 </tr>;
               })}</tbody>
@@ -158,6 +176,13 @@ export function StaffManager({ initialProfiles }: { initialProfiles: KcplStaffPr
                     <div className="ops-filter-choices">{kcplBranches.map((branch) => { const on = draft.branches.includes(branch); return <button key={branch} type="button" onClick={() => toggleBranch(branch)} className="ops-filter-choice staff-branch" data-active={on || undefined} aria-pressed={on}>{on ? <Check size={12} strokeWidth={2} aria-hidden="true"/> : null}{branch}</button>; })}</div>
                   </div> : <p className="col-span-full ops-inspector-hint">This person can operate records across every configured KCPL branch.</p>}
                   <label className="col-span-full staff-active"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })}/>Active account</label>
+                  {editing && twoStep && twoStepRequiredForRole(editing.role) ? <div className="col-span-full staff-two-step">
+                    <span className="ops-field-label">Two-step sign-in</span>
+                    <p className="ops-inspector-hint">{twoStep[editing.uid]?.enabled
+                      ? `On${twoStep[editing.uid]?.recovery_left !== undefined ? `, ${twoStep[editing.uid]?.recovery_left} recovery code${twoStep[editing.uid]?.recovery_left === 1 ? "" : "s"} left` : ""}. Reset it if they lost the phone with the app.`
+                      : "Not set up yet. They set it up at their next sign-in."}</p>
+                    {twoStep[editing.uid]?.enabled && editing.uid !== viewerUid ? <OpsButton type="button" variant="ghost" size="sm" disabled={busy} onClick={() => resetTwoStepFor(editing)}><ShieldOff size={14} aria-hidden="true"/>Reset two-step sign-in</OpsButton> : null}
+                  </div> : null}
                 </div>
               </div>
             </div>

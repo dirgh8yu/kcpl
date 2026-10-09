@@ -2,6 +2,7 @@ import "../organisation-premium.css";
 import { getAdminAccess } from "../admin-auth";
 import { OperationsShell } from "../operations-shell";
 import { getStaffContext, listStaffProfiles } from "../staff-directory.server";
+import { twoStepOverview } from "../two-step.server";
 import { V4WorkspaceGate } from "../v4-workspace-gate";
 import { StaffManager } from "./staff-manager";
 
@@ -26,7 +27,9 @@ export default async function StaffPage() {
   const profiles = await listStaffProfiles();
   if (profiles === null) return <OperationsShell {...shellProps}><Gate embedded title="People didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
 
-  return <OperationsShell {...shellProps}><StaffManager initialProfiles={profiles}/></OperationsShell>;
+  // Who has two-step sign-in on; the page still works if this can't be read.
+  const twoStep = await twoStepOverview(profiles.map((profile) => profile.uid)).catch(() => null);
+  return <OperationsShell {...shellProps}><StaffManager initialProfiles={profiles} twoStep={twoStep ? Object.fromEntries(twoStep) : null} viewerUid={access.user.uid}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

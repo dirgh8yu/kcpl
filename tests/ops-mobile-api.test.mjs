@@ -36,11 +36,19 @@ test("the staff bearer resolver verifies with revocation and decides with the we
   assert.ok(start > 0);
   const body = source.slice(start, source.indexOf("export function adminSessionCookie", start));
   assert.match(body, /verifyIdToken\(token, true\)/);
-  assert.match(body, /isAuthorizedAdminUser\(decoded\.uid, decoded\.email\)/);
-  assert.ok(body.indexOf("verifyIdToken") < body.indexOf("isAuthorizedAdminUser"));
+  // The role check the cookie path makes, then the same second step for Management and Accounts.
+  assert.match(body, /authorizedAdminRole\(decoded\.uid, decoded\.email\)/);
+  assert.ok(body.indexOf("verifyIdToken") < body.indexOf("authorizedAdminRole"));
+  assert.match(body, /return await withTwoStep\(user, role, /);
+  const cookiePath = source.slice(source.indexOf("export async function getAdminAccess("), start);
+  assert.match(cookiePath, /authorizedAdminRole\(decoded\.uid, decoded\.email\)/);
+  assert.match(cookiePath, /withTwoStep\(user, role, /);
   // The only other way in is the same fenced QA preview the cookie path has.
   assert.match(body, /const previewAccess = previewQaAccess\(\);\s*if \(previewAccess\) return previewAccess;/);
-  assert.equal((body.match(/kind: "authorized"/g) ?? []).length, 1);
+  // Its only way to "authorized" is the second step's own check, which lets through only a verified one.
+  assert.equal((body.match(/kind: "authorized"/g) ?? []).length, 0);
+  const twoStep = source.slice(source.indexOf("async function withTwoStep"), source.indexOf("export async function getAdminAccess("));
+  assert.match(twoStep, /status === "verified" \? \{ kind: "authorized", user \} : \{ kind: "two-step", step: status, pending: user \}/);
 });
 
 test("every staff route resolves the caller through the one wrapper", async () => {
@@ -48,7 +56,15 @@ test("every staff route resolves the caller through the one wrapper", async () =
   assert.ok(routes.length >= 7, `found ${routes.length}`);
   for (const path of routes) {
     const source = code(await readFile(repo(path), "utf8"));
-    assert.match(source, /withStaffSession\(request, async \(/, path);
+    if (path === "app/api/mobile/ops/v1/two-step/route.ts") {
+      // The one route for someone not through yet: it takes the bearer's
+      // pending second step, and nothing else.
+      assert.match(source, /getAdminAccessFromBearer\(request\)/);
+      assert.match(source, /access\.kind !== "two-step"\) return opsJson\(\{ ok: false, code: "signed_out"/);
+      assert.match(source, /verifyTwoStep\(access\.pending\.uid, /);
+    } else {
+      assert.match(source, /withStaffSession\(request, async \(/, path);
+    }
     assert.doesNotMatch(source, /firebaseAdminDb|collection\(/, `${path} must not query Firestore itself`);
     assert.doesNotMatch(source, /getAdminAccess\(\)/, `${path} must not fall back to the cookie`);
   }
@@ -71,6 +87,7 @@ test("the staff app can write only what the phone needs, and only through shared
     "app/api/mobile/ops/v1/jobs/[reference]/notes/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/tasks/[id]/route.ts",
     "app/api/mobile/ops/v1/push/route.ts",
+    "app/api/mobile/ops/v1/two-step/route.ts",
   ]);
   for (const kind of ["tasks", "customs"]) {
     const source = code(await readFile(repo(`app/api/mobile/ops/v1/jobs/[reference]/${kind}/[id]/route.ts`), "utf8"));

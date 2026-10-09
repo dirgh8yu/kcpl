@@ -152,9 +152,9 @@ class _PayScreenState extends State<PayScreen> {
       return DoneView(
         title: status.paid ? l.payPaid : l.payReview,
         body: status.paid
-            ? l.payPaidBody(formatMoney(status.amount, 'NPR'), invoice.reference)
-            : status.message ?? l.payReviewBody(invoice.reference),
-        reference: invoice.reference,
+            ? l.payPaidBody(formatMoney(status.amount, 'NPR'), invoice.number)
+            : status.message ?? l.payReviewBody(invoice.number),
+        reference: invoice.number,
       );
     }
 
@@ -255,7 +255,7 @@ class _PayScreenState extends State<PayScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(kGutter + 4, 0, kGutter, 16),
           child: Text(
-            '${invoice.reference} · ${l.payOwed(formatMoney(options.balance, options.currency))}',
+            '${invoice.number} · ${l.payOwed(formatMoney(options.balance, options.currency))}',
             style: context.type.bodyMedium?.copyWith(color: context.palette.secondary),
           ),
         ),
