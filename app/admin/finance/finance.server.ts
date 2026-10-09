@@ -28,8 +28,9 @@ import {
   creditNoteSplit,
   invoiceTotals,
   shipmentBillingCounts,
-  taxDocumentNumber,
 } from "./finance-data";
+import { CUSTOMER_CREDITS, nextTaxDocumentNumber, writeMovedToCredit, writeNewCustomerCredit } from "./customer-credit-ledger.server";
+import { creditNoteAllocation, invoiceLedgerKind } from "./refund-policy";
 
 type Actor = { name: string; email: string };
 
@@ -113,6 +114,8 @@ function paymentFromDoc(invoiceReference: string, id: string, data: Record<strin
   return {
     id,
     invoice_reference: invoiceReference,
+    kind: invoiceLedgerKind(data.kind),
+    customer_credit_id: nullable(data.customer_credit_id),
     amount: numberValue(data.amount),
     currency: currencyValue(data.currency),
     payment_date: text(data.payment_date),
@@ -159,6 +162,7 @@ async function invoiceFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     total: numberValue(data.total),
     amount_paid: numberValue(data.amount_paid),
     balance_due: balanceDue,
+    moved_to_credit_total: numberValue(data.moved_to_credit_total),
     notes: nullable(data.notes),
     tax_invoice_number: nullable(data.tax_invoice_number),
     fiscal_year: nullable(data.fiscal_year),
@@ -168,7 +172,10 @@ async function invoiceFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     created_by_email: text(data.created_by_email),
     created_at: text(data.created_at),
     updated_at: text(data.updated_at),
-    payments: paymentsSnapshot?.docs.map((doc) => paymentFromDoc(snapshot.id, doc.id, doc.data() as Record<string, unknown>)) ?? [],
+    // Newest first; on the same day, by when recorded, a payment above the
+    // money it moved to credit.
+    payments: (paymentsSnapshot?.docs.map((doc) => paymentFromDoc(snapshot.id, doc.id, doc.data() as Record<string, unknown>)) ?? [])
+      .sort((a, b) => b.payment_date.localeCompare(a.payment_date) || b.created_at.localeCompare(a.created_at) || Number(a.kind === "moved_to_credit") - Number(b.kind === "moved_to_credit")),
     credit_notes: creditNotesSnapshot?.docs.map((doc) => creditNoteFromDoc(snapshot.id, doc.id, doc.data() as Record<string, unknown>)) ?? [],
   };
 }
@@ -191,22 +198,6 @@ function creditNoteFromDoc(invoiceReference: string, id: string, data: Record<st
 /** KCPL's PAN/VAT number for its tax invoices, from configuration. */
 export function companyPan() {
   return process.env.KCPL_COMPANY_PAN?.trim() || null;
-}
-
-/**
- * The next number in a fiscal year's series, inside the caller's
- * transaction so two invoices issued at once can't share one. Read before
- * any write in the transaction, as Firestore requires.
- */
-async function nextTaxDocumentNumber(transaction: FirebaseFirestore.Transaction, kind: "invoice" | "credit_note", fiscalYear: string) {
-  const ref = firebaseAdminDb().collection("tax_document_series").doc(`${kind}-${fiscalYear}`);
-  const series = await transaction.get(ref);
-  const sequence = Math.max(0, Math.floor(numberValue(series.get("last_sequence")))) + 1;
-  return {
-    number: taxDocumentNumber(kind, fiscalYear, sequence),
-    sequence,
-    commit: () => transaction.set(ref, { kind, fiscal_year: fiscalYear, last_sequence: sequence, updated_at: new Date().toISOString() }, { merge: true }),
-  };
 }
 
 function canAccessFinance(context: KcplStaffContext) {
@@ -287,7 +278,17 @@ export async function recomputeCustomerFinance(customerId: string) {
   const outstanding = sumInCurrency(outstandingByCurrency, currency, table?.rates ?? null);
   const unconverted = [...new Set([...revenue.missing, ...cost.missing, ...outstanding.missing])].sort();
 
+  // Money KCPL holds for the customer, shown beside what they owe; never
+  // netted against it, so the credit limit stays about exposure.
+  const accountCreditByCurrency: Partial<Record<string, number>> = {};
+  const credits = await db.collection(CUSTOMER_CREDITS).where("customer_id", "==", customerId).where("status", "==", "open").get();
+  for (const credit of credits.docs) {
+    const creditCurrency = currencyValue(credit.get("currency"));
+    accountCreditByCurrency[creditCurrency] = Math.round(((accountCreditByCurrency[creditCurrency] ?? 0) + numberValue(credit.get("available")) + numberValue(credit.get("reserved"))) * 100) / 100;
+  }
+
   await customerRef.update({
+    account_credit_by_currency: accountCreditByCurrency,
     revenue_total: revenue.amount,
     cost_total: cost.amount,
     profit_total: Math.round((revenue.amount - cost.amount) * 100) / 100,
@@ -537,6 +538,7 @@ export async function createFinanceInvoice(input: CreateFinanceInvoiceInput, act
     tax_total: tax,
     disbursement_total: disbursementTotal,
     credit_total: 0,
+    moved_to_credit_total: 0,
     credit_tax_total: 0,
     credit_disbursement_total: 0,
     adjustment_total: 0,
@@ -614,7 +616,9 @@ export async function createCreditNote(reference: string, input: { amount: numbe
   if (loaded.kind !== "ready") return loaded;
   const reason = input.reason.trim().slice(0, 500);
   if (reason.length < 4) return { kind: "reason_required" as const };
-  if (!["issued", "partially_paid", "overdue"].includes(loaded.invoice.status) || loaded.invoice.record_type !== "invoice") return { kind: "invalid_status" as const };
+  // A paid invoice can be credited too: what was paid becomes the customer's credit.
+  const creditable = ["issued", "partially_paid", "overdue", "paid"];
+  if (!creditable.includes(loaded.invoice.status) || loaded.invoice.record_type !== "invoice") return { kind: "invalid_status" as const };
   const today = operationalDate();
   const fiscalYear = nepalFiscalYear(today);
   if (!fiscalYear) return { kind: "invalid_status" as const };
@@ -624,40 +628,68 @@ export async function createCreditNote(reference: string, input: { amount: numbe
     const current = await transaction.get(invoiceRef);
     if (!current.exists) return { kind: "missing" as const };
     const status = text(current.get("status"));
-    if (!["issued", "partially_paid", "overdue"].includes(status)) return { kind: "invalid_status" as const };
+    if (!creditable.includes(status)) return { kind: "invalid_status" as const };
     const data = current.data() as Record<string, unknown>;
+    const total = numberValue(data.total);
+    const balanceDue = numberValue(data.balance_due);
+    const amountPaid = numberValue(data.amount_paid);
     const split = creditNoteSplit({
-      total: numberValue(data.total), tax_total: numberValue(data.tax_total), disbursement_total: numberValue(data.disbursement_total),
-      balance_due: numberValue(data.balance_due), credit_tax_total: numberValue(data.credit_tax_total), credit_disbursement_total: numberValue(data.credit_disbursement_total),
+      total, tax_total: numberValue(data.tax_total), disbursement_total: numberValue(data.disbursement_total),
+      credit_tax_total: numberValue(data.credit_tax_total), credit_disbursement_total: numberValue(data.credit_disbursement_total),
     }, input.amount);
     if (!split.ok) return { kind: split.reason };
+    const allocation = creditNoteAllocation({ total, balance_due: balanceDue }, split.amount);
+    if (!allocation.ok) return { kind: allocation.reason };
+    // What was paid can't be more than what is credited back out of it.
+    if (allocation.toCustomerCredit - amountPaid > 0.005) return { kind: "invalid_status" as const };
     const series = await nextTaxDocumentNumber(transaction, "credit_note", fiscalYear);
     const now = new Date().toISOString();
     const round = (value: number) => Math.round(value * 100) / 100;
-    const nextTotal = round(numberValue(data.total) - split.amount);
-    const nextBalance = round(numberValue(data.balance_due) - split.amount);
+    const nextTotal = round(total - split.amount);
+    const nextBalance = round(balanceDue - allocation.fromBalance);
+    const nextPaid = round(amountPaid - allocation.toCustomerCredit);
     const id = childId("credit");
+    const invoiceNumber = text(data.tax_invoice_number) || loaded.invoice.reference;
     series.commit();
     transaction.create(invoiceRef.collection("credit_notes").doc(id), {
       number: series.number, sequence: series.sequence, fiscal_year: fiscalYear, invoice_reference: loaded.invoice.reference,
       tax_invoice_number: nullable(data.tax_invoice_number), credit_date: today, amount: split.amount, tax_amount: split.tax_amount,
       disbursement_amount: split.disbursement_amount, currency: text(data.currency), reason,
+      from_balance: allocation.fromBalance, to_customer_credit: allocation.toCustomerCredit,
       created_by_name: actor.name, created_by_email: actor.email, created_at: now,
     });
+    let customerCreditId: string | null = null;
+    if (allocation.toCustomerCredit > 0.005) {
+      customerCreditId = `credit-note-${id.replace(/^credit-/, "")}`;
+      writeNewCustomerCredit(transaction, {
+        id: customerCreditId, customerId: text(data.customer_id), customerName: text(data.customer_name, "Customer"),
+        branch: text(data.branch), currency: text(data.currency), amount: allocation.toCustomerCredit, source: "credit_note",
+        sourceInvoiceReference: loaded.invoice.reference, sourceInvoiceNumber: invoiceNumber, sourceDocument: series.number,
+        note: reason, actor, now,
+      });
+      writeMovedToCredit(transaction, invoiceRef, {
+        id: `${id}-to-credit`, invoiceReference: loaded.invoice.reference, amount: allocation.toCustomerCredit,
+        currency: text(data.currency), creditId: customerCreditId, date: today,
+        note: `Credit note ${series.number}: already paid, now the customer's credit`, actor, now,
+      });
+    }
     transaction.update(invoiceRef, {
       total: nextTotal,
       balance_due: nextBalance,
+      amount_paid: nextPaid,
+      moved_to_credit_total: round(numberValue(data.moved_to_credit_total) + allocation.toCustomerCredit),
       credit_total: round(numberValue(data.credit_total) + split.amount),
       credit_tax_total: round(numberValue(data.credit_tax_total) + split.tax_amount),
       credit_disbursement_total: round(numberValue(data.credit_disbursement_total) + split.disbursement_amount),
       ...(nextBalance <= 0.00001 ? { status: "paid", payment_status: "paid" } : {}),
       updated_at: now,
     });
-    return { kind: "created" as const, number: series.number, amount: split.amount };
+    return { kind: "created" as const, number: series.number, amount: split.amount, customerCreditId, toCustomerCredit: allocation.toCustomerCredit };
   });
   if (result.kind !== "created") return result;
   await recomputeCustomerFinance(loaded.invoice.customer_id);
-  await writeCustomerActivity(loaded.invoice.customer_id, `Credit note ${result.number}`, `${loaded.invoice.currency} ${result.amount.toFixed(2)} off ${loaded.invoice.tax_invoice_number ?? loaded.invoice.reference} · ${reason}`, actor);
+  const creditDetail = result.toCustomerCredit > 0.005 ? ` · ${loaded.invoice.currency} ${result.toCustomerCredit.toFixed(2)} already paid, now the customer's credit` : "";
+  await writeCustomerActivity(loaded.invoice.customer_id, `Credit note ${result.number}`, `${loaded.invoice.currency} ${result.amount.toFixed(2)} off ${loaded.invoice.tax_invoice_number ?? loaded.invoice.reference} · ${reason}${creditDetail}`, actor);
   await writeJobActivity(loaded.invoice.shipment_reference, `Credit note ${result.number}`, `${loaded.invoice.currency} ${result.amount.toFixed(2)} · ${reason}`, actor);
   return result;
 }

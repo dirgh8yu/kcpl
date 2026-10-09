@@ -69,10 +69,17 @@ export async function getCrmCustomerFinanceSnapshot(
 
   const currency = currencyValue(customer.get("preferred_currency"));
   const today = operationalDate();
-  const [invoiceSnapshot, shipmentSnapshot] = await Promise.all([
+  const [invoiceSnapshot, shipmentSnapshot, creditSnapshot] = await Promise.all([
     db.collection("invoices").where("customer_id", "==", id).limit(2000).get(),
     db.collection("shipments").where("customer_id", "==", id).limit(500).get(),
+    db.collection("customer_credits").where("customer_id", "==", id).where("status", "==", "open").get(),
   ]);
+  const accountCredit = new Map<CrmCurrency, number>();
+  for (const credit of creditSnapshot.docs) {
+    if (!canSeeBranch(context, branchValue(credit.get("branch")))) continue;
+    const creditCurrency = currencyValue(credit.get("currency"));
+    accountCredit.set(creditCurrency, Math.round(((accountCredit.get(creditCurrency) ?? 0) + numberValue(credit.get("available")) + numberValue(credit.get("reserved"))) * 100) / 100);
+  }
 
   // One NRB read, only if some record is in another currency.
   let rateTable: Promise<RateTable | null> | null = null;
@@ -188,6 +195,7 @@ export async function getCrmCustomerFinanceSnapshot(
     other_currency_invoice_count: otherCurrencyInvoiceCount,
     other_currency_cost_count: otherCurrencyCostCount,
     rates_date: ratesDate,
+    account_credit: [...accountCredit.entries()].map(([creditCurrency, amount]) => ({ currency: creditCurrency, amount })),
     integrity_warning_count: integrityWarningCount,
     generated_at: new Date().toISOString(),
   };

@@ -23,6 +23,7 @@ import {
   Tag,
   TrendingUp,
   Truck,
+  Undo2,
   Users,
   Users2,
   Zap,
@@ -31,6 +32,7 @@ import {
 import type { WorkspaceIconName } from "./workflow-navigation";
 
 const workspaceIcons: Record<WorkspaceIconName, LucideIcon> = {
+  Undo2,
   Home,
   Truck,
   Calendar,

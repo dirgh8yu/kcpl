@@ -36,6 +36,15 @@ export function PortalInvoicesWorkspace({
       />
       <div className="ops-content">
         <div className="ops-stack portal-stack">
+          {summary.accountCredit.length ? (
+            <OpsSurface
+              priority="info"
+              title={t("inv.credit_held_title", { amount: summary.accountCredit.map((credit) => portalMoney(credit.amount, credit.currency)).join(" · ") })}
+            >
+              <p className="text-[length:var(--app-label-size)] leading-5 text-[var(--admin-muted)]">{t("inv.credit_held_body")}</p>
+            </OpsSurface>
+          ) : null}
+
           {summary.balances.length ? (
             <OpsSurface
               title={t("inv.position_title")}

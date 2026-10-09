@@ -38,11 +38,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   const actor = { name: auth.user.displayName, email: auth.user.email };
   if (action === "credit") {
     const credit = await createCreditNote(reference, { amount: Number(body.amount), reason: typeof body.reason === "string" ? body.reason : "" }, actor, auth.staff);
-    if (credit.kind === "created") return json({ ok: true, creditNote: credit.number });
+    if (credit.kind === "created") return json({ ok: true, creditNote: credit.number, customerCredit: credit.customerCreditId, toCustomerCredit: credit.toCustomerCredit });
     if (credit.kind === "reason_required") return json({ ok: false, error: "Say why the amount is being credited." }, 400);
     if (credit.kind === "invalid_amount") return json({ ok: false, error: "Enter a credit amount greater than zero." }, 400);
-    if (credit.kind === "exceeds_balance") return json({ ok: false, error: "A credit note can't be more than what is still owed on the invoice." }, 409);
-    if (credit.kind === "invalid_status") return json({ ok: false, error: "Only an issued invoice with something still owed can be credited." }, 409);
+    if (credit.kind === "exceeds_total") return json({ ok: false, error: "A credit note can't be more than what is left of the invoice." }, 409);
+    if (credit.kind === "invalid_status") return json({ ok: false, error: "Only an issued or paid invoice can be credited." }, 409);
     if (credit.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
     if (credit.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);
     return json({ ok: false, error: "Finance storage is unavailable." }, 503);

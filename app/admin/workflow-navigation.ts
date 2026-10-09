@@ -8,6 +8,7 @@ export type WorkspacePermission =
   | "staff";
 
 export type WorkspaceIconName =
+  | "Undo2"
   | "Home"
   | "Truck"
   | "Calendar"
@@ -133,6 +134,7 @@ export const workflowWorkspaces: WorkflowWorkspace[] = [
   { id: "edi", href: "/admin/edi", label: "EDI messages", hub: "partners", tab: "EDI", group: "Network", hint: "Electronic messages exchanged with carriers", keywords: ["edi", "edi gateway", "x12", "204", "990", "214", "load tender", "carrier response", "van", "transaction"], permission: "job_file", icon: "Network", prefixes: ["/admin/edi"] },
 
   { id: "receivables", href: "/admin/finance", label: "Receivables", hub: "finance", tab: "Receivables", group: "Finance", hint: "Customer invoices and who owes what", keywords: ["receivable", "invoice", "customer billing", "collections"], permission: "finance", icon: "CreditCard", prefixes: ["/admin/finance"] },
+  { id: "credits", href: "/admin/finance/credits", label: "Credits & refunds", hub: "finance", tab: "Credits & refunds", group: "Finance", hint: "Money held for customers, and paying it back", keywords: ["refund", "credit", "customer credit", "overpayment", "paid twice", "money back", "credit note"], permission: "finance", icon: "Undo2", prefixes: ["/admin/finance/credits"] },
   { id: "payables", href: "/admin/payables", label: "Payables", hub: "finance", tab: "Payables", group: "Finance", hint: "Supplier bills and what we owe", keywords: ["payable", "supplier bill", "ap", "payment"], permission: "finance", icon: "Receipt", prefixes: ["/admin/payables"] },
   { id: "freight-audit", href: "/admin/freight-audit", label: "Supplier bill checks", hub: "finance", tab: "Bill checks", group: "Finance", hint: "Check supplier bills against what we booked before paying", keywords: ["freight audit", "match pay", "match-pay", "variance", "supplier invoice", "overcharge"], permission: "finance", icon: "Scale", prefixes: ["/admin/freight-audit"] },
   { id: "supplier-reconciliation", href: "/admin/partners/reconciliation", label: "Supplier records", hub: "finance", tab: "Supplier records", group: "Finance", hint: "Tidy supplier details and link old bills", keywords: ["supplier", "reconciliation", "supplier reconciliation", "legacy", "bills"], permission: "finance", icon: "Scale", prefixes: ["/admin/partners/reconciliation"] },

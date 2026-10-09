@@ -48,7 +48,9 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
 
   // As issued, before credit notes; total is already net of them.
   const issuedTotal = result.kind === "ready" ? result.invoice.total + result.invoice.credit_total : 0;
-  const settled = result.kind === "ready" && Boolean(result.invoice.amount_paid || result.invoice.credit_total);
+  const settled = result.kind === "ready" && Boolean(result.invoice.amount_paid || result.invoice.credit_total || result.invoice.moved_to_credit_total);
+  // What was received for the invoice, including any part since moved to the account's credit.
+  const received = result.kind === "ready" ? result.invoice.amount_paid + result.invoice.moved_to_credit_total : 0;
 
   return (
     <PortalShell
@@ -139,7 +141,8 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
                       {settled ? portalMoney(issuedTotal, result.invoice.currency) : <strong>{portalMoney(issuedTotal, result.invoice.currency)}</strong>}
                     </OpsDetailItem>
                     {result.invoice.credit_total ? <OpsDetailItem label={t("invd.credit_notes")}>−{portalMoney(result.invoice.credit_total, result.invoice.currency)}</OpsDetailItem> : null}
-                    {result.invoice.amount_paid ? <OpsDetailItem label={t("invd.receipted")}>{portalMoney(result.invoice.amount_paid, result.invoice.currency)}</OpsDetailItem> : null}
+                    {received ? <OpsDetailItem label={t("invd.receipted")}>{portalMoney(received, result.invoice.currency)}</OpsDetailItem> : null}
+                    {result.invoice.moved_to_credit_total ? <OpsDetailItem label={t("invd.moved_to_credit")}>−{portalMoney(result.invoice.moved_to_credit_total, result.invoice.currency)}</OpsDetailItem> : null}
                     {settled ? <OpsDetailItem label={t("invd.balance_due")}>
                       <strong>{portalMoney(result.invoice.balance_due, result.invoice.currency)}</strong>
                     </OpsDetailItem> : null}

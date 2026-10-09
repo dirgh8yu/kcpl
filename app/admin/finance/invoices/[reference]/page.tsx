@@ -48,7 +48,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ refere
     return [];
   });
 
-  return <OperationsShell {...shellProps}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} companyPan={companyPan()}/></OperationsShell>;
+  return <OperationsShell {...shellProps} detailLabel={result.invoice.tax_invoice_number ?? undefined}><InvoiceWorkspace invoice={result.invoice} remittances={remittances} companyPan={companyPan()}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

@@ -262,6 +262,8 @@ export type PortalFinanceSummary = {
   balances: PortalCurrencyBalance[];
   openInvoices: number;
   overdueInvoices: number;
+  /** Money KCPL holds for the customer, per currency, to refund or use on an invoice. */
+  accountCredit: Array<{ currency: string; amount: number }>;
 };
 
 /** Invoice statuses are already effective (see portalInvoiceView), so overdue is read straight off them. */
@@ -289,6 +291,7 @@ function summarizeInvoices(invoices: PortalInvoiceView[]): PortalFinanceSummary 
     balances: [...byCurrency.values()].sort((a, b) => b.outstanding - a.outstanding),
     openInvoices,
     overdueInvoices,
+    accountCredit: [],
   };
 }
 
@@ -309,10 +312,17 @@ export async function listPortalInvoices(session: PortalSession): Promise<
       .filter(portalInvoiceVisible)
       .map((record) => portalInvoiceView(record, today))
       .sort((a, b) => b.issue_date.localeCompare(a.issue_date));
+    const credits = await firebaseAdminDb().collection("customer_credits")
+      .where("customer_id", "==", session.customerId).where("status", "==", "open").get();
+    const accountCredit = new Map<string, number>();
+    for (const credit of credits.docs) {
+      const currency = String(credit.get("currency") ?? "NPR");
+      accountCredit.set(currency, Math.round(((accountCredit.get(currency) ?? 0) + Number(credit.get("available") ?? 0) + Number(credit.get("reserved") ?? 0)) * 100) / 100);
+    }
     return {
       kind: "ready",
       invoices,
-      summary: summarizeInvoices(invoices),
+      summary: { ...summarizeInvoices(invoices), accountCredit: [...accountCredit.entries()].filter(([, amount]) => amount > 0.004).map(([currency, amount]) => ({ currency, amount })) },
     };
   } catch (error) {
     console.error("KCPL portal invoice listing failed", error);

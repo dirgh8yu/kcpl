@@ -1,4 +1,5 @@
 import type { CrmCurrency, KcplBranch } from "../crm/crm-data";
+import type { CustomerCreditSource, InvoiceLedgerKind, RefundStatus } from "./refund-policy";
 
 export const financeInvoiceStatuses = ["draft", "issued", "partially_paid", "paid", "overdue", "void"] as const;
 export type FinanceInvoiceStatus = (typeof financeInvoiceStatuses)[number];
@@ -64,6 +65,9 @@ export type FinanceCreditNote = {
 export type FinancePayment = {
   id: string;
   invoice_reference: string;
+  /** Money received, the customer's credit used here, or money moved off this invoice into their credit (negative). */
+  kind: InvoiceLedgerKind;
+  customer_credit_id: string | null;
   amount: number;
   currency: CrmCurrency;
   payment_date: string;
@@ -100,6 +104,8 @@ export type FinanceInvoice = {
   total: number;
   amount_paid: number;
   balance_due: number;
+  /** Paid on this invoice and since moved to the customer's credit; amount_paid is already net of it. */
+  moved_to_credit_total: number;
   notes: string | null;
   /** "KCPL/2083-84/00012": given in sequence when the invoice is issued. */
   tax_invoice_number: string | null;
@@ -227,29 +233,99 @@ export function invoiceTotals(lines: readonly InvoiceLineInput[]):
   return { ok: true, lines: priced, subtotal, tax_total: taxTotal, disbursement_total: disbursementTotal, total };
 }
 
-/** "KCPL/2083-84/00012" for invoices, "KCPL/CN/2083-84/00003" for credit notes. */
-export function taxDocumentNumber(kind: "invoice" | "credit_note", fiscalYear: string, sequence: number) {
-  return `KCPL/${kind === "credit_note" ? "CN/" : ""}${fiscalYear}/${String(sequence).padStart(5, "0")}`;
+export type TaxDocumentKind = "invoice" | "credit_note" | "refund";
+
+const taxDocumentPrefixes: Record<TaxDocumentKind, string> = { invoice: "", credit_note: "CN/", refund: "RF/" };
+
+/** "KCPL/2083-84/00012" for invoices, "KCPL/CN/2083-84/00003" for credit notes, "KCPL/RF/2083-84/00001" for refunds paid. */
+export function taxDocumentNumber(kind: TaxDocumentKind, fiscalYear: string, sequence: number) {
+  return `KCPL/${taxDocumentPrefixes[kind]}${fiscalYear}/${String(sequence).padStart(5, "0")}`;
 }
+
+/** Money KCPL holds for a customer, to refund or use on another invoice. */
+export type FinanceCustomerCredit = {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  branch: KcplBranch;
+  currency: CrmCurrency;
+  amount: number;
+  available: number;
+  /** In refunds asked for or approved but not yet paid. */
+  reserved: number;
+  refunded: number;
+  applied: number;
+  status: "open" | "used";
+  source: CustomerCreditSource;
+  source_invoice_reference: string;
+  source_invoice_number: string;
+  /** The credit note's number, or the payment's reference. */
+  source_document: string | null;
+  note: string | null;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FinanceRefund = {
+  id: string;
+  /** "KCPL/RF/2083-84/00001": given when the refund is paid. */
+  number: string | null;
+  credit_id: string;
+  customer_id: string;
+  customer_name: string;
+  branch: KcplBranch;
+  currency: CrmCurrency;
+  amount: number;
+  reason: string;
+  /** Where the money goes, as the customer gave it. */
+  payee_details: string | null;
+  status: RefundStatus;
+  requested_by_name: string;
+  requested_by_email: string;
+  requested_at: string;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  paid_on: string | null;
+  method: FinancePaymentMethod | null;
+  payment_reference: string | null;
+  paid_by_name: string | null;
+  source_invoice_reference: string;
+  source_invoice_number: string;
+};
+
+/** What happened to a credit, newest first on its page. */
+export type FinanceCreditEvent = {
+  id: string;
+  kind: "created" | "refund_requested" | "refund_approved" | "refund_rejected" | "refund_cancelled" | "refund_paid" | "applied";
+  amount: number;
+  detail: string;
+  actor_name: string;
+  created_at: string;
+  refund_id: string | null;
+  invoice_reference: string | null;
+};
 
 /**
  * How a credit is split into VAT, at-cost and KCPL's own charge: in the same
  * proportions as what is still on the invoice, so several credits never take
- * back more VAT than the invoice carried. Refused above what is still owed.
+ * back more VAT than the invoice carried. Refused above what is left of the invoice.
  */
 export function creditNoteSplit(invoice: {
-  total: number; tax_total: number; disbursement_total: number; balance_due: number;
+  total: number; tax_total: number; disbursement_total: number;
   credit_tax_total?: number; credit_disbursement_total?: number;
 }, requested: number):
   | { ok: true; amount: number; tax_amount: number; disbursement_amount: number }
-  | { ok: false; reason: "invalid_amount" | "exceeds_balance" } {
+  | { ok: false; reason: "invalid_amount" | "exceeds_total" } {
   const amount = round2(Number(requested));
   if (!Number.isFinite(amount) || amount <= 0) return { ok: false, reason: "invalid_amount" };
-  if (amount - invoice.balance_due > 0.005) return { ok: false, reason: "exceeds_balance" };
+  // Up to the whole invoice: what was already paid becomes the customer's credit.
+  if (amount - invoice.total > 0.005) return { ok: false, reason: "exceeds_total" };
   const remainingTax = Math.max(0, invoice.tax_total - (invoice.credit_tax_total ?? 0));
   const remainingDisbursement = Math.max(0, invoice.disbursement_total - (invoice.credit_disbursement_total ?? 0));
   const remainingGross = invoice.total;
-  if (remainingGross <= 0) return { ok: false, reason: "exceeds_balance" };
+  if (remainingGross <= 0) return { ok: false, reason: "exceeds_total" };
   return {
     ok: true,
     amount,

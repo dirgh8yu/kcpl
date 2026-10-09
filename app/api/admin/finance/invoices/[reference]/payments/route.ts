@@ -30,15 +30,17 @@ export async function POST(request: Request, context: { params: Promise<{ refere
     notes: typeof body.notes === "string" ? body.notes : "",
     currency: typeof body.currency === "string" ? body.currency : null,
     idempotencyKey,
+    keepExcessAsCredit: body.keepExcessAsCredit === true,
   }, { name: access.user.displayName, email: access.user.email }, staff);
 
-  if (result.kind === "updated" || result.kind === "idempotent") return json({ ok: true, idempotent: result.kind === "idempotent" });
+  if (result.kind === "updated") return json({ ok: true, idempotent: false, excessToCredit: result.excessToCredit, customerCredit: result.customerCreditId });
+  if (result.kind === "idempotent") return json({ ok: true, idempotent: true });
   if (result.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);
   if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This invoice has an incompatible customer or shipment branch relationship." }, 409);
   if (["invalid_amount", "invalid_payment_date", "invalid_method", "invalid_currency"].includes(result.kind)) return json({ ok: false, error: "The payment request is invalid." }, 400);
-  if (result.kind === "already_paid") return json({ ok: false, code: "ALREADY_PAID", error: "This invoice is already fully collected." }, 409);
-  if (result.kind === "overpayment") return json({ ok: false, code: "OVERPAYMENT", error: "The payment exceeds the current outstanding balance." }, 409);
+  if (result.kind === "already_paid") return json({ ok: false, code: "ALREADY_PAID", error: "This invoice is already paid. If the money really came in, keep it as the customer's credit." }, 409);
+  if (result.kind === "overpayment") return json({ ok: false, code: "OVERPAYMENT", error: "That is more than is owed. Keep the extra as the customer's credit, or correct the amount." }, 409);
   if (result.kind === "idempotency_conflict") return json({ ok: false, code: "IDEMPOTENCY_CONFLICT", error: "This payment idempotency key was already used for a different collection request." }, 409);
   if (result.kind === "currency_mismatch") return json({ ok: false, code: "CURRENCY_MISMATCH", error: "Collection currency must exactly match the invoice currency. No hidden FX conversion is allowed." }, 422);
   if (result.kind === "invalid_financial_state") return json({ ok: false, code: "INVALID_FINANCIAL_STATE", error: "The invoice totals or outstanding balance are inconsistent and require Accounts review." }, 422);

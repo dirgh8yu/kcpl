@@ -66,18 +66,20 @@ test("tax invoices and credit notes are numbered per fiscal year", () => {
 test("a number is given only when the invoice is issued, inside the same transaction", () => {
   const finance = read("app/admin/finance/finance.server.ts");
   assert.match(finance, /export async function issueFinanceInvoice[\s\S]{0,2500}runTransaction[\s\S]{0,2500}nextTaxDocumentNumber\(transaction, "invoice"/);
-  assert.match(finance, /tax_document_series/);
+  assert.match(read("app/admin/finance/customer-credit-ledger.server.ts"), /tax_document_series/);
   // A draft has no number, so drafts that are never issued leave no gap.
   assert.match(finance, /tax_invoice_number: null,/);
 });
 
 // Credit notes
-test("a credit note takes VAT and at-cost back in proportion and never more than is owed", () => {
+test("a credit note takes VAT and at-cost back in proportion and never more than the invoice", () => {
   const invoice = { total: 131_500, tax_total: 13_000, disbursement_total: 18_500, balance_due: 131_500 };
   const split = creditNoteSplit(invoice, 13_150);
   assert.deepEqual(split, { ok: true, amount: 13_150, tax_amount: 1_300, disbursement_amount: 1_850 });
   assert.deepEqual(creditNoteSplit(invoice, 0), { ok: false, reason: "invalid_amount" });
-  assert.deepEqual(creditNoteSplit({ ...invoice, balance_due: 10_000 }, 10_000.01), { ok: false, reason: "exceeds_balance" });
+  // Above what is owed is allowed on a paid invoice (the rest becomes credit), never above the invoice itself.
+  assert.equal(creditNoteSplit({ ...invoice, balance_due: 10_000 }, 10_000.01).ok, true);
+  assert.deepEqual(creditNoteSplit(invoice, 131_500.01), { ok: false, reason: "exceeds_total" });
   // After the first credit, the second splits on what is left.
   const after = { total: 118_350, tax_total: 13_000, disbursement_total: 18_500, balance_due: 118_350, credit_tax_total: 1_300, credit_disbursement_total: 1_850 };
   assert.deepEqual(creditNoteSplit(after, 13_150), { ok: true, amount: 13_150, tax_amount: 1_300, disbursement_amount: 1_850 });

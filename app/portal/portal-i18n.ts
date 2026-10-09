@@ -482,6 +482,9 @@ const en = {
   "invd.col_reason": "Reason",
   "invd.seller_pan": "{company} PAN/VAT {pan}",
   "invd.buyer_pan": "Your PAN/VAT {pan}",
+  "invd.moved_to_credit": "Moved to your account credit",
+  "inv.credit_held_title": "KCPL holds {amount} for you",
+  "inv.credit_held_body": "From a credit note on a paid invoice, or a payment above what was owed. KCPL refunds it or uses it on your next invoice; tell your account manager which you prefer.",
 
   /* Notification emails. These are the reason the language lives on the
    * account rather than in a cookie: the scheduled sweep has no browser. */
@@ -969,6 +972,9 @@ const ne: Record<PortalTextKey, string> = {
   "invd.col_reason": "कारण",
   "invd.seller_pan": "{company} को प्यान/भ्याट नं. {pan}",
   "invd.buyer_pan": "तपाईंको प्यान/भ्याट नं. {pan}",
+  "invd.moved_to_credit": "तपाईंको खाताको क्रेडिटमा सारिएको",
+  "inv.credit_held_title": "KCPL सँग तपाईंको {amount} जम्मा छ",
+  "inv.credit_held_body": "भुक्तानी भइसकेको बिलको क्रेडिट नोट वा तिर्नुपर्नेभन्दा बढी भुक्तानीबाट। KCPL ले यो फिर्ता गर्छ वा तपाईंको अर्को बिलमा मिलाउँछ; कुन चाहनुहुन्छ आफ्नो खाता प्रबन्धकलाई भन्नुहोस्।",
 
   "mail.brand": "कपिलेश्वर कार्गो",
   "mail.sent_because": "यो ढुवानी तपाईंको KCPL खातामा भएकाले {customer} लाई पठाइएको। यी इमेल पोर्टलको सूचना सेटिङबाट बन्द गर्न सकिन्छ।",

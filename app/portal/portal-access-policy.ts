@@ -757,6 +757,8 @@ export type PortalInvoiceView = {
   disbursement_total: number;
   /** What credit notes took off; total and balance_due are already net of it. */
   credit_total: number;
+  /** Paid on this invoice and since moved to the customer's account credit; amount_paid is already net of it. */
+  moved_to_credit_total: number;
   line_items: PortalInvoiceLineView[];
   /** Filled where one invoice is read; the list leaves it empty. */
   credit_notes: PortalCreditNoteView[];
@@ -794,6 +796,7 @@ export function portalInvoiceView(data: Record<string, unknown>, today: string):
     customer_tax_id: nullableText(data.customer_tax_id),
     disbursement_total: money(data.disbursement_total),
     credit_total: money(data.credit_total),
+    moved_to_credit_total: money(data.moved_to_credit_total),
     line_items: lines.map((line, index) => ({
       id: String(line.id ?? index),
       description: text(line.description, "Charge"),

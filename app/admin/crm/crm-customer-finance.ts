@@ -19,5 +19,7 @@ export type CrmCustomerFinanceSnapshot = {
   /** NRB rate date when other currencies were converted into this one. */
   rates_date: string | null;
   integrity_warning_count: number;
+  /** Money KCPL holds for the customer, per currency: refundable or usable on an invoice. */
+  account_credit: Array<{ currency: CrmCurrency; amount: number }>;
   generated_at: string;
 };

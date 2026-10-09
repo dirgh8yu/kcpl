@@ -3,6 +3,8 @@ import { canAccessBranchValue, compatibleRecordBranches, strictBranchValue } fro
 import { crmCurrencies } from "../crm/crm-data";
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { recomputeCustomerFinance } from "../finance/finance.server";
+import { writeMovedToCredit, writeNewCustomerCredit } from "../finance/customer-credit-ledger.server";
+import { paymentAllocation } from "../finance/refund-policy";
 import type { KcplStaffContext } from "../staff-directory.server";
 import {
   applySettlementPayment,
@@ -22,6 +24,8 @@ type PaymentInput = {
   notes: string;
   currency?: string | null;
   idempotencyKey?: string | null;
+  /** Accounts chose to keep anything above what is owed as the customer's credit. Without it, more than is owed is refused. */
+  keepExcessAsCredit?: boolean;
 };
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
@@ -127,34 +131,68 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
     }
 
     const currentStatus = text(invoice.status);
-    if (currentStatus === "paid" || numberValue(invoice.balance_due) <= 0) return { kind: "already_paid" as const };
-    if (!["issued", "partially_paid", "overdue"].includes(currentStatus)) return { kind: "invalid_status" as const };
-    const basis = resolveSettlementBasis({
-      subtotal: invoice.subtotal, taxes: invoice.tax_total, adjustments: invoice.adjustment_total, credits: invoice.credit_total,
-      storedTotal: invoice.total, amountAlreadyPaid: invoice.amount_paid, storedOutstanding: invoice.balance_due,
-    });
-    if (!basis.ok) return { kind: "invalid_financial_state" as const };
-    const applied = applySettlementPayment(basis.basis, input.amount);
-    if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+    const keepExcess = input.keepExcessAsCredit === true;
+    const outstanding = numberValue(invoice.balance_due);
+    const settled = currentStatus === "paid" || outstanding <= 0;
+    // Money for an invoice already settled (paid twice, say) can still be
+    // received, but only into the customer's credit, and only when asked.
+    if (settled && !keepExcess) return { kind: "already_paid" as const };
+    if (!["issued", "partially_paid", "overdue", ...(keepExcess ? ["paid"] : [])].includes(currentStatus)) return { kind: "invalid_status" as const };
+    const allocation = paymentAllocation(settled ? 0 : outstanding, input.amount, keepExcess);
+    if (!allocation.ok) return { kind: allocation.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+
+    let nextPaid = numberValue(invoice.amount_paid);
+    let nextOutstanding = settled ? 0 : outstanding;
+    let basisAmount = numberValue(invoice.settlement_basis_amount) || numberValue(invoice.total);
+    if (allocation.applied > 0) {
+      const basis = resolveSettlementBasis({
+        subtotal: invoice.subtotal, taxes: invoice.tax_total, adjustments: invoice.adjustment_total, credits: invoice.credit_total,
+        storedTotal: invoice.total, amountAlreadyPaid: invoice.amount_paid, storedOutstanding: invoice.balance_due,
+      });
+      if (!basis.ok) return { kind: "invalid_financial_state" as const };
+      const applied = applySettlementPayment(basis.basis, allocation.applied);
+      if (!applied.ok) return { kind: applied.reason === "overpayment" ? "overpayment" as const : "invalid_amount" as const };
+      nextPaid = applied.nextPaid;
+      nextOutstanding = applied.nextOutstanding;
+      basisAmount = basis.basis.totalPayable;
+    }
 
     const now = new Date().toISOString();
-    const nextStatus = applied.nextOutstanding <= 0.00001 ? "paid" : text(invoice.due_date) < operationalDate() ? "overdue" : "partially_paid";
+    const nextStatus = nextOutstanding <= 0.00001 ? "paid" : text(invoice.due_date) < operationalDate() ? "overdue" : "partially_paid";
+    const creditId = allocation.excess > 0 ? `credit-${paymentId}` : null;
     transaction.create(paymentRef, {
-      invoice_reference: normalizedReference, amount: applied.amount, currency: invoiceCurrency, payment_date: paymentDate, method: input.method,
+      kind: "payment",
+      invoice_reference: normalizedReference, amount: allocation.amount, currency: invoiceCurrency, payment_date: paymentDate, method: input.method,
       reference: input.reference.trim() || null, notes: input.notes.trim() || null, request_fingerprint: requestFingerprint,
-      idempotency_key: input.idempotencyKey?.trim() || null, balance_before: basis.basis.outstandingAmount,
-      balance_after: applied.nextOutstanding, settlement_basis_amount: basis.basis.totalPayable, settlement_basis_currency: invoiceCurrency,
+      idempotency_key: input.idempotencyKey?.trim() || null, balance_before: settled ? 0 : outstanding,
+      balance_after: nextOutstanding, applied_amount: allocation.applied, excess_to_credit: allocation.excess, customer_credit_id: creditId,
+      settlement_basis_amount: basisAmount, settlement_basis_currency: invoiceCurrency,
       settlement_basis_version: 1, recorded_by_name: actor.name, recorded_by_email: actor.email, created_at: now,
     });
+    if (creditId) {
+      const invoiceNumber = text(invoice.tax_invoice_number) || normalizedReference;
+      writeNewCustomerCredit(transaction, {
+        id: creditId, customerId, customerName: text(invoice.customer_name, "Customer"), branch, currency: invoiceCurrency,
+        amount: allocation.excess, source: "overpayment", sourceInvoiceReference: normalizedReference, sourceInvoiceNumber: invoiceNumber,
+        sourceDocument: input.reference.trim() || null, note: input.notes.trim() || null, actor, now,
+      });
+      writeMovedToCredit(transaction, invoiceRef, {
+        id: `${paymentId}-to-credit`, invoiceReference: normalizedReference, amount: allocation.excess, currency: invoiceCurrency,
+        creditId, date: paymentDate, note: "Paid more than was owed: the rest is the customer's credit", actor, now,
+      });
+    }
     transaction.update(invoiceRef, {
-      amount_paid: applied.nextPaid, balance_due: applied.nextOutstanding, status: nextStatus,
-      payment_status: applied.nextOutstanding <= 0.00001 ? "paid" : "partially_paid", last_payment_id: paymentId,
+      amount_paid: nextPaid, balance_due: nextOutstanding, status: nextStatus,
+      payment_status: nextOutstanding <= 0.00001 ? "paid" : "partially_paid", last_payment_id: paymentId,
       last_payment_at: now, last_payment_by_name: actor.name, last_payment_by_email: actor.email,
-      settlement_basis_amount: basis.basis.totalPayable, settlement_basis_currency: invoiceCurrency, settlement_basis_version: 1, updated_at: now,
+      ...(creditId ? { moved_to_credit_total: Math.round((numberValue(invoice.moved_to_credit_total) + allocation.excess) * 100) / 100 } : {}),
+      settlement_basis_amount: basisAmount, settlement_basis_currency: invoiceCurrency, settlement_basis_version: 1, updated_at: now,
     });
+    const applied = { amount: allocation.amount, nextOutstanding, excess: allocation.excess, creditId };
     return {
       kind: "updated" as const, paymentId, customerId, shipmentReference,
       currency: invoiceCurrency, amount: applied.amount, remaining: applied.nextOutstanding,
+      excessToCredit: applied.excess, customerCreditId: applied.creditId,
     };
   });
 

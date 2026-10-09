@@ -3,7 +3,8 @@ import { sendTransactionalEmail, transactionalEmailConfigured } from "../integra
 import type { PortalSession } from "./portal-auth";
 import { nepalOperationalDate } from "../invoice-effective-status";
 import { portalInvoiceView, portalInvoiceVisible } from "./portal-access-policy";
-import { buildStatement, type Statement, type StatementPayment } from "./portal-statement";
+import { buildStatement, type Statement, type StatementPayment, type StatementRefund } from "./portal-statement";
+import { invoiceLedgerKind } from "../admin/finance/refund-policy";
 import { renderStatementPdf } from "./portal-statement-pdf";
 import { readAllDocuments } from "../admin/firestore-scan";
 
@@ -23,12 +24,14 @@ async function statementFor(customerId: string, asOf = nepalOperationalDate()): 
     .map((doc) => ({ ...(doc.data() as Record<string, unknown>), reference: doc.id }))
     .filter(portalInvoiceVisible)
     .map((record) => portalInvoiceView(record, asOf));
-  // Payments are read only where something was paid.
-  const paid = snapshot.docs.filter((doc) => Number(doc.get("amount_paid") ?? 0) > 0);
+  // Payments are read only where something was received. Money moved into
+  // or out of the customer's credit isn't money received, so only payments
+  // count; refunds are listed on their own.
+  const paid = snapshot.docs.filter((doc) => Number(doc.get("amount_paid") ?? 0) > 0 || Number(doc.get("moved_to_credit_total") ?? 0) > 0);
   const payments: StatementPayment[] = (await Promise.all(paid.map(async (doc) => {
     const rows = await doc.ref.collection("payments").limit(100).get();
-    const invoice = typeof doc.get("external_invoice_number") === "string" && doc.get("external_invoice_number") ? String(doc.get("external_invoice_number")) : doc.id;
-    return rows.docs.map((row: FirebaseFirestore.QueryDocumentSnapshot): StatementPayment => ({
+    const invoice = [doc.get("tax_invoice_number"), doc.get("external_invoice_number")].find((value) => typeof value === "string" && value) as string | undefined ?? doc.id;
+    return rows.docs.filter((row: FirebaseFirestore.QueryDocumentSnapshot) => invoiceLedgerKind(row.get("kind")) === "payment").map((row: FirebaseFirestore.QueryDocumentSnapshot): StatementPayment => ({
       invoice,
       date: String(row.get("payment_date") || row.get("created_at") || "").slice(0, 10),
       amount: Number(row.get("amount") ?? 0),
@@ -37,7 +40,23 @@ async function statementFor(customerId: string, asOf = nepalOperationalDate()): 
       reference: typeof row.get("reference") === "string" ? String(row.get("reference")) : null,
     }));
   }))).flat();
-  return buildStatement({ invoices, payments, asOf });
+  const [refundRows, creditRows] = await Promise.all([
+    db.collection("customer_refunds").where("customer_id", "==", customerId).where("status", "==", "paid").get(),
+    db.collection("customer_credits").where("customer_id", "==", customerId).where("status", "==", "open").get(),
+  ]);
+  const refunds: StatementRefund[] = refundRows.docs.map((row: FirebaseFirestore.QueryDocumentSnapshot) => ({
+    number: String(row.get("number") ?? "Refund"),
+    date: String(row.get("paid_on") ?? "").slice(0, 10),
+    amount: Number(row.get("amount") ?? 0),
+    currency: String(row.get("currency") ?? "NPR"),
+    method: String(row.get("method") ?? ""),
+    reference: typeof row.get("payment_reference") === "string" ? String(row.get("payment_reference")) : null,
+  }));
+  const credits = creditRows.docs.map((row: FirebaseFirestore.QueryDocumentSnapshot) => ({
+    currency: String(row.get("currency") ?? "NPR"),
+    amount: Number(row.get("available") ?? 0) + Number(row.get("reserved") ?? 0),
+  }));
+  return buildStatement({ invoices, payments, refunds, credits, asOf });
 }
 
 function filename(customer: string, asOf: string) {

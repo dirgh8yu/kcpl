@@ -16,6 +16,16 @@ export type StatementPayment = {
   reference: string | null;
 };
 
+/** Money KCPL paid back to the customer. */
+export type StatementRefund = {
+  number: string;
+  date: string;
+  amount: number;
+  currency: string;
+  method: string;
+  reference: string | null;
+};
+
 export type StatementAgeing = { current: number; days1to30: number; days31to60: number; days61to90: number; over90: number };
 
 export type StatementOpenInvoice = {
@@ -39,6 +49,11 @@ export type StatementCurrency = {
   ageing: StatementAgeing;
   open: StatementOpenInvoice[];
   payments: StatementPayment[];
+  /** Paid back in the statement period. */
+  refunded: number;
+  refunds: StatementRefund[];
+  /** Held for the customer now: to be refunded or used on an invoice. */
+  creditHeld: number;
 };
 
 export type Statement = {
@@ -69,7 +84,14 @@ function counts(invoice: PortalInvoiceView) {
   return invoice.record_type === "invoice" && !["draft", "void", "cancelled"].includes(invoice.status);
 }
 
-export function buildStatement(input: { invoices: PortalInvoiceView[]; payments: StatementPayment[]; asOf: string; since?: string }): Statement {
+export function buildStatement(input: {
+  invoices: PortalInvoiceView[];
+  payments: StatementPayment[];
+  refunds?: StatementRefund[];
+  credits?: Array<{ currency: string; amount: number }>;
+  asOf: string;
+  since?: string;
+}): Statement {
   const asOf = input.asOf.slice(0, 10);
   const since = (input.since ?? statementSince(asOf)).slice(0, 10);
   const byCurrency = new Map<string, StatementCurrency>();
@@ -85,6 +107,9 @@ export function buildStatement(input: { invoices: PortalInvoiceView[]; payments:
         ageing: { current: 0, days1to30: 0, days31to60: 0, days61to90: 0, over90: 0 },
         open: [],
         payments: [],
+        refunded: 0,
+        refunds: [],
+        creditHeld: 0,
       };
       byCurrency.set(currency, entry);
     }
@@ -123,10 +148,26 @@ export function buildStatement(input: { invoices: PortalInvoiceView[]; payments:
     entry.payments.push(payment);
   }
 
+  for (const refund of input.refunds ?? []) {
+    const date = refund.date.slice(0, 10);
+    if (date < since || date > asOf) continue;
+    const entry = bucket(refund.currency || "NPR");
+    entry.refunded += refund.amount;
+    entry.refunds.push(refund);
+  }
+
+  for (const credit of input.credits ?? []) {
+    if (credit.amount <= 0.004) continue;
+    bucket(credit.currency || "NPR").creditHeld += credit.amount;
+  }
+
   const currencies = [...byCurrency.values()].map((entry) => ({
     ...entry,
     invoiced: round(entry.invoiced),
     received: round(entry.received),
+    refunded: round(entry.refunded),
+    creditHeld: round(entry.creditHeld),
+    refunds: entry.refunds.sort((a, b) => b.date.localeCompare(a.date)),
     outstanding: round(entry.outstanding),
     overdue: round(entry.overdue),
     ageing: Object.fromEntries(Object.entries(entry.ageing).map(([key, value]) => [key, round(value)])) as StatementAgeing,

@@ -1190,11 +1190,62 @@ export function mockPartnerDashboard(staff: KcplStaffContext, now = Date.now()):
 import type { KcplStaffProfile } from "./staff-directory.ts";
 import type { CrmCurrency } from "./crm/crm-data.ts";
 import type {
+  FinanceCreditEvent,
   FinanceCurrencySummary,
+  FinanceCustomerCredit,
   FinanceDashboard,
   FinanceInvoice,
   FinanceInvoiceStatus,
+  FinanceRefund,
 } from "./finance/finance-data.ts";
+
+/* Three credits held for customers: one with a refund waiting for
+ * Management, one still to be refunded or used, and one partly refunded. */
+export function mockCustomerCredits(now = Date.now()) {
+  const at = (days: number) => iso(now, -days * DAY);
+  const accounts = { name: "Prakash Adhikari", email: "prakash.adhikari@kcpl.com.np" };
+  const credit = (values: Partial<FinanceCustomerCredit> & Pick<FinanceCustomerCredit, "id" | "customer_name" | "amount" | "available" | "source" | "source_invoice_number">): FinanceCustomerCredit => ({
+    customer_id: `cust-${values.id}`, branch: "Kathmandu", currency: "NPR", reserved: 0, refunded: 0, applied: 0, status: "open",
+    source_invoice_reference: values.source_invoice_number, source_document: null, note: null,
+    created_by_name: accounts.name, created_at: at(6), updated_at: at(2), ...values,
+  });
+  const credits: FinanceCustomerCredit[] = [
+    credit({ id: "credit-qa-1", customer_name: "Everest Garments Pvt. Ltd.", amount: 11_300, available: 0, reserved: 11_300, source: "credit_note", source_invoice_number: "KCPL/2083-84/00004", source_document: "KCPL/CN/2083-84/00002", note: "Shipment cancelled after payment" }),
+    credit({ id: "credit-qa-2", customer_name: "Annapurna Agro Exports", amount: 7_000, available: 7_000, source: "overpayment", source_invoice_number: "KCPL/2083-84/00009", source_document: "NIC Asia TXN 448812", branch: "Birgunj", created_at: at(3) }),
+    credit({ id: "credit-qa-3", customer_name: "Lumbini Pharma Distributors", currency: "USD", amount: 250, available: 100, refunded: 150, source: "credit_note", source_invoice_number: "KCPL/2083-84/00012", source_document: "KCPL/CN/2083-84/00001", created_at: at(20) }),
+  ];
+  const refund = (values: Partial<FinanceRefund> & Pick<FinanceRefund, "id" | "credit_id" | "amount" | "status">): FinanceRefund => {
+    const source = credits.find((item) => item.id === values.credit_id) ?? credits[0];
+    return {
+      number: null, customer_id: source.customer_id, customer_name: source.customer_name, branch: source.branch, currency: source.currency,
+      reason: "", payee_details: null, requested_by_name: accounts.name, requested_by_email: accounts.email, requested_at: at(2),
+      decided_by_name: null, decided_at: null, decision_note: null, paid_on: null, method: null, payment_reference: null, paid_by_name: null,
+      source_invoice_reference: source.source_invoice_reference, source_invoice_number: source.source_invoice_number, ...values,
+    };
+  };
+  const refunds: FinanceRefund[] = [
+    refund({ id: "refund-qa-1", credit_id: "credit-qa-1", amount: 11_300, status: "requested", reason: "Shipment cancelled after payment; customer asked for the money back", payee_details: "Everest Garments, Nabil Bank, A/C 0101 0177 3301" }),
+    refund({ id: "refund-qa-2", credit_id: "credit-qa-3", amount: 150, status: "paid", number: "KCPL/RF/2083-84/00001", reason: "Duplicate handling charge", requested_at: at(15), decided_by_name: "Sita Sharma", decided_at: at(14), paid_on: nepalDay(now, -13), method: "bank_transfer", payment_reference: "SWIFT 2610-55120", paid_by_name: accounts.name }),
+  ];
+  const event = (id: string, kind: FinanceCreditEvent["kind"], amount: number, detail: string, days: number, refundId: string | null = null): FinanceCreditEvent => ({ id, kind, amount, detail, actor_name: accounts.name, created_at: at(days), refund_id: refundId, invoice_reference: null });
+  const history: Record<string, FinanceCreditEvent[]> = {
+    "credit-qa-1": [
+      event("e2", "refund_requested", 11_300, "Refund of NPR 11300.00 asked for · Shipment cancelled after payment", 2, "refund-qa-1"),
+      event("e1", "created", 11_300, "From credit note KCPL/CN/2083-84/00002 on KCPL/2083-84/00004, already paid", 6),
+    ],
+    "credit-qa-2": [event("e1", "created", 7_000, "Paid more than KCPL/2083-84/00009 owed (NIC Asia TXN 448812)", 3)],
+    "credit-qa-3": [
+      event("e3", "refund_paid", 150, "Refund KCPL/RF/2083-84/00001 of USD 150.00 paid · SWIFT 2610-55120", 13, "refund-qa-2"),
+      event("e2", "refund_approved", 150, "Refund of USD 150.00 approved", 14, "refund-qa-2"),
+      event("e1", "created", 250, "From credit note KCPL/CN/2083-84/00001 on KCPL/2083-84/00012, already paid", 20),
+    ],
+  };
+  const openInvoices = [
+    { reference: "INV-QA-0021", number: "KCPL/2083-84/00021", balance_due: 48_200, due_date: nepalDay(now, 9) },
+    { reference: "INV-QA-0024", number: "KCPL/2083-84/00024", balance_due: 5_650, due_date: nepalDay(now, 14) },
+  ];
+  return { credits, refunds, history, openInvoices };
+}
 
 /* The five names the shipments are already assigned to, so the staff directory
  * and every owner column agree. */
@@ -1277,6 +1328,7 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
       total,
       amount_paid: paid,
       balance_due: total - paid,
+      moved_to_credit_total: 0,
       notes: null,
       tax_invoice_number: status === "draft" ? null : `KCPL/2083-84/${String(index + 1).padStart(5, "0")}`,
       fiscal_year: status === "draft" ? null : "2083-84",
@@ -1290,6 +1342,8 @@ export function mockFinanceDashboard(staff: KcplStaffContext, now = Date.now()):
         ? [{
             id: `pay-${index + 1}`,
             invoice_reference: `INV-${job.reference.slice(5)}`,
+            kind: "payment" as const,
+            customer_credit_id: null,
             amount: paid,
             currency: "NPR" as CrmCurrency,
             payment_date: nepalDay(now, -(index + 2)),
@@ -3062,6 +3116,7 @@ export function mockCrmCustomerFinanceSnapshot(id: string, staff: KcplStaffConte
     other_currency_cost_count: 0,
     rates_date: null,
     integrity_warning_count: 0,
+    account_credit: [],
     generated_at: iso(now, 0),
   };
 }

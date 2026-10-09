@@ -63,6 +63,8 @@ function rows(statement: Statement, customerName: string, generatedAt: string): 
       ["Of which overdue", currency.overdue],
       ["Invoiced in the period", currency.invoiced],
       ["Received in the period", currency.received],
+      ...(currency.refunded ? [["Refunded to you in the period", currency.refunded] as [string, number]] : []),
+      ...(currency.creditHeld ? [["Credit held for you", currency.creditHeld] as [string, number]] : []),
     ];
     for (const [label, amount] of summary) {
       out.push({ cells: [{ text: label, x: 50 }, { text: money(amount), x: 250, right: true, bold: label === "Owed now" }], size: 10, gapBefore: 2 });
@@ -138,6 +140,31 @@ function rows(statement: Statement, customerName: string, generatedAt: string): 
             { text: payment.invoice.slice(0, 24), x: 140 },
             { text: [payment.method.replace(/_/g, " "), payment.reference].filter(Boolean).join(" - ").slice(0, 40), x: 280 },
             { text: money(payment.amount), x: RIGHT, right: true },
+          ],
+          size: 9,
+        });
+      }
+    }
+
+    if (currency.refunds.length) {
+      out.push({ cells: [{ text: "REFUNDS PAID TO YOU", x: 50, bold: true }], size: 9, gapBefore: 12 });
+      out.push({
+        cells: [
+          { text: "Date", x: 50, bold: true },
+          { text: "Refund", x: 140, bold: true },
+          { text: "Method / reference", x: 280, bold: true },
+          { text: "Amount", x: RIGHT, right: true, bold: true },
+        ],
+        size: 8,
+        gapBefore: 2,
+      });
+      for (const refund of currency.refunds) {
+        out.push({
+          cells: [
+            { text: date(refund.date), x: 50 },
+            { text: refund.number.slice(0, 24), x: 140 },
+            { text: [refund.method.replace(/_/g, " "), refund.reference].filter(Boolean).join(" - ").slice(0, 40), x: 280 },
+            { text: money(refund.amount), x: RIGHT, right: true },
           ],
           size: 9,
         });
