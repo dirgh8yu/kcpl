@@ -33,6 +33,12 @@ const stateTones: Record<string, "neutral" | "success" | "warning" | "danger"> =
   expired: "danger",
 };
 
+/** "10 Oct 2026", as dates read across the Job File. */
+function dayLabel(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(date);
+}
+
 export function FreeTimeControl({
   reference,
   initial,
@@ -100,16 +106,16 @@ export function FreeTimeControl({
             <div className="portal-checklist-main">
               <strong>{freeTime.ended_on && status.state !== "not_set"
                 ? status.daysOverdue > 0
-                  ? `Cargo left on ${freeTime.ended_on}, ${status.daysOverdue} day${status.daysOverdue === 1 ? "" : "s"} past free time. The clock has stopped.`
-                  : `Cargo left on ${freeTime.ended_on}, inside free time. The clock has stopped.`
+                  ? `Cargo left on ${dayLabel(freeTime.ended_on)}, ${status.daysOverdue} day${status.daysOverdue === 1 ? "" : "s"} past free time. The clock has stopped.`
+                  : `Cargo left on ${dayLabel(freeTime.ended_on)}, inside free time. The clock has stopped.`
                 : freeTimeSummary(freeTime, status)}</strong>
               <span>
-                {status.deadline ? `Last free day ${status.deadline}` : "No allowance recorded"}
+                {status.deadline ? `Last free day ${dayLabel(status.deadline)}` : "No allowance recorded"}
                 {freeTime.daily_charge !== null ? ` · ${freeTime.charge_currency ?? ""} ${freeTime.daily_charge}/day after` : ""}
                 {status.projectedCharge !== null ? ` · ${freeTime.charge_currency ?? ""} ${status.projectedCharge} accrued` : ""}
               </span>
             </div>
-            <OpsBadge tone={stateTones[status.state] ?? "neutral"} dot>
+            <OpsBadge tone={stateTones[status.state] ?? "neutral"} dot className="justify-self-start">
               {status.state === "not_set" ? "Not recorded" : freeTime.ended_on ? "Stopped" : status.state === "expired" ? "Expired" : status.state === "last_day" ? "Last day" : `${status.daysRemaining} days left`}
             </OpsBadge>
           </div>

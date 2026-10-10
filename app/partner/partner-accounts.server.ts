@@ -62,6 +62,9 @@ export async function invitePartnerLogin(partnerId: string, input: { email: stri
   catch { await auth.createUser({ email, emailVerified: false, password: randomPassword() }); }
   const link = await auth.generatePasswordResetLink(email);
   if (!transactionalEmailConfigured()) return { kind: "link" as const, email, link };
+  // Where to sign in afterwards, as other KCPL emails link back to the site.
+  const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") || "";
+  const signInAt = origin ? `${origin}/partner` : "";
   await sendTransactionalEmail({
     to: email,
     subject: "Your KCPL partner portal access",
@@ -72,14 +75,14 @@ export async function invitePartnerLogin(partnerId: string, input: { email: stri
       "Set your password and confirm your email address using the secure link below:",
       link,
       "",
-      "Then sign in at /partner on the KCPL website to see the shipments KCPL has shared with you, post their milestones and upload documents.",
+      `Then sign in at ${signInAt || "the KCPL partner portal"} to see the shipments KCPL has shared with you, post their milestones and upload documents.`,
       "",
       "If you were not expecting this message, you can ignore it.",
     ].join("\n"),
     html: [
       `<p>Kapileshwor Cargo Pvt. Ltd. has given <strong>${escapeHtml(partnerName)}</strong> access to the KCPL partner portal.</p>`,
       `<p><a href="${escapeHtml(link)}">Set your password</a> to confirm your email address.</p>`,
-      `<p>Then sign in to see the shipments KCPL has shared with you, post their milestones and upload documents.</p>`,
+      `<p>Then sign in${signInAt ? ` at <a href="${escapeHtml(signInAt)}">${escapeHtml(signInAt)}</a>` : " to the KCPL partner portal"} to see the shipments KCPL has shared with you, post their milestones and upload documents.</p>`,
       `<p>If you were not expecting this message, you can ignore it.</p>`,
     ].join(""),
   });

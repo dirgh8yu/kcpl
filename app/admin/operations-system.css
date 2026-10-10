@@ -1838,7 +1838,7 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 @media (max-width: 760px) {
   .kcpl-admin-content .portal-checklist li { flex-wrap: wrap; }
   .kcpl-admin-content .portal-checklist-main { margin-right: 0; flex: 1 1 calc(100% - 40px); }
-  .kcpl-admin-content .portal-checklist-main + * { margin-left: 40px; }
+  .kcpl-admin-content .portal-checklist li > .portal-checklist-mark ~ .portal-checklist-main + * { margin-left: 40px; }
 }
 
 /* Customer portal -- notification settings. A row per topic with its switch on
@@ -2672,3 +2672,10 @@ body :is(.ops-filter-options, .ops-filter-menu, .ops-action-menu, .shipments-fil
 .kcpl-admin-content .portal-price-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--admin-line); border-radius: var(--app-radius); background: var(--admin-surface-muted); }
 .kcpl-admin-content .portal-price-total span { color: var(--admin-muted); font-size: var(--app-text-sm); }
 .kcpl-admin-content .portal-price-total strong { color: var(--admin-ink); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* On phones a card's action sizes to its buttons: beside a short title it
+ * sits at the right end, not stretched to half the card with the button
+ * stranded in the middle; under a long title it wraps to its own line. */
+@media (max-width: 760px) {
+  .kcpl-admin-content .ops-surface-action { width: auto; }
+}

@@ -286,6 +286,16 @@ const reviewedClassifications = [
     rationale: "Customer delivery rating, shared by the web portal route and the KCPL app route. Writes one customer_feedback row under the shipment per login (created once, keyed by a hash of the login) and, for a low score, a notification to the desk. It reads the shipment's status only to refuse a rating before delivery; it never writes the shipment document, a delivery attempt or POD evidence, so a rating cannot assign or influence canonical status.",
   },
   {
+    file: "app/shipment-containers.server.ts",
+    category: "A",
+    rationale: "Writes container sub-records (each box's gate-out, delivered and empty-return dates and detention terms) and the shipment's updated_at; never assigns the shipment status, so a container marked delivered cannot make the shipment Delivered.",
+  },
+  {
+    file: "app/admin/document-reading.server.ts",
+    category: "A",
+    rationale: "Stores document readings and, when staff apply one, only carrier, carrier_reference and eta on the shipment plus containers through shipment-containers; the shipment status is never written.",
+  },
+  {
     file: "app/shipment-free-time.server.ts",
     category: "F",
     rationale: "Read-only accessor for the free-time block on a shipment. One get, no mutation; writing free time goes through the namespaced admin route.",
