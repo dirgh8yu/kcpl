@@ -50,7 +50,8 @@ export async function getPartnerShipment(session: PartnerSession, reference: str
   return {
     shipment: rowFromData(normalized, doc.data() as Record<string, unknown>, session.partnerId),
     events: events.docs.map((event) => ({ id: event.id, title: text(event.get("title")), location: text(event.get("location")) || null, details: text(event.get("details")) || null, event_time: text(event.get("event_time")), author_name: text(event.get("author_name")) })),
-    documents: documents.docs.filter((item) => item.get("review_status") !== "deleted").map((item) => ({ id: item.id, filename: text(item.get("filename")), document_type: text(item.get("document_type")), uploaded_at: text(item.get("uploaded_at")), review_status: text(item.get("review_status")) })),
+    // Their invoices are listed with the bills, not as documents.
+    documents: documents.docs.filter((item) => item.get("review_status") !== "deleted" && item.get("kcpl_only") !== true).map((item) => ({ id: item.id, filename: text(item.get("filename")), document_type: text(item.get("document_type")), uploaded_at: text(item.get("uploaded_at")), review_status: text(item.get("review_status")) })),
   };
 }
 

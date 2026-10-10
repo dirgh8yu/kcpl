@@ -145,7 +145,7 @@ test("a hub opens on its first page the person may see, and hides when they may 
 test("the Shipments hub holds the stages of a job, in the order work happens", () => {
   const shipments = activeHub("/admin/customs", full);
   assert.equal(shipments?.hub.id, "shipments");
-  assert.deepEqual(shipments?.items.map((workspace) => workspace.tab), ["All shipments", "Pickups", "Tracking", "Customs", "Documents", "Freight documents", "Delivery & POD"]);
+  assert.deepEqual(shipments?.items.map((workspace) => workspace.tab), ["All shipments", "Pickups", "Tracking", "Customs", "Documents", "Freight documents", "Delivery & POD", "Claims", "Deposits"]);
   assert.equal(activeHub("/admin/jobs/KCPL-S-1", full)?.hub.id, "shipments", "a Job File sits in Shipments");
   assert.equal(activeHub("/admin/partners/reconciliation", full)?.hub.id, "finance", "the most specific page decides the hub");
 });

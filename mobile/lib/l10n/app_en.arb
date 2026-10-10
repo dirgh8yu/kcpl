@@ -1121,9 +1121,21 @@
   "opsRequired": "Required",
   "opsOptional": "Optional",
   "opsNextStep": "Next: {step}",
-  "@opsNextStep": {"placeholders": {"step": {"type": "String"}}},
+  "@opsNextStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
   "opsStuckStep": "Stuck: {step}",
-  "@opsStuckStep": {"placeholders": {"step": {"type": "String"}}},
+  "@opsStuckStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
   "opsStepBooking": "Booking",
   "opsStepPickup": "Pickup",
   "opsStepDocuments": "Documents",
@@ -1761,5 +1773,119 @@
   "opsTwoStepConfirm": "Confirm",
   "opsTwoStepSetupTitle": "Set up two-step sign-in first",
   "opsTwoStepSetupBody": "Your role signs in with a code from an authenticator app. Set it up once on the KCPL Operations website, then come back here.",
-  "opsTwoStepSetupDone": "I’ve set it up"
+  "opsTwoStepSetupDone": "I’ve set it up",
+  "claimEntry": "Report damage or loss",
+  "claimEntryHint": "Damaged, short, lost or badly late",
+  "claimTitle": "Report a problem",
+  "claimWhat": "What happened",
+  "claimKindDamage": "Damaged",
+  "claimKindShortage": "Short: less arrived than was sent",
+  "claimKindLoss": "Lost",
+  "claimKindDelay": "Badly delayed",
+  "claimKindOther": "Something else",
+  "claimFoundOn": "Found on",
+  "claimDescribe": "Describe it",
+  "claimDescribeHint": "Which packages, what is wrong, and anything written on the delivery receipt",
+  "claimValue": "Value of the loss (optional)",
+  "claimPhotos": "Photos",
+  "claimAddPhoto": "Add a photo",
+  "claimPhotoCount": "{count} of {max}",
+  "@claimPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "claimRemovePhoto": "Remove photo",
+  "claimFootnote": "Report it as soon as you find it: carriers and insurers accept claims for only a few days after delivery. KCPL takes it up and keeps you posted here.",
+  "claimNeedDescription": "Say what happened in a sentence or two.",
+  "claimInvalidValue": "Enter the value as a number, or leave it blank.",
+  "claimsTitle": "Claims",
+  "claimNumber": "Claim {number}",
+  "@claimNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "claimStatusReported": "With KCPL",
+  "claimStatusFiled": "Filed with the carrier or insurer",
+  "claimStatusSettled": "Settled",
+  "claimStatusRejected": "Not accepted",
+  "claimStatusWithdrawn": "Withdrawn",
+  "claimWithdraw": "Withdraw",
+  "claimWithdrawConfirm": "Withdraw this claim? KCPL will stop taking it up.",
+  "claimSettledCredit": "{amount} as a credit note on your invoice",
+  "@claimSettledCredit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "claimSettledRefund": "{amount} refunded to you",
+  "@claimSettledRefund": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "claimSettledInsurer": "The insurer pays you directly",
+  "opsContainers": "Containers",
+  "opsContainerAtPort": "At the port",
+  "opsContainerOutSince": "Out since {date}",
+  "@opsContainerOutSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "opsContainerDeliveredOn": "Delivered {date}",
+  "@opsContainerDeliveredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "opsContainerBackOn": "Empty back {date}",
+  "@opsContainerBackOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "opsContainerTitle": "Container {number}",
+  "@opsContainerTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "opsContainerWhat": "What happened",
+  "opsContainerMoveOut": "Left the port full",
+  "opsContainerMoveDelivered": "Delivered",
+  "opsContainerMoveBack": "Empty returned to the depot",
+  "opsContainerOn": "On",
+  "opsContainerReceipt": "Gate receipt",
+  "opsContainerReceiptHint": "Photograph the receipt from the gate. It is filed on the job.",
+  "opsContainerSaved": "{number} updated",
+  "@opsContainerSaved": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "opsContainerFootnote": "Detention counts from the day the box left the port to the day the empty is back.",
+  "opsContainerSave": "Save"
 }

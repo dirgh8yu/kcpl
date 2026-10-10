@@ -3,6 +3,7 @@ import { OperationsShell } from "../../operations-shell";
 import { getStaffContext } from "../../staff-directory.server";
 import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { currentBsMonth, loadTaxMonth } from "../tax-books.server";
+import { loadVatPeriod } from "../vat-period-lock.server";
 import { TaxWorkspace } from "./tax-workspace";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,8 @@ export default async function TaxPage({ searchParams }: { searchParams: Promise<
   if (result.kind === "forbidden") return <OperationsShell {...shellProps}><Gate embedded title="Finance access is restricted" detail="Tax books are available to Management and Accounts roles only."/></OperationsShell>;
   if (result.kind === "invalid") return <OperationsShell {...shellProps}><Gate embedded title="That month isn't in the calendar" detail="Choose a Nepali month between 2070 and 2100."/></OperationsShell>;
   if (result.kind === "unavailable") return <OperationsShell {...shellProps}><Gate embedded title="Tax books didn’t load" detail="The records service isn’t responding. Try again in a minute; the menu and search still work."/></OperationsShell>;
-  return <OperationsShell {...shellProps}><TaxWorkspace month={result.month} currentYear={current.year}/></OperationsShell>;
+  const period = await loadVatPeriod(staff, year, month).catch(() => null);
+  return <OperationsShell {...shellProps}><TaxWorkspace month={result.month} period={period} currentYear={current.year}/></OperationsShell>;
 }
 
 function Gate({ title, detail, embedded = false }: { title: string; detail: string; embedded?: boolean }) {

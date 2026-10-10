@@ -14,6 +14,7 @@ import '../widgets/proof_of_delivery.dart';
 import '../widgets/rate_delivery.dart';
 import '../widgets/rows.dart';
 import '../widgets/shipment_actions.dart';
+import 'claim_screens.dart';
 import 'confirm_delivery_screen.dart';
 import 'estimate_screens.dart';
 import 'overview_screen.dart' show JourneyGraphic;
@@ -231,6 +232,13 @@ class _ShipmentDetailScreenState extends State<ShipmentDetailScreen> {
             leading: Icon(KIcons.message, size: 22, color: context.palette.accent),
             title: Text(l.msgRow),
             subtitle: Text(l.msgRowHint),
+            chevron: true,
+          ),
+          RowTile(
+            onTap: () => openClaims(context, shipment),
+            leading: Icon(KIcons.warning, size: 22, color: context.palette.accent),
+            title: Text(l.claimEntry),
+            subtitle: Text(l.claimEntryHint),
             chevron: true,
           ),
           if (freeTime != null)

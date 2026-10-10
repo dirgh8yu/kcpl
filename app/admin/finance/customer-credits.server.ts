@@ -34,6 +34,7 @@ import {
   type CustomerCreditSource,
   type RefundAction,
 } from "./refund-policy";
+import { lockedVatPeriod } from "./vat-period-lock.server";
 
 type Actor = { name: string; email: string };
 
@@ -295,6 +296,10 @@ export async function moveRefund(refundId: string, action: RefundAction, input: 
     if (!canAccessBranchValue(context, refund.branch)) return { kind: "forbidden" as const };
     const transition = refundTransition(refund, action, { role: context.profile.role, email: actor.email, canManageFinance: context.permissions.canManageFinance });
     if (!transition.ok) return { kind: transition.reason };
+    if (action === "pay") {
+      const locked = await lockedVatPeriod([paidOn], transaction);
+      if (locked) return { kind: "period_locked" as const, period: locked.label };
+    }
     const creditRef = db.collection(CUSTOMER_CREDITS).doc(refund.credit_id);
     const creditSnapshot = await transaction.get(creditRef);
     if (!creditSnapshot.exists) return { kind: "missing" as const };
@@ -454,6 +459,8 @@ export async function recordAdvance(input: AdvanceInput, actor: Actor, context: 
       if (text(invoice.get("status")) !== "draft") return { kind: "invoice_not_draft" as const };
       if (text(invoice.get("currency")) !== currency) return { kind: "currency_mismatch" as const };
     }
+    const locked = await lockedVatPeriod([receivedOn], transaction);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
     const series = await nextTaxDocumentNumber(transaction, "advance", fiscalYear);
     const now = new Date().toISOString();
     series.commit();

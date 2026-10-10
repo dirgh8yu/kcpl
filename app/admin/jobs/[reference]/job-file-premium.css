@@ -231,6 +231,9 @@
 .kcpl-admin-content .job-container-dates { margin: 2px 0 0; color: var(--admin-muted); font-size: var(--app-text-sm); line-height: 19px; }
 .kcpl-admin-content .job-container-actions { display: flex; align-items: center; gap: 8px; }
 .kcpl-admin-content .job-container-all { display: flex; align-items: flex-start; gap: 8px; color: var(--admin-ink); font-size: var(--app-text-sm); }
+.kcpl-admin-content .job-deposit-boxes { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; border: 0; }
+.kcpl-admin-content .job-deposit-boxes legend { width: 100%; margin-bottom: 6px; padding: 0; }
+.kcpl-admin-content .job-deposit-boxes label { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-ink); font-size: var(--app-text-sm); }
 
 /* Duty estimate: one row of fields per HS line or levy. */
 .kcpl-admin-content .duty-lines { display: grid; gap: var(--app-space-3); margin: 0; padding: 0; border: 0; }

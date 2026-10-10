@@ -19,6 +19,7 @@ import '../ops_models.dart';
 import '../ops_rows.dart';
 import '../delivery_queue.dart';
 import '../note_queue.dart';
+import 'container_screen.dart';
 import 'delivery_screen.dart';
 import 'field_note_screen.dart';
 import 'job_actions.dart';
@@ -171,6 +172,22 @@ class JobDetailScreen extends StatelessWidget {
           ),
       ],
       _DeliverySection(file: file),
+      if (file.containers.isNotEmpty) ...[
+        SectionHeader(context.l.opsContainers),
+        RowGroup(
+          children: [
+            for (final container in file.containers)
+              RowTile(
+                onTap: () async {
+                  if (await openContainer(context, job.reference, container) != null && context.mounted) await AsyncPage.reload(context);
+                },
+                title: Text(container.number, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+                subtitle: Text(containerLine(context, container)),
+                chevron: true,
+              ),
+          ],
+        ),
+      ],
       SectionHeader(context.l.opsCustomer),
       RowGroup(
         indent: RowGroup.iconIndent,

@@ -29,6 +29,7 @@ import {
   invoiceTotals,
   shipmentBillingCounts,
 } from "./finance-data";
+import { lockedVatPeriod } from "./vat-period-lock.server";
 import { CUSTOMER_CREDITS, nextTaxDocumentNumber, writeCreditEvent, writeMovedToCredit, writeNewCustomerCredit } from "./customer-credit-ledger.server";
 import { applyCreditToInvoice, creditNoteAllocation, customerCreditBalanceFromData, customerCreditOpen, invoiceLedgerKind } from "./refund-policy";
 
@@ -739,6 +740,11 @@ export async function voidFinanceInvoice(reference: string, actor: Actor, contex
   if (loaded.invoice.amount_paid > 0) return { kind: "has_payments" as const };
   // Credit notes point at this invoice; it is corrected through them now.
   if (loaded.invoice.credit_total > 0) return { kind: "has_credit_notes" as const };
+  // An issued invoice is in its month's sales book; once that is filed, it is corrected with a credit note.
+  if (loaded.invoice.tax_invoice_number) {
+    const locked = await lockedVatPeriod([loaded.invoice.issue_date]);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
+  }
   const now = new Date().toISOString();
   await firebaseAdminDb().collection("invoices").doc(loaded.invoice.reference).update({ status: "void", balance_due: 0, voided_at: now, voided_by_name: actor.name, voided_by_email: actor.email, updated_at: now });
   await recomputeCustomerFinance(loaded.invoice.customer_id);

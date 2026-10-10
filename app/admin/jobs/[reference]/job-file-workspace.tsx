@@ -37,11 +37,13 @@ import { shipmentDocumentTypeLabels, shipmentDocumentTypes, type ShipmentDocumen
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsFileDrop, OpsInspectorNote, OpsMono, OpsNotice, OpsPage, OpsProgress, OpsSkeleton, OpsSurface } from "../../operations-ui";
 import { FreeTimeControl, type FreeTimePanelData } from "./free-time-control";
 import { ContainerControl } from "./container-control";
+import { DepositControl } from "./deposit-control";
 import { DocumentReadingsControl } from "./document-readings-control";
 import { PartnerAccessControl } from "./partner-access-control";
 import type { PartnerShipmentAccess } from "../../../partner/partner-access-policy";
 import type { StoredReading } from "../../document-reading.server";
 import type { ShipmentContainer } from "../../../shipment-containers";
+import type { ContainerDeposit } from "../../../container-deposits";
 import { ShipmentThread } from "../../../shipment-thread";
 import { canDeleteShipmentDocument, canReviewShipmentDocuments, canVerifyOwnShipmentDocument } from "../../../shipment-document-policy";
 
@@ -79,6 +81,7 @@ export function JobFileWorkspace({
   nowIso,
   freeTime,
   containers,
+  deposits,
   today,
   readings,
   readingConfigured,
@@ -97,6 +100,8 @@ export function JobFileWorkspace({
   freeTime: FreeTimePanelData | null;
   /** Null where the containers couldn't be read; air shipments don't show the panel. */
   containers: ShipmentContainer[] | null;
+  /** Deposits paid to the line for this shipment's containers; null where they couldn't be read. */
+  deposits: ContainerDeposit[] | null;
   today: string;
   readings: StoredReading[];
   readingConfigured: boolean;
@@ -453,6 +458,7 @@ export function JobFileWorkspace({
         <div data-panel="booking"><PartnerAccessControl reference={job.reference} partners={shipmentPartners} options={partnerOptions} canEdit={canManageJobFile}/></div>
         <div data-panel="transit" id="shipment-free-time"><FreeTimeControl reference={job.reference} initial={freeTime} canEdit={canManageJobFile}/></div>
         {job.mode !== "air" ? <div data-panel="transit"><ContainerControl reference={job.reference} initial={containers} canEdit={canManageJobFile} today={today}/></div> : null}
+        {job.mode !== "air" ? <div data-panel="transit"><DepositControl reference={job.reference} deposits={deposits} containers={containers ?? []} canEdit={canManageJobFile} canFinance={canBillCosts} isManagement={role === "management"} today={today} defaultLine={job.carrier}/></div> : null}
 
         <div data-panel="tasks">
           <OpsSurface id="shipment-tasks" title="Tasks" description={overdueTasks.length ? <span className="job-overdue">{overdueTasks.length} overdue</span> : undefined} action={<OpsButton variant="secondary" size="xs" onClick={() => setTaskOpen((value) => !value)} aria-expanded={taskOpen}><Plus size={13} strokeWidth={1.75} aria-hidden="true"/>{taskOpen ? "Close" : "Add task"}</OpsButton>}>

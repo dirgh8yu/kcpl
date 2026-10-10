@@ -1,3 +1,4 @@
+import { vatPeriodLockedMessage } from "../../../../admin/finance/vat-period-lock";
 import { giveStaffCash } from "../../../../admin/finance/staff-cash.server";
 import { financeWriteRequest, json } from "../credit-route-auth";
 import { staffCashError } from "./staff-cash-errors";
@@ -13,5 +14,6 @@ export async function POST(request: Request) {
     idempotencyKey: request.headers.get("idempotency-key")?.trim() || field("idempotencyKey"),
   }, auth.actor, auth.staff);
   if (result.kind === "created") return json({ ok: true, id: result.id, number: result.number, repeated: result.repeated });
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: vatPeriodLockedMessage(result.period) }, 409);
   return staffCashError(result.kind);
 }

@@ -93,6 +93,16 @@ abstract class KcplApi {
   /// "How did this delivery go?" Once per login, after delivery.
   Future<RatingReceipt> rateDelivery(String reference, int score, {String comment = ''});
 
+  /// Claims the customer reported on a shipment, newest first.
+  Future<List<CargoClaim>> claims(String reference);
+
+  /// Reports damage, shortage, loss or delay, with photos. KCPL takes it up
+  /// with the carrier or insurer.
+  Future<SendReceipt> sendClaim(String reference, ClaimDraft draft, {SendProgress? onProgress});
+
+  /// Takes back a claim KCPL hasn't filed yet.
+  Future<void> withdrawClaim(String reference, String id);
+
   /// A new link to the shipment's public tracking page.
   Future<TrackingLink> createTrackingLink(String reference);
 

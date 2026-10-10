@@ -188,3 +188,25 @@ export function containersSummary(containers: ShipmentContainer[], today: string
     charges: [...charges.entries()].map(([currency, total]) => ({ currency, total })),
   };
 }
+
+export const containerMovements = ["gated_out", "delivered", "empty_returned"] as const;
+export type ContainerMovement = (typeof containerMovements)[number];
+const movementField: Record<ContainerMovement, "gated_out_on" | "delivered_on" | "empty_returned_on"> = {
+  gated_out: "gated_out_on", delivered: "delivered_on", empty_returned: "empty_returned_on",
+};
+
+/**
+ * One date recorded from the field (the Ops app): out of the port, delivered,
+ * or the empty back at the depot. Only that date changes; it must not be in
+ * the future and must keep the three in order.
+ */
+export function containerMovementUpdate(container: Pick<ShipmentContainer, "gated_out_on" | "delivered_on" | "empty_returned_on">, movement: unknown, on: unknown, today: string):
+  { ok: true; field: "gated_out_on" | "delivered_on" | "empty_returned_on"; value: string } | { ok: false; error: "movement" | "date" | "order" } {
+  if (!containerMovements.includes(movement as ContainerMovement)) return { ok: false, error: "movement" };
+  const value = typeof on === "string" && on.trim() ? on.trim() : today;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`)) || value > today) return { ok: false, error: "date" };
+  const field = movementField[movement as ContainerMovement];
+  const next = { gated_out_on: container.gated_out_on, delivered_on: container.delivered_on, empty_returned_on: container.empty_returned_on, [field]: value };
+  if (!containerDatesInOrder(next)) return { ok: false, error: "order" };
+  return { ok: true, field, value };
+}

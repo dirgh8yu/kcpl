@@ -53,6 +53,8 @@ export type PurchaseBookRow = {
   taxable: number;
   vat: number;
   reference: string;
+  /** Dated in an earlier month that was already filed; counted in this one. */
+  booked_late: boolean;
 };
 
 type Lines = Array<{ kind?: unknown; tax_rate?: unknown; subtotal?: unknown }>;
@@ -151,6 +153,7 @@ export function purchaseBookRow(reference: string, data: Record<string, unknown>
     taxable: taxed ? round(subtotal) : 0,
     vat: round(vat),
     reference,
+    booked_late: Boolean(str(data.vat_booked_on)),
   };
 }
 
@@ -203,9 +206,10 @@ export function salesBookCsv(rows: SalesBookRow[]) {
 }
 
 export function purchaseBookCsv(rows: PurchaseBookRow[]) {
-  const head = ["Date (BS)", "Date (AD)", "Supplier bill no.", "Supplier", "Supplier PAN", "Currency", "Total purchases", "Non-taxable purchases", "Taxable purchases", "VAT"];
+  const head = ["Date (BS)", "Date (AD)", "Supplier bill no.", "Supplier", "Supplier PAN", "Currency", "Total purchases", "Non-taxable purchases", "Taxable purchases", "VAT", "Note"];
   return [csvRow(head), ...rows.map((row) => csvRow([
     row.date_bs, row.date, row.bill_number, row.supplier_name, row.supplier_pan ?? "", row.currency,
     row.total_purchase, row.non_taxable, row.taxable, row.vat,
+    row.booked_late ? "Received after its month was filed" : "",
   ]))].join("\r\n") + "\r\n";
 }

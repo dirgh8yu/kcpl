@@ -19,6 +19,7 @@ import {
   type SalesBookRow,
   type VatSummary,
 } from "./tax-books";
+import { payableBookDate } from "./vat-period-lock";
 import { WITHHELD_TAX } from "./withheld-tax-ledger.server";
 import { STAFF_ADVANCES } from "./staff-cash.server";
 import { tdsDepositDue, withheldTaxStatusLabels, type WithheldTaxDirection, type WithheldTaxStatus } from "./withheld-tax-policy";
@@ -122,11 +123,17 @@ type MonthDocs = {
 
 async function monthDocuments(start: string, end: string): Promise<MonthDocs> {
   const db = firebaseAdminDb();
-  const [invoices, creditNotes, bills] = await Promise.all([
+  const [invoices, creditNotes, datedBills, lateBills] = await Promise.all([
     readAllDocuments(db.collection("invoices").where("issue_date", ">=", start).where("issue_date", "<=", end)),
     db.collectionGroup("credit_notes").where("credit_date", ">=", start).where("credit_date", "<=", end).get(),
     readAllDocuments(db.collection("payables").where("bill_date", ">=", start).where("bill_date", "<=", end)),
+    // Bills that came in after their own month was filed count in the month they were approved.
+    readAllDocuments(db.collection("payables").where("vat_booked_on", ">=", start).where("vat_booked_on", "<=", end)),
   ]);
+  const inMonth = (doc: FirebaseFirestore.QueryDocumentSnapshot) => { const day = payableBookDate(doc.data()); return day >= start && day <= end; };
+  const billById = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+  for (const doc of [...datedBills.docs, ...lateBills.docs]) if (inMonth(doc)) billById.set(doc.id, doc);
+  const bills = { docs: [...billById.values()] };
   const parentIds = [...new Set(creditNotes.docs.map((doc) => doc.ref.parent.parent?.id).filter((id): id is string => Boolean(id)))];
   const parents = await loadDocumentsById(db, "invoices", parentIds);
   const supplierIds = [...new Set(bills.docs.map((doc) => text(doc.get("supplier_id"))).filter(Boolean))];
@@ -348,7 +355,8 @@ export async function tallyMonth(context: KcplStaffContext, year: number, month:
     if (!seen(data.branch) || !purchaseBookRow(doc.id, data, null)) continue;
     if (!npr(data.currency)) { foreign += 1; continue; }
     const party = supplier(text(data.supplier_name, "Supplier"));
-    vouchers.push({ type: "Purchase", date: text(data.bill_date), number: text(data.supplier_bill_reference) || doc.id, narration: `${text(data.description)}${text(data.shipment_reference) ? ` · ${text(data.shipment_reference)}` : ""}`, party, entries: [
+    const late = text(data.vat_booked_on) ? ` · supplier's date ${text(data.bill_date)}` : "";
+    vouchers.push({ type: "Purchase", date: payableBookDate(data), number: text(data.supplier_bill_reference) || doc.id, narration: `${text(data.description)}${text(data.shipment_reference) ? ` · ${text(data.shipment_reference)}` : ""}${late}`, party, entries: [
       { ledger: settings.purchases, amount: round(num(data.subtotal)) },
       { ledger: settings.vat_input, amount: round(num(data.tax_total)) },
       { ledger: party, amount: -round(num(data.total)) },

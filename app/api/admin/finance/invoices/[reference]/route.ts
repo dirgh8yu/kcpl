@@ -58,6 +58,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (result.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);
   if (result.kind === "has_payments") return json({ ok: false, error: "An invoice with recorded payments cannot be voided." }, 409);
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: `${result.period} is filed with the tax office and this invoice is in its sales book, so it can't be voided now. Issue a credit note instead.` }, 409);
   if (result.kind === "invalid_status") return json({ ok: false, error: "That action is not available for the invoice's current status." }, 409);
   if (result.kind === "unavailable") return json({ ok: false, error: "Finance storage is unavailable." }, 503);
   return json({ ok: false, error: "Choose a valid invoice action." }, 400);

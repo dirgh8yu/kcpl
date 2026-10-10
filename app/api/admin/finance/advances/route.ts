@@ -1,3 +1,4 @@
+import { vatPeriodLockedMessage } from "../../../../admin/finance/vat-period-lock";
 import { recordAdvance } from "../../../../admin/finance/customer-credits.server";
 import { creditError, financeWriteRequest, json } from "../credit-route-auth";
 
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
     idempotencyKey: request.headers.get("idempotency-key")?.trim() || field("idempotencyKey"),
   }, auth.actor, auth.staff);
   if (result.kind === "created" || result.kind === "idempotent") return json({ ok: true, credit: result.creditId, receipt: result.receiptNumber, idempotent: result.kind === "idempotent" });
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: vatPeriodLockedMessage(result.period) }, 409);
   const known = advanceErrors[result.kind];
   if (known) return json({ ok: false, error: known[0] }, known[1]);
   if (result.kind === "missing") return json({ ok: false, error: "No customer with that reference." }, 404);

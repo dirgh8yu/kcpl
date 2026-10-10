@@ -2948,4 +2948,172 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opsTwoStepSetupDone => 'I’ve set it up';
+
+  @override
+  String get claimEntry => 'Report damage or loss';
+
+  @override
+  String get claimEntryHint => 'Damaged, short, lost or badly late';
+
+  @override
+  String get claimTitle => 'Report a problem';
+
+  @override
+  String get claimWhat => 'What happened';
+
+  @override
+  String get claimKindDamage => 'Damaged';
+
+  @override
+  String get claimKindShortage => 'Short: less arrived than was sent';
+
+  @override
+  String get claimKindLoss => 'Lost';
+
+  @override
+  String get claimKindDelay => 'Badly delayed';
+
+  @override
+  String get claimKindOther => 'Something else';
+
+  @override
+  String get claimFoundOn => 'Found on';
+
+  @override
+  String get claimDescribe => 'Describe it';
+
+  @override
+  String get claimDescribeHint =>
+      'Which packages, what is wrong, and anything written on the delivery receipt';
+
+  @override
+  String get claimValue => 'Value of the loss (optional)';
+
+  @override
+  String get claimPhotos => 'Photos';
+
+  @override
+  String get claimAddPhoto => 'Add a photo';
+
+  @override
+  String claimPhotoCount(int count, int max) {
+    return '$count of $max';
+  }
+
+  @override
+  String get claimRemovePhoto => 'Remove photo';
+
+  @override
+  String get claimFootnote =>
+      'Report it as soon as you find it: carriers and insurers accept claims for only a few days after delivery. KCPL takes it up and keeps you posted here.';
+
+  @override
+  String get claimNeedDescription => 'Say what happened in a sentence or two.';
+
+  @override
+  String get claimInvalidValue =>
+      'Enter the value as a number, or leave it blank.';
+
+  @override
+  String get claimsTitle => 'Claims';
+
+  @override
+  String claimNumber(String number) {
+    return 'Claim $number';
+  }
+
+  @override
+  String get claimStatusReported => 'With KCPL';
+
+  @override
+  String get claimStatusFiled => 'Filed with the carrier or insurer';
+
+  @override
+  String get claimStatusSettled => 'Settled';
+
+  @override
+  String get claimStatusRejected => 'Not accepted';
+
+  @override
+  String get claimStatusWithdrawn => 'Withdrawn';
+
+  @override
+  String get claimWithdraw => 'Withdraw';
+
+  @override
+  String get claimWithdrawConfirm =>
+      'Withdraw this claim? KCPL will stop taking it up.';
+
+  @override
+  String claimSettledCredit(String amount) {
+    return '$amount as a credit note on your invoice';
+  }
+
+  @override
+  String claimSettledRefund(String amount) {
+    return '$amount refunded to you';
+  }
+
+  @override
+  String get claimSettledInsurer => 'The insurer pays you directly';
+
+  @override
+  String get opsContainers => 'Containers';
+
+  @override
+  String get opsContainerAtPort => 'At the port';
+
+  @override
+  String opsContainerOutSince(String date) {
+    return 'Out since $date';
+  }
+
+  @override
+  String opsContainerDeliveredOn(String date) {
+    return 'Delivered $date';
+  }
+
+  @override
+  String opsContainerBackOn(String date) {
+    return 'Empty back $date';
+  }
+
+  @override
+  String opsContainerTitle(String number) {
+    return 'Container $number';
+  }
+
+  @override
+  String get opsContainerWhat => 'What happened';
+
+  @override
+  String get opsContainerMoveOut => 'Left the port full';
+
+  @override
+  String get opsContainerMoveDelivered => 'Delivered';
+
+  @override
+  String get opsContainerMoveBack => 'Empty returned to the depot';
+
+  @override
+  String get opsContainerOn => 'On';
+
+  @override
+  String get opsContainerReceipt => 'Gate receipt';
+
+  @override
+  String get opsContainerReceiptHint =>
+      'Photograph the receipt from the gate. It is filed on the job.';
+
+  @override
+  String opsContainerSaved(String number) {
+    return '$number updated';
+  }
+
+  @override
+  String get opsContainerFootnote =>
+      'Detention counts from the day the box left the port to the day the empty is back.';
+
+  @override
+  String get opsContainerSave => 'Save';
 }

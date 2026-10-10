@@ -48,6 +48,14 @@ class HttpKcplApi extends KcplApi {
     return ProgressingRequest.wrap(multipart, onProgress);
   }, timeout: const Duration(minutes: 2));
 
+  Future<http.Response> _uploadMany(String path, List<Attachment> files, String field, Map<String, String> fields, SendProgress? onProgress) => _dispatch(() {
+    final multipart = http.MultipartRequest('POST', _uri(path))..fields.addAll(fields);
+    for (final file in files) {
+      multipart.files.add(http.MultipartFile.fromBytes(field, file.bytes, filename: file.filename));
+    }
+    return ProgressingRequest.wrap(multipart, onProgress);
+  }, timeout: const Duration(minutes: 3));
+
   Future<http.Response> _dispatch(http.BaseRequest Function() build, {Duration timeout = _timeout}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await auth.idToken(forceRefresh: attempt > 0);
@@ -156,6 +164,27 @@ class HttpKcplApi extends KcplApi {
       SendReceipt.fromJson(
         _decode(await _upload('shipments/${Uri.encodeComponent(reference)}/documents', file, {'documentType': documentType}, onProgress)),
       );
+
+  @override
+  Future<List<CargoClaim>> claims(String reference) async =>
+      _rows((await _json('shipments/${Uri.encodeComponent(reference)}/claims'))['claims']).map(CargoClaim.fromJson).toList();
+
+  @override
+  Future<SendReceipt> sendClaim(String reference, ClaimDraft draft, {SendProgress? onProgress}) async => SendReceipt.fromJson(
+    _decode(
+      await _uploadMany('shipments/${Uri.encodeComponent(reference)}/claims', draft.photos, 'photos', {
+        'kind': draft.kind,
+        'description': draft.description.trim(),
+        'noticedOn': draft.noticedOn,
+        if (draft.claimedAmount != null) 'claimedAmount': '${draft.claimedAmount}',
+        'currency': draft.currency,
+      }, onProgress),
+    ),
+  );
+
+  @override
+  Future<void> withdrawClaim(String reference, String id) =>
+      _send('DELETE', 'shipments/${Uri.encodeComponent(reference)}/claims/${Uri.encodeComponent(id)}');
 
   @override
   Future<SendReceipt> confirmDelivery(String reference, {String receivedBy = '', String note = ''}) async => SendReceipt.fromJson(

@@ -5119,6 +5119,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I’ve set it up'**
   String get opsTwoStepSetupDone;
+
+  /// No description provided for @claimEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Report damage or loss'**
+  String get claimEntry;
+
+  /// No description provided for @claimEntryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged, short, lost or badly late'**
+  String get claimEntryHint;
+
+  /// No description provided for @claimTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get claimTitle;
+
+  /// No description provided for @claimWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened'**
+  String get claimWhat;
+
+  /// No description provided for @claimKindDamage.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged'**
+  String get claimKindDamage;
+
+  /// No description provided for @claimKindShortage.
+  ///
+  /// In en, this message translates to:
+  /// **'Short: less arrived than was sent'**
+  String get claimKindShortage;
+
+  /// No description provided for @claimKindLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost'**
+  String get claimKindLoss;
+
+  /// No description provided for @claimKindDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Badly delayed'**
+  String get claimKindDelay;
+
+  /// No description provided for @claimKindOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get claimKindOther;
+
+  /// No description provided for @claimFoundOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Found on'**
+  String get claimFoundOn;
+
+  /// No description provided for @claimDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe it'**
+  String get claimDescribe;
+
+  /// No description provided for @claimDescribeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Which packages, what is wrong, and anything written on the delivery receipt'**
+  String get claimDescribeHint;
+
+  /// No description provided for @claimValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value of the loss (optional)'**
+  String get claimValue;
+
+  /// No description provided for @claimPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get claimPhotos;
+
+  /// No description provided for @claimAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get claimAddPhoto;
+
+  /// No description provided for @claimPhotoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max}'**
+  String claimPhotoCount(int count, int max);
+
+  /// No description provided for @claimRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get claimRemovePhoto;
+
+  /// No description provided for @claimFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Report it as soon as you find it: carriers and insurers accept claims for only a few days after delivery. KCPL takes it up and keeps you posted here.'**
+  String get claimFootnote;
+
+  /// No description provided for @claimNeedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what happened in a sentence or two.'**
+  String get claimNeedDescription;
+
+  /// No description provided for @claimInvalidValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the value as a number, or leave it blank.'**
+  String get claimInvalidValue;
+
+  /// No description provided for @claimsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims'**
+  String get claimsTitle;
+
+  /// No description provided for @claimNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim {number}'**
+  String claimNumber(String number);
+
+  /// No description provided for @claimStatusReported.
+  ///
+  /// In en, this message translates to:
+  /// **'With KCPL'**
+  String get claimStatusReported;
+
+  /// No description provided for @claimStatusFiled.
+  ///
+  /// In en, this message translates to:
+  /// **'Filed with the carrier or insurer'**
+  String get claimStatusFiled;
+
+  /// No description provided for @claimStatusSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get claimStatusSettled;
+
+  /// No description provided for @claimStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get claimStatusRejected;
+
+  /// No description provided for @claimStatusWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawn'**
+  String get claimStatusWithdrawn;
+
+  /// No description provided for @claimWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get claimWithdraw;
+
+  /// No description provided for @claimWithdrawConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw this claim? KCPL will stop taking it up.'**
+  String get claimWithdrawConfirm;
+
+  /// No description provided for @claimSettledCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} as a credit note on your invoice'**
+  String claimSettledCredit(String amount);
+
+  /// No description provided for @claimSettledRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} refunded to you'**
+  String claimSettledRefund(String amount);
+
+  /// No description provided for @claimSettledInsurer.
+  ///
+  /// In en, this message translates to:
+  /// **'The insurer pays you directly'**
+  String get claimSettledInsurer;
+
+  /// No description provided for @opsContainers.
+  ///
+  /// In en, this message translates to:
+  /// **'Containers'**
+  String get opsContainers;
+
+  /// No description provided for @opsContainerAtPort.
+  ///
+  /// In en, this message translates to:
+  /// **'At the port'**
+  String get opsContainerAtPort;
+
+  /// No description provided for @opsContainerOutSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Out since {date}'**
+  String opsContainerOutSince(String date);
+
+  /// No description provided for @opsContainerDeliveredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered {date}'**
+  String opsContainerDeliveredOn(String date);
+
+  /// No description provided for @opsContainerBackOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty back {date}'**
+  String opsContainerBackOn(String date);
+
+  /// No description provided for @opsContainerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Container {number}'**
+  String opsContainerTitle(String number);
+
+  /// No description provided for @opsContainerWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened'**
+  String get opsContainerWhat;
+
+  /// No description provided for @opsContainerMoveOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Left the port full'**
+  String get opsContainerMoveOut;
+
+  /// No description provided for @opsContainerMoveDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get opsContainerMoveDelivered;
+
+  /// No description provided for @opsContainerMoveBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty returned to the depot'**
+  String get opsContainerMoveBack;
+
+  /// No description provided for @opsContainerOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get opsContainerOn;
+
+  /// No description provided for @opsContainerReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Gate receipt'**
+  String get opsContainerReceipt;
+
+  /// No description provided for @opsContainerReceiptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the receipt from the gate. It is filed on the job.'**
+  String get opsContainerReceiptHint;
+
+  /// No description provided for @opsContainerSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{number} updated'**
+  String opsContainerSaved(String number);
+
+  /// No description provided for @opsContainerFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Detention counts from the day the box left the port to the day the empty is back.'**
+  String get opsContainerFootnote;
+
+  /// No description provided for @opsContainerSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get opsContainerSave;
 }
 
 class _AppLocalizationsDelegate

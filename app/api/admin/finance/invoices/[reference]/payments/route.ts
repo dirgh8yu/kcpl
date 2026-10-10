@@ -1,3 +1,4 @@
+import { vatPeriodLockedMessage } from "../../../../../../admin/finance/vat-period-lock";
 import { getAdminAccess } from "../../../../../../admin/admin-auth";
 import { recordReceivablePaymentWithSettlementIntegrity } from "../../../../../../admin/financial-settlement/receivables-settlement.server";
 import { financePaymentMethods, type FinancePaymentMethod } from "../../../../../../admin/finance/finance-data";
@@ -36,6 +37,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
 
   if (result.kind === "updated") return json({ ok: true, idempotent: false, excessToCredit: result.excessToCredit, customerCredit: result.customerCreditId, tds: result.tds });
   if (result.kind === "idempotent") return json({ ok: true, idempotent: true });
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: vatPeriodLockedMessage(result.period) }, 409);
   if (result.kind === "missing") return json({ ok: false, error: "Invoice not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This invoice is outside your finance or branch access." }, 403);
   if (result.kind === "relationship_mismatch") return json({ ok: false, error: "This invoice has an incompatible customer or shipment branch relationship." }, 409);

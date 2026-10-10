@@ -30,6 +30,10 @@ import { portalDeliveryRating } from "../../portal-delivery-rating.server";
 import { portalProofOfDelivery } from "../../portal-proof-of-delivery.server";
 import type { PortalProofOfDelivery } from "../../portal-proof-of-delivery";
 import { PortalProofOfDeliveryCard } from "./portal-proof-of-delivery";
+import { PortalClaims } from "./portal-claims";
+import { listPortalClaims } from "../../portal-claims.server";
+import type { PortalClaimView } from "../../../cargo-claims";
+import { nepalOperationalDate } from "../../../invoice-effective-status";
 import {
   portalDate,
   portalDateTime,
@@ -74,13 +78,14 @@ export default async function PortalShipmentPage({
       ])
     : [null, null];
   const rated = !delivered || rating !== null;
+  const claims = result.kind === "ready" ? await listPortalClaims(access.session, result.detail.shipment.reference).catch(() => null) : null;
 
   return (
     <PortalShell
       session={access.session}
     >
       {result.kind === "ready"
-        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} proof={proof} locale={access.session.locale} requested={requested}/>
+        ? <ShipmentDetail detail={result.detail} canSend={access.session.capabilities.canSubmitRequests} canRate={!rated} proof={proof} claims={claims ?? []} locale={access.session.locale} requested={requested}/>
         : null}
       {result.kind === "missing" ? (
         <OpsPage>
@@ -103,7 +108,7 @@ export default async function PortalShipmentPage({
   );
 }
 
-function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; locale: PortalLocale; requested: string | null }) {
+function ShipmentDetail({ detail, canSend, canRate, proof, claims, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; claims: PortalClaimView[]; locale: PortalLocale; requested: string | null }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
   // Only paper the customer can send counts: a bill of lading KCPL prepares
@@ -223,6 +228,8 @@ function ShipmentDetail({ detail, canSend, canRate, proof, locale, requested }: 
           {proof ? <PortalProofOfDeliveryCard reference={shipment.reference} proof={proof} locale={locale}/> : null}
 
           {canRate ? <PortalDeliveryRating reference={shipment.reference} locale={locale}/> : null}
+
+          <PortalClaims reference={shipment.reference} claims={claims} canSend={canSend} today={nepalOperationalDate()} locale={locale}/>
 
           <ShipmentThread
             endpoint={`/api/portal/shipments/${encodeURIComponent(shipment.reference)}/messages`}

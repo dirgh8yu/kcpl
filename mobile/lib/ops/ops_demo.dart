@@ -225,6 +225,7 @@ class DemoOpsApi implements OpsApi {
         blockers: const ['Required customs steps are still open.', 'Proof of delivery has not been recorded.'],
         closeBlockers: _closed.contains(reference) ? const [] : _closeBlockers(reference),
         jobClosed: _closed.contains(reference),
+        containers: job.mode == 'sea' || job.mode == 'multimodal' ? (containers[reference] ??= _containersFor(reference)) : const [],
         fieldNotes: [
           ...?notes[reference],
           if (job.exception)
@@ -242,6 +243,44 @@ class DemoOpsApi implements OpsApi {
 
   /// Notes added in this session, newest first.
   final notes = <String, List<FieldNote>>{};
+
+  /// Containers per job, as dates are recorded in this session.
+  final containers = <String, List<OpsContainer>>{};
+
+  /// The movement and photo last recorded, for tests.
+  String? lastContainerMovement;
+  String? lastContainerPhoto;
+
+  List<OpsContainer> _containersFor(String reference) => [
+    OpsContainer(number: 'CMAU7719230', sizeType: '40HC', gatedOutOn: _day(-6), returnDepot: 'Birgunj ICD empty yard'),
+    const OpsContainer(number: 'TGHU1234567', sizeType: '20GP', returnDepot: 'Birgunj ICD empty yard'),
+  ];
+
+  @override
+  Future<OpsContainer> recordContainer(String reference, String number, String movement, {DateTime? on, Attachment? photo, SendProgress? onProgress}) async {
+    _reachable();
+    for (var step = 0; step <= 4; step++) {
+      onProgress?.call(step / 4);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+    final list = containers[reference] ??= _containersFor(reference);
+    final index = list.indexWhere((c) => c.number == number);
+    if (index < 0) throw const ApiException(404, 'missing', 'That container isn’t on this shipment.');
+    final current = list[index];
+    final day = (on ?? DateTime.now()).toIso8601String().substring(0, 10);
+    final updated = OpsContainer(
+      number: current.number,
+      sizeType: current.sizeType,
+      gatedOutOn: movement == 'gated_out' ? day : current.gatedOutOn,
+      deliveredOn: movement == 'delivered' ? day : current.deliveredOn,
+      emptyReturnedOn: movement == 'empty_returned' ? day : current.emptyReturnedOn,
+      returnDepot: current.returnDepot,
+    );
+    list[index] = updated;
+    lastContainerMovement = movement;
+    lastContainerPhoto = photo?.filename;
+    return updated;
+  }
 
   /// How the last photo was filed.
   String? lastDocumentType;

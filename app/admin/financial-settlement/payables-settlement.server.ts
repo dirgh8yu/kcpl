@@ -10,6 +10,7 @@ import { jobCostCategories } from "../job-file";
 import { canAccessPartnerOwner, isPartnerReference, partnerOwnerCompatibleWithBranch } from "../partners/partner-policy";
 import type { CreatePayableInput } from "../payables/payables-data";
 import { normalizeSupplierBillReference, payableDateError, supplierIdentityKey, validPayableCalendarDate } from "../payables/payables-policy";
+import { lockedVatPeriod } from "../finance/vat-period-lock.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import { settlementWithTds } from "../finance/withheld-tax-policy";
 import { writeWithheldTax } from "../finance/withheld-tax-ledger.server";
@@ -256,6 +257,8 @@ export async function recordPayablePaymentWithSettlementIntegrity(reference: str
       };
       return { kind: "idempotency_conflict" as const };
     }
+    const locked = await lockedVatPeriod([paymentDate], transaction);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
 
     const currentStatus = status(bill.status);
     if (currentStatus === "paid" || numberValue(bill.balance_due) <= 0) return { kind: "already_paid" as const };

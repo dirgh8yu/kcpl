@@ -6,6 +6,7 @@ import { recomputeCustomerFinance } from "../finance/finance.server";
 import { writeMovedToCredit, writeNewCustomerCredit } from "../finance/customer-credit-ledger.server";
 import { settlementWithTds } from "../finance/withheld-tax-policy";
 import { writeWithheldTax } from "../finance/withheld-tax-ledger.server";
+import { lockedVatPeriod } from "../finance/vat-period-lock.server";
 import type { KcplStaffContext } from "../staff-directory.server";
 import {
   applySettlementPayment,
@@ -132,6 +133,9 @@ export async function recordReceivablePaymentWithSettlementIntegrity(reference: 
       }
       return { kind: "idempotency_conflict" as const };
     }
+    // Money can't be dated into a month whose VAT return is filed.
+    const locked = await lockedVatPeriod([paymentDate], transaction);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
 
     const currentStatus = text(invoice.status);
     const keepExcess = input.keepExcessAsCredit === true;

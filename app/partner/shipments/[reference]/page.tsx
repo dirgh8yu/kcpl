@@ -8,6 +8,9 @@ import { getPartnerAccess } from "../../partner-auth";
 import { getPartnerShipment } from "../../partner-data.server";
 import { PartnerShell } from "../../partner-shell";
 import { PartnerShipmentActions } from "./partner-shipment-actions";
+import { PartnerBills } from "./partner-bills";
+import { listPartnerBills } from "../../partner-bills.server";
+import { nepalOperationalDate } from "../../../invoice-effective-status";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +35,7 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
   const detail = await getPartnerShipment(access.session, decodeURIComponent(reference));
   if (!detail) notFound();
   const { shipment, events, documents } = detail;
+  const bills = await listPartnerBills(access.session, shipment.reference).catch(() => []);
   return <PartnerShell session={access.session}>
     <OpsPage>
       <OpsPageHeader
@@ -62,6 +66,7 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
               <OpsBadge tone={document.review_status === "rejected" ? "danger" : document.review_status === "verified" ? "success" : "info"}>{document.review_status === "rejected" ? "Sent back" : document.review_status === "verified" ? "Accepted" : "With KCPL"}</OpsBadge>
             </li>)}</ul> : <p className="portal-footnote m-0">Nothing sent yet.</p>}
           </OpsSurface>
+          <PartnerBills reference={shipment.reference} bills={bills} today={nepalOperationalDate()}/>
         </div>
       </div>
     </OpsPage>

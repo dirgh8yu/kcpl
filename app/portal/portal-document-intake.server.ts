@@ -32,9 +32,9 @@ import { portalIntakeExtension, portalIntakeExtensions, portalWriteRefused, type
 
 /** Checks that need nothing from the request body, so a refused caller is
  * turned away before the upload is read. */
-async function admitPortalDocument(session: PortalSession, reference: string): Promise<PortalWriteResult | { normalized: string }> {
+export async function admitPortalDocument(session: PortalSession, reference: string, refusal = "This account can view shipments but cannot send documents."): Promise<PortalWriteResult | { normalized: string }> {
   if (!session.capabilities.canSubmitRequests) {
-    return portalWriteRefused(403, "forbidden", "This account can view shipments but cannot send documents.");
+    return portalWriteRefused(403, "forbidden", refusal);
   }
 
   const normalized = reference.trim().toUpperCase();

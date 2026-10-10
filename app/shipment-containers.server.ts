@@ -4,6 +4,7 @@ import { freeTimeBearers, type FreeTimeBearer } from "./shipment-free-time";
 import {
   containerDatesInOrder,
   containerFromRecord,
+  containerMovementUpdate,
   containerNumberValid,
   containerSizeTypes,
   normalizeContainerNumber,
@@ -151,5 +152,37 @@ export async function removeShipmentContainer(reference: string, id: string, act
       type: "container_removed", title: `Container ${number} removed`, detail: null, actor_name: actor.name, actor_email: actor.email, created_at: now,
     });
     return { kind: "removed" as const };
+  });
+}
+
+const movementTitles = { gated_out_on: "left the port", delivered_on: "delivered", empty_returned_on: "empty returned" } as const;
+
+/**
+ * One date from the field, with the gate receipt's document id when a photo
+ * was taken. Nothing else about the container changes, so a phone can't
+ * clear the detention terms set on the Job File.
+ */
+export async function recordContainerMovement(reference: string, id: string, input: { movement: unknown; on: unknown; documentId: number | null }, actor: Actor) {
+  const number = normalizeContainerNumber(id);
+  if (!containerNumberValid(number)) return { kind: "missing" as const };
+  const db = firebaseAdminDb();
+  const shipment = db.collection("shipments").doc(reference);
+  const ref = shipment.collection("containers").doc(number);
+  return db.runTransaction(async (transaction) => {
+    const doc = await transaction.get(ref);
+    if (!doc.exists) return { kind: "missing" as const };
+    const container = containerFromRecord(doc.id, doc.data() as Record<string, unknown>);
+    const checked = containerMovementUpdate(container, input.movement, input.on, nepalOperationalDate());
+    if (!checked.ok) return { kind: "invalid" as const, error: checked.error };
+    const now = new Date().toISOString();
+    const receipt = checked.field === "gated_out_on" ? "gate_out_document_id" : checked.field === "empty_returned_on" ? "empty_return_document_id" : "delivery_document_id";
+    transaction.update(ref, { [checked.field]: checked.value, ...(input.documentId !== null ? { [receipt]: input.documentId } : {}), updated_at: now, updated_by: actor.email });
+    transaction.create(shipment.collection("job_activity").doc(`container-${number}-${Date.now()}`), {
+      type: "container_updated", title: `Container ${number} ${movementTitles[checked.field]}`,
+      detail: `${checked.value}${input.documentId !== null ? " · gate receipt photographed" : ""} · from the KCPL Ops app`,
+      actor_name: actor.name, actor_email: actor.email, created_at: now,
+    });
+    transaction.update(shipment, { updated_at: now });
+    return { kind: "updated" as const, container: { ...container, [checked.field]: checked.value } };
   });
 }

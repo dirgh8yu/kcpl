@@ -44,6 +44,8 @@ export type PayableBill = {
   category: JobCostCategory;
   status: PayableStatus;
   bill_date: string;
+  /** Set when the bill came in after its own month's VAT return was filed: the day it counts in the purchase book. */
+  vat_booked_on: string | null;
   due_date: string;
   currency: CrmCurrency;
   description: string;
@@ -54,6 +56,12 @@ export type PayableBill = {
   amount_paid: number;
   balance_due: number;
   notes: string | null;
+  /** "partner_portal" when the supplier sent it themselves; null when Accounts entered it. */
+  source: "partner_portal" | null;
+  /** The invoice file the partner attached, on the shipment. */
+  partner_document_id: number | null;
+  /** What KCPL's reader found on that file, against what the partner typed. */
+  partner_reading_check: { matches: boolean; issues: string[] } | null;
   /** The hand-typed Job File cost this bill replaces once approved. */
   replaces_job_cost_id: string | null;
   migration_batch_id: string | null;

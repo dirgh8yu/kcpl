@@ -7,6 +7,8 @@ import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "
 import { financePaymentMethods, type FinancePaymentMethod } from "../finance/finance-data";
 import { billNetCost } from "../finance/money-basis";
 import { recomputeCustomerFinance } from "../finance/finance.server";
+import { payableBookDate } from "../finance/vat-period-lock";
+import { lockedVatPeriod } from "../finance/vat-period-lock.server";
 import { jobCostCategories, type JobCostCategory } from "../job-file";
 import { canAccessPartnerOwner, isPartnerReference } from "../partners/partner-policy";
 import { type KcplStaffContext } from "../staff-directory.server";
@@ -138,6 +140,7 @@ async function payableFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     category: categoryValue(data.category),
     status: effectiveStatus(statusValue(data.status), dueDate, balanceDue),
     bill_date: text(data.bill_date),
+    vat_booked_on: text(data.vat_booked_on) || null,
     due_date: dueDate,
     currency: currencyValue(data.currency),
     description: text(data.description, "Supplier cost"),
@@ -148,6 +151,11 @@ async function payableFromSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot,
     amount_paid: numberValue(data.amount_paid),
     balance_due: balanceDue,
     notes: nullable(data.notes),
+    source: data.source === "partner_portal" ? "partner_portal" : null,
+    partner_document_id: typeof data.partner_document_id === "number" ? data.partner_document_id : null,
+    partner_reading_check: data.partner_reading_check && typeof data.partner_reading_check === "object"
+      ? { matches: (data.partner_reading_check as Record<string, unknown>).matches === true, issues: Array.isArray((data.partner_reading_check as Record<string, unknown>).issues) ? ((data.partner_reading_check as Record<string, unknown>).issues as unknown[]).filter((item): item is string => typeof item === "string") : [] }
+      : null,
     replaces_job_cost_id: nullable(data.replaces_job_cost_id),
     migration_batch_id: nullable(data.migration_batch_id),
     migration_as_of_date: nullable(data.migration_as_of_date),
@@ -461,10 +469,15 @@ export async function approvePayable(reference: string, actor: Actor, context: K
   const loaded = await getPayable(reference, context);
   if (loaded.kind !== "ready") return loaded;
   if (loaded.bill.status !== "draft") return { kind: "invalid_status" as const };
-  const nextStatus: PayableStatus = loaded.bill.due_date < operationalDate() ? "overdue" : "approved";
+  const today = operationalDate();
+  const nextStatus: PayableStatus = loaded.bill.due_date < today ? "overdue" : "approved";
+  // A bill dated in a month whose VAT return is already filed counts in this
+  // month's purchase book instead, keeping its own date.
+  const filed = await lockedVatPeriod([loaded.bill.bill_date]);
   const now = new Date().toISOString();
   await firebaseAdminDb().collection("payables").doc(loaded.bill.reference).update({
     status: nextStatus,
+    ...(filed ? { vat_booked_on: today } : {}),
     approved_at: now,
     approved_by_name: actor.name,
     approved_by_email: actor.email,
@@ -474,7 +487,7 @@ export async function approvePayable(reference: string, actor: Actor, context: K
   await syncApprovedBillToJobCost(approvedBill);
   await recomputeLinkedCustomer(approvedBill);
   await Promise.all([
-    writeJobActivity(approvedBill.shipment_reference, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.supplier_name}`, actor),
+    writeJobActivity(approvedBill.shipment_reference, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.supplier_name}${filed ? ` · ${filed.label} was already filed, so it counts in this month's purchase book` : ""}`, actor),
     writePartnerActivity(approvedBill.supplier_id, `Supplier bill approved: ${approvedBill.reference}`, `${approvedBill.currency} ${approvedBill.total.toFixed(2)} · ${approvedBill.branch}`, actor),
   ]);
   return { kind: "updated" as const };
@@ -523,6 +536,11 @@ export async function voidPayable(reference: string, actor: Actor, context: Kcpl
   if (loaded.kind !== "ready") return loaded;
   if (loaded.bill.status === "void") return { kind: "updated" as const };
   if (loaded.bill.amount_paid > 0) return { kind: "has_payments" as const };
+  // A draft isn't in the books yet; an approved bill is, in the month it counts in.
+  if (loaded.bill.status !== "draft") {
+    const locked = await lockedVatPeriod([payableBookDate(loaded.bill)]);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
+  }
   const now = new Date().toISOString();
   await firebaseAdminDb().collection("payables").doc(loaded.bill.reference).update({
     status: "void",

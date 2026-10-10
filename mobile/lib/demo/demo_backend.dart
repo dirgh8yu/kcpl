@@ -404,6 +404,7 @@ class DemoApi extends KcplApi {
   /// Everything sent from the app in this session, newest first.
   final sentDocuments = <DocumentRow>[];
   final confirmations = <String, DeliveryConfirmation>{};
+  final claimsByShipment = <String, List<CargoClaim>>{};
   final sentRemittances = <String, List<Remittance>>{};
 
   /// Reports progress in steps, as a real upload on a phone signal would.
@@ -773,6 +774,56 @@ class DemoApi extends KcplApi {
       message: complaint ? 'Thank you. The team that handled this delivery will be in touch.' : 'Thank you for telling us.',
       complaint: complaint,
       reviewUrl: complaint ? null : Uri.parse('https://g.page/r/kcpl-demo/review'),
+    );
+  }
+
+  @override
+  Future<List<CargoClaim>> claims(String reference) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return List.of(claimsByShipment[reference] ?? const <CargoClaim>[]);
+  }
+
+  @override
+  Future<SendReceipt> sendClaim(String reference, ClaimDraft draft, {SendProgress? onProgress}) async {
+    for (var step = 1; step <= 4; step++) {
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      onProgress?.call(step / 4);
+    }
+    final list = claimsByShipment[reference] ??= [];
+    final number = 'CLM-DEMO-${list.length + 1}';
+    list.insert(
+      0,
+      CargoClaim(
+        id: 'demo-${list.length + 1}',
+        number: number,
+        kind: draft.kind,
+        description: draft.description.trim(),
+        noticedOn: draft.noticedOn,
+        status: 'reported',
+        currency: draft.currency,
+        claimedAmount: draft.claimedAmount,
+        canWithdraw: true,
+      ),
+    );
+    return SendReceipt(message: 'Claim $number sent to KCPL. The team will take it up with the carrier or insurer and keep you posted here.');
+  }
+
+  @override
+  Future<void> withdrawClaim(String reference, String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final list = claimsByShipment[reference] ?? [];
+    final index = list.indexWhere((claim) => claim.id == id);
+    if (index < 0) throw const ApiException(404, 'missing', 'Claim not found.');
+    final claim = list[index];
+    list[index] = CargoClaim(
+      id: claim.id,
+      number: claim.number,
+      kind: claim.kind,
+      description: claim.description,
+      noticedOn: claim.noticedOn,
+      status: 'withdrawn',
+      currency: claim.currency,
+      claimedAmount: claim.claimedAmount,
     );
   }
 

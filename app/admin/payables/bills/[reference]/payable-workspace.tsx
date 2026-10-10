@@ -63,6 +63,11 @@ export function PayableWorkspace({ bill }: { bill: PayableBill }) {
 
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.toLowerCase().includes("failed") || notice.toLowerCase().includes("could not") ? "danger" : "success"} onDismiss={() => setNotice("")}>{notice}</OpsNotice> : null}
+      {bill.source === "partner_portal" ? <OpsNotice tone={bill.partner_reading_check && !bill.partner_reading_check.matches ? "warning" : "neutral"}>
+        <strong>Sent by {bill.supplier_name} through the partner portal.</strong>{" "}
+        {bill.partner_document_id !== null && bill.shipment_reference ? <a className="ops-cell-link" href={`/api/admin/shipments/${encodeURIComponent(bill.shipment_reference)}/documents/${bill.partner_document_id}`}>Open their invoice</a> : "Their file didn’t save; ask them to send it again."}
+        {bill.partner_reading_check ? (bill.partner_reading_check.matches ? " KCPL’s reader found the same number and total on the invoice." : ` Check before approving: ${bill.partner_reading_check.issues.join("; ")}.`) : null}
+      </OpsNotice> : null}
       {openingBalance ? <OpsNotice tone="neutral"><strong>Migration opening payable.</strong> This is the supplier balance KCPL owed as at {dateLabel(asOfDate)}. It affects outstanding payables and aging, but it is not treated as a historical supplier bill or Job File cost.{bill.migration_batch_id ? <> Migration batch <OpsMono>{bill.migration_batch_id}</OpsMono>.</> : null}</OpsNotice> : null}
       <div className="ops-grid-main">
         <div className="ops-stack">

@@ -56,6 +56,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ refer
   if (result.kind === "missing") return json({ ok: false, error: "Supplier bill not found." }, 404);
   if (result.kind === "forbidden") return json({ ok: false, error: "This bill is outside your finance or branch access." }, 403);
   if (result.kind === "has_payments") return json({ ok: false, error: "A supplier bill with recorded payments cannot be voided." }, 409);
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: `${result.period} is filed with the tax office and this bill is in its purchase book, so it can't be voided. Ask Management to reopen ${result.period} if the return is being corrected.` }, 409);
   if (result.kind === "invalid_status") return json({ ok: false, error: "That action is not available for the bill's current status." }, 409);
   if (result.kind === "unavailable") return json({ ok: false, error: "Accounts Payable storage is unavailable." }, 503);
   return json({ ok: false, error: "Choose a valid supplier bill action." }, 400);

@@ -11,6 +11,9 @@ import { V4WorkspaceGate } from "../../v4-workspace-gate";
 import { getShipmentWorkflowReadiness } from "../../workflow-guard.server";
 import { readShipmentFreeTime } from "../../../shipment-free-time.server";
 import { readShipmentContainers } from "../../../shipment-containers.server";
+import { readShipmentDeposits } from "../../../container-deposits.server";
+import { readShipmentClaims } from "../../../cargo-claims.server";
+import { ClaimControl } from "./claim-control";
 import { readShipmentDutyEstimate } from "../../../shipment-duty-estimate.server";
 import { loadNprRateTable } from "../../finance/fx-rates.server";
 import { documentReadingConfigured, listDocumentReadings } from "../../document-reading.server";
@@ -95,6 +98,9 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
   const exceptionBranches = [...new Set([result.job.primary_branch, ...result.job.handling_branches])]
     .filter((branch) => staffCanAccessBranch(staff, branch));
 
+  const claims = await readShipmentClaims(result.job.reference);
+  const openClaims = (claims ?? []).filter((claim) => claim.status === "reported" || claim.status === "filed").length;
+
   return <OperationsShell {...shellProps}>
     <JobRecord
       job={job}
@@ -104,7 +110,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
       pickupStatus={stepContext.pickupStatus}
       pickup={stepContext.pickup}
       requestedPanel={typeof requestedStep === "string" ? requestedStep : null}
-      openProblems={exceptionCases.kind === "ready" ? exceptionCases.summary.open : 0}
+      openProblems={(exceptionCases.kind === "ready" ? exceptionCases.summary.open : 0) + openClaims}
       canManageFinance={staff.permissions.canManageFinance}
       canMessageCustomer={staff.permissions.canManageJobFile}
       dutyEstimate={dutyEstimate}
@@ -123,6 +129,7 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
           nowIso={new Date().toISOString()}
           freeTime={await readShipmentFreeTime(result.job.reference)}
           containers={await readShipmentContainers(result.job.reference)}
+          deposits={await readShipmentDeposits(result.job.reference)}
           today={nepalOperationalDate()}
           readings={readings}
           readingConfigured={documentReadingConfigured()}
@@ -143,6 +150,10 @@ export default async function JobFilePage({ params, searchParams }: { params: Pr
             currentUserEmail={access.user.email}
           />
         ) : <QuietSection eyebrow="Problems" title="Problems can’t be shown" detail="None of this shipment’s branches are in your access."/>}
+      </div>
+
+      <div className="job-record-block" data-panel="problems">
+        <ClaimControl reference={result.job.reference} claims={claims} canEdit={staff.permissions.canManageJobFile} canFinance={staff.permissions.canManageFinance} today={nepalOperationalDate()}/>
       </div>
 
       <div id="shipment-delivery" className="job-record-block" data-panel="delivery proof">

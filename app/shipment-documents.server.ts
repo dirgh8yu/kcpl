@@ -149,6 +149,8 @@ export async function uploadShipmentDocument(
     source?: "staff" | "customer_portal" | "partner";
     /** For a partner's upload, which partner sent it, so their portal lists only their own documents. */
     uploadedByPartnerId?: string;
+    /** KCPL's own paper (a supplier's bill to KCPL): never released to the customer, whatever its review says. */
+    kcplOnly?: boolean;
   },
 ) {
   if (!configured()) return { kind: "unavailable" as const };
@@ -225,6 +227,7 @@ export async function uploadShipmentDocument(
     batch.create(shipment.ref.collection("documents").doc(String(id)), {
       ...document,
       uploaded_by_partner_id: values.uploadedByPartnerId ?? null,
+      ...(values.kcplOnly ? { kcpl_only: true } : {}),
       storage_path: key,
       storage_deleted_at: null,
       storage_delete_pending: false,
@@ -282,7 +285,8 @@ export async function updateShipmentDocumentControl(reference: string, id: numbe
   const verified = values.status === "verified";
   const update = {
     review_status: values.status,
-    customer_safe: values.customerSafe,
+    // A supplier's bill to KCPL stays KCPL's, however it is reviewed.
+    customer_safe: snapshot.get("kcpl_only") === true ? false : values.customerSafe,
     review_note: values.reviewNote.trim() || null,
     reviewed_at: now,
     reviewed_by: actor.name,

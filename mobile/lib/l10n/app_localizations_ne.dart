@@ -2906,4 +2906,172 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get opsTwoStepSetupDone => 'मिलाइसकेँ';
+
+  @override
+  String get claimEntry => 'क्षति वा हराएको जानकारी दिनुहोस्';
+
+  @override
+  String get claimEntryHint => 'बिग्रिएको, कम आएको, हराएको वा धेरै ढिला';
+
+  @override
+  String get claimTitle => 'समस्या जानकारी दिनुहोस्';
+
+  @override
+  String get claimWhat => 'के भयो';
+
+  @override
+  String get claimKindDamage => 'बिग्रिएको';
+
+  @override
+  String get claimKindShortage => 'कम आएको: पठाएभन्दा थोरै आयो';
+
+  @override
+  String get claimKindLoss => 'हराएको';
+
+  @override
+  String get claimKindDelay => 'धेरै ढिला भएको';
+
+  @override
+  String get claimKindOther => 'अरू केही';
+
+  @override
+  String get claimFoundOn => 'थाहा पाएको मिति';
+
+  @override
+  String get claimDescribe => 'विवरण लेख्नुहोस्';
+
+  @override
+  String get claimDescribeHint =>
+      'कुन प्याकेज, के समस्या छ, र डेलिभरी रसिदमा लेखिएको कुनै कुरा';
+
+  @override
+  String get claimValue => 'नोक्सानीको मूल्य (ऐच्छिक)';
+
+  @override
+  String get claimPhotos => 'फोटो';
+
+  @override
+  String get claimAddPhoto => 'फोटो थप्नुहोस्';
+
+  @override
+  String claimPhotoCount(int count, int max) {
+    return '$max मध्ये $count';
+  }
+
+  @override
+  String get claimRemovePhoto => 'फोटो हटाउनुहोस्';
+
+  @override
+  String get claimFootnote =>
+      'थाहा पाउनेबित्तिकै जानकारी दिनुहोस्: ढुवानीकर्ता र बीमा कम्पनीले डेलिभरीपछि केही दिनभित्र मात्र दाबी लिन्छन्। KCPL ले यसमा काम गरी यहीँ जानकारी दिनेछ।';
+
+  @override
+  String get claimNeedDescription => 'के भयो एक दुई वाक्यमा लेख्नुहोस्।';
+
+  @override
+  String get claimInvalidValue =>
+      'मूल्य अङ्कमा लेख्नुहोस्, वा खाली छोड्नुहोस्।';
+
+  @override
+  String get claimsTitle => 'दाबीहरू';
+
+  @override
+  String claimNumber(String number) {
+    return 'दाबी $number';
+  }
+
+  @override
+  String get claimStatusReported => 'KCPL सँग';
+
+  @override
+  String get claimStatusFiled => 'ढुवानीकर्ता वा बीमा कम्पनीमा दर्ता भयो';
+
+  @override
+  String get claimStatusSettled => 'टुंगियो';
+
+  @override
+  String get claimStatusRejected => 'स्वीकार भएन';
+
+  @override
+  String get claimStatusWithdrawn => 'फिर्ता लिइयो';
+
+  @override
+  String get claimWithdraw => 'फिर्ता लिनुहोस्';
+
+  @override
+  String get claimWithdrawConfirm =>
+      'यो दाबी फिर्ता लिने हो? KCPL ले यसमा काम गर्न छोड्नेछ।';
+
+  @override
+  String claimSettledCredit(String amount) {
+    return 'तपाईंको बिलमा $amount क्रेडिट नोट';
+  }
+
+  @override
+  String claimSettledRefund(String amount) {
+    return 'तपाईंलाई $amount फिर्ता गरियो';
+  }
+
+  @override
+  String get claimSettledInsurer => 'बीमा कम्पनीले तपाईंलाई सिधै भुक्तानी गर्छ';
+
+  @override
+  String get opsContainers => 'कन्टेनरहरू';
+
+  @override
+  String get opsContainerAtPort => 'बन्दरगाहमा';
+
+  @override
+  String opsContainerOutSince(String date) {
+    return '$date देखि बाहिर';
+  }
+
+  @override
+  String opsContainerDeliveredOn(String date) {
+    return '$date मा डेलिभर';
+  }
+
+  @override
+  String opsContainerBackOn(String date) {
+    return '$date मा खाली फिर्ता';
+  }
+
+  @override
+  String opsContainerTitle(String number) {
+    return 'कन्टेनर $number';
+  }
+
+  @override
+  String get opsContainerWhat => 'के भयो';
+
+  @override
+  String get opsContainerMoveOut => 'भरिएको अवस्थामा बन्दरगाहबाट निस्कियो';
+
+  @override
+  String get opsContainerMoveDelivered => 'डेलिभर भयो';
+
+  @override
+  String get opsContainerMoveBack => 'खाली कन्टेनर डिपोमा फिर्ता भयो';
+
+  @override
+  String get opsContainerOn => 'मिति';
+
+  @override
+  String get opsContainerReceipt => 'गेट रसिद';
+
+  @override
+  String get opsContainerReceiptHint =>
+      'गेटको रसिदको फोटो खिच्नुहोस्। यो जबमा राखिन्छ।';
+
+  @override
+  String opsContainerSaved(String number) {
+    return '$number अद्यावधिक भयो';
+  }
+
+  @override
+  String get opsContainerFootnote =>
+      'डिटेन्सन कन्टेनर बन्दरगाहबाट निस्केको दिनदेखि खाली फिर्ता भएको दिनसम्म गनिन्छ।';
+
+  @override
+  String get opsContainerSave => 'सुरक्षित गर्नुहोस्';
 }

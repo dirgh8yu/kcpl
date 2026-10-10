@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, FileCheck2, Landmark } from "lucide-react";
+import { Download, FileCheck2, Landmark, Lock, LockOpen } from "lucide-react";
 import { nepalOperationalDate } from "../../../invoice-effective-status";
 import { bsDateLabel, bsMonthNames } from "../../../nepali-calendar";
 import type { TaxMonth, WithheldTaxRow } from "../tax-books.server";
+import type { VatPeriodState } from "../vat-period-lock.server";
+import { vatBooksChangedSinceFiling } from "../vat-period-lock";
 import { tallyLedgerLabels, type TallyLedgerSettings } from "../tally-export";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsField, OpsMetric, OpsMetricStrip, OpsMono, OpsNotice, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
 
@@ -29,7 +31,7 @@ async function send(url: string, method: "POST" | "PATCH" | "PUT", body: unknown
   return data;
 }
 
-export function TaxWorkspace({ month, currentYear }: { month: TaxMonth; currentYear: number }) {
+export function TaxWorkspace({ month, period, currentYear }: { month: TaxMonth; period: VatPeriodState | null; currentYear: number }) {
   const router = useRouter();
   const [notice, setNotice] = useState<Notice>(null);
   const exportUrl = (kind: string) => `/api/admin/finance/tax/export?kind=${kind}&y=${month.year}&m=${month.month}`;
@@ -55,6 +57,7 @@ export function TaxWorkspace({ month, currentYear }: { month: TaxMonth; currentY
     <div className="ops-content-wide ops-stack">
       {notice ? <OpsNotice tone={notice.tone} onDismiss={() => setNotice(null)}>{notice.text}</OpsNotice> : null}
       {month.partial ? <OpsNotice tone="warning">You see your own branches only. The VAT return covers the whole company, so ask Management for the full books.</OpsNotice> : null}
+      {period ? <VatReturn period={period} month={month} onDone={(text) => { setNotice({ text, tone: "success" }); router.refresh(); }} onError={(text) => setNotice({ text, tone: "danger" })}/> : null}
 
       <OpsMetricStrip columns={4}>
         <OpsMetric label="VAT on sales" value={money(summary.output_vat)} detail={`${money(summary.taxable_sales)} taxable sales`}/>
@@ -83,12 +86,12 @@ export function TaxWorkspace({ month, currentYear }: { month: TaxMonth; currentY
         </table></OpsTableWrap> : <OpsEmptyState compact icon={<FileCheck2 size={17} strokeWidth={1.75} aria-hidden="true"/>} title="No sales this month" description="Invoices appear here in the month they are issued."/>}
       </OpsSurface>
 
-      <OpsSurface title="Purchase book" description="Supplier bills dated this month, once approved." action={<a className="ops-button" data-variant="secondary" data-size="sm" href={exportUrl("purchases")}><Download size={12}/>CSV</a>} flush>
+      <OpsSurface title="Purchase book" description="Supplier bills dated this month, once approved, and late bills for months already filed." action={<a className="ops-button" data-variant="secondary" data-size="sm" href={exportUrl("purchases")}><Download size={12}/>CSV</a>} flush>
         {month.purchases.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table">
           <thead><tr><th>Date</th><th>Supplier bill</th><th>Supplier</th><th className="text-right">Non-taxable</th><th className="text-right">Taxable</th><th className="text-right">VAT</th></tr></thead>
           <tbody>{month.purchases.map((row) => <tr key={row.reference}>
             <td data-cell="meta" data-label="Date">{row.date_bs}<span className="ops-cell-secondary">{dateLabel(row.date)}</span></td>
-            <td data-cell="primary"><Link href={`/admin/payables/bills/${encodeURIComponent(row.reference)}`} className="ops-cell-ref ops-mono">{row.bill_number}</Link></td>
+            <td data-cell="primary"><Link href={`/admin/payables/bills/${encodeURIComponent(row.reference)}`} className="ops-cell-ref ops-mono">{row.bill_number}</Link>{row.booked_late ? <span className="ops-cell-secondary">Came in after its own month was filed</span> : null}</td>
             <td data-cell="route"><span className="ops-cell-primary">{row.supplier_name}</span><span className="ops-cell-secondary">{row.supplier_pan ? `PAN ${row.supplier_pan}` : "No PAN"}{row.currency !== "NPR" ? ` · ${row.currency}` : ""}</span></td>
             <td data-cell="meta" data-label="Non-taxable" className="text-right tabular-nums">{money(row.non_taxable, row.currency)}</td>
             <td data-cell="meta" data-label="Taxable" className="text-right tabular-nums">{money(row.taxable, row.currency)}</td>
@@ -102,6 +105,55 @@ export function TaxWorkspace({ month, currentYear }: { month: TaxMonth; currentY
       <Tally settings={month.tally} mastersUrl={exportUrl("tally-masters")} vouchersUrl={exportUrl("tally-vouchers")} onDone={(text) => { setNotice({ text, tone: "success" }); router.refresh(); }} onError={(text) => setNotice({ text, tone: "danger" })}/>
     </div>
   </OpsPage>;
+}
+
+function VatReturn({ period, month, onDone, onError }: { period: VatPeriodState; month: TaxMonth; onDone: (text: string) => void; onError: (text: string) => void }) {
+  const [form, setForm] = useState({ filedOn: nepalOperationalDate(), reference: "" });
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const filed = period.status === "filed";
+  const now = { output_vat: month.summary.output_vat, input_vat: month.summary.input_vat, net_vat: month.summary.net_vat, sales: month.sales.length, purchases: month.purchases.length };
+  const changed = vatBooksChangedSinceFiling(period.filed_summary, now);
+  const last = period.history[period.history.length - 1] ?? null;
+  // The month in progress has nothing to file yet; say nothing until it is over or has a history.
+  if (!filed && !period.fileable && !period.history.length) return null;
+
+  async function post(body: Record<string, unknown>, done: string) {
+    setBusy(true);
+    try { await send("/api/admin/finance/tax/period", "POST", { year: month.year, month: month.month, ...body }); onDone(done); setReason(""); }
+    catch (error) { onError(error instanceof Error ? error.message : "That didn't go through."); }
+    finally { setBusy(false); }
+  }
+
+  return <OpsSurface
+    title="VAT return"
+    description={filed
+      ? `Filed ${dateLabel(period.filed_on)}${period.filing_reference ? ` · reference ${period.filing_reference}` : ""}${period.filed_by_name ? ` · marked by ${period.filed_by_name}` : ""}. Invoices, credit notes, supplier bills and payments dated in ${month.label} are closed. Corrections go in an open month.`
+      : `When the return for ${month.label} is filed, mark it here. Nothing dated in the month can then be added or voided, and a supplier bill for it that comes in late counts in the month it is approved.`}
+    action={<OpsBadge tone={filed ? "success" : "neutral"} dot>{filed ? "Filed" : "Open"}</OpsBadge>}
+  >
+    <div className="ops-stack">
+      {!filed && last?.action === "reopened" ? <OpsNotice tone="warning">Reopened by {last.by} on {dateLabel(last.at.slice(0, 10))}: {last.detail}</OpsNotice> : null}
+      {changed && period.filed_summary ? <OpsNotice tone="warning">The books have changed since the return was filed. VAT on sales was {money(period.filed_summary.output_vat)} and is now {money(now.output_vat)}; VAT on purchases was {money(period.filed_summary.input_vat)} and is now {money(now.input_vat)}.</OpsNotice> : null}
+      {!filed && period.can_file ? <form onSubmit={(event) => { event.preventDefault(); void post({ action: "file", ...form }, `${month.label} marked filed. Its books are closed.`); }} className="grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)_auto] sm:items-end">
+        <OpsField label="Filed on"><input required type="date" min={month.end} max={nepalOperationalDate()} value={form.filedOn} onChange={(event) => setForm({ ...form, filedOn: event.target.value })}/></OpsField>
+        <OpsField label="Tax office reference (optional)"><input maxLength={120} value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })}/></OpsField>
+        <OpsButton type="submit" variant="primary" disabled={busy}><Lock size={12}/>Mark as filed</OpsButton>
+      </form> : null}
+      {!filed && !period.can_file ? <p className="text-[length:var(--app-label-size)] text-[var(--admin-muted)]">Accounts or Management staff who see every branch mark the return filed.</p> : null}
+      {filed && period.can_reopen ? <details>
+        <summary className="cursor-pointer text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">Reopen {month.label}</summary>
+        <form onSubmit={(event) => { event.preventDefault(); void post({ action: "reopen", reason }, `${month.label} reopened. Mark it filed again once the correction is made.`); }} className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <OpsField label="Why" hint="Stays on the record"><input required minLength={10} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)}/></OpsField>
+          <OpsButton type="submit" variant="secondary" disabled={busy || reason.trim().length < 10}><LockOpen size={12}/>Reopen</OpsButton>
+        </form>
+      </details> : null}
+      {period.history.length > 1 ? <details>
+        <summary className="cursor-pointer text-[length:var(--app-label-size)] font-semibold text-[var(--admin-ink)]">History</summary>
+        <ul className="mt-2 space-y-1 text-[length:var(--app-label-size)] text-[var(--admin-muted)]">{[...period.history].reverse().map((item) => <li key={`${item.action}-${item.at}`}>{dateLabel(item.at.slice(0, 10))} · {item.action === "filed" ? "Marked filed" : "Reopened"} by {item.by}{item.detail ? ` · ${item.detail}` : ""}</li>)}</ul>
+      </details> : null}
+    </div>
+  </OpsSurface>;
 }
 
 function TdsDeposit({ rows, due, exportUrl, onDone, onError }: { rows: WithheldTaxRow[]; due: string | null; exportUrl: string; onDone: (text: string) => void; onError: (text: string) => void }) {

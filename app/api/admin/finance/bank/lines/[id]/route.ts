@@ -32,6 +32,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (result.kind === "matched") return json({ ok: true, remaining: result.remaining });
   if (result.kind === "unknown_action") return json({ ok: false, error: "Unknown action." }, 400);
   if (result.kind === "note_required") return json({ ok: false, error: "Say what the line is (bank charge, interest, own transfer)." }, 400);
+  if (result.kind === "period_locked" && "period" in result) return json({ ok: false, code: "PERIOD_LOCKED", error: `${result.period} is filed with the tax office and this bank line is dated in it, so it can't be matched now. Ask Management to reopen ${result.period} if the return is being corrected.` }, 409);
   const known = settlementErrors[result.kind];
   if (known) return json({ ok: false, error: known[0] }, known[1]);
   return creditError(result.kind);

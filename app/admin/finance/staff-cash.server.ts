@@ -12,6 +12,7 @@ import type { KcplStaffContext } from "../staff-directory.server";
 import { nextTaxDocumentNumber } from "./customer-credit-ledger.server";
 import { refundMethods } from "./refund-policy";
 import { staffCashSettlement, staffCashSpent, validStaffExpense, type StaffCashSettlement } from "./staff-cash-policy";
+import { lockedVatPeriod } from "./vat-period-lock.server";
 
 /*
  * Staff cash advances: cash handed to staff for fees paid on the spot, the
@@ -161,7 +162,9 @@ export async function giveStaffCash(input: { staffEmail: string; staffName: stri
   const ref = db.collection(STAFF_ADVANCES).doc(childId("advance", input.idempotencyKey));
   const result = await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(ref);
-    if (existing.exists) return { number: text(existing.get("number")), repeated: true };
+    if (existing.exists) return { locked: null, number: text(existing.get("number")), repeated: true };
+    const locked = await lockedVatPeriod([givenOn], transaction);
+    if (locked) return { locked: locked.label, number: "", repeated: false };
     const series = await nextTaxDocumentNumber(transaction, "staff_advance", fiscalYear);
     const now = new Date().toISOString();
     series.commit();
@@ -170,8 +173,9 @@ export async function giveStaffCash(input: { staffEmail: string; staffName: stri
       given_on: givenOn, method: input.method, purpose, status: "open", settled_on: null,
       given_by_name: actor.name, given_by_email: actor.email, created_at: now, updated_at: now,
     });
-    return { number: series.number, repeated: false };
+    return { locked: null, number: series.number, repeated: false };
   });
+  if (result.locked) return { kind: "period_locked" as const, period: result.locked };
   return { kind: "created" as const, id: ref.id, number: result.number, repeated: result.repeated };
 }
 
@@ -244,6 +248,8 @@ export async function settleStaffAdvance(id: string, input: { settledOn: string;
     if (!advance.exists) return { kind: "missing" as const };
     if (!canAccessBranchValue(context, advance.get("branch"))) return { kind: "forbidden" as const };
     if (advance.get("status") !== "open") return { kind: "already_settled" as const };
+    const locked = await lockedVatPeriod([settledOn], transaction);
+    if (locked) return { kind: "period_locked" as const, period: locked.label };
     const expenseDocs = (await transaction.get(ref.collection("expenses"))).docs;
     const expenses = expenseDocs.map(expenseFromDoc);
     const shipments = [...new Set(expenses.map((item) => item.shipment_reference).filter((value): value is string => Boolean(value)))];

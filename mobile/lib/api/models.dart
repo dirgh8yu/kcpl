@@ -846,6 +846,76 @@ class RemittanceDraft {
   final String note;
 }
 
+/// Damage, shortage, loss or delay reported on a shipment, and where KCPL
+/// has got with it. What it was settled at shows only once it is settled.
+class CargoClaim {
+  const CargoClaim({
+    required this.id,
+    required this.number,
+    required this.kind,
+    required this.description,
+    required this.noticedOn,
+    required this.status,
+    required this.currency,
+    this.claimedAmount,
+    this.compensationAmount,
+    this.compensationMethod,
+    this.canWithdraw = false,
+  });
+
+  final String id;
+  final String number;
+
+  /// damage, shortage, loss, delay or other.
+  final String kind;
+  final String description;
+
+  /// YYYY-MM-DD: the day the problem was found.
+  final String noticedOn;
+
+  /// reported, filed, settled, rejected or withdrawn.
+  final String status;
+  final String currency;
+  final double? claimedAmount;
+  final double? compensationAmount;
+
+  /// credit_note, refund, insurer_paid or none.
+  final String? compensationMethod;
+  final bool canWithdraw;
+
+  factory CargoClaim.fromJson(Map<String, dynamic> json) => CargoClaim(
+    id: _s(json['id']),
+    number: _s(json['number']),
+    kind: _s(json['kind'], 'other'),
+    description: _s(json['description']),
+    noticedOn: _s(json['noticed_on']),
+    status: _s(json['status'], 'reported'),
+    currency: _s(json['currency'], 'NPR'),
+    claimedAmount: json['claimed_amount'] is num ? _n(json['claimed_amount']) : null,
+    compensationAmount: json['compensation_amount'] is num ? _n(json['compensation_amount']) : null,
+    compensationMethod: _ns(json['compensation_method']),
+    canWithdraw: _b(json['can_withdraw']),
+  );
+}
+
+/// The kinds of claim, in the order the screen offers them.
+const claimKinds = ['damage', 'shortage', 'loss', 'delay', 'other'];
+
+/// Up to this many photos go with a claim.
+const claimMaxPhotos = 6;
+
+class ClaimDraft {
+  const ClaimDraft({required this.kind, required this.description, required this.noticedOn, this.claimedAmount, this.currency = 'NPR', this.photos = const []});
+  final String kind;
+  final String description;
+
+  /// YYYY-MM-DD.
+  final String noticedOn;
+  final double? claimedAmount;
+  final String currency;
+  final List<Attachment> photos;
+}
+
 /// A login on the customer's account, as the owner's team panel lists it.
 class TeamMember {
   const TeamMember({

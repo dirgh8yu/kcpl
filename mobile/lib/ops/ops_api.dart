@@ -49,6 +49,10 @@ abstract class OpsApi {
     SendProgress? onProgress,
   });
 
+  /// A container date from the field: [movement] is gated_out, delivered or
+  /// empty_returned. [photo] is the gate receipt, filed on the job.
+  Future<OpsContainer> recordContainer(String reference, String number, String movement, {DateTime? on, Attachment? photo, SendProgress? onProgress});
+
   /// Jobs in the caller's branches that a scanned or typed identifier means.
   Future<List<ScanMatch>> lookup(String query);
 
@@ -287,6 +291,18 @@ class HttpOpsApi implements OpsApi {
       return ProgressingRequest.wrap(multipart, onProgress);
     }, timeout: const Duration(minutes: 2));
     return FieldNote.fromJson((body['note'] as Map?)?.cast<String, dynamic>() ?? const {});
+  }
+
+  @override
+  Future<OpsContainer> recordContainer(String reference, String number, String movement, {DateTime? on, Attachment? photo, SendProgress? onProgress}) async {
+    final body = await _dispatch(() {
+      final multipart = http.MultipartRequest('POST', _uri('jobs/${_ref(reference)}/containers/${_ref(number)}'))
+        ..fields['movement'] = movement
+        ..fields['on'] = (on ?? DateTime.now()).toIso8601String().substring(0, 10);
+      if (photo != null) multipart.files.add(http.MultipartFile.fromBytes('photo', photo.bytes, filename: photo.filename));
+      return ProgressingRequest.wrap(multipart, onProgress);
+    }, timeout: const Duration(minutes: 2));
+    return OpsContainer.fromJson((body['container'] as Map?)?.cast<String, dynamic>() ?? const {});
   }
 
   @override

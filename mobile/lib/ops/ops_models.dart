@@ -344,7 +344,11 @@ class JobFile {
     this.closeBlockers = const [],
     this.jobClosed = false,
     this.delivery,
+    this.containers = const [],
   });
+
+  /// The boxes on a sea or multimodal job, with their dates.
+  final List<OpsContainer> containers;
 
   /// Delivery Control, when it could be read alongside.
   final DeliveryControl? delivery;
@@ -368,6 +372,7 @@ class JobFile {
     closeBlockers: closeBlockers,
     jobClosed: jobClosed,
     delivery: delivery,
+    containers: containers,
   );
 
   /// What stands between this job and closing it, as closeout checks it.
@@ -438,8 +443,61 @@ class JobFile {
       closeBlockers: workflow == null ? const [] : _strings(workflow['close_blockers']),
       jobClosed: workflow != null && _b(workflow['job_closed']),
       fieldNotes: _list(body['fieldNotes']).map(FieldNote.fromJson).toList(),
+      containers: _list(body['containers']).map(OpsContainer.fromJson).toList(),
     );
   }
+
+  JobFile withContainer(OpsContainer container) => JobFile(
+    job: job,
+    carrierReference: carrierReference,
+    handlingBranches: handlingBranches,
+    ownerTitle: ownerTitle,
+    internalReference: internalReference,
+    internalNotes: internalNotes,
+    tasks: tasks,
+    customs: customs,
+    canViewCosts: canViewCosts,
+    costTotals: costTotals,
+    revenueTotals: revenueTotals,
+    profitTotals: profitTotals,
+    marginPercent: marginPercent,
+    blockers: blockers,
+    fieldNotes: fieldNotes,
+    closeBlockers: closeBlockers,
+    jobClosed: jobClosed,
+    delivery: delivery,
+    containers: [for (final c in containers) c.number == container.number ? container : c],
+  );
+}
+
+/// A container on a job: its number and size, and the three dates the field
+/// records: out of the port full, delivered, and the empty back at the depot.
+class OpsContainer {
+  const OpsContainer({required this.number, required this.sizeType, this.gatedOutOn, this.deliveredOn, this.emptyReturnedOn, this.returnDepot});
+  final String number;
+  final String sizeType;
+  final String? gatedOutOn;
+  final String? deliveredOn;
+  final String? emptyReturnedOn;
+  final String? returnDepot;
+
+  /// What happens to the box next, as the app offers it first.
+  String? get next => emptyReturnedOn != null
+      ? null
+      : gatedOutOn == null
+      ? 'gated_out'
+      : deliveredOn == null
+      ? 'delivered'
+      : 'empty_returned';
+
+  factory OpsContainer.fromJson(Map<String, dynamic> j) => OpsContainer(
+    number: _s(j['number']),
+    sizeType: _s(j['size_type'], '40HC'),
+    gatedOutOn: _ns(j['gated_out_on']),
+    deliveredOn: _ns(j['delivered_on']),
+    emptyReturnedOn: _ns(j['empty_returned_on']),
+    returnDepot: _ns(j['return_depot']),
+  );
 }
 
 /// A note left on a job from the field, with or without a photo. On the web

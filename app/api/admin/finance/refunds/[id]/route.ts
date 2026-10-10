@@ -1,3 +1,4 @@
+import { vatPeriodLockedMessage } from "../../../../../admin/finance/vat-period-lock";
 import { moveRefund } from "../../../../../admin/finance/customer-credits.server";
 import type { RefundAction } from "../../../../../admin/finance/refund-policy";
 import { creditError, financeWriteRequest, json } from "../../credit-route-auth";
@@ -16,5 +17,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     note: field("note"), paidOn: field("paidOn"), method: field("method"), paymentReference: field("paymentReference"),
   }, auth.actor, auth.staff);
   if (result.kind === "updated") return json({ ok: true, status: result.status, number: result.number });
+  if (result.kind === "period_locked") return json({ ok: false, code: "PERIOD_LOCKED", error: vatPeriodLockedMessage(result.period) }, 409);
   return creditError(result.kind);
 }

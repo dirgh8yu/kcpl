@@ -311,6 +311,8 @@ const withheldDocumentStatuses = new Set(["rejected", "superseded", "deleted"]);
  */
 export function portalDocumentReleased(document: Record<string, unknown>, now = new Date()) {
   if (document.customer_safe !== true) return false;
+  // A supplier's bill to KCPL (sent through the partner portal) is never the customer's to see.
+  if (document.kcpl_only === true) return false;
   // A sealed POD manifest carries the recipient's phone, GPS and driver. It is
   // staff evidence even if an older record was marked customer-safe.
   if (document.pod_manifest === true) return false;

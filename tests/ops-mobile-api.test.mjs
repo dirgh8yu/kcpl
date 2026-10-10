@@ -80,6 +80,7 @@ test("the staff app can write only what the phone needs, and only through shared
   assert.deepEqual(writers.sort(), [
     "app/api/mobile/ops/v1/alerts/[id]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/actions/route.ts",
+    "app/api/mobile/ops/v1/jobs/[reference]/containers/[number]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/customs/[id]/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/delivery/evidence/route.ts",
     "app/api/mobile/ops/v1/jobs/[reference]/delivery/route.ts",
@@ -94,6 +95,10 @@ test("the staff app can write only what the phone needs, and only through shared
     assert.match(source, /toggleJobChild\(/);
     assert.doesNotMatch(source, /toggleJobTask|toggleCustomsStep/);
   }
+  // A container date goes through the containers module's own writer, after the branch check.
+  const containers = code(await readFile(repo("app/admin/ops-containers.server.ts"), "utf8"));
+  assert.ok(containers.indexOf("checkShipmentBranchAccess(") < containers.indexOf("recordContainerMovement("), "branch access is checked before writing");
+  assert.doesNotMatch(containers, /firebaseAdminDb|collection\(/, "the phone never writes the container itself");
 });
 
 test("a reply to the customer is the Job File's own, after the same branch check", async () => {
