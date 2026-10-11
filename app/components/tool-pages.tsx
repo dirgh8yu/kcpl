@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { sitePath, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs, type ToolSlug } from "../tool-data";
 import { DutyEstimator, StorageEstimator, VolumeEstimator } from "./importer-tool-forms";
@@ -10,21 +10,19 @@ export function ToolsIndexPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/tools">
       <section className="section page-head freight-guide-head">
-        <p className="freight-guide-eyebrow">KCPL / {copy.eyebrow}</p>
         <h1 className="section-title">{copy.index.title}</h1>
         <p className="section-intro">{copy.index.intro}</p>
       </section>
       <section className="section reference-index">
         <ol className="reference-index-list">
-          {toolSlugs.map((slug, index) => (
+          {toolSlugs.map((slug) => (
             <li key={slug}>
               <Link href={sitePath(locale, `/tools/${slug}`)} className="reference-index-link">
-                <span className="reference-index-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <span className="reference-index-body">
                   <span className="reference-index-title">{copy[slug].title}</span>
                   <span className="reference-index-copy">{copy[slug].description}</span>
                 </span>
-                <span className="reference-index-open">{copy.index.open}<ArrowRight size={15} weight="bold" aria-hidden="true"/></span>
+                <span className="reference-index-open">{copy.index.open}<CaretRight size={13} weight="bold" aria-hidden="true"/></span>
               </Link>
             </li>
           ))}
@@ -42,7 +40,7 @@ export function ToolPage({ locale, slug }: { locale: SiteLocale; slug: ToolSlug 
   return (
     <SiteShell locale={locale} path={`/tools/${slug}`}>
       <section className="section page-head freight-guide-head">
-        <p className="freight-guide-eyebrow"><Link href={sitePath(locale, "/tools")}>KCPL / {copy.eyebrow}</Link></p>
+        <p className="freight-guide-eyebrow"><Link href={sitePath(locale, "/tools")}>{copy.eyebrow}</Link></p>
         <h1 className="section-title">{page.title}</h1>
         <p className="section-intro">{page.intro}</p>
       </section>

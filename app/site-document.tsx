@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, IBM_Plex_Mono, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
+import { Geist, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense, type ReactNode } from "react";
 import { Analytics } from "./components/analytics";
 import { StructuredData } from "./components/structured-data";
@@ -14,25 +14,23 @@ import "./globals.css";
  * one calls this rather than copying the document out.
  */
 
-// Only the faces the public site paints its first screen with are
-// preloaded. The rest are declared so the CSS variables resolve, and the
-// browser fetches each one when a glyph on the page actually calls for it:
-// preloading all of them put ~400KB of fonts in front of the LCP image.
+// Only the two faces the public site paints its first screen with are
+// preloaded: Inter, for the headlines wherever the system face is not San
+// Francisco, and Manrope for the wordmark. The rest are declared so the CSS
+// variables resolve, and the browser fetches each one when a glyph on the page
+// actually calls for it: preloading all of them put ~400KB of fonts in front of
+// the LCP image.
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"], preload: false });
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"], preload: false });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 // Public brand and marketing retain Manrope; the KCPL staff product uses Inter through its scoped typography contract.
-// The public site's display serif: every headline, and the first thing painted.
-const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
+const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400", preload: false });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"], preload: false });
 // The identity file records Noto Sans Devanagari for Nepali, so the public site sets
 // Nepali in the sans to match the Manrope wordmark rather than the portal's serif.
-// The public site sets all metadata, labels and navigation in mono: on an
-// operational board those are readings, not prose.
-const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
 const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"], preload: false });
 
-const fontVariables = [geist, manrope, inter, instrumentSerif, notoDevanagari, notoDevanagariSans, plexMono].map((font) => font.variable).join(" ");
+const fontVariables = [geist, manrope, inter, instrumentSerif, notoDevanagari, notoDevanagariSans].map((font) => font.variable).join(" ");
 
 const defaultTitle = "Kapileshwor Cargo | Freight & Logistics in Nepal";
 const defaultDescription = "KCPL coordinates import, export and cross-border freight through Nepal's logistics gateways and international counterpart network.";

@@ -1,20 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
-import { routeMap } from "../app/route-map-data.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-
-test("the opening route map has land, a lit Nepal and every stop inside the picture", () => {
-  assert.ok(routeMap.land.length > 1000, "the dotted land is missing");
-  assert.ok(routeMap.nepal.length > 50, "Nepal's dots are missing");
-  for (const [place, [x, y]] of Object.entries(routeMap.places)) {
-    assert.ok(x >= 0 && x <= routeMap.width && y >= 0 && y <= routeMap.height, `${place} falls outside the map`);
-  }
-  for (const [leg, d] of Object.entries(routeMap.routes)) assert.match(d, /^M[\d.]+ [\d.]+C/, `${leg} is not a drawable curve`);
-  // Kathmandu is the destination: it sits north of Birgunj, which sits north of Kolkata.
-  assert.ok(routeMap.places.kathmandu[1] < routeMap.places.birgunj[1] && routeMap.places.birgunj[1] < routeMap.places.kolkata[1]);
-});
 
 test("every photograph the site imports exists in the graded set and stays light", () => {
   const source = read("app/site-photos.ts");
@@ -34,10 +22,13 @@ test("photographs with another company's name on them do not come back", () => {
   for (const page of pages) assert.doesNotMatch(read(page), /ship-dusk|port-crane|air-cargo|forklift-loading/, `${page} uses a retired photograph`);
 });
 
-test("headlines are set in the display face, and the header carries the guides", () => {
+test("headlines are set in the one sans-serif, and the header carries the guides", () => {
   const css = read("app/site.css");
-  assert.match(css, /--font-display: var\(--font-instrument\)/);
-  assert.match(css, /\.site-root \.hero-title, \.site-root \.section-title/);
+  const block = css.slice(css.indexOf("The public site, October 2026"));
+  assert.ok(block.length > 1000, "the October 2026 block is missing from site.css");
+  assert.match(block, /--font-sans: -apple-system/);
+  assert.match(block, /\.site-root :is\(\.hero-title, \.section-title[^)]*\) \{\s*font-family: inherit;/);
+  assert.doesNotMatch(block, /--font-instrument|font-style: italic/, "a serif display face came back");
   const chrome = read("app/components/site-chrome.tsx");
   assert.match(chrome, /const headerNavigation = \[[\s\S]*?\{ path: "\/guides" \}/);
 });

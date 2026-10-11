@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { servicePhotos } from "../site-photos";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
+import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 
@@ -20,41 +21,38 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
         <h1 className="section-title">{t("services.title")}</h1>
         <p className="section-intro">{t("services.intro")}</p>
       </section>
-      {/* A spread rather than a list: the first service leads, the rest share a
-        * grid, every one with its own photograph (illustrative, so decorative). */}
-      <section className="section service-index reveal-group">
-        {services.map((service, index) => (
-          <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className={`service-card${index === 0 ? " service-card-feature" : ""}`}>
-            <figure className="service-card-figure">
-              <Image
-                src={servicePhotos[service.key]}
-                alt=""
-                placeholder="blur"
-                sizes={index === 0 ? "(max-width: 900px) 100vw, 58vw" : "(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 32vw"}
-                className={`service-card-photo service-photo-${service.key}`}
-              />
-            </figure>
-            <div className="service-card-body">
-              <span className="service-card-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <h2 className="service-card-title">{t(text(service.key, "title"))}</h2>
-              <p className="service-card-copy">{t(text(service.key, "summary"))}</p>
-              <ArrowRight className="service-card-arrow" size={20} aria-hidden="true"/>
-            </div>
-          </Link>
-        ))}
-      </section>
-      <section className="section cargo-types">
-        <h2 className="service-block-title">{t("services.cargo_title")}</h2>
-        <p className="section-intro">{t("services.cargo_copy")}</p>
-      </section>
-      <section className="section section-cta">
-        <h2 className="cta-title">{t("home.cta_title")}</h2>
-        <p className="cta-copy">{t("home.cta_copy")}</p>
-        <div className="hero-actions">
-          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-          <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
+      {/* Tiles, as on the home page: the first service across the width, the
+        * other six in pairs, each with its own photograph (illustrative, so
+        * decorative). The whole tile is the link. */}
+      <section className="tiles service-tiles">
+        <div className="tile-grid">
+          {services.map((service, index) => (
+            <article key={service.slug} className={`tile ${index === 0 ? "tile-dark tile-wide" : "tile-light"}`}>
+              <div className="tile-text">
+                <h2 className="tile-title"><Link href={sitePath(locale, `/services/${service.slug}`)} className="tile-cover">{t(text(service.key, "title"))}</Link></h2>
+                <p className="tile-copy">{t(text(service.key, "summary"))}</p>
+                <span className="text-link" aria-hidden="true">{t("chrome.learn_more")}<CaretRight size={13} weight="bold"/></span>
+              </div>
+              <figure className="tile-figure">
+                <Image
+                  src={servicePhotos[service.key]}
+                  alt=""
+                  placeholder="blur"
+                  sizes={index === 0 ? "(max-width: 760px) 100vw, 60vw" : "(max-width: 760px) 100vw, 50vw"}
+                  className={`service-photo-${service.key}`}
+                />
+              </figure>
+            </article>
+          ))}
         </div>
       </section>
+      <section className="tiles">
+        <header className="tiles-head">
+          <h2 className="section-title">{t("services.cargo_title")}</h2>
+          <p className="section-intro">{t("services.cargo_copy")}</p>
+        </header>
+      </section>
+      <ClosingBand locale={locale}/>
     </SiteShell>
   );
 }
@@ -69,13 +67,16 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
       {/* The page describes one service; the node says the same thing to a
         * crawler and points back at the organisation that provides it. */}
       <StructuredData data={graph([serviceNode(locale, slug)])}/>
-      <section className="service-banner">
-        <Image src={servicePhotos[service.key]} alt="" fill placeholder="blur" sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
-        <div className="service-banner-copy">
-          <p className="eyebrow">{t("services.title")}</p>
-          <h1 className="section-title">{t(text(service.key, "title"))}</h1>
-          <p className="section-intro">{t(text(service.key, "summary"))}</p>
+      <section className="intro intro-page">
+        <p className="eyebrow"><Link href={sitePath(locale, "/services")}>{t("services.title")}</Link></p>
+        <h1 className="hero-title">{t(text(service.key, "title"))}</h1>
+        <p className="intro-copy">{t(text(service.key, "summary"))}</p>
+        <div className="intro-actions">
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}</Link>
         </div>
+        <figure className="intro-figure">
+          <Image src={servicePhotos[service.key]} alt="" priority placeholder="blur" sizes="(max-width: 1440px) 100vw, 1440px" className={`service-photo-${service.key}`}/>
+        </figure>
       </section>
       <section className="section service-detail">
         <div className="service-detail-main">
@@ -87,7 +88,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         <aside className="service-detail-aside">
           <h2 className="service-block-title">{t("services.ask")}</h2>
           <p className="service-ask">{t(text(service.key, "ask"))}</p>
-          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}</Link>
         </aside>
       </section>
       {/* Depth the summary cannot carry: how the work actually runs, then the
@@ -124,7 +125,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           {others.map((entry) => (
             <Link key={entry.slug} href={sitePath(locale, `/services/${entry.slug}`)} className="service-related-link">
               <span className="service-related-name">{t(text(entry.key, "title"))}</span>
-              <ArrowRight size={15} weight="bold" aria-hidden="true"/>
+              <CaretRight size={15} weight="bold" aria-hidden="true"/>
             </Link>
           ))}
         </div>

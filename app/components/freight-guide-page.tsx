@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
 import { faqNode, graph } from "../structured-data";
 import { sitePath, type SiteLocale } from "../site-i18n";
@@ -16,7 +16,7 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
     <SiteShell locale={locale} path={`/guides/${slug}`}>
       <StructuredData data={graph([faqNode(locale, slug)])}/>
       <section className="section page-head freight-guide-head">
-        <p className="freight-guide-eyebrow"><Link href={sitePath(locale, "/guides")}>KCPL / {index.title}</Link></p>
+        <p className="freight-guide-eyebrow"><Link href={sitePath(locale, "/guides")}>{index.title}</Link></p>
         <h1 className="section-title">{guide.title}</h1>
         <p className="section-intro">{guide.intro}</p>
       </section>
@@ -57,21 +57,19 @@ export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/guides">
       <section className="section page-head freight-guide-head">
-        <p className="freight-guide-eyebrow">KCPL / {index.title}</p>
         <h1 className="section-title">{index.title}</h1>
         <p className="section-intro">{index.intro}</p>
       </section>
       <section className="section reference-index">
         <ol className="reference-index-list">
-          {guideSlugs.map((slug, position) => (
+          {guideSlugs.map((slug) => (
             <li key={slug}>
               <Link href={sitePath(locale, `/guides/${slug}`)} className="reference-index-link">
-                <span className="reference-index-number" aria-hidden="true">{String(position + 1).padStart(2, "0")}</span>
                 <span className="reference-index-body">
                   <span className="reference-index-title">{guides[locale][slug].title}</span>
                   <span className="reference-index-copy">{guides[locale][slug].description}</span>
                 </span>
-                <span className="reference-index-open">{index.open}<ArrowRight size={15} weight="bold" aria-hidden="true"/></span>
+                <span className="reference-index-open">{index.open}<CaretRight size={13} weight="bold" aria-hidden="true"/></span>
               </Link>
             </li>
           ))}

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations, company } from "../company-data";
 import { telHref, whatsappHref } from "../contact-links";
 import { photos } from "../site-photos";
@@ -18,10 +18,11 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
     image: sectorImages[n - 1],
   }));
   const cases = [1, 2, 3].map((n) => ({
+    tone: (["crimson", "dark", "light"] as const)[n - 1],
+    anchor: ["", "infrastructure", "air-export", "western-nepal"][n],
     kicker: t(`home.proof_${n}_kicker` as "home.proof_1_kicker"),
     title: t(`home.proof_${n}_title` as "home.proof_1_title"),
     copy: t(`home.proof_${n}_copy` as "home.proof_1_copy"),
-    meta: t(`home.proof_${n}_meta` as "home.proof_1_meta"),
   }));
   return (
     <SiteShell locale={locale} path="/sectors">
@@ -41,25 +42,21 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
           </article>
         ))}
       </section>
-      <section className="section section-proof">
-        <div className="section-head">
-          <p className="eyebrow">{t("home.proof_eyebrow")}</p>
+      <section className="tiles">
+        <header className="tiles-head">
           <h2 className="section-title">{t("sectors.cases_title")}</h2>
           <p className="section-intro">{t("sectors.cases_intro")}</p>
-        </div>
-        <div className="record-list">
+        </header>
+        <div className="story-grid">
           {cases.map((item) => (
-            <article key={item.title} className="record">
-              <p className="proof-kicker">{item.kicker}</p>
-              <div>
-                <h3 className="proof-title">{item.title}</h3>
-                <p className="proof-copy">{item.copy}</p>
-                <p className="proof-meta">{item.meta}</p>
-              </div>
+            <article key={item.title} className={`tile story tile-${item.tone}`}>
+              <p className="tile-eyebrow">{item.kicker}</p>
+              <h3 className="tile-title"><Link href={sitePath(locale, `/work#${item.anchor}`)} className="tile-cover">{item.title}</Link></h3>
+              <p className="tile-copy">{item.copy}</p>
             </article>
           ))}
         </div>
-        <Link href={sitePath(locale, "/work")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+        <p className="tiles-more"><Link href={sitePath(locale, "/work")} className="text-link">{t("home.proof_link")}<CaretRight size={13} weight="bold" aria-hidden="true"/></Link></p>
       </section>
       <ClosingBand locale={locale}/>
     </SiteShell>

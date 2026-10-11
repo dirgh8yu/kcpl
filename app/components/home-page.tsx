@@ -1,172 +1,171 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import type { ReactNode } from "react";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations } from "../company-data";
-import { guides } from "../guide-data";
-import { photos } from "../site-photos";
-import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { guideIndex } from "../guide-data";
+import { photos, servicePhotos } from "../site-photos";
+import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
+import { tools } from "../tool-data";
+import type { ServiceKey } from "../services-data";
 import { ClientRail } from "./client-rail";
-import { RouteMap } from "./route-map";
+import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
+
+const tileServices: Array<{ key: ServiceKey; slug: string }> = [
+  { key: "ocean", slug: "ocean-freight" },
+  { key: "air", slug: "air-freight" },
+  { key: "road", slug: "road-freight" },
+  { key: "customs", slug: "customs-clearance" },
+];
+
+/** "Learn more ›": the one secondary action on every tile. */
+function More({ href, children }: { href: string; children: ReactNode }) {
+  return <Link href={href} className="text-link">{children}<CaretRight size={13} weight="bold" aria-hidden="true"/></Link>;
+}
 
 export function HomePage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
-  const capabilities = [
-    { title: t("home.cap_1_title"), copy: t("home.cap_1_copy"), href: "/services" },
-    { title: t("home.cap_2_title"), copy: t("home.cap_2_copy"), href: "/services/customs-clearance" },
-    { title: t("home.cap_3_title"), copy: t("home.cap_3_copy"), href: "/services/project-cargo" },
-    { title: t("home.cap_4_title"), copy: t("home.cap_4_copy"), href: "/services/delivery" },
-  ];
-  // The four numbers KCPL can stand behind, each already stated elsewhere on the site.
+  const svc = (key: ServiceKey, part: string) => t(`svc.${key}.${part}` as SiteTextKey);
   const figures = [
     { value: t("home.band_since_value"), label: t("home.band_since_label") },
     { value: t("stats.clients_value"), label: t("stats.clients_label") },
     { value: t("stats.projects_value"), label: t("stats.projects_label") },
     { value: t("home.storage_road_value"), label: t("home.storage_road_label") },
   ];
-  const credibility = [
+  const stories = ([1, 2, 3] as const).map((number) => ({
+    number,
+    tone: (["crimson", "dark", "light"] as const)[number - 1],
+    anchor: ["", "infrastructure", "air-export", "western-nepal"][number],
+    kicker: t(`home.proof_${number}_kicker`),
+    title: t(`home.proof_${number}_title`),
+    copy: t(`home.proof_${number}_copy`),
+  }));
+  const credentials = [
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
     { label: t("home.credibility_projects"), detail: t("home.credibility_projects_detail") },
   ];
-  const stories = ([1, 2, 3] as const).map((number) => ({
-    number,
-    anchor: ["", "infrastructure", "air-export", "western-nepal"][number],
-    kicker: t(`home.proof_${number}_kicker`),
-    title: t(`home.proof_${number}_title`),
-    copy: t(`home.proof_${number}_copy`),
-    // The record line reads as stops on the way: origin, handover, proof.
-    stops: t(`home.proof_${number}_meta`).split(" · "),
-  }));
 
   return (
     <SiteShell locale={locale} path="/">
-      <section className="home-hero">
-        <div className="home-hero-copy">
-          <p className="kicker kicker-on-dark">{t("home.hero_overline")}</p>
-          <h1 className="hero-title">{t("home.hero_title")}</h1>
-          <p className="home-hero-intro">{t("home.hero_intro")}</p>
-          <div className="hero-actions">
-            <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-            <Link href={sitePath(locale, "/services")} className="button-ghost">{t("home.hero_secondary")}</Link>
-          </div>
-          <p className="home-hero-trust">{t("home.hero_trust")}</p>
+      <section className="intro">
+        <h1 className="hero-title">{t("home.hero_title")}</h1>
+        <p className="intro-copy">{t("home.hero_intro")}</p>
+        <div className="intro-actions">
+          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}</Link>
+          <More href={sitePath(locale, "/services")}>{t("home.hero_secondary")}</More>
         </div>
-        <RouteMap locale={locale}/>
+        <figure className="intro-figure">
+          <Image src={photos.roadDawn} alt="" priority placeholder="blur" sizes="(max-width: 1440px) 100vw, 1440px"/>
+        </figure>
       </section>
 
-      <div className="home-figures-band">
-        <dl className="home-figures">
+      <section className="tiles">
+        <dl className="tile tile-light figures">
           {figures.map((figure) => (
-            <div key={figure.label} className="home-figure">
+            <div key={figure.label} className="figure">
               <dt>{figure.label}</dt>
               <dd>{figure.value}</dd>
             </div>
           ))}
         </dl>
-      </div>
-
-      <ClientRail locale={locale}/>
-
-      <section className="section section-capability">
-        <div className="capability-layout">
-          <div className="capability-aside">
-            <h2 className="section-title">{t("home.capability_title")}</h2>
-            <p className="section-intro">{t("home.capability_intro")}</p>
-            <Link href={sitePath(locale, "/services")} className="section-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-            <figure className="capability-figure"><Image src={photos.roadDawn} alt="" placeholder="blur" sizes="(max-width: 1024px) 100vw, 46vw" className="capability-photo"/></figure>
-          </div>
-          <dl className="capability-list reveal-group">
-            {capabilities.map((item) => (
-              <div key={item.title} className="capability-item">
-                <dt className="capability-title"><Link href={sitePath(locale, item.href)}>{item.title}<ArrowRight size={18} aria-hidden="true"/></Link></dt>
-                <dd className="capability-copy">{item.copy}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
       </section>
 
-      <section className="section section-proof">
-        <div className="section-split-head">
-          <div className="section-head">
-            <p className="kicker kicker-on-dark">{t("home.proof_eyebrow")}</p>
-            <h2 className="section-title">{t("home.proof_title")}</h2>
-            <p className="section-intro">{t("home.proof_intro")}</p>
-          </div>
-          <Link href={sitePath(locale, "/work")} className="section-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+      <section className="tiles">
+        <header className="tiles-head">
+          <h2 className="section-title">{t("home.capability_title")}</h2>
+          <p className="section-intro">{t("home.capability_intro")}</p>
+        </header>
+        <div className="tile-grid">
+          {tileServices.map((service) => (
+            <article key={service.key} className="tile tile-light">
+              <h3 className="tile-title">{svc(service.key, "title")}</h3>
+              <p className="tile-copy">{svc(service.key, "summary")}</p>
+              <div className="tile-links">
+                <More href={sitePath(locale, `/services/${service.slug}`)}>{t("chrome.learn_more")}</More>
+                <More href={sitePath(locale, "/quote")}>{t("chrome.quote")}</More>
+              </div>
+              <figure className="tile-figure">
+                <Image src={servicePhotos[service.key]} alt="" placeholder="blur" sizes="(max-width: 760px) 100vw, 50vw"/>
+              </figure>
+            </article>
+          ))}
+          <article className="tile tile-dark tile-wide">
+            <div className="tile-text">
+              <h3 className="tile-title">{svc("project", "title")}</h3>
+              <p className="tile-copy">{svc("project", "summary")}</p>
+              <div className="tile-links">
+                <More href={sitePath(locale, "/services/project-cargo")}>{t("chrome.learn_more")}</More>
+                <More href={sitePath(locale, "/sectors")}>{t("chrome.sectors")}</More>
+              </div>
+            </div>
+            <figure className="tile-figure">
+              <Image src={servicePhotos.project} alt="" placeholder="blur" sizes="(max-width: 760px) 100vw, 60vw"/>
+            </figure>
+          </article>
         </div>
-        <div className="proof-cards">
+        <p className="tiles-more"><More href={sitePath(locale, "/services")}>{t("home.capability_link")}</More></p>
+      </section>
+
+      <section className="tiles">
+        <header className="tiles-head">
+          <h2 className="section-title">{t("home.proof_title")}</h2>
+          <p className="section-intro">{t("home.proof_intro")}</p>
+        </header>
+        <div className="story-grid">
           {stories.map((story) => (
-            <article className="proof-card" key={story.number}>
-              <p className="kicker kicker-on-dark">{story.kicker}</p>
-              <h3 className="proof-card-title"><Link href={sitePath(locale, `/work#${story.anchor}`)}>{story.title}</Link></h3>
-              <p className="proof-card-copy">{story.copy}</p>
-              <ol className="proof-route">
-                {story.stops.map((stop) => <li key={stop}>{stop}</li>)}
-              </ol>
+            <article key={story.number} className={`tile story tile-${story.tone}`}>
+              <p className="tile-eyebrow">{story.kicker}</p>
+              <h3 className="tile-title"><Link href={sitePath(locale, `/work#${story.anchor}`)} className="tile-cover">{story.title}</Link></h3>
+              <p className="tile-copy">{story.copy}</p>
             </article>
           ))}
         </div>
+        <p className="tiles-more"><More href={sitePath(locale, "/work")}>{t("home.proof_link")}</More></p>
       </section>
 
-      <section className="section section-corridor">
-        <div className="section-split-head">
-          <div className="section-head">
-            <h2 className="section-title">{t("home.corridor_title")}</h2>
-            <p className="section-intro">{t("home.corridor_intro")}</p>
-          </div>
-          <Link href={sitePath(locale, "/network")} className="section-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-        </div>
-        <div className="corridor-band">
-          <article className="corridor-leg">
-            <figure className="corridor-figure"><Image src={photos.shipAerial} alt="" placeholder="blur" sizes="(max-width: 860px) 100vw, 50vw" className="corridor-photo"/></figure>
-            <h3 className="corridor-title">{t("home.corridor_in_title")}</h3>
-            <p className="corridor-copy">{t("home.corridor_in_copy")}</p>
-            <Link href={sitePath(locale, "/guides/importing-to-nepal")} className="section-link">{guides[locale]["importing-to-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
+      <section className="tiles">
+        <div className="tile-grid">
+          <article className="tile tile-crimson tile-feature">
+            <h2 className="tile-title">{tools[locale].index.title}</h2>
+            <p className="tile-copy">{tools[locale].index.description}</p>
+            <div className="tile-links"><More href={sitePath(locale, "/tools")}>{t("chrome.learn_more")}</More></div>
           </article>
-          <article className="corridor-leg">
-            <figure className="corridor-figure"><Image src={photos.himalaya} alt="" placeholder="blur" sizes="(max-width: 860px) 100vw, 50vw" className="corridor-photo corridor-photo-himalaya"/></figure>
-            <h3 className="corridor-title">{t("home.corridor_out_title")}</h3>
-            <p className="corridor-copy">{t("home.corridor_out_copy")}</p>
-            <Link href={sitePath(locale, "/guides/exporting-from-nepal")} className="section-link">{guides[locale]["exporting-from-nepal"].title}<ArrowRight size={15} aria-hidden="true"/></Link>
+          <article className="tile tile-light tile-feature">
+            <h2 className="tile-title">{guideIndex[locale].title}</h2>
+            <p className="tile-copy">{guideIndex[locale].description}</p>
+            <div className="tile-links"><More href={sitePath(locale, "/guides")}>{t("chrome.learn_more")}</More></div>
           </article>
         </div>
       </section>
 
-      <section className="section section-credibility">
-        <div className="credibility-layout">
-          <div className="credibility-copy">
-            <h2 className="section-title">{t("home.credibility_title")}</h2>
-            <p className="section-intro">{t("home.credibility_copy")}</p>
-          </div>
-          <ul className="credibility-marks">
-            {affiliations.filter((mark) => mark.name !== "JCtrans").map((mark) => (
-              <li key={mark.name} className="credibility-mark">
-                <Image src={mark.image} alt={mark.detail} width={mark.width} height={mark.height} className="credibility-mark-image"/>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <dl className="credibility-facts reveal-group">
-          {credibility.map((fact) => (
-            <div key={fact.label} className="credibility-fact">
-              <dt className="credibility-label">{fact.label}</dt>
-              <dd className="credibility-detail">{fact.detail}</dd>
+      <ClientRail locale={locale}/>
+
+      <section className="tiles credentials">
+        <header className="tiles-head">
+          <h2 className="section-title">{t("home.credibility_title")}</h2>
+          <p className="section-intro">{t("home.credibility_copy")}</p>
+        </header>
+        <ul className="credential-marks">
+          {affiliations.filter((mark) => mark.name !== "JCtrans").map((mark) => (
+            <li key={mark.name}>
+              <Image src={mark.image} alt={mark.detail} width={mark.width} height={mark.height} className="credential-mark"/>
+            </li>
+          ))}
+        </ul>
+        <dl className="credential-facts">
+          {credentials.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.detail}</dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <section className="section section-cta">
-        <h2 className="cta-title">{t("home.cta_title")}</h2>
-        <p className="cta-copy">{t("home.cta_copy")}</p>
-        <div className="hero-actions">
-          <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-          <Link href={sitePath(locale, "/contact")} className="button-ghost">{t("home.cta_secondary")}</Link>
-        </div>
-      </section>
+      <ClosingBand locale={locale}/>
     </SiteShell>
   );
 }

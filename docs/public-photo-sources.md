@@ -33,5 +33,3 @@ These were already in `public/images/` (the staff app's website-gallery preview 
 | `public/images/services/specialist-break-bulk.jpg` | `site/breakbulk.jpg` |
 | `public/images/services/packaging-storage.jpg` | `site/packing.jpg` |
 | `public/images/services/specialist-open-top.jpg` | `site/open-top.jpg` |
-
-The home page's opening map is not a photograph: `node scripts/build-route-map.mjs` draws it from the apps' Natural Earth basemap (public domain).

@@ -27,7 +27,7 @@ export async function GalleryPage({ locale }: { locale: SiteLocale }) {
     : galleryImages.map((item) => ({ src: item.src, title: t(item.key), alt: t(item.key), width: item.width, height: item.height, managed: false }));
   return (
     <SiteShell locale={locale} path="/gallery">
-      <section className="section showcase-head">
+      <section className="section page-head showcase-head">
         <h1 className="section-title">{t("gallery.title")}</h1>
         <p className="section-intro">{t("gallery.intro")}</p>
       </section>
@@ -54,7 +54,7 @@ export function AwardsPage({ locale }: { locale: SiteLocale }) {
   const lcci = affiliations.find((item) => item.name === "LCCI")!;
   return (
     <SiteShell locale={locale} path="/awards">
-      <section className="section showcase-head awards-head">
+      <section className="section page-head showcase-head awards-head">
         <h1 className="section-title">{t("awards.title")}</h1>
         <p className="section-intro">{t("awards.intro")}</p>
       </section>
