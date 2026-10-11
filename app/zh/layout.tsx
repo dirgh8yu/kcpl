@@ -1,18 +1,17 @@
-import { Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
 import { SiteDocument, baseMetadata, baseViewport } from "../site-document";
 
 /*
- * Root layout for the Chinese site. Noto Sans SC ships 303 unicode-range
- * @font-face rules -- 272KB of CSS -- so it is declared here rather than in the
- * shared document, where it landed on every English and Nepali page and on the
- * whole operations console.
+ * Root layout for the Chinese site. Chinese text is set in the reader's own
+ * system font (PingFang on Apple, Noto Sans CJK on Android, Microsoft YaHei on
+ * Windows): a downloaded Noto Sans SC cost every Chinese page about a megabyte
+ * of font slices in three weights, on the slowest connections the site serves,
+ * for glyphs every device that reads Chinese already has. Latin text stays in
+ * the brand face.
  */
-const notoSansSC = Noto_Sans_SC({ variable: "--font-sc", subsets: ["latin"], weight: ["400", "500", "700"], preload: false });
-
 export const metadata = baseMetadata;
 export const viewport = baseViewport;
 
 export default function ChineseLayout({ children }: { children: ReactNode }) {
-  return <SiteDocument locale="zh" className={notoSansSC.variable}>{children}</SiteDocument>;
+  return <SiteDocument locale="zh">{children}</SiteDocument>;
 }

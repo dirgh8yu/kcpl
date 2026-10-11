@@ -37,7 +37,8 @@ test("every date is a real calendar day, not a build timestamp", () => {
   }
 });
 
-test("both freight guides are substantial and available in every site language", () => {
+test("every freight guide is substantial and available in every site language", () => {
+  assert.ok(sitemapPaths().includes("/guides"));
   for (const slug of guideSlugs) {
     assert.ok(sitemapPaths().includes(`/guides/${slug}`));
     for (const locale of siteLocales) {
@@ -45,7 +46,20 @@ test("both freight guides are substantial and available in every site language",
       assert.ok(guide.title && guide.description && guide.intro, `${locale}/${slug} is missing SEO copy`);
       assert.equal(guide.stages.length, 3, `${locale}/${slug} is missing a planning stage`);
       assert.ok(guide.documents.length >= 4, `${locale}/${slug} is missing its checklist`);
-      assert.equal(guide.questions.length, 2, `${locale}/${slug} is missing a planning answer`);
+      assert.ok(guide.questions.length >= 2 && guide.questions.length <= 4, `${locale}/${slug} needs two to four planning answers`);
     }
+  }
+});
+
+test("every guide points somewhere real: its service, its calculator and other guides", async () => {
+  const { guideLinks } = await import("../app/guide-data.ts");
+  const { toolSlugs } = await import("../app/tool-data.ts");
+  const paths = sitemapPaths();
+  for (const slug of guideSlugs) {
+    const links = guideLinks[slug];
+    assert.ok(paths.includes(links.service), `${slug} links to ${links.service}, which is not a page`);
+    assert.ok(toolSlugs.includes(links.tool), `${slug} links to an unknown tool`);
+    assert.ok(links.next.length >= 1 && !links.next.includes(slug), `${slug} must lead to other guides`);
+    for (const next of links.next) assert.ok(guideSlugs.includes(next), `${slug} links to unknown guide ${next}`);
   }
 });

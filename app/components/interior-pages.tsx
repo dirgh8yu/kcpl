@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations, company } from "../company-data";
+import { telHref, whatsappHref } from "../contact-links";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
@@ -136,6 +137,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
 
 export function ContactPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
+  const whatsapp = whatsappHref(company.whatsapp, t("chrome.whatsapp_prefill"));
   return (
     <SiteShell locale={locale} path="/contact">
       <section className="section page-head">
@@ -149,7 +151,11 @@ export function ContactPage({ locale }: { locale: SiteLocale }) {
         </div>
         <div className="contact-cell">
           <h2 className="service-block-title">{t("contact.phone_label")}</h2>
-          <a className="contact-value contact-link" href={`tel:${company.phones[0].replace(/[^+\d]/g, "")}`}>{company.phones[0]}</a>
+          <a className="contact-value contact-link" href={telHref(company.phones[0])} data-analytics-event="call_tap">{company.phones[0]}</a>
+          {whatsapp ? <>
+            <h2 className="service-block-title contact-second">{t("chrome.whatsapp")}</h2>
+            <a className="contact-value contact-link" href={whatsapp} target="_blank" rel="noopener noreferrer" data-analytics-event="whatsapp_tap">{company.whatsapp}</a>
+          </> : null}
           <h2 className="service-block-title contact-second">{t("contact.email_label")}</h2>
           <a className="contact-value contact-link" href={`mailto:${company.email}`}>{company.email}</a>
         </div>

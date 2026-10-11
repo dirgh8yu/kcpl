@@ -9,6 +9,9 @@ export const company = {
     "Kathmandu, Nepal",
   ],
   phones: ["+977-1-4987510"],
+  /** KCPL's WhatsApp Business number with its country code, e.g. "+977 98XXXXXXXX".
+   * Empty until KCPL has one: the WhatsApp buttons stay hidden until then. */
+  whatsapp: "",
   email: "admin@kapileshworcargo.com.np",
   website: "kapileshworcargo.com.np",
   instagram: "https://www.instagram.com/kapileshworcargo/",

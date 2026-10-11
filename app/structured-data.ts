@@ -1,7 +1,8 @@
 import { company } from "./company-data";
 import { absoluteUrl, siteName, siteUrl } from "./seo";
 import { services } from "./services-data";
-import { guides, guideSlugs, type GuideSlug } from "./guide-data";
+import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data";
+import { tools, toolSlugs, type ToolSlug } from "./tool-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -100,6 +101,10 @@ const crumbLabels: Record<string, SiteTextKey> = {
 function crumbLabel(locale: SiteLocale, path: string) {
   const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
   if (guideSlugs.includes(guideSlug as GuideSlug)) return guides[locale][guideSlug as GuideSlug].title;
+  if (path === "/guides") return guideIndex[locale].title;
+  if (path === "/tools") return tools[locale].index.title;
+  const toolSlug = path.startsWith("/tools/") ? path.slice("/tools/".length) : "";
+  if (toolSlugs.includes(toolSlug as ToolSlug)) return tools[locale][toolSlug as ToolSlug].title;
   const key = crumbLabels[path];
   if (key) return siteText(locale, key);
   const service = services.find((entry) => path === `/services/${entry.slug}`);
@@ -145,6 +150,21 @@ export function serviceNode(locale: SiteLocale, slug: string) {
     provider: { "@id": organizationId },
     areaServed: { "@type": "Country", name: "Nepal" },
     url: absoluteUrl(sitePath(locale, `/services/${service.slug}`)),
+  };
+}
+
+/** A guide's common questions, exactly as the page prints them. */
+export function faqNode(locale: SiteLocale, slug: GuideSlug) {
+  const guide = guides[locale][slug];
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl(sitePath(locale, `/guides/${slug}`))}#faq`,
+    inLanguage: siteLocaleTags[locale],
+    mainEntity: guide.questions.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
   };
 }
 

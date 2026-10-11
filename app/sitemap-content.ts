@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { services } from "./services-data.ts";
-import { guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
+import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
+import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
 
 /*
@@ -37,6 +38,18 @@ function prefixesFor(path: string) {
   return [...sharedPrefixes, ...(pagePrefixes[path] ?? [])];
 }
 
+/** What a tools page says: the index lists every tool's title and summary; a
+ * tool's page its own copy and the shared labels around it. */
+function toolPageSource(locale: SiteLocale, path: string) {
+  const { index, "duty-estimate": duty, "storage-charges": storage, "volume-weight": volume, ...shared } = tools[locale];
+  const pages = { "duty-estimate": duty, "storage-charges": storage, "volume-weight": volume };
+  const summaries = toolSlugs.map((slug) => [pages[slug].title, pages[slug].description]);
+  if (path === "/tools") return { index, eyebrow: shared.eyebrow, summaries };
+  const slug = path.startsWith("/tools/") ? path.slice("/tools/".length) : "";
+  if (!toolSlugs.includes(slug as ToolSlug)) return null;
+  return { shared, page: pages[slug as ToolSlug], summaries };
+}
+
 /**
  * The content fingerprint of one path in one language. Only the dictionary is
  * hashed: a layout change alters how the page looks, not what it says, and
@@ -48,6 +61,12 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
   if (guideSlugs.includes(guideSlug as GuideSlug)) {
     return createHash("sha256").update(JSON.stringify(guides[locale][guideSlug as GuideSlug])).digest("hex").slice(0, 16);
   }
+  if (path === "/guides") {
+    const listed = guideSlugs.map((slug) => [guides[locale][slug].title, guides[locale][slug].description]);
+    return createHash("sha256").update(JSON.stringify({ index: guideIndex[locale], listed })).digest("hex").slice(0, 16);
+  }
+  const toolSource = toolPageSource(locale, path);
+  if (toolSource) return createHash("sha256").update(JSON.stringify(toolSource)).digest("hex").slice(0, 16);
   const dictionary = siteDictionary(locale);
   const prefixes = prefixesFor(path);
   const entries = Object.keys(dictionary)
@@ -59,7 +78,14 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
 
 /** Every path the sitemap covers, so the script and the sitemap agree on the set. */
 export function sitemapPaths() {
-  return [...Object.keys(pagePrefixes), ...services.map((service) => `/services/${service.slug}`), ...guideSlugs.map((slug) => `/guides/${slug}`)];
+  return [
+    ...Object.keys(pagePrefixes),
+    ...services.map((service) => `/services/${service.slug}`),
+    "/guides",
+    ...guideSlugs.map((slug) => `/guides/${slug}`),
+    "/tools",
+    ...toolSlugs.map((slug) => `/tools/${slug}`),
+  ];
 }
 
 export function fingerprintAll() {

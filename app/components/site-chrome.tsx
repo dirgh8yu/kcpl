@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Check, Globe, InstagramLogo, List, X } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Check, Globe, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
-import { guides } from "../guide-data";
+import { telHref, whatsappHref } from "../contact-links";
+import { guideIndex } from "../guide-data";
+import { tools } from "../tool-data";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
 import { SiteMotion } from "./site-motion";
@@ -93,6 +95,8 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
               <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
             ))}
             <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
+            <Link href={sitePath(locale, "/guides")} className="site-menu-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
+            <Link href={sitePath(locale, "/tools")} className="site-menu-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
             <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
             {/* The header's quote button is hidden on the narrowest screens, so the
               * menu carries it there instead of losing the primary action. */}
@@ -124,14 +128,14 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
           <h2 className="site-footer-heading">{t("chrome.footer_services")}</h2>
           <Link href={sitePath(locale, "/quote")} className="site-footer-link">{t("chrome.quote")}</Link>
           <Link href={sitePath(locale, "/track")} className="site-footer-link">{t("chrome.track")}</Link>
-          <Link href={sitePath(locale, "/guides/importing-to-nepal")} className="site-footer-link">{guides[locale]["importing-to-nepal"].title}</Link>
-          <Link href={sitePath(locale, "/guides/exporting-from-nepal")} className="site-footer-link">{guides[locale]["exporting-from-nepal"].title}</Link>
+          <Link href={sitePath(locale, "/guides")} className="site-footer-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
+          <Link href={sitePath(locale, "/tools")} className="site-footer-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
           <Link href="/portal" className="site-footer-link">{t("chrome.portal")}</Link>
         </div>
         <div className="site-footer-col">
           <h2 className="site-footer-heading">{t("chrome.footer_contact")}</h2>
           <p className="site-footer-address">{company.addressLines.join(", ")}</p>
-          <a href={`tel:${company.phones[0].replace(/[^+\d]/g, "")}`} className="site-footer-link">{company.phones[0]}</a>
+          <a href={telHref(company.phones[0])} className="site-footer-link" data-analytics-event="call_tap">{company.phones[0]}</a>
           <a href={`mailto:${company.email}`} className="site-footer-link">{company.email}</a>
           {/* The one social profile KCPL runs. It is linked here as well as
             * declared in the schema graph, so the machine-readable claim and
@@ -146,6 +150,32 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
         <Link href={sitePath(locale, "/terms")} className="site-footer-link" aria-current={isCurrent("/terms", path) ? "page" : undefined}>{t("chrome.terms")}</Link>
       </div>
     </footer>
+  );
+}
+
+/**
+ * On a phone the ways to reach KCPL sit under the thumb: call, WhatsApp once
+ * KCPL has a number for it, and the quote form (left out on the quote page
+ * itself). Plain links, no JavaScript; hidden on wider screens, where the
+ * header carries the quote button and the footer the number.
+ */
+export function SiteActionBar({ locale, path }: { locale: SiteLocale; path: string }) {
+  const t = siteTranslator(locale);
+  const whatsapp = whatsappHref(company.whatsapp, t("chrome.whatsapp_prefill"));
+  return (
+    <nav className="site-action-bar" aria-label={t("chrome.actions_label")}>
+      <a href={telHref(company.phones[0])} className="site-action" aria-label={`${t("chrome.call_label")} ${company.phones[0]}`} data-analytics-event="call_tap">
+        <Phone size={18} weight="bold" aria-hidden="true"/>{t("chrome.call")}
+      </a>
+      {whatsapp ? (
+        <a href={whatsapp} className="site-action" aria-label={t("chrome.whatsapp_label")} target="_blank" rel="noopener noreferrer" data-analytics-event="whatsapp_tap">
+          <WhatsappLogo size={18} weight="bold" aria-hidden="true"/>{t("chrome.whatsapp")}
+        </a>
+      ) : null}
+      {path === "/quote" ? null : (
+        <Link href={sitePath(locale, "/quote")} className="site-action site-action-primary" data-analytics-event="quote_tap">{t("chrome.quote")}</Link>
+      )}
+    </nav>
   );
 }
 
@@ -166,6 +196,7 @@ export function SiteShell({ locale, path, children }: { locale: SiteLocale; path
       <SiteMotion/>
       <main id="main">{children}</main>
       <SiteFooter locale={locale} path={path}/>
+      <SiteActionBar locale={locale} path={path}/>
     </div>
   );
 }

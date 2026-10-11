@@ -1,9 +1,16 @@
+import { practicalGuides, practicalGuideSlugs } from "./guide-data-practical.ts";
 import type { SiteLocale } from "./site-i18n";
+import type { ToolSlug } from "./tool-data";
 
-export const guideSlugs = ["importing-to-nepal", "exporting-from-nepal"] as const;
+const routeGuideSlugs = ["importing-to-nepal", "exporting-from-nepal"] as const;
+type RouteGuideSlug = (typeof routeGuideSlugs)[number];
+
+/* The two route guides come first: they are the overview the practical
+ * guides hang off. */
+export const guideSlugs = [...routeGuideSlugs, ...practicalGuideSlugs] as const;
 export type GuideSlug = (typeof guideSlugs)[number];
 
-type Guide = {
+export type Guide = {
   title: string;
   description: string;
   intro: string;
@@ -18,7 +25,7 @@ type Guide = {
   related: string;
 };
 
-export const guides: Record<SiteLocale, Record<GuideSlug, Guide>> = {
+const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
   en: {
     "importing-to-nepal": {
       title: "Importing Freight to Nepal",
@@ -194,5 +201,59 @@ export const guides: Record<SiteLocale, Record<GuideSlug, Guide>> = {
       cta: "与 KCPL 规划出口运输",
       related: "了解货运服务",
     },
+  },
+};
+
+export const guides: Record<SiteLocale, Record<GuideSlug, Guide>> = {
+  en: { ...routeGuides.en, ...practicalGuides.en },
+  ne: { ...routeGuides.ne, ...practicalGuides.ne },
+  hi: { ...routeGuides.hi, ...practicalGuides.hi },
+  zh: { ...routeGuides.zh, ...practicalGuides.zh },
+};
+
+/**
+ * Where each guide leads: the service it belongs to, the calculator that runs
+ * its sums, and the guides to read next. Kept apart from the copy so the four
+ * languages cannot point different ways.
+ */
+export const guideLinks: Record<GuideSlug, { service: string; tool: ToolSlug; next: GuideSlug[] }> = {
+  "importing-to-nepal": { service: "/services/customs-clearance", tool: "duty-estimate", next: ["customs-clearance-in-nepal", "sea-freight-through-india"] },
+  "exporting-from-nepal": { service: "/services", tool: "volume-weight", next: ["importing-to-nepal", "air-freight-to-kathmandu"] },
+  "customs-clearance-in-nepal": { service: "/services/customs-clearance", tool: "duty-estimate", next: ["hs-codes-and-import-duty", "free-time-and-demurrage"] },
+  "sea-freight-through-india": { service: "/services/ocean-freight", tool: "storage-charges", next: ["free-time-and-demurrage", "customs-clearance-in-nepal"] },
+  "air-freight-to-kathmandu": { service: "/services/air-freight", tool: "volume-weight", next: ["customs-clearance-in-nepal", "importing-to-nepal"] },
+  "hs-codes-and-import-duty": { service: "/services/customs-clearance", tool: "duty-estimate", next: ["customs-clearance-in-nepal", "importing-to-nepal"] },
+  "free-time-and-demurrage": { service: "/services/ocean-freight", tool: "storage-charges", next: ["sea-freight-through-india", "customs-clearance-in-nepal"] },
+};
+
+/** The guides' own index page, and the words around every guide. */
+export const guideIndex: Record<SiteLocale, { title: string; description: string; intro: string; related: string; open: string }> = {
+  en: {
+    title: "Freight guides",
+    description: "Practical guides to shipping into and out of Nepal: customs clearance, sea freight through Indian ports, air freight into Kathmandu, HS codes and duty, and free time and demurrage.",
+    intro: "Plain answers to common questions about moving freight into and out of Nepal, written as planning checklists. Requirements depend on the goods and change over time, so confirm the details for each shipment.",
+    related: "Related guides",
+    open: "Read the guide",
+  },
+  ne: {
+    title: "ढुवानी मार्गदर्शिका",
+    description: "नेपालभित्र र बाहिर ढुवानीका व्यावहारिक मार्गदर्शिका: भन्सार जाँचपास, भारतीय बन्दरगाह हुँदै समुद्री ढुवानी, काठमाडौँमा हवाई ढुवानी, HS कोड र महसुल, र फ्री टाइम तथा डेमरेज।",
+    intro: "नेपालमा र नेपालबाट मालसामान ढुवानीसम्बन्धी सामान्य प्रश्नका सरल उत्तर, योजना सूचीका रूपमा। आवश्यकताहरू सामान र समयअनुसार फरक पर्छन्, त्यसैले हरेक शिपमेन्टमा विवरण पुष्टि गर्नुहोस्।",
+    related: "सम्बन्धित मार्गदर्शिका",
+    open: "मार्गदर्शिका पढ्नुहोस्",
+  },
+  hi: {
+    title: "माल ढुलाई गाइड",
+    description: "नेपाल में और नेपाल से माल भेजने की व्यावहारिक गाइड: कस्टम्स क्लियरेंस, भारतीय बंदरगाहों से समुद्री माल, काठमांडू में हवाई माल, HS कोड और ड्यूटी, तथा फ़्री टाइम और डेमरेज।",
+    intro: "नेपाल में और नेपाल से माल ले जाने से जुड़े आम सवालों के सीधे जवाब, योजना सूची के रूप में। ज़रूरतें माल और समय के साथ बदलती हैं, इसलिए हर शिपमेंट के लिए विवरण की पुष्टि करें।",
+    related: "संबंधित गाइड",
+    open: "गाइड पढ़ें",
+  },
+  zh: {
+    title: "货运指南",
+    description: "进出尼泊尔货运实用指南：清关、经印度港口的海运、空运至加德满都、HS 编码与关税，以及免费期与滞期费。",
+    intro: "以规划清单的形式，简明解答进出尼泊尔货运的常见问题。具体要求因货物而异并会随时间变化，请逐票确认细节。",
+    related: "相关指南",
+    open: "阅读指南",
   },
 };

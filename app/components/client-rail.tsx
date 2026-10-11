@@ -73,14 +73,17 @@ export function ClientRail({ locale }: { locale: SiteLocale }) {
   }, [emblaApi, autoScroll]);
 
   return (
-    <section ref={sectionRef} className="client-rail" aria-labelledby="client-rail-title">
+    // One carousel landmark, named by its heading; each logo a slide in it. A
+    // list of role="group" items was invalid markup, and a second region with
+    // the same name made two indistinguishable landmarks.
+    <section ref={sectionRef} className="client-rail" aria-roledescription="carousel" aria-labelledby="client-rail-title">
       <div className="client-rail-head">
         <h2 id="client-rail-title">{t("home.clients_title")}</h2>
       </div>
-      <div className="client-rail-viewport" ref={emblaRef} role="region" aria-roledescription="carousel" aria-label={t("home.clients_title")}>
-        <ul className="client-rail-track">
+      <div className="client-rail-viewport" ref={emblaRef}>
+        <div className="client-rail-track">
           {organisations.map((organisation, index) => (
-            <li key={organisation.name} className="client-rail-item" role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${organisations.length}: ${organisation.name}`}>
+            <div key={organisation.name} className="client-rail-item" role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${organisations.length}: ${organisation.name}`}>
               {"logo" in organisation ? (
                 /* sizes mirrors the CSS box (.client-rail-logo: max 160px wide
                  * on desktop, 132px under 620px), so the browser picks from
@@ -91,9 +94,9 @@ export function ClientRail({ locale }: { locale: SiteLocale }) {
               ) : (
                 <span className={`client-rail-name${organisation.name.length > 22 ? " client-rail-name-long" : ""}`}>{organisation.name}</span>
               )}
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );
