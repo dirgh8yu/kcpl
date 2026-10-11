@@ -148,7 +148,7 @@ class _SendReceiptScreenState extends State<SendReceiptScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: context.type.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                 decoration: cardField(
-                  l.receiptAmount,
+                  '0',
                   suffix: Text(invoice.currency, style: context.type.bodyLarge?.copyWith(color: p.secondary)),
                 ).copyWith(labelText: l.receiptAmount, floatingLabelBehavior: FloatingLabelBehavior.always),
               ),

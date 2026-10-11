@@ -28,7 +28,15 @@ class InvoicesScreen extends StatelessWidget {
         if (page.summary.balances.isNotEmpty)
           RowGroup(children: [for (final balance in page.summary.balances) BalanceFigure(balance: balance, detail: true)]),
         if (page.summary.balances.length > 1) Footnote(l.invPositionDescription),
-        if (page.summary.balances.isNotEmpty) const SizedBox(height: 20),
+        // The invoices straight under the totals, where paying one starts;
+        // the credit held and the statement come after them.
+        SectionHeader(l.invBillingTitle),
+        if (page.invoices.isEmpty)
+          EmptyState(icon: KIcons.invoices, title: l.invEmptyTitle, description: l.invEmptyDescription)
+        else
+          RowGroup(children: [for (final invoice in page.invoices) InvoiceRow(invoice)]),
+        Footnote(l.invFootnote),
+        const SizedBox(height: 20),
         // Money KCPL holds for the customer: refunded or used on an invoice.
         if (page.summary.accountCredit.isNotEmpty) ...[
           Notice(
@@ -39,12 +47,6 @@ class InvoicesScreen extends StatelessWidget {
           const SizedBox(height: 20),
         ],
         const RowGroup(indent: RowGroup.iconIndent, children: [StatementRow()]),
-        SectionHeader(l.invBillingTitle),
-        if (page.invoices.isEmpty)
-          EmptyState(icon: KIcons.invoices, title: l.invEmptyTitle, description: l.invEmptyDescription)
-        else
-          RowGroup(children: [for (final invoice in page.invoices) InvoiceRow(invoice)]),
-        Footnote(l.invFootnote),
       ],
     );
   }

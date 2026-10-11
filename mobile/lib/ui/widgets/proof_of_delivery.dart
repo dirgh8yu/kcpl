@@ -260,38 +260,60 @@ class _ProofViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      // Expanded, so the picture gets the whole screen: a loose stack sized
+      // itself to the title row and drew the photo small beneath it.
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: InteractiveViewer(
-              maxScale: 5,
-              child: Center(
-                child: HeroMode(
-                  enabled: !Motion.reduced(context),
-                  child: Hero(
-                    tag: tag,
-                    child: Image.memory(bytes, fit: BoxFit.contain, semanticLabel: label),
-                  ),
+          InteractiveViewer(
+            maxScale: 5,
+            // Fills the screen and fits inside it, as Photos shows a picture.
+            child: SizedBox.expand(
+              child: HeroMode(
+                enabled: !Motion.reduced(context),
+                child: Hero(
+                  tag: tag,
+                  child: Image.memory(bytes, fit: BoxFit.contain, semanticLabel: label),
                 ),
               ),
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, kGutter, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                    icon: const Icon(KIcons.close, color: Colors.white, size: 22),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(label, style: context.type.titleMedium?.copyWith(color: Colors.white), overflow: TextOverflow.ellipsis),
-                  ),
-                ],
+          // A soft shade behind the title, so it reads over a pale photo zoomed up under it.
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 140,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99000000), Color(0x00000000)]),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, kGutter, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      icon: const Icon(KIcons.close, color: Colors.white, size: 22),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(label, style: context.type.titleMedium?.copyWith(color: Colors.white), overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

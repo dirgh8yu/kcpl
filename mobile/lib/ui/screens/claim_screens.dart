@@ -33,8 +33,9 @@ String claimStatusLabel(AppLocalizations l, String status) => switch (status) {
 };
 
 /// The claims on [shipment], with "Report a problem" at the top.
+/// A sheet over the shipment, as its messages and estimates are.
 Future<void> openClaims(BuildContext context, Shipment shipment) =>
-    Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => ClaimsScreen(shipment: shipment)));
+    Navigator.of(context).push<void>(SheetRoute<void>(builder: (_) => ClaimsScreen(shipment: shipment)));
 
 class ClaimsScreen extends StatelessWidget {
   const ClaimsScreen({super.key, required this.shipment});
@@ -312,8 +313,9 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
                 enabled: !_busy,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: context.type.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                // The label sits above; the empty field shows a figure, not the label again.
                 decoration: cardField(
-                  l.claimValue,
+                  '0',
                   suffix: Text('NPR', style: context.type.bodyLarge?.copyWith(color: p.secondary)),
                 ).copyWith(labelText: l.claimValue, floatingLabelBehavior: FloatingLabelBehavior.always),
               ),

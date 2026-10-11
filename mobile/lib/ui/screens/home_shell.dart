@@ -44,6 +44,8 @@ class _HomeShellState extends State<HomeShell> {
   /// A tap on the home screen widget opens the shipment it shows.
   StreamSubscription<String>? _widgetTaps;
 
+  final _scrollers = TabScrollers<HomeTab>();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -94,7 +96,17 @@ class _HomeShellState extends State<HomeShell> {
   void dispose() {
     _widgetTaps?.cancel();
     _shortcuts?.pending.removeListener(_onShortcut);
+    _scrollers.dispose();
     super.dispose();
+  }
+
+  /// A tap on the tab bar: the tab already open goes back to the top of its list.
+  void _tap(HomeTab tab) {
+    if (tab == _tab) {
+      _scrollers.toTop(context, tab);
+    } else {
+      _select(tab);
+    }
   }
 
   void _select(HomeTab tab) {
@@ -183,13 +195,13 @@ class _HomeShellState extends State<HomeShell> {
             // pages know not to refresh until they are shown again.
             children: [
               for (final item in tabs)
-                TickerMode(enabled: item == tab, child: _visited.contains(item) ? screen(item) : const SizedBox.shrink()),
+                TickerMode(enabled: item == tab, child: _visited.contains(item) ? _scrollers.wrap(item, screen(item)) : const SizedBox.shrink()),
             ],
           ),
           bottomNavigationBar: KTabBar(
             note: widget.demo ? l.demoBanner : null,
             selected: tabs.indexOf(tab),
-            onSelected: (index) => _select(tabs[index]),
+            onSelected: (index) => _tap(tabs[index]),
             items: [for (final item in tabs) TabItem(icon: icons[item]!.$1, selectedIcon: icons[item]!.$2, label: labels[item]!)],
           ),
         ),

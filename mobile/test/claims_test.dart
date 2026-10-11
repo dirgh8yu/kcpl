@@ -8,6 +8,7 @@ import 'package:kcpl_customer/api/http_kcpl_api.dart';
 import 'package:kcpl_customer/api/models.dart';
 import 'package:kcpl_customer/demo/demo_backend.dart';
 import 'package:kcpl_customer/ui/format.dart';
+import 'package:kcpl_customer/ui/screens/claim_screens.dart' show ReportClaimScreen;
 
 import 'app_flow_test.dart' show pumpApp, settle, signIn;
 import 'send_flows_test.dart' show openShipment, sheetScrollTo, useSource;
@@ -35,8 +36,10 @@ void main() {
 
     await tester.tap(find.text('Short: less arrived than was sent'));
     await settle(tester);
-    await sheetScrollTo(tester, find.byType(TextField).first);
-    await tester.enterText(find.byType(TextField).first, 'Two of twelve cartons missing at delivery');
+    // The claim's own field: the shipment's sheet is still on screen beneath it.
+    final describe = find.descendant(of: find.byType(ReportClaimScreen), matching: find.byType(TextField)).first;
+    await sheetScrollTo(tester, describe);
+    await tester.enterText(describe, 'Two of twelve cartons missing at delivery');
     await sheetScrollTo(tester, find.text('Add a photo'));
     await tester.tap(find.text('Add a photo'));
     await settle(tester);

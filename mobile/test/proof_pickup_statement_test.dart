@@ -170,6 +170,9 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Delivery photo 1'));
     await settle(tester);
     expect(find.byType(InteractiveViewer), findsOneWidget, reason: 'the photo opens full screen, to zoom');
+    // The whole screen, not a strip the height of the title row.
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(tester.getSize(find.byType(InteractiveViewer)), screen);
     await tester.tap(find.byTooltip('Close'));
     await settle(tester);
     expect(find.byType(InteractiveViewer), findsNothing);

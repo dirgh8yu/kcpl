@@ -27,6 +27,25 @@ Future<void> audit(WidgetTester tester, String where) async {
   await expectLater(tester, meetsGuideline(textContrastGuideline), reason: '$where: text contrast');
 }
 
+/// Moves [scrollable] at most a row's height either way to the nearest
+/// place where no row is cut by the bar: a row half under the frosted bar is
+/// a scroll position, not a small control. A control that is small in full
+/// view still fails, wherever it sits.
+Future<void> restClearOfBar(WidgetTester tester, Finder scrollable) async {
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final start = position.pixels;
+  for (var step = 0.0; step <= 64; step += 4) {
+    for (final target in [start - step, start + step]) {
+      if (target < position.minScrollExtent || target > position.maxScrollExtent) continue;
+      position.jumpTo(target);
+      await tester.pump();
+      if ((await iOSTapTargetGuideline.evaluate(tester)).passed) return;
+    }
+  }
+  position.jumpTo(start);
+  await tester.pump();
+}
+
 Future<void> close(WidgetTester tester) async {
   await tester.tap(find.byType(SheetCloseButton).last);
   await settle(tester);
@@ -150,13 +169,18 @@ void main() {
       await settle(tester);
       await audit(tester, tab);
       // Further down, at rest (not mid-way under the bar).
-      await tester.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -700));
+      final list = find.byType(Scrollable).hitTestable().first;
+      await tester.drag(list, const Offset(0, -700));
       await settle(tester);
+      await restClearOfBar(tester, list);
       await audit(tester, '$tab, further down');
     }
     await openShipment(tester, 'KCPL-S-24077');
     await audit(tester, 'shipment waiting on documents');
     await close(tester);
+    await tester.tap(find.text('Invoices').last);
+    await settle(tester);
+    // Left scrolled down above; a second tap on the tab takes it to the top.
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
     await tester.tap(ref('KCPL/2083-84/00041').first);

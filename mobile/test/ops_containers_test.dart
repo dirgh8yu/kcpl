@@ -24,7 +24,9 @@ void main() {
 
     await tapInView(tester, find.text('CMAU7719230'));
     await settle(tester);
-    expect(find.text('Container CMAU7719230'), findsWidgets);
+    // Titled by the number alone, which fits at title size.
+    expect(find.text('CMAU7719230'), findsWidgets);
+    expect(find.text('What happened'), findsOneWidget);
 
     await tester.tap(find.text('Empty returned to the depot'));
     await settle(tester);

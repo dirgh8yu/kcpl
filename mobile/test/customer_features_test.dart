@@ -277,6 +277,8 @@ void main() {
     await _pump(tester, DemoApi());
     await tester.tap(find.text('Invoices').last);
     await settle(tester);
+    // Under the invoices, which come first.
+    await scrollTo(tester, find.text('KCPL holds ${formatMoney(5650, 'NPR')} for you'));
     expect(find.text('KCPL holds ${formatMoney(5650, 'NPR')} for you'), findsOneWidget);
     expect(find.textContaining('KCPL-I-20260809-002'), findsNothing, reason: 'the internal reference is not what the customer files');
     await _invoice(tester, 'KCPL/2083-84/00019');

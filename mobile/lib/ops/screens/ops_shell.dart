@@ -49,6 +49,7 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _badgeTimer?.cancel();
+    _scrollers.dispose();
     super.dispose();
   }
 
@@ -68,6 +69,17 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
       controller.setUnread((await controller.api.alerts()).unreadCount);
     } catch (_) {
       // A missing badge is not worth an error; Alerts will say why.
+    }
+  }
+
+  final _scrollers = TabScrollers<OpsTab>();
+
+  /// A tap on the tab bar: the tab already open goes back to the top of its list.
+  void _tap(OpsTab tab) {
+    if (tab == _tab) {
+      _scrollers.toTop(context, tab);
+    } else {
+      _select(tab);
     }
   }
 
@@ -145,13 +157,13 @@ class _OpsShellState extends State<OpsShell> with WidgetsBindingObserver {
             // pages know not to refresh until they are shown again.
             children: [
               for (final tab in OpsTab.values)
-                TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? screen(tab) : const SizedBox.shrink()),
+                TickerMode(enabled: tab == _tab, child: _visited.contains(tab) ? _scrollers.wrap(tab, screen(tab)) : const SizedBox.shrink()),
             ],
           ),
           bottomNavigationBar: KTabBar(
             note: widget.demo ? context.l.opsDemoBanner : null,
             selected: _tab.index,
-            onSelected: (index) => _select(OpsTab.values[index]),
+            onSelected: (index) => _tap(OpsTab.values[index]),
             items: [
               for (final tab in OpsTab.values)
                 TabItem(icon: icons[tab]!.$1, selectedIcon: icons[tab]!.$2, label: labels[tab]!, badge: tab == OpsTab.alerts ? unread : 0),

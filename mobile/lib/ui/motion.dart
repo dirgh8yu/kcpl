@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/material.dart';
 
 import 'theme.dart';
@@ -93,7 +94,9 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 }
 
 /// Presses in under the finger the instant it lands, and springs back on
-/// release, before the tap has even been decided.
+/// release, before the tap has even been decided. A finger that starts to
+/// move is scrolling, not pressing: past the touch slop it lets go, so a card
+/// doesn't stay pressed in while the list moves under it.
 class Pressable extends StatefulWidget {
   const Pressable({super.key, required this.child, this.scale = 0.97});
   final Widget child;
@@ -105,16 +108,27 @@ class Pressable extends StatefulWidget {
 
 class _PressableState extends State<Pressable> {
   bool _down = false;
+  Offset? _origin;
 
   void _set(bool down) {
     if (_down != down) setState(() => _down = down);
+  }
+
+  void _move(PointerMoveEvent event) {
+    final origin = _origin;
+    if (origin == null || !_down) return;
+    if ((event.position - origin).distance > kTouchSlop) _set(false);
   }
 
   @override
   Widget build(BuildContext context) {
     final pressed = _down && !Motion.reduced(context);
     return Listener(
-      onPointerDown: (_) => _set(true),
+      onPointerDown: (event) {
+        _origin = event.position;
+        _set(true);
+      },
+      onPointerMove: _move,
       onPointerUp: (_) => _set(false),
       onPointerCancel: (_) => _set(false),
       child: AnimatedScale(

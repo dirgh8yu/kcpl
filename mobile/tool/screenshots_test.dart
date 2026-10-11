@@ -88,6 +88,24 @@ Future<void> _tab(WidgetTester tester, String label) async {
   await _wait(tester);
 }
 
+/// The innermost scroll that runs down the screen: not a sideways photo strip.
+Finder _downScroll() => find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).last;
+
+/// Scrolls [finder] on screen first: rows move below the fold as screens gain
+/// sections. Drags low on the screen, where a thumb would, so it moves whatever
+/// is on top (a sheet, not the page under it) and not the map near the top.
+Future<void> _tapShown(WidgetTester tester, Finder finder) async {
+  final size = tester.view.physicalSize / tester.view.devicePixelRatio;
+  for (var i = 0; i < 30 && finder.evaluate().isEmpty; i++) {
+    await tester.dragFrom(Offset(size.width / 2, size.height * 0.72), const Offset(0, -250));
+    await _wait(tester, 3);
+  }
+  await tester.ensureVisible(finder.first);
+  await _wait(tester, 4);
+  await tester.tap(finder.first);
+  await _wait(tester);
+}
+
 /// A photo of paperwork, as the camera would hand it back.
 class _Paper extends AttachmentSource {
   const _Paper();
@@ -200,6 +218,8 @@ void main() {
       await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
       await _wait(tester);
       await _shot(tester, 'customer-$mode-9d-arrived');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Confirm receipt'));
+      await _wait(tester);
       await tester.tap(find.widgetWithText(FilledButton, 'Confirm receipt'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-9e-confirm');
@@ -208,10 +228,10 @@ void main() {
       await tester.tap(find.byType(SheetCloseButton).last);
       await _wait(tester);
       await _tab(tester, 'Invoices');
-      await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+      await _tapShown(tester, find.textContaining('KCPL/2083-84/00027', findRichText: true));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-9f-invoice');
-      await tester.tap(find.text('Send payment receipt'));
+      await _tapShown(tester, find.text('Send payment receipt'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-9g-receipt');
       await tester.tap(find.byType(SheetCloseButton).last);
@@ -252,10 +272,10 @@ void main() {
       await tester.tap(find.text('Bikram Sambat (BS)'));
       await _wait(tester);
       await _tab(tester, 'Invoices');
-      await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
+      await _tapShown(tester, find.textContaining('KCPL/2083-84/00041', findRichText: true));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-10d-invoice-bs');
-      await tester.tap(find.text('Pay online'));
+      await _tapShown(tester, find.text('Pay online'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-10e-pay');
       await tester.tap(find.text('Khalti'));
@@ -365,7 +385,7 @@ void main() {
       await _tab(tester, 'Shipments');
       await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
       await _wait(tester);
-      await tester.scrollUntilVisible(find.text('How did this delivery go?'), 300, scrollable: find.byType(Scrollable).last);
+      await tester.scrollUntilVisible(find.text('How did this delivery go?'), 300, scrollable: _downScroll());
       await tester.tap(find.byTooltip('5 out of 5'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-11a-rate');
@@ -413,9 +433,9 @@ void main() {
       await _wait(tester, 20);
       await _signIn(tester, 'imports@annapurna.example');
       await _tab(tester, 'Invoices');
-      await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
+      await _tapShown(tester, find.textContaining('KCPL/2083-84/00041', findRichText: true));
       await _wait(tester);
-      await tester.tap(find.text('Pay online'));
+      await _tapShown(tester, find.text('Pay online'));
       await _wait(tester);
       await tester.tap(find.text('Part of it'));
       await _wait(tester);
@@ -427,9 +447,9 @@ void main() {
       await _wait(tester);
       await tester.tap(find.byType(SheetCloseButton).last);
       await _wait(tester);
-      await tester.tap(find.textContaining('KCPL-I-20260821-004', findRichText: true).first);
+      await _tapShown(tester, find.textContaining('KCPL/2083-84/00027', findRichText: true));
       await _wait(tester);
-      await tester.tap(find.text('Pay online'));
+      await _tapShown(tester, find.text('Pay online'));
       await _wait(tester);
       await _shot(tester, 'customer-$mode-12b-pay-dollars');
       await tester.pumpWidget(const SizedBox());
@@ -556,10 +576,10 @@ void main() {
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-1-shipments');
       await _tab(tester, 'Invoices');
-      await tester.tap(find.textContaining('KCPL-I-20260918-011', findRichText: true).first);
+      await _tapShown(tester, find.textContaining('KCPL/2083-84/00041', findRichText: true));
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-2-invoices');
-      await _tab(tester, 'Documents');
+      await _tab(tester, 'Docs');
       await tester.tap(find.text('Commercial invoice').first);
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-4-documents');
@@ -582,6 +602,39 @@ void main() {
       await tester.tap(find.text('KCPL-2609-0142 held at Jogbani border'));
       await _wait(tester);
       await _shot(tester, 'ipad-$mode-6-ops-alerts');
+        }, variant: iPhone);
+
+    testWidgets('customer claims $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      final controller = AppController(auth: DemoAuth(), api: DemoApi(), prefs: MemoryTokenStore(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(KcplApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'imports@annapurna.example');
+      await _tab(tester, 'Shipments');
+      await tester.tap(find.textContaining('KCPL-S-24012', findRichText: true).first);
+      await _wait(tester);
+      await _tapShown(tester, find.text('Report damage or loss'));
+      await _shot(tester, 'customer-$mode-14a-claims');
+      await _tapShown(tester, find.text('Report a problem'));
+      await tester.enterText(find.byType(TextField).first, 'Two cartons crushed at one corner; the delivery receipt notes it.');
+      await _wait(tester, 3);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await _shot(tester, 'customer-$mode-14b-report-claim');
+    }, variant: iPhone);
+
+    testWidgets('ops containers $mode', (tester) async {
+      await _phone(tester, dark: dark);
+      final controller = OpsController(auth: DemoAuth(), api: DemoOpsApi(), configured: true);
+      await controller.start();
+      await tester.pumpWidget(OpsApp(controller: controller, demo: true));
+      await _wait(tester, 20);
+      await _signIn(tester, 'anil@kcpl.example');
+      await _tab(tester, 'Jobs');
+      await tester.tap(find.textContaining('KCPL-2609-0142').first);
+      await _wait(tester);
+      await _tapShown(tester, find.text('CMAU7719230'));
+      await _shot(tester, 'ops-$mode-8a-container');
     }, variant: iPhone);
   }
 }

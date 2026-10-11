@@ -123,3 +123,37 @@ class TabBarItem extends StatelessWidget {
     );
   }
 }
+
+/// One scroll controller per tab, handed to the tab's page as its primary
+/// controller, so tapping the tab you are already on takes its list back to
+/// the top, as on iPhone.
+class TabScrollers<T> {
+  final _controllers = <T, ScrollController>{};
+
+  ScrollController of(T tab) => _controllers.putIfAbsent(tab, ScrollController.new);
+
+  /// [tab]'s page, with its controller as the one its lists pick up.
+  Widget wrap(T tab, Widget page) => PrimaryScrollController(controller: of(tab), child: page);
+
+  /// Every list on the tab (a tablet shows two) back to its top: eased, or
+  /// straight there under reduce-motion.
+  void toTop(BuildContext context, T tab) {
+    final controller = _controllers[tab];
+    if (controller == null) return;
+    final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    for (final position in controller.positions.toList()) {
+      if (position.pixels <= position.minScrollExtent) continue;
+      if (reduced) {
+        position.jumpTo(position.minScrollExtent);
+      } else {
+        position.animateTo(position.minScrollExtent, duration: const Duration(milliseconds: 350), curve: const Cubic(0.23, 1, 0.32, 1));
+      }
+    }
+  }
+
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+  }
+}

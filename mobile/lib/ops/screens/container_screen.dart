@@ -119,7 +119,8 @@ class _ContainerScreenState extends State<ContainerScreen> {
     final l = context.l;
     final p = context.palette;
     return ComposeScaffold(
-      title: l.opsContainerTitle(widget.container.number),
+      // The number alone: "Container CMAU7719230" was cut short at title size, and the number is what's read off the door.
+      title: widget.container.number,
       error: _error,
       action: SendButton(label: l.opsContainerSave, onPressed: _save, busy: _busy, progress: _progress),
       children: [

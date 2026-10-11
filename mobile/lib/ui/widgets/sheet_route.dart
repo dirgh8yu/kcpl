@@ -156,6 +156,11 @@ class _SheetFrameState extends State<_SheetFrame> {
       _dragging = true;
       _velocity.clear();
       widget.route._dragStart();
+      // It catches up with the whole pull, so from here on it sits under
+      // the finger rather than trailing it by the hysteresis.
+      widget.route._dragUpdate(pulled / _height);
+      _velocity.add((clock.now(), event.position.dy));
+      return;
     }
     if (!_dragging) return;
     widget.route._dragUpdate(event.delta.dy / _height);
