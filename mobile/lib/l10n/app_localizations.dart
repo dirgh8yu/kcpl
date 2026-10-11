@@ -1205,7 +1205,7 @@ abstract class AppLocalizations {
   /// No description provided for @topicShipmentUpdatesHint.
   ///
   /// In en, this message translates to:
-  /// **'When a shipment is booked, moves, clears customs, is out for delivery or is delivered.'**
+  /// **'When a shipment is booked, moves, clears customs, is out for delivery or is delivered, and when a damage or loss claim is settled or not accepted.'**
   String get topicShipmentUpdatesHint;
 
   /// No description provided for @topicDocumentsHint.

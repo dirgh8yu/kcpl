@@ -18,7 +18,10 @@ import {
 import { mobileDevicesFor, refreshLiveActivities, sendMobilePush, type MobileDevice } from "../mobile-push.server";
 import { customerPushTarget, liveActivityState } from "../mobile-push-policy";
 import { freeTimeClockStopped, freeTimeReminderThreshold, freeTimeStatus, shipmentFreeTimeFromRecord } from "../shipment-free-time";
+import { CARGO_CLAIMS } from "../cargo-claims";
 import {
+  portalClaimOutcomeFact,
+  portalClaimOutcomeMessage,
   portalDocumentReleaseMessage,
   portalDocumentRequestFact,
   portalDocumentRequestMessage,
@@ -531,6 +534,50 @@ export async function dispatchPortalNotifications() {
       }
 
       await stateRef.set(stateUpdate, { merge: true });
+    }
+
+    // A claim settled or turned down in the last fortnight, to those who follow
+    // the customer's shipments. One small query per customer; the fact is keyed
+    // by claim and outcome, so it is sent once whichever sweep sees it first.
+    if (subscribers.length && sent < MAX_EMAILS_PER_SWEEP) {
+      let claims;
+      try {
+        claims = await db.collection(CARGO_CLAIMS).where("customer_id", "==", customerId).limit(SHIPMENT_SCAN_LIMIT).get();
+      } catch (error) {
+        console.error("KCPL portal claim notice scan failed", { customerId, error });
+        claims = null;
+      }
+      const lanes = new Map(shipments.docs.map((document) => {
+        const view = portalShipmentView(document.id, document.data() as Record<string, unknown>);
+        return [view.reference, { origin: view.origin, destination: view.destination }];
+      }));
+      for (const claim of claims?.docs ?? []) {
+        const data = claim.data() as Record<string, unknown>;
+        const fact = portalClaimOutcomeFact({ ...data, id: claim.id }, today);
+        if (!fact) continue;
+        const reference = typeof data.shipment_reference === "string" ? data.shipment_reference : "";
+        if (!reference) continue;
+        const url = portalUrl(`/portal/shipments/${encodeURIComponent(reference)}#claims`);
+        for (const account of subscribers) {
+          if (sent >= MAX_EMAILS_PER_SWEEP) break;
+          const message = portalClaimOutcomeMessage({
+            reference,
+            claimNumber: typeof data.number === "string" ? data.number : claim.id,
+            outcome: data.status === "settled" ? "settled" : "rejected",
+            compensationAmount: typeof data.compensation_amount === "number" ? data.compensation_amount : null,
+            compensationMethod: typeof data.compensation_method === "string" ? data.compensation_method : null,
+            currency: typeof data.currency === "string" ? data.currency : "NPR",
+            origin: lanes.get(reference)?.origin ?? "",
+            destination: lanes.get(reference)?.destination ?? "",
+            customerName: account.customerName,
+            portalUrl: url,
+          }, account.locale);
+          const key = portalNotificationKey({ topic: "shipment_updates", reference, fact, recipient: account.email });
+          const result = await sendOnce({ key, to: account.email, subject: message.subject, text: message.text, html: message.html, reference });
+          if (result.kind === "sent") sent += 1;
+          await pushOnce({ key, account, subject: message.subject, text: message.text, url, subscriptions: pushSubscriptions, mobileDevices });
+        }
+      }
     }
 
     // Invoices due soon or just overdue, to owners who want them. The keys

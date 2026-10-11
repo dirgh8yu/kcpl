@@ -628,7 +628,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get topicShipmentUpdatesHint =>
-      'ढुवानी बुक हुँदा, हिँड्दा, भन्सार पास हुँदा, डेलिभरीका लागि निस्कँदा वा डेलिभर हुँदा।';
+      'ढुवानी बुक हुँदा, हिँड्दा, भन्सार पास हुँदा, डेलिभरीका लागि निस्कँदा वा डेलिभर हुँदा, र क्षति वा हराएको सामानको दाबी टुंगिँदा वा स्वीकार नहुँदा।';
 
   @override
   String get topicDocumentsHint =>

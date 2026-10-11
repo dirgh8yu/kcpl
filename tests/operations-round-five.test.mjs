@@ -36,6 +36,7 @@ import {
   portalClaimView,
 } from "../app/cargo-claims.ts";
 import { portalDocumentReleased } from "../app/portal/portal-access-policy.ts";
+import { CLAIM_OUTCOME_NOTICE_DAYS, portalClaimOutcomeFact, portalClaimOutcomeMessage } from "../app/portal/portal-notifications.ts";
 import { activeWorkspace, workflowWorkspaces } from "../app/admin/workflow-navigation.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -288,4 +289,37 @@ test("a partner's files are what they say they are, bounded per login, and check
   for (const route of ["app/api/partner/shipments/[reference]/bills/route.ts", "app/api/partner/shipments/[reference]/documents/route.ts"]) {
     assert.match(read(route), /result\.kind === "rate_limited"\) return partnerJson\([^)]*\}, 429\)/);
   }
+});
+
+test("a customer hears once when their claim is settled or turned down, and only recently decided ones", () => {
+  const today = "2026-10-20";
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "settled", settled_on: "2026-10-19" }, today), "claim-c1-settled");
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "rejected", settled_on: "2026-10-06" }, today), "claim-c1-rejected", "a fortnight is still news");
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "settled", settled_on: "2026-10-05" }, today), null, `older than ${CLAIM_OUTCOME_NOTICE_DAYS} days is back catalogue`);
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "filed", settled_on: null }, today), null);
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "withdrawn", settled_on: today }, today), null, "the customer withdrew it: nothing to tell them");
+  assert.equal(portalClaimOutcomeFact({ id: "c1", status: "settled" }, today), null);
+
+  const base = { reference: "KCPL-S-24091", claimNumber: "CLM-202610-AB12", currency: "NPR", origin: "Kolkata", destination: "Kathmandu", customerName: "Annapurna Home Goods", portalUrl: "https://kcpl.example/portal/shipments/KCPL-S-24091#claims" };
+  const settled = portalClaimOutcomeMessage({ ...base, outcome: "settled", compensationAmount: 25000, compensationMethod: "credit_note" });
+  assert.equal(settled.subject, "KCPL-S-24091 · Claim CLM-202610-AB12 is settled");
+  assert.equal(settled.text.split("\n")[0], "Claim CLM-202610-AB12 is settled: NPR 25,000.00 as a credit note on your invoice.", "the lock screen line carries the whole outcome");
+  assert.match(settled.html, /#claims/);
+  const insurer = portalClaimOutcomeMessage({ ...base, outcome: "settled", compensationAmount: null, compensationMethod: "insurer_paid" });
+  assert.match(insurer.text.split("\n")[0], /The insurer pays you directly/);
+  const none = portalClaimOutcomeMessage({ ...base, outcome: "settled", compensationAmount: 0, compensationMethod: "none" });
+  assert.equal(none.text.split("\n")[0], "Claim CLM-202610-AB12 is settled.");
+  const rejected = portalClaimOutcomeMessage({ ...base, outcome: "rejected", compensationAmount: null, compensationMethod: null });
+  assert.equal(rejected.subject, "KCPL-S-24091 · Claim CLM-202610-AB12 was not accepted");
+  assert.match(rejected.text, /account manager can tell you why/);
+  const nepali = portalClaimOutcomeMessage({ ...base, outcome: "settled", compensationAmount: 25000, compensationMethod: "refund" }, "ne");
+  assert.match(nepali.subject, /दाबी CLM-202610-AB12 टुंगियो/);
+  assert.match(nepali.text.split("\n")[0], /तपाईंलाई NPR 25,000.00 फिर्ता गरियो/);
+
+  // The sweep sends it on every channel under one key per claim and outcome, to those following shipments.
+  const sweep = read("app/portal/portal-notifications.server.ts");
+  assert.match(sweep, /collection\(CARGO_CLAIMS\)\.where\("customer_id", "==", customerId\)/);
+  assert.match(sweep, /portalClaimOutcomeFact\(\{ \.\.\.data, id: claim\.id \}, today\)/);
+  assert.match(sweep, /portalNotificationKey\(\{ topic: "shipment_updates", reference, fact, recipient: account\.email \}\)/);
+  assert.doesNotMatch(sweep.slice(sweep.indexOf("portalClaimOutcomeMessage({")), /outcome_note|against_name/, "KCPL's own note never reaches the customer");
 });

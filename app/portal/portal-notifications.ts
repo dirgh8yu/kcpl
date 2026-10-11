@@ -31,7 +31,7 @@ export const portalNotificationTopicLabels: Record<PortalNotificationTopic, stri
 };
 
 export const portalNotificationTopicHints: Record<PortalNotificationTopic, string> = {
-  shipment_updates: "When a shipment is booked, moves, clears customs, is out for delivery or is delivered.",
+  shipment_updates: "When a shipment is booked, moves, clears customs, is out for delivery or is delivered, and when a damage or loss claim is settled or not accepted.",
   documents: "When KCPL needs paperwork from you, or releases a document to your account.",
   free_time: "Before storage or demurrage charges start on cargo at a port or depot.",
   invoices: "Three days before an invoice is due, and if it becomes overdue. Account owners only.",
@@ -503,6 +503,89 @@ export function portalInvoiceMessage(facts: PortalInvoiceFacts, locale: PortalLo
     `</table>`,
     `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.see_invoice"))}</a></p>`,
     `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.inv_sent_because", { customer: facts.customerName }))}</p>`,
+    `</div>`,
+  ].join("");
+
+  return { subject, text, html };
+}
+
+/*
+ * Claim outcomes. A claim the customer can follow in the portal is news twice
+ * over its life: when it is settled and when it is turned down. Each is sent
+ * once, and only for a fortnight after it was decided, so the first sweep after
+ * this starts does not mail every claim ever closed. KCPL's own note on the
+ * outcome, and who it was filed against, never leave KCPL: the message carries
+ * what the portal shows and no more.
+ */
+
+export const CLAIM_OUTCOME_NOTICE_DAYS = 14;
+
+export function portalClaimOutcomeFact(claim: Record<string, unknown> & { id: string }, today: string): string | null {
+  const status = claim.status;
+  if (status !== "settled" && status !== "rejected") return null;
+  const decided = typeof claim.settled_on === "string" ? dayNumber(claim.settled_on) : null;
+  const now = dayNumber(today);
+  if (decided === null || now === null || decided > now || now - decided > CLAIM_OUTCOME_NOTICE_DAYS) return null;
+  return `claim-${claim.id}-${status}`;
+}
+
+export type PortalClaimOutcomeFacts = {
+  reference: string;
+  claimNumber: string;
+  outcome: "settled" | "rejected";
+  compensationAmount: number | null;
+  compensationMethod: string | null;
+  currency: string;
+  origin: string;
+  destination: string;
+  customerName: string;
+  portalUrl: string;
+};
+
+/** What the customer gets back, in the portal's own words, or null when nothing is paid through KCPL. */
+function claimOutcomeLine(facts: PortalClaimOutcomeFacts, say: (key: PortalTextKey, vars?: Record<string, string | number>) => string) {
+  const amount = facts.compensationAmount && facts.compensationAmount > 0 ? money(facts.compensationAmount, facts.currency) : "";
+  if (facts.compensationMethod === "credit_note" && amount) return say("claim.settled_credit_note", { amount });
+  if (facts.compensationMethod === "refund" && amount) return say("claim.settled_refund", { amount });
+  if (facts.compensationMethod === "insurer_paid") return say("claim.settled_insurer");
+  return null;
+}
+
+export function portalClaimOutcomeMessage(facts: PortalClaimOutcomeFacts, locale: PortalLocale = "en"): PortalMilestoneMessage {
+  const say = (key: PortalTextKey, vars?: Record<string, string | number>) => portalText(locale, key, vars);
+  const number = facts.claimNumber;
+  const settled = facts.outcome === "settled";
+  const outcome = settled ? claimOutcomeLine(facts, say) : null;
+  const subject = `${facts.reference} · ${say(settled ? "mail.claim_settled_subject" : "mail.claim_rejected_subject", { number })}`;
+  // The first line is what a lock screen or a text message carries, so it says the whole outcome.
+  const headline = settled
+    ? outcome ? say("mail.claim_settled_outcome", { number, outcome }) : say("mail.claim_settled", { number })
+    : say("mail.claim_rejected", { number });
+
+  const text = [
+    headline,
+    "",
+    `${say("mail.label_claim")}: ${number}`,
+    `${say("mail.label_shipment")}: ${facts.reference}`,
+    `${say("mail.label_route")}: ${lane(facts)}`,
+    "",
+    say("mail.see_shipment_line", { url: facts.portalUrl }),
+    "",
+    say("mail.turn_off"),
+  ].join("\n");
+
+  const html = [
+    `<div style="font-family:Arial,sans-serif;max-width:620px;color:#101010">`,
+    `<p style="font-size:12px;font-weight:700;color:#DC143C;margin:0 0 6px">${escapeHtml(say("mail.brand"))}</p>`,
+    `<h2 style="font-size:20px;margin:0 0 12px">${escapeHtml(say(settled ? "mail.claim_settled_subject" : "mail.claim_rejected_subject", { number }))}</h2>`,
+    `<p style="font-size:14px;line-height:1.6;margin:0 0 16px">${escapeHtml(headline)}</p>`,
+    `<table style="font-size:14px;line-height:1.7;border-collapse:collapse">`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_claim"))}</td><td><strong>${escapeHtml(number)}</strong></td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_shipment"))}</td><td>${escapeHtml(facts.reference)}</td></tr>`,
+    `<tr><td style="color:#5C6675;padding-right:12px">${escapeHtml(say("mail.label_route"))}</td><td>${escapeHtml(lane(facts))}</td></tr>`,
+    `</table>`,
+    `<p style="margin:20px 0"><a href="${escapeHtml(facts.portalUrl)}" style="display:inline-block;background:#DC143C;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">${escapeHtml(say("mail.see_shipment"))}</a></p>`,
+    `<p style="font-size:11px;color:#8B95A4;line-height:1.6">${escapeHtml(say("mail.sent_because", { customer: facts.customerName }))}</p>`,
     `</div>`,
   ].join("");
 

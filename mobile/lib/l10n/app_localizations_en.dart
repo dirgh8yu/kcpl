@@ -630,7 +630,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get topicShipmentUpdatesHint =>
-      'When a shipment is booked, moves, clears customs, is out for delivery or is delivered.';
+      'When a shipment is booked, moves, clears customs, is out for delivery or is delivered, and when a damage or loss claim is settled or not accepted.';
 
   @override
   String get topicDocumentsHint =>
