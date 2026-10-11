@@ -1025,7 +1025,11 @@
 }
 /* Devanagari keeps Noto Sans Devanagari, Chinese the reader's system face;
  * Latin inside either follows the sans. */
-.site-root-deva { font-family: var(--font-devanagari-sans), var(--font-sans); }
+/* Noto Sans Devanagari, self-hosted (the Google Fonts Devanagari subset, SIL
+ * Open Font License 1.1) so SiteDocument can preload it on the Nepali and Hindi
+ * sites alone; through next/font the preload landed on every route. */
+@font-face { font-family: "Noto Sans Devanagari Site"; src: url("/fonts/noto-sans-devanagari.woff2") format("woff2"); font-style: normal; font-weight: 100 900; font-display: swap; unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A; }
+.site-root-deva { font-family: "Noto Sans Devanagari Site", var(--font-devanagari-sans), var(--font-sans); }
 .site-root-zh { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", var(--font-inter), "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif; }
 /* Older layers pinned Manrope on individual controls; the wordmark keeps it. */
 .site-root :is(.eyebrow, .site-nav-link, .site-lang, .site-menu-button, .site-footer-heading, .proof-kicker, .credibility-label,
@@ -1047,6 +1051,11 @@
 .site-root-deva :is(.hero-title, .section-title, .cta-title, .sector-title, .tile-title, .reference-index-title),
 .site-root-zh :is(.hero-title, .section-title, .cta-title, .sector-title, .tile-title, .reference-index-title) { letter-spacing: 0; line-height: 1.28; }
 .site-root-deva .hero-title, .site-root-zh .hero-title, .site-root-deva .page-head .section-title, .site-root-zh .page-head .section-title { font-size: clamp(38px, 6vw, 88px); }
+/* Headline measures are in ch, which comes from the first Latin face; on a
+ * Devanagari page that face can swap in after the first paint and rewrap a long
+ * headline. The same widths in em do not move. */
+.site-root-deva .intro .hero-title { max-width: 7.4em; }
+.site-root-deva .tiles-head .section-title { max-width: 10.2em; }
 /* Chinese headlines break at punctuation, not inside a place name. */
 .site-root-zh :is(.hero-title, .section-title, .tile-title) { word-break: keep-all; overflow-wrap: anywhere; }
 .site-root .section-intro { color: var(--site-muted); }
@@ -1175,6 +1184,7 @@
 .site-root .quote-email-panel h2 { font-family: inherit; letter-spacing: -0.035em; line-height: 1.05; }
 .site-root .quote-email-panel button { justify-content: center; border-radius: 980px; font-size: 17px; font-weight: 500; }
 .site-root .quote-email-panel button svg { display: none; }
+.site-root-deva :is(.page-head .section-title, .section-cta .cta-title) { max-width: 9.1em; }
 
 /* Service pages read like a product page: bold headings, grey panels,
  * rounded tiles for the related services. */

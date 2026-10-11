@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Instrument_Serif, Inter, Manrope, Noto_Sans_Devanagari, Noto_Serif_Devanagari } from "next/font/google";
 import { Suspense, type ReactNode } from "react";
+import { preload } from "react-dom";
 import { Analytics } from "./components/analytics";
 import { StructuredData } from "./components/structured-data";
 import { siteName, siteUrl, socialImage } from "./seo";
@@ -75,6 +76,9 @@ const siteGraph = graph([organizationNode, websiteNode(defaultDescription)]);
  * reason the roots are split.
  */
 export function SiteDocument({ locale = "en", className, children }: { locale?: SiteLocale; className?: string; children: ReactNode }) {
+  // Nepali and Hindi headlines are set in Noto Sans Devanagari (site.css). Fetched
+  // late, it rewrapped them an extra line after the first paint.
+  if (locale === "ne" || locale === "hi") preload("/fonts/noto-sans-devanagari.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
   return (
     <html lang={siteLocaleTags[locale]}>
       <body className={`${fontVariables} ${className ?? ""} antialiased`.replace(/\s+/g, " ").trim()}>
