@@ -1,19 +1,19 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "79fe358861871834",
+      "fingerprint": "6c2b60657cdcfa70",
       "lastmod": "2026-10-11"
     },
     "ne/": {
-      "fingerprint": "5c6f041e2c4d5cf8",
+      "fingerprint": "d37489534dfe667c",
       "lastmod": "2026-10-11"
     },
     "zh/": {
-      "fingerprint": "6293bcd4c06db331",
+      "fingerprint": "75e9c843019161cf",
       "lastmod": "2026-10-11"
     },
     "hi/": {
-      "fingerprint": "724d8671a39a3e28",
+      "fingerprint": "68d44206fc010dff",
       "lastmod": "2026-10-11"
     },
     "en/services": {
@@ -61,7 +61,7 @@
       "lastmod": "2026-10-11"
     },
     "hi/work": {
-      "fingerprint": "7f387cd8ea4b5fca",
+      "fingerprint": "b4e126286a40715d",
       "lastmod": "2026-10-11"
     },
     "en/network": {

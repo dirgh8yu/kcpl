@@ -3,13 +3,14 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { affiliations, company } from "../company-data";
 import { telHref, whatsappHref } from "../contact-links";
+import { photos } from "../site-photos";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
-  const sectorImages = ["/images/unsplash/port-crane.jpg", "/images/unsplash/warehouse-forklift.jpg", "/images/unsplash/ship-aerial.jpg"];
+  const sectorImages = [photos.openTop, photos.packing, photos.warehouseAisle];
   const sectors = [1, 2, 3].map((n) => ({
     title: t(`sectors.s${n}_title` as "sectors.s1_title"),
     copy: t(`sectors.s${n}_copy` as "sectors.s1_copy"),
@@ -31,7 +32,7 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
       <section className="section sector-list reveal-group">
         {sectors.map((sector, index) => (
           <article key={sector.title} className="sector-row reveal">
-            <figure className="sector-figure"><Image src={sector.image} alt="" width={800} height={560} sizes="(max-width: 700px) 100vw, 45vw" className={`sector-photo sector-photo-${index + 1}`}/></figure>
+            <figure className="sector-figure"><Image src={sector.image} alt="" placeholder="blur" sizes="(max-width: 700px) 100vw, 45vw" className={`sector-photo sector-photo-${index + 1}`}/></figure>
             <div className="sector-content">
               <h2 className="sector-title">{sector.title}</h2>
               <p className="sector-copy">{sector.copy}</p>
@@ -85,19 +86,19 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("about.intro")}</p>
       </section>
       <section className="about-banner">
-        <Image src="/images/unsplash/warehouse-forklift.jpg" alt="" fill sizes="100vw" className="about-banner-image"/>
+        <Image src={photos.mountainRoad} alt="" fill placeholder="blur" sizes="100vw" className="about-banner-image"/>
       </section>
       <section className="section about-split">
         <div>
           <h2 className="service-block-title">{t("about.how_title")}</h2>
           <p className="about-copy">{t("about.how_copy")}</p>
         </div>
-        <div>
+        <div className="about-leadership">
           <h2 className="service-block-title">{t("about.leadership_title")}</h2>
           <p className="about-copy">{t("about.leadership_copy")}</p>
         </div>
       </section>
-      <section className="section section-capability">
+      <section className="section section-capability about-desks">
         <h2 className="service-block-title">{t("about.desks_title")}</h2>
         <dl className="capability-list reveal-group">
           {desks.map((desk) => (

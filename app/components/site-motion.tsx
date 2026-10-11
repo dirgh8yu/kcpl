@@ -6,9 +6,10 @@ import { usePathname } from "next/navigation";
 const revealSelector = [
   ".section-title",
   ".proof-story",
+  ".proof-card",
   ".work-record",
   ".sector-row",
-  ".service-row",
+  ".service-card",
 ].join(", ");
 
 export function SiteMotion() {

@@ -7,11 +7,11 @@ import { siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n"
 import { SiteShell } from "./site-chrome";
 
 const galleryImages: { src: string; key: SiteTextKey; width: number; height: number }[] = [
-  { src: "/images/unsplash/ship-aerial.jpg", key: "gallery.ocean", width: 2200, height: 1585 },
-  { src: "/images/unsplash/air-cargo.jpg", key: "gallery.air", width: 1800, height: 1200 },
-  { src: "/images/unsplash/nepal-road.jpg", key: "gallery.road", width: 2200, height: 1467 },
-  { src: "/images/unsplash/port-aerial.jpg", key: "gallery.gateway", width: 2200, height: 1730 },
-  { src: "/images/unsplash/forklift-loading.jpg", key: "gallery.handling", width: 1800, height: 2700 },
+  { src: "/images/site/ship-aerial.jpg", key: "gallery.ocean", width: 2200, height: 1585 },
+  { src: "/images/site/air-dusk.jpg", key: "gallery.air", width: 1802, height: 873 },
+  { src: "/images/site/mountain-road.jpg", key: "gallery.road", width: 2200, height: 1467 },
+  { src: "/images/site/port-aerial.jpg", key: "gallery.gateway", width: 2200, height: 1730 },
+  { src: "/images/site/breakbulk.jpg", key: "gallery.handling", width: 1536, height: 1024 },
 ];
 
 const awardCertificates = [2022, 2023, 2024, 2025] as const;

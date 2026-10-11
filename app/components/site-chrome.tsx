@@ -11,7 +11,7 @@ import { StructuredData } from "./structured-data";
 import { SiteMotion } from "./site-motion";
 import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
-/** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
+/** Every page, declared once: the phone menu and the footer read it. */
 const navigation = [
   { path: "/services", key: "chrome.services" },
   { path: "/sectors", key: "chrome.sectors" },
@@ -19,6 +19,18 @@ const navigation = [
   { path: "/network", key: "chrome.network" },
   { path: "/gallery", key: "chrome.gallery" },
   { path: "/awards", key: "chrome.awards" },
+  { path: "/about", key: "chrome.about" },
+  { path: "/contact", key: "chrome.contact" },
+] as const;
+
+/** The header carries fewer, so it fits on a laptop without folding into a
+ * menu; Gallery and Awards are a click away from About and in the footer. */
+const headerNavigation = [
+  { path: "/services", key: "chrome.services" },
+  { path: "/sectors", key: "chrome.sectors" },
+  { path: "/work", key: "chrome.work" },
+  { path: "/network", key: "chrome.network" },
+  { path: "/guides" },
   { path: "/about", key: "chrome.about" },
   { path: "/contact", key: "chrome.contact" },
 ] as const;
@@ -54,8 +66,8 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
       <div className="site-header-inner">
         <SiteLogo locale={locale}/>
         <nav className="site-nav" aria-label={t("chrome.nav_label")}>
-          {navigation.map((item) => (
-            <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+          {headerNavigation.map((item) => (
+            <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{"key" in item ? t(item.key) : guideIndex[locale].title}</Link>
           ))}
         </nav>
         <div className="site-header-actions">

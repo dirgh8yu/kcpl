@@ -14,7 +14,7 @@ import "./globals.css";
  * one calls this rather than copying the document out.
  */
 
-// Only the two faces the public site paints its first screen with are
+// Only the faces the public site paints its first screen with are
 // preloaded. The rest are declared so the CSS variables resolve, and the
 // browser fetches each one when a glyph on the page actually calls for it:
 // preloading all of them put ~400KB of fonts in front of the LCP image.
@@ -22,7 +22,8 @@ const geist = Geist({ variable: "--font-geist", subsets: ["latin"], preload: fal
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], preload: false });
 // Public brand and marketing retain Manrope; the KCPL staff product uses Inter through its scoped typography contract.
-const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400", preload: false });
+// The public site's display serif: every headline, and the first thing painted.
+const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400" });
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"], preload: false });
 // The identity file records Noto Sans Devanagari for Nepali, so the public site sets
 // Nepali in the sans to match the Manrope wordmark rather than the portal's serif.

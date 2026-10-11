@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { services, type ServiceKey, type ServiceSlug } from "../services-data";
+import { servicePhotos } from "../site-photos";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { SiteShell } from "./site-chrome";
@@ -19,17 +20,26 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
         <h1 className="section-title">{t("services.title")}</h1>
         <p className="section-intro">{t("services.intro")}</p>
       </section>
+      {/* A spread rather than a list: the first service leads, the rest share a
+        * grid, every one with its own photograph (illustrative, so decorative). */}
       <section className="section service-index reveal-group">
-        {services.map((service) => (
-          <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className="service-row reveal">
-            <div className="service-row-body">
-              <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
-              <p className="service-row-copy">{t(text(service.key, "summary"))}</p>
+        {services.map((service, index) => (
+          <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className={`service-card${index === 0 ? " service-card-feature" : ""}`}>
+            <figure className="service-card-figure">
+              <Image
+                src={servicePhotos[service.key]}
+                alt=""
+                placeholder="blur"
+                sizes={index === 0 ? "(max-width: 900px) 100vw, 58vw" : "(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 32vw"}
+                className={`service-card-photo service-photo-${service.key}`}
+              />
+            </figure>
+            <div className="service-card-body">
+              <span className="service-card-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <h2 className="service-card-title">{t(text(service.key, "title"))}</h2>
+              <p className="service-card-copy">{t(text(service.key, "summary"))}</p>
+              <ArrowRight className="service-card-arrow" size={20} aria-hidden="true"/>
             </div>
-            {/* Illustrative freight photography, not KCPL's own cargo, so it carries
-              * no caption and is marked decorative. */}
-            <figure className="service-figure"><Image src={service.image} alt="" width={480} height={320} sizes="(max-width: 700px) 100vw, 220px" className={`service-photo service-photo-${service.key}`}/></figure>
-            <span className="service-row-arrow" aria-hidden="true"><ArrowRight size={20} weight="regular"/></span>
           </Link>
         ))}
       </section>
@@ -60,7 +70,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         * crawler and points back at the organisation that provides it. */}
       <StructuredData data={graph([serviceNode(locale, slug)])}/>
       <section className="service-banner">
-        <Image src={service.image} alt="" fill sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
+        <Image src={servicePhotos[service.key]} alt="" fill placeholder="blur" sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
         <div className="service-banner-copy">
           <p className="eyebrow">{t("services.title")}</p>
           <h1 className="section-title">{t(text(service.key, "title"))}</h1>
