@@ -5,7 +5,7 @@ import type { CashFlowOverview } from "../cash-flow.server";
 import { OpsBadge, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsNotice, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../../operations-ui";
 import { dateLabel, money } from "../credits/credits-format";
 
-const kindLabels: Record<CashFlowKind, string> = { invoice: "Invoice", bill: "Supplier bill", refund: "Refund", tds: "TDS deposit", vat: "VAT" };
+const kindLabels: Record<CashFlowKind, string> = { invoice: "Invoice", deposit: "Container deposit", bill: "Supplier bill", refund: "Refund", tds: "TDS deposit", vat: "VAT" };
 
 function weekLabel(start: string, end: string) {
   const format = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" });
@@ -23,7 +23,7 @@ const SOON_WEEKS = 4;
 export function CashFlowWorkspace({ overview }: { overview: CashFlowOverview }) {
   const missingBalance = overview.currencies.filter((currency) => currency.opening === null).map((currency) => currency.currency);
   return <OpsPage>
-    <OpsPageHeader eyebrow="Finance" title="Cash flow" description="The next 13 weeks, from the bank balance: what customers owe by the date it's due, and what KCPL owes suppliers, in refunds, TDS and VAT. Overdue money owed to KCPL is listed but not counted; overdue bills are counted now."/>
+    <OpsPageHeader eyebrow="Finance" title="Cash flow" description="The next 13 weeks from the bank balance: money due in from customers and shipping lines, and out to suppliers, refunds, TDS and VAT. Overdue money owed to KCPL is listed but not counted; overdue bills are counted now."/>
     <div className="ops-content-wide ops-stack">
       {overview.partial ? <OpsNotice tone="warning">You see only your branches&apos; invoices and bills, and VAT is left out. Management sees the whole company.</OpsNotice> : null}
       {missingBalance.length ? <OpsNotice tone="warning">No bank balance for {missingBalance.join(", ")} yet, so the weeks show money in and out without a balance. <Link href="/admin/finance/bank" className="ops-cell-link">Upload a statement</Link> with a balance column to start from what&apos;s in the bank.</OpsNotice> : null}

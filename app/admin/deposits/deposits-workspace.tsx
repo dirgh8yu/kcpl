@@ -19,12 +19,15 @@ export function DepositsWorkspace({ open, closed }: { open: DepositRegisterRow[]
   const rows = [...open].sort((a, b) => urgency(a) - urgency(b) || a.deposit.paid_on.localeCompare(b.deposit.paid_on));
   const toClaim = open.filter((row) => row.stage.stage === "to_claim");
   const overdue = open.filter((row) => row.stage.stage === "claimed" && row.stage.overdue);
-  const outstanding = depositsOutstanding(open.map((row) => row.deposit));
+  // A deposit the customer paid goes back to them: it's with the line, but it isn't KCPL's money.
+  const ours = open.filter((row) => row.deposit.paid_by === "kcpl");
+  const theirs = open.length - ours.length;
+  const outstanding = depositsOutstanding(ours.map((row) => row.deposit));
   return <OpsPage>
     <OpsPageHeader eyebrow="Shipments" title="Container deposits" description={`Money paid to shipping lines to release boxes, until it comes back. Claim within ${DEPOSIT_CLAIM_DAYS} days of the last empty going back; a refund not in ${DEPOSIT_REFUND_DAYS} days after the claim is overdue.`}/>
     <div className="ops-content-wide ops-stack">
       <OpsMetricStrip columns={3}>
-        <OpsMetric label="With the lines" value={outstanding.length ? totalsByCurrency(outstanding) : "Nothing"} detail={`${open.length} deposit${open.length === 1 ? "" : "s"}`}/>
+        <OpsMetric label="KCPL’s money with the lines" value={outstanding.length ? totalsByCurrency(outstanding) : "Nothing"} detail={`${ours.length} deposit${ours.length === 1 ? "" : "s"}${theirs ? ` · ${theirs} more paid by customers` : ""}`}/>
         <OpsMetric label="Empties back, claim now" value={String(toClaim.length)} detail={toClaim.length ? "Ask the line for the refund" : "None"}/>
         <OpsMetric label="Refunds overdue" value={String(overdue.length)} detail={overdue.length ? "Chase the line" : "None"}/>
       </OpsMetricStrip>

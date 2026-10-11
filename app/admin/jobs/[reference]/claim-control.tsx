@@ -95,7 +95,7 @@ export function ClaimControl({ reference, claims, canEdit, canFinance, today }: 
           <OpsField label="Value claimed" hint="Optional"><input name="claimedAmount" inputMode="decimal"/></OpsField>
           <OpsField label="Currency"><input name="currency" maxLength={3} defaultValue="NPR" autoCapitalize="characters"/></OpsField>
         </div>
-        <OpsField label="Description" hint="Which packages, what is wrong, what the delivery receipt says"><textarea name="description" required minLength={10} maxLength={2000} rows={3}/></OpsField>
+        <OpsField label="Description" hint="Which packages, what is wrong, what the delivery receipt says. The customer can read this."><textarea name="description" required minLength={10} maxLength={2000} rows={3}/></OpsField>
         <OpsFileDrop prompt="Add photos" hint={`Up to ${CLAIM_MAX_PHOTOS}: the damage, the packaging, the receipt`} accept="image/jpeg,image/png,image/webp,application/pdf" multiple chosen={photos.length ? `${photos.length} chosen` : null} onFiles={(files) => setPhotos(files.slice(0, CLAIM_MAX_PHOTOS))}/>
         <div className="portal-form-actions"><OpsButton type="submit" variant="primary" size="sm" disabled={busy}><ShieldAlert size={14} strokeWidth={1.75} aria-hidden="true"/>{busy ? "Saving…" : "Open claim"}</OpsButton></div>
       </form> : null}

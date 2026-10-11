@@ -188,6 +188,20 @@ export function depositRefundFromInput(deposit: Pick<ContainerDeposit, "amount" 
   return { ok: true, value: { refunded_on: on, amount_refunded: received, deduction: deduction > 0.005 ? deduction : 0, deduction_reason: deduction > 0.005 ? reason : null, closed_note: note } };
 }
 
+/**
+ * For the cash-flow view: a deposit KCPL paid and has claimed back is money
+ * due in, DEPOSIT_REFUND_DAYS after the claim, less the detention the line is
+ * likely to keep. One the customer paid goes back to them, and a deposit
+ * still out has no date yet, so neither is counted.
+ */
+export function depositRefundDue(deposit: ContainerDeposit, containers: ShipmentContainer[], today: string): { date: string; amount: number } | null {
+  if (deposit.status !== "claimed" || deposit.paid_by !== "kcpl" || !deposit.claimed_on) return null;
+  const due = new Date(`${deposit.claimed_on}T00:00:00Z`);
+  due.setUTCDate(due.getUTCDate() + DEPOSIT_REFUND_DAYS);
+  const amount = expectedDepositDeduction(deposit, containers, today).expected_back;
+  return amount > 0 ? { date: due.toISOString().slice(0, 10), amount } : null;
+}
+
 /** Totals still with the lines, by currency, for the deposits register. */
 export function depositsOutstanding(deposits: ContainerDeposit[]) {
   const totals = new Map<string, number>();

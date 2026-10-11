@@ -4,7 +4,7 @@ import type { KcplStaffContext } from "./staff-directory.server";
 import { OPS_FIELD_PHOTO_MAX_BYTES, opsFieldPhotoExtensions } from "./ops-field";
 import { validateShipmentDocumentBytes } from "../shipment-document-policy";
 import { uploadShipmentDocument } from "../shipment-documents.server";
-import { recordContainerMovement } from "../shipment-containers.server";
+import { checkContainerMovement, recordContainerMovement } from "../shipment-containers.server";
 
 /*
  * Container dates from the KCPL Ops app: out of the port, delivered, empty
@@ -28,6 +28,11 @@ export async function recordOpsContainerMovement(reference: string, number: stri
   if (access.kind === "missing") return refused(404, "missing", "Shipment not found.");
   if (access.kind === "forbidden") return refused(403, "forbidden", "This shipment is outside your branch access.");
 
+  // The date first: a refused movement leaves no gate-receipt photo behind on the job.
+  const movement = { movement: form.get("movement"), on: form.get("on") };
+  const precheck = await checkContainerMovement(normalized, number, movement);
+  if (precheck.kind !== "ok") return movementRefused(precheck);
+
   const file = form.get("photo");
   const photo = file instanceof File && file.size > 0 ? file : null;
   let documentId: number | null = null;
@@ -47,12 +52,14 @@ export async function recordOpsContainerMovement(reference: string, number: stri
     if (upload.kind === "created" || upload.kind === "duplicate") documentId = typeof upload.document?.id === "number" ? upload.document.id : null;
   }
 
-  const result = await recordContainerMovement(normalized, number, { movement: form.get("movement"), on: form.get("on"), documentId }, { name: user.displayName, email: user.email });
-  if (result.kind === "missing") return refused(404, "missing", "That container isn’t on this shipment.");
-  if (result.kind === "invalid") {
-    if (result.error === "movement") return refused(400, "invalid", "Choose what happened to the container.");
-    if (result.error === "date") return refused(400, "invalid", "Choose today or an earlier day.");
-    return refused(409, "conflict", "That date is out of order: out of the port, then delivered, then the empty back.");
-  }
+  const result = await recordContainerMovement(normalized, number, { ...movement, documentId }, { name: user.displayName, email: user.email });
+  if (result.kind !== "updated") return movementRefused(result);
   return { kind: "ok" as const, container: result.container };
+}
+
+function movementRefused(result: { kind: "missing" } | { kind: "invalid"; error: "movement" | "date" | "order" }) {
+  if (result.kind === "missing") return refused(404, "missing", "That container isn’t on this shipment.");
+  if (result.error === "movement") return refused(400, "invalid", "Choose what happened to the container.");
+  if (result.error === "date") return refused(400, "invalid", "Choose today or an earlier day.");
+  return refused(409, "conflict", "That date is out of order: out of the port, then delivered, then the empty back.");
 }

@@ -15,6 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (result.kind === "missing") return partnerJson({ ok: false, error: "That shipment isn’t shared with you." }, 404);
   if (result.kind === "unsupported_type") return partnerJson({ ok: false, error: "Send a PDF or a photo (JPEG, PNG or WebP)." }, 400);
   if (result.kind === "too_large") return partnerJson({ ok: false, error: "That file is over 15 MB." }, 413);
+  if (result.kind === "rate_limited") return partnerJson({ ok: false, error: "Too many uploads from this login just now. Try again in a while." }, 429);
   if (result.kind === "duplicate") return partnerJson({ ok: false, error: "That file is already on the shipment." }, 409);
   return partnerJson({ ok: false, error: "The document couldn’t be saved. Try again." }, 503);
 }

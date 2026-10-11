@@ -15,6 +15,7 @@ import { purchaseBookRow } from "../app/admin/finance/tax-books.ts";
 import {
   depositFromInput,
   depositFromRecord,
+  depositRefundDue,
   depositRefundFromInput,
   depositStage,
   depositStageBadge,
@@ -249,4 +250,42 @@ test("a date from the field moves only that date, never into the future or out o
   const server = read("app/admin/ops-containers.server.ts");
   assert.match(server, /checkShipmentBranchAccess\(normalized, staff\)/);
   assert.match(read("app/api/mobile/ops/v1/jobs/[reference]/containers/[number]/route.ts"), /withStaffSession\(/);
+});
+
+// Review of the round
+test("a deposit KCPL paid and claimed is money due in a month after the claim, less the detention", () => {
+  const today = "2026-10-20";
+  const claimed = depositFromRecord("d5", { shipment_reference: "KCPL-S-1", shipping_line: "CMA CGM", amount: 100000, currency: "NPR", paid_on: "2026-09-18", status: "claimed", claimed_on: "2026-10-09", paid_by: "kcpl", container_numbers: [] });
+  const due = depositRefundDue(claimed, containers, today);
+  assert.equal(due?.date, "2026-11-08");
+  assert.equal(due?.amount, expectedDepositDeduction(claimed, containers, today).expected_back);
+  assert.equal(depositRefundDue({ ...claimed, paid_by: "customer" }, containers, today), null, "the customer's deposit goes back to them");
+  assert.equal(depositRefundDue({ ...claimed, status: "held" }, containers, today), null, "a deposit still out has no date");
+  const server = read("app/admin/finance/cash-flow.server.ts");
+  assert.match(server, /collection\(CONTAINER_DEPOSITS\)\.where\("status", "==", "claimed"\)/);
+  assert.match(server, /deposit\.paid_by === "kcpl" && seen\(deposit\.branch\)/);
+  assert.match(read("app/admin/deposits/deposits-workspace.tsx"), /row\.deposit\.paid_by === "kcpl"/, "the register's total is KCPL's money only");
+});
+
+test("a refused container date stores no gate-receipt photo", () => {
+  const server = read("app/admin/ops-containers.server.ts");
+  assert.ok(server.indexOf("checkContainerMovement(normalized") > 0);
+  assert.ok(server.indexOf("checkContainerMovement(normalized") < server.indexOf("uploadShipmentDocument("), "the date is checked before the photo is stored");
+});
+
+test("a partner's files are what they say they are, bounded per login, and checked before anything is stored", () => {
+  const bills = read("app/partner/partner-bills.server.ts");
+  for (const check of ["partnerFileMatchesType(file.type, data)", "partnerWriteAllowed(session)"]) {
+    assert.ok(bills.indexOf(check) > 0 && bills.indexOf(check) < bills.indexOf("createPayableWithSettlementIntegrity("), `${check} runs before the bill is drafted`);
+  }
+  assert.match(bills, /where\("supplier_id", "==", session\.partnerId\)\.where\("shipment_reference", "==", normalized\)/);
+  assert.match(bills, /upload\.kind === "duplicate"[\s\S]*kcpl_only: true, customer_safe: false/, "a file sent before as a document is linked and kept from the customer");
+  const documents = read("app/partner/partner-data.server.ts");
+  for (const check of ["partnerFileMatchesType(file.type, data)", "partnerWriteAllowed(session)"]) {
+    assert.ok(documents.indexOf(check) > 0 && documents.indexOf(check) < documents.lastIndexOf("uploadShipmentDocument("), `${check} runs before the document is stored`);
+  }
+  assert.match(documents, /validateShipmentDocumentBytes\(ext/);
+  for (const route of ["app/api/partner/shipments/[reference]/bills/route.ts", "app/api/partner/shipments/[reference]/documents/route.ts"]) {
+    assert.match(read(route), /result\.kind === "rate_limited"\) return partnerJson\([^)]*\}, 429\)/);
+  }
 });

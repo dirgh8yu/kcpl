@@ -162,6 +162,16 @@ const movementTitles = { gated_out_on: "left the port", delivered_on: "delivered
  * was taken. Nothing else about the container changes, so a phone can't
  * clear the detention terms set on the Job File.
  */
+/** The same check recordContainerMovement makes, without writing: so a refused date stores no gate-receipt photo. */
+export async function checkContainerMovement(reference: string, id: string, input: { movement: unknown; on: unknown }) {
+  const number = normalizeContainerNumber(id);
+  if (!containerNumberValid(number)) return { kind: "missing" as const };
+  const doc = await firebaseAdminDb().collection("shipments").doc(reference).collection("containers").doc(number).get();
+  if (!doc.exists) return { kind: "missing" as const };
+  const checked = containerMovementUpdate(containerFromRecord(doc.id, doc.data() as Record<string, unknown>), input.movement, input.on, nepalOperationalDate());
+  return checked.ok ? { kind: "ok" as const } : { kind: "invalid" as const, error: checked.error };
+}
+
 export async function recordContainerMovement(reference: string, id: string, input: { movement: unknown; on: unknown; documentId: number | null }, actor: Actor) {
   const number = normalizeContainerNumber(id);
   if (!containerNumberValid(number)) return { kind: "missing" as const };

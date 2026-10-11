@@ -1,14 +1,15 @@
 /*
  * The next thirteen weeks of money in and out, by week and currency: what
- * customers owe by the date it's due, what KCPL owes suppliers, refunds
- * approved, TDS to deposit and VAT to pay. Pure: the server gathers the open documents;
+ * customers owe by the date it's due, container deposits claimed back from
+ * shipping lines, what KCPL owes suppliers, refunds approved, TDS to deposit
+ * and VAT to pay. Pure: the server gathers the open documents;
  * this puts them in weeks and keeps the running balance.
  *
  * Overdue money owed to KCPL is shown but not counted in the balance, since
  * nobody knows when it will come. Overdue money KCPL owes is counted now.
  */
 
-export type CashFlowKind = "invoice" | "bill" | "refund" | "tds" | "vat";
+export type CashFlowKind = "invoice" | "deposit" | "bill" | "refund" | "tds" | "vat";
 
 export type CashFlowEntry = {
   kind: CashFlowKind;

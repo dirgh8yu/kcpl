@@ -27,6 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ refere
   if (result.kind === "file_required") return partnerJson({ ok: false, error: "Attach the invoice (PDF or a photo)." }, 400);
   if (result.kind === "unsupported_type") return partnerJson({ ok: false, error: "Send a PDF or a photo (JPEG, PNG or WebP)." }, 400);
   if (result.kind === "too_large") return partnerJson({ ok: false, error: "That file is over 15 MB." }, 413);
+  if (result.kind === "rate_limited") return partnerJson({ ok: false, error: "Too many uploads from this login just now. Try again in a while." }, 429);
   if (result.kind === "duplicate") return partnerJson({ ok: false, error: "KCPL already has an invoice with that number from you." }, 409);
   if (result.kind === "other_branch") return partnerJson({ ok: false, error: "Your company is set up with another KCPL branch, so this invoice can’t be filed here. Send it to your KCPL contact." }, 409);
   return partnerJson({ ok: false, error: "The invoice couldn’t be sent. Try again." }, 503);

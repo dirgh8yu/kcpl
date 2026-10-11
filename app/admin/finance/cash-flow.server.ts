@@ -1,6 +1,8 @@
 import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin.server";
 import { nepalOperationalDate } from "../../invoice-effective-status";
 import { adToBs } from "../../nepali-calendar";
+import { CONTAINER_DEPOSITS, depositFromRecord, depositRefundDue } from "../../container-deposits";
+import { readShipmentContainers } from "../../shipment-containers.server";
 import { canAccessBranchValue } from "../branch-access-policy";
 import { readAllDocuments } from "../firestore-scan";
 import { qaMockDataEnabled } from "../qa-fixtures";
@@ -14,8 +16,9 @@ import { tdsDepositDue } from "./withheld-tax-policy";
 
 /*
  * What the cash-flow view reads: every open invoice and approved bill, the
- * refunds approved and not yet paid, TDS to deposit and VAT to pay, and the
- * bank balances from the latest statements uploaded.
+ * container deposits claimed back, the refunds approved and not yet paid, TDS
+ * to deposit and VAT to pay, and the bank balances from the latest statements
+ * uploaded.
  */
 
 function text(value: unknown, fallback = "") { return typeof value === "string" ? value : fallback; }
@@ -58,8 +61,9 @@ export async function loadCashFlow(context: KcplStaffContext): Promise<{ kind: "
   try {
     const db = firebaseAdminDb();
     const seen = (branch: unknown) => canAccessBranchValue(context, branch);
-    const [invoices, bills, refunds, tds, accounts, vat] = await Promise.all([
+    const [invoices, deposits, bills, refunds, tds, accounts, vat] = await Promise.all([
       readAllDocuments(db.collection("invoices").where("status", "in", ["issued", "partially_paid", "overdue"])),
+      readAllDocuments(db.collection(CONTAINER_DEPOSITS).where("status", "==", "claimed")),
       readAllDocuments(db.collection("payables").where("status", "in", ["approved", "partially_paid", "overdue"])),
       readAllDocuments(db.collection(CUSTOMER_REFUNDS).where("status", "==", "approved")),
       readAllDocuments(db.collection(WITHHELD_TAX).where("direction", "==", "by_kcpl").where("status", "==", "to_deposit")),
@@ -75,6 +79,19 @@ export async function loadCashFlow(context: KcplStaffContext): Promise<{ kind: "
         date: text(data.due_date) || text(data.issue_date) || null,
         label: `${text(data.customer_name, "Customer")} · ${text(data.tax_invoice_number) || text(data.external_invoice_number) || doc.id}`,
         link: `/admin/finance/invoices/${encodeURIComponent(doc.id)}`,
+      });
+    }
+    const claimed = deposits.docs.map((doc) => depositFromRecord(doc.id, doc.data() as Record<string, unknown>)).filter((deposit) => deposit.paid_by === "kcpl" && seen(deposit.branch));
+    const references = [...new Set(claimed.map((deposit) => deposit.shipment_reference))];
+    const lists = await Promise.all(references.map((reference) => readShipmentContainers(reference)));
+    const boxes = new Map(references.map((reference, index) => [reference, lists[index] ?? []]));
+    for (const deposit of claimed) {
+      const due = depositRefundDue(deposit, boxes.get(deposit.shipment_reference) ?? [], today);
+      if (!due) continue;
+      entries.push({
+        kind: "deposit", direction: "in", currency: deposit.currency, amount: due.amount, date: due.date,
+        label: `Deposit back from ${deposit.shipping_line} · ${deposit.shipment_reference}`,
+        link: `/admin/jobs/${encodeURIComponent(deposit.shipment_reference)}?step=transit#shipment-deposits`,
       });
     }
     for (const doc of bills.docs) {

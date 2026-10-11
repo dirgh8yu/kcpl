@@ -3,6 +3,9 @@ import { addShipmentEvent } from "../shipment-data.server";
 import { uploadShipmentDocument } from "../shipment-documents.server";
 import { shipmentDocumentTypes, type ShipmentDocumentType } from "../shipment-document-types";
 import { readAllDocuments } from "../admin/firestore-scan";
+import { checkQuoteRateLimit, quoteRateLimitPolicies } from "../api/quotes/quote-rate-limit-policy";
+import { firestoreQuoteRateLimitStore } from "../api/quotes/quote-rate-limit.server";
+import { validateShipmentDocumentBytes } from "../shipment-document-policy";
 import type { PartnerSession } from "./partner-auth";
 import { partnerCanSeeShipment, partnerShipmentAccessFromRecord, partnerShipmentRoleLabels } from "./partner-access-policy";
 
@@ -80,16 +83,33 @@ export const PARTNER_UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
 const partnerUploadTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 /** A document from the partner, into KCPL's review queue; the customer sees it only once staff release it. */
+const partnerFileExtensions: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/** The browser's declared type is only a claim: the bytes must be that kind of file, as for every other upload. */
+export function partnerFileMatchesType(contentType: string, data: ArrayBuffer) {
+  const ext = partnerFileExtensions[contentType];
+  return Boolean(ext) && validateShipmentDocumentBytes(ext, new Uint8Array(data)) === null;
+}
+
+/** Documents and invoices from one partner login, bounded per hour. */
+export async function partnerWriteAllowed(session: PartnerSession) {
+  const limit = await checkQuoteRateLimit({ subjects: [{ policy: quoteRateLimitPolicies.partner, value: session.email }], store: firestoreQuoteRateLimitStore() });
+  return limit.allowed;
+}
+
 export async function uploadPartnerDocument(session: PartnerSession, reference: string, file: File, documentType: string) {
   const normalized = reference.trim().toUpperCase();
   const doc = await firebaseAdminDb().collection("shipments").doc(normalized).get();
   if (!doc.exists || !partnerCanSeeShipment(doc.data() as Record<string, unknown>, session.partnerId)) return { kind: "missing" as const };
   if (!partnerUploadTypes.includes(file.type)) return { kind: "unsupported_type" as const };
   if (file.size <= 0 || file.size > PARTNER_UPLOAD_MAX_BYTES) return { kind: "too_large" as const };
+  const data = await file.arrayBuffer();
+  if (!partnerFileMatchesType(file.type, data)) return { kind: "unsupported_type" as const };
+  if (!await partnerWriteAllowed(session)) return { kind: "rate_limited" as const };
   const type = shipmentDocumentTypes.includes(documentType as ShipmentDocumentType) ? documentType as ShipmentDocumentType : "other";
   const result = await uploadShipmentDocument(normalized, {
     filename: file.name.slice(0, 200) || "document", contentType: file.type, sizeBytes: file.size, documentType: type,
-    uploadedBy: session.partnerName, uploadedByEmail: session.email, data: await file.arrayBuffer(), source: "partner", uploadedByPartnerId: session.partnerId,
+    uploadedBy: session.partnerName, uploadedByEmail: session.email, data, source: "partner", uploadedByPartnerId: session.partnerId,
   });
   return result.kind === "created" ? { kind: "created" as const } : result.kind === "duplicate" ? { kind: "duplicate" as const } : { kind: "unavailable" as const };
 }

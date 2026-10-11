@@ -56,6 +56,9 @@ export const quoteRateLimitPolicies = {
   // enquiries and accepting one quote used to lock them out for half an hour.
   // Still bounded, so a runaway client cannot flood the enquiry desk.
   account: { name: "account", limit: 30, windowMs: 60 * MINUTE },
+  // A partner login sending documents and invoices: known to KCPL, and each
+  // invoice is read automatically, so a runaway client is still bounded.
+  partner: { name: "partner", limit: 30, windowMs: 60 * MINUTE },
 } satisfies Record<string, RateLimitPolicy>;
 
 /**
