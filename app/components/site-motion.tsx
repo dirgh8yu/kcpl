@@ -49,5 +49,54 @@ export function SiteMotion() {
     };
   }, [pathname]);
 
+  // The phone menu and the language list are native disclosures, which do not
+  // close on Escape by themselves. Escape closes whichever is open and returns
+  // focus to its button; choosing a link in the menu closes it too, which
+  // matters when the link is the page already showing.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      for (const details of document.querySelectorAll<HTMLDetailsElement>(".site-menu[open], .site-lang[open]")) {
+        details.open = false;
+        details.querySelector("summary")?.focus();
+      }
+    };
+    const onClick = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest(".site-menu-panel a") : null;
+      link?.closest("details")?.removeAttribute("open");
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("click", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onClick);
+    };
+  }, []);
+
+  // The footer's link lists fold on a phone and stand open, not toggleable,
+  // on anything wider. They are rendered open so the links are there without
+  // JavaScript.
+  useEffect(() => {
+    const phone = window.matchMedia("(max-width: 760px)");
+    const folds = [...document.querySelectorAll<HTMLDetailsElement>(".site-footer-fold")];
+    const sync = () => {
+      for (const details of folds) {
+        details.open = !phone.matches;
+        const summary = details.querySelector("summary");
+        if (summary) summary.tabIndex = phone.matches ? 0 : -1;
+      }
+    };
+    const keepOpen = (event: MouseEvent) => {
+      if (!phone.matches && event.target instanceof Element && event.target.closest(".site-footer-summary")) event.preventDefault();
+    };
+    sync();
+    phone.addEventListener("change", sync);
+    document.addEventListener("click", keepOpen);
+    return () => {
+      phone.removeEventListener("change", sync);
+      document.removeEventListener("click", keepOpen);
+    };
+  }, [pathname]);
+
   return null;
 }

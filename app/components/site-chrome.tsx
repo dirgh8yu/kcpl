@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Check, Globe, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, CaretDown, Check, Globe, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { telHref, whatsappHref } from "../contact-links";
 import { guideIndex } from "../guide-data";
@@ -102,17 +102,23 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
           * the header again already closed. */}
         <details className="site-menu">
           <summary className="site-menu-button" aria-label={t("chrome.menu")}><List className="site-menu-open-icon" size={19} aria-hidden="true"/><X className="site-menu-close-icon" size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
+          {/* A full sheet under the header: the pages in large type, the
+            * reference pages smaller beneath them, then the one action. */}
           <div className="site-menu-panel">
-            {navigation.map((item) => (
-              <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
-            ))}
-            <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
-            <Link href={sitePath(locale, "/guides")} className="site-menu-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
-            <Link href={sitePath(locale, "/tools")} className="site-menu-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
-            <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
+            <div className="site-menu-main">
+              {navigation.map((item) => (
+                <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+              ))}
+            </div>
+            <div className="site-menu-more">
+              <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
+              <Link href={sitePath(locale, "/guides")} className="site-menu-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
+              <Link href={sitePath(locale, "/tools")} className="site-menu-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
+              <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
+            </div>
             {/* The header's quote button is hidden on the narrowest screens, so the
               * menu carries it there instead of losing the primary action. */}
-            <Link href={sitePath(locale, "/quote")} className="site-menu-link site-menu-quote">{t("chrome.quote")}</Link>
+            <Link href={sitePath(locale, "/quote")} className="button-primary site-menu-quote">{t("chrome.quote")}</Link>
           </div>
         </details>
       </div>
@@ -130,20 +136,23 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
           <p className="site-footer-tagline">{t("company.tagline")}</p>
           <p className="site-footer-note">{t("company.established")}</p>
         </div>
-        <div className="site-footer-col">
-          <h2 className="site-footer-heading">{t("chrome.footer_company")}</h2>
+        {/* The two link lists fold on a phone, as Apple's footer does; they are
+          * rendered open, and SiteMotion closes them below 761px, so without
+          * JavaScript every link is still there. */}
+        <details className="site-footer-col site-footer-fold" open>
+          <summary className="site-footer-summary"><h2 className="site-footer-heading">{t("chrome.footer_company")}</h2><CaretDown className="site-footer-caret" size={14} weight="bold" aria-hidden="true"/></summary>
           {navigation.map((item) => (
             <Link key={item.path} href={sitePath(locale, item.path)} className="site-footer-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
           ))}
-        </div>
-        <div className="site-footer-col">
-          <h2 className="site-footer-heading">{t("chrome.footer_services")}</h2>
+        </details>
+        <details className="site-footer-col site-footer-fold" open>
+          <summary className="site-footer-summary"><h2 className="site-footer-heading">{t("chrome.footer_services")}</h2><CaretDown className="site-footer-caret" size={14} weight="bold" aria-hidden="true"/></summary>
           <Link href={sitePath(locale, "/quote")} className="site-footer-link">{t("chrome.quote")}</Link>
           <Link href={sitePath(locale, "/track")} className="site-footer-link">{t("chrome.track")}</Link>
           <Link href={sitePath(locale, "/guides")} className="site-footer-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
           <Link href={sitePath(locale, "/tools")} className="site-footer-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
           <Link href="/portal" className="site-footer-link">{t("chrome.portal")}</Link>
-        </div>
+        </details>
         <div className="site-footer-col">
           <h2 className="site-footer-heading">{t("chrome.footer_contact")}</h2>
           <p className="site-footer-address">{company.addressLines.join(", ")}</p>

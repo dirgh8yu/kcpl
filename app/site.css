@@ -1275,6 +1275,7 @@
   .tile-figure img, .intro-figure img { transition: transform 900ms var(--ease-out); }
   .tile:has(.tile-cover):hover .tile-figure img { transform: scale(1.02); }
   .site-root .service-related-link:hover { background: #ebebf0; color: var(--site-ink); }
+  .site-root .site-menu-button:hover { border-color: transparent; background: transparent; color: var(--site-crimson); }
 }
 
 @media (max-width: 1024px) {
@@ -1298,3 +1299,69 @@
   /* Room for the call bar, so the last footer link is never under it. */
   .site-root .site-footer { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* The menu, wherever it stands in for the inline nav: a sheet that fills the
+ * screen under the header, the pages in large type, as Apple's does. */
+.site-root .site-header:has(.site-menu[open]) { background: #fff; }
+.site-root .site-menu-panel { inset: 100% 0 auto; display: flex; flex-direction: column; gap: 28px; height: calc(100dvh - 100%); max-height: none; padding: 20px max(var(--site-gutter), 24px) calc(40px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; background: #fff; box-shadow: none; }
+.site-root :is(.site-menu-main, .site-menu-more) { display: grid; }
+.site-root .site-menu-main .site-menu-link { padding: 7px 0; border: 0; font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.site-root .site-menu-more .site-menu-link { padding: 9px 0; border: 0; color: var(--site-muted); font-size: 17px; font-weight: 500; }
+.site-root .site-menu-link[aria-current="page"] { color: var(--site-crimson); }
+.site-root .site-menu-quote { align-self: flex-start; color: #fff; }
+.site-root-deva .site-menu-main .site-menu-link, .site-root-zh .site-menu-main .site-menu-link { letter-spacing: 0; line-height: 1.4; }
+/* The page behind the open menu stays put. */
+@media (max-width: 1359px) {
+  html:has(.site-root .site-menu[open]) { overflow: hidden; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .site-root .site-menu[open] .site-menu-panel { transition: opacity 200ms var(--ease-out); }
+  .site-root .site-menu[open] :is(.site-menu-link, .site-menu-quote) { transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out); }
+  .site-root .site-menu-main .site-menu-link:nth-child(2) { transition-delay: 15ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(3) { transition-delay: 30ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(4) { transition-delay: 45ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(5) { transition-delay: 60ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(6) { transition-delay: 75ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(7) { transition-delay: 90ms; }
+  .site-root .site-menu-main .site-menu-link:nth-child(8) { transition-delay: 105ms; }
+  .site-root .site-menu-more .site-menu-link, .site-root .site-menu[open] .site-menu-quote { transition-delay: 120ms; }
+  @starting-style {
+    .site-root .site-menu[open] .site-menu-panel { opacity: 0; transform: none; }
+    .site-root .site-menu[open] :is(.site-menu-link, .site-menu-quote) { opacity: 0; transform: translateY(-6px); }
+  }
+}
+
+/* Footer link lists: headings with the links under them on wider screens,
+ * folding rows on a phone (SiteMotion opens and closes them). */
+.site-root .site-footer-summary { display: flex; align-items: center; justify-content: space-between; list-style: none; pointer-events: none; }
+.site-root .site-footer-summary::-webkit-details-marker { display: none; }
+.site-root .site-footer-caret { display: none; }
+.site-root .site-footer-fold .site-footer-link { display: flex; margin-top: 12px; }
+.site-root .site-footer-fold .site-footer-summary + .site-footer-link { margin-top: 0; }
+@media (max-width: 760px) {
+  .site-root .site-footer-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .site-root .site-footer-brand { padding-bottom: 28px; }
+  .site-root .site-footer-fold { border-bottom: 1px solid var(--site-line); }
+  .site-root .site-footer-fold:first-of-type { border-top: 1px solid var(--site-line); }
+  .site-root .site-footer-summary { min-height: 48px; cursor: pointer; pointer-events: auto; }
+  .site-root .site-footer-summary .site-footer-heading { margin: 0; font-size: 14px; }
+  .site-root .site-footer-caret { display: block; color: var(--site-muted); transition: transform 200ms var(--ease-out); }
+  .site-root .site-footer-fold[open] .site-footer-caret { transform: rotate(180deg); }
+  .site-root .site-footer-fold[open] { padding-bottom: 10px; }
+  .site-root .site-footer-fold .site-footer-link { margin-top: 0; }
+  .site-root .site-footer-col:not(.site-footer-fold) { padding-top: 28px; }
+}
+
+/* Motion: photographs settle as their tile arrives, side-by-side tiles a beat
+ * apart, and the opening photograph eases in once. None of it under reduced
+ * motion, where SiteMotion adds no reveal classes either. */
+@media (prefers-reduced-motion: no-preference) {
+  .site-root .tile.motion-reveal .tile-figure img { transition: transform 900ms var(--ease-out); }
+  .site-root .tile.motion-pending .tile-figure img { transform: scale(1.06); }
+  .site-root .tile-grid > .motion-reveal:nth-child(even), .site-root .story-grid > .motion-reveal:nth-child(3n + 2) { transition-delay: 70ms; }
+  .site-root .story-grid > .motion-reveal:nth-child(3n) { transition-delay: 140ms; }
+  .site-root .intro-figure img { transition: transform 1200ms var(--ease-out); }
+  @starting-style { .site-root .intro-figure img { transform: scale(1.04); } }
+}
+/* The open menu carries the quote button itself; the call bar would cover it. */
+.site-root:has(.site-menu[open]) .site-action-bar { display: none; }
