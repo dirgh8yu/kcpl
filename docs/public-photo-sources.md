@@ -4,6 +4,8 @@ The public site shows illustrative photographs. They do not depict KCPL shipment
 
 The site never uses the originals directly. `node scripts/grade-site-photos.mjs` writes one colour-graded copy of each to `public/images/site/`, so pictures from different sources read as one shoot, and `app/site-photos.ts` imports that set. Add a photograph to the script's list, run it, then import the graded file.
 
+The link-preview cards in `public/og/` (one per language) are drawn by `node scripts/build-share-images.mjs` from the graded `road-dawn.jpg`, the home page headline and the site's own fonts; run it again after changing either.
+
 Retired in October 2026 because a brand other than KCPL's was legible in them: `ship-dusk.jpg` (a CMA CGM ship), `port-crane.jpg` (another line's containers) and `air-cargo.jpg` (an airline's livery).
 
 ## Unsplash

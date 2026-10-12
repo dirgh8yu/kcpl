@@ -32,3 +32,13 @@ test("headlines are set in the one sans-serif, and the header carries the guides
   const chrome = read("app/components/site-chrome.tsx");
   assert.match(chrome, /const headerNavigation = \[[\s\S]*?\{ path: "\/guides" \}/);
 });
+
+test("every language has its own share card, small enough for WhatsApp", () => {
+  for (const locale of ["en", "ne", "hi", "zh"]) {
+    const path = new URL(`../public/og/${locale}.jpg`, import.meta.url);
+    assert.ok(existsSync(path), `public/og/${locale}.jpg is missing: run node scripts/build-share-images.mjs`);
+    assert.ok(statSync(path).size < 150 * 1024, `public/og/${locale}.jpg is heavier than 150KB`);
+  }
+  assert.match(read("app/seo.ts"), /\/og\/\$\{locale\}\.jpg/);
+  for (const retired of ["og.jpg", "og.png", "og-cinematic.jpg"]) assert.ok(!existsSync(new URL(`../public/${retired}`, import.meta.url)), `public/${retired} came back`);
+});

@@ -92,20 +92,7 @@
 .site-portal-link { display: inline-flex; align-items: center; gap: 4px; color: var(--site-ink); text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .site-lang { position: relative; font-size: 12px; font-weight: 600; color: var(--site-muted); border-left: 1px solid var(--site-line); padding-inline-start: 16px; }
 .site-lang-button { display: inline-flex; align-items: center; gap: 7px; list-style: none; cursor: pointer; white-space: nowrap; }
-/* The three words share one grid cell, so the box takes the width of the
- * longest and the height of the tallest on its own. No fixed height: Devanagari
- * ascenders and the descender on "Language" both need more room than the Latin
- * line box, and clipping them is what a fixed height does. */
-.site-lang-rotator { display: inline-grid; line-height: 1.45; }
-.site-lang-word { grid-area: 1 / 1; place-self: center start; opacity: 0; }
-.site-lang-word:first-child { opacity: 1; }
 .site-lang-option[aria-current] { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--site-crimson); cursor: default; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .site-lang-word { animation: site-lang-cycle 9s infinite; }
-  .site-lang-word:nth-child(2) { animation-delay: 3s; }
-  .site-lang-word:nth-child(3) { animation-delay: 6s; }
-}
 
 /* The phone action bar: call, WhatsApp, quote, under the thumb. Wider screens
  * have the header's quote button and the footer's number instead. */
@@ -137,13 +124,6 @@
   .site-footer-link { display: flex; align-items: center; min-height: 44px; }
   .site-footer-base .site-footer-link { display: inline-flex; }
   .network-map-filter { min-width: 44px; min-height: 44px; }
-}
-
-/* Each word holds for a third of the cycle and crossfades at the edges. */
-@keyframes site-lang-cycle {
-  0%, 2% { opacity: 0; }
-  5%, 28% { opacity: 1; }
-  33%, 100% { opacity: 0; }
 }
 .site-lang-button::-webkit-details-marker { display: none; }
 .site-lang[open] .site-lang-button { color: var(--site-ink); }
@@ -1080,6 +1060,9 @@
 .site-root .site-nav-link { padding-block: 6px; border-bottom: 0; color: rgb(29 29 31 / .78); font-size: 13px; font-weight: 400; }
 .site-root .site-nav-link[aria-current="page"] { color: var(--site-ink); font-weight: 600; }
 .site-root .site-portal-link, .site-root .site-lang { font-size: 13px; font-weight: 400; }
+.site-root .site-lang { color: rgb(29 29 31 / .78); }
+.site-root .site-lang-panel { inset-inline: auto 0; min-width: 168px; padding: 6px; border-color: var(--site-line-soft); border-radius: 14px; box-shadow: 0 12px 40px rgb(0 0 0 / .12); }
+.site-root .site-lang-option { padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; }
 .site-root .site-cta { min-height: 32px; padding: 6px 15px; border-radius: 980px; font-size: 13px; font-weight: 500; }
 .site-root .site-menu-button { min-height: 40px; padding: 8px 10px; border: 0; font-weight: 500; }
 
@@ -1178,6 +1161,20 @@
 .site-root .reference-index-copy { font-size: 17px; line-height: 1.5; }
 .site-root .reference-index-open { gap: 3px; color: var(--site-crimson); font-size: 17px; font-weight: 400; }
 .site-root .freight-guide-eyebrow { font-size: 15px; font-weight: 600; }
+/* The quote form, calmer: each section a plain title with its note beneath,
+ * no icons and no rules between them. */
+.site-root .quote-form-section { margin-bottom: clamp(40px, 5vw, 56px); padding-top: 0; border-top: 0; }
+.site-root .quote-form-section > legend { display: grid; gap: 4px; padding: 0; font-family: inherit; font-size: clamp(24px, 2.2vw, 28px); letter-spacing: -0.02em; }
+.site-root-deva .quote-form-section > legend, .site-root-zh .quote-form-section > legend { letter-spacing: 0; }
+.site-root .quote-form-section > legend small { margin: 0; color: var(--site-muted); font-family: inherit; font-size: 15px; font-weight: 400; letter-spacing: 0; }
+.site-root .quote-form-grid { margin-top: 20px; }
+.site-root :is(.quote-form-grid label > span, .quote-field-dimensions > span) { color: var(--site-ink); font-size: 14px; font-weight: 600; }
+.site-root .quote-progress > div { color: var(--site-muted); font-size: 14px; font-weight: 500; }
+.site-root .quote-progress progress { height: 6px; overflow: hidden; border-radius: 3px; }
+.site-root .quote-progress progress::-webkit-progress-bar { border-radius: 3px; background: var(--site-line-soft); }
+.site-root .quote-progress progress::-webkit-progress-value { border-radius: 3px; background: var(--site-crimson); }
+.site-root .quote-progress progress::-moz-progress-bar { border-radius: 3px; background: var(--site-crimson); }
+.site-root .quote-form-grid :is(input, select, textarea):focus { border-color: var(--site-crimson); box-shadow: 0 0 0 4px rgb(220 20 60 / .12); }
 /* The quote form: rounded fields, and the summary as a black tile. */
 .site-root .quote-form-grid :is(input, select, textarea) { border-color: var(--site-line); border-radius: 12px; }
 .site-root .quote-email-panel { border-radius: var(--tile-radius); background: #000; }

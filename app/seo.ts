@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
-import { siteLocales, sitePath, type SiteLocale } from "./site-i18n";
+import { siteLocales, sitePath, siteTranslator, type SiteLocale } from "./site-i18n";
 
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kapileshworcargo.com.np").replace(/\/$/, "");
 
 export const siteName = "Kapileshwor Cargo Pvt. Ltd.";
-/* 1200x630 is the size every social scraper crops to, and JPEG keeps the card
- * under 100KB: the 1.7MB PNG this replaced was above WhatsApp's preview ceiling,
- * so the link shared in Nepal most often was the one that showed no image. */
-export const socialImage = {
-  url: `${siteUrl}/og.jpg`,
-  width: 1200,
-  height: 630,
-  type: "image/jpeg",
-  alt: "KCPL — Moving Nepal. Connecting the World.",
-};
+/* The link preview: one card per language (scripts/build-share-images.mjs),
+ * so a Nepali page shared on WhatsApp previews in Nepali. 1200x630 is the size
+ * every social scraper crops to, and JPEG keeps each card near 50KB, well under
+ * WhatsApp's preview ceiling. */
+export function socialImageFor(locale: SiteLocale) {
+  return {
+    url: `${siteUrl}/og/${locale}.jpg`,
+    width: 1200,
+    height: 630,
+    type: "image/jpeg",
+    alt: `Kapileshwor Cargo: ${siteTranslator(locale)("home.hero_title")}`,
+  };
+}
+
+export const socialImage = socialImageFor("en");
 
 export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
@@ -74,13 +79,13 @@ export function createPageMetadata({
       title: resolvedTitle,
       description,
       url,
-      images: [socialImage],
+      images: [socialImageFor(localeFromPath(path).locale)],
     },
     twitter: {
       card: "summary_large_image",
       title: resolvedTitle,
       description,
-      images: [socialImage.url],
+      images: [socialImageFor(localeFromPath(path).locale).url],
     },
   };
 }

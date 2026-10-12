@@ -72,20 +72,14 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
         </nav>
         <div className="site-header-actions">
           <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
-          {/* The trigger cycles the word for "language" through the scripts the
-            * site speaks, so a reader who cannot read the others still
-            * recognises the control. Nepali and Hindi share भाषा, so three
-            * words cover four languages. The rotation is decoration: the
-            * accessible name is fixed and the globe carries the meaning when
-            * motion is switched off. */}
+          {/* The globe and the language the page is in, as Apple's footer
+            * does: the globe carries the meaning for a reader who cannot read
+            * the current one. The accessible name starts with the visible
+            * word so voice control can say what it sees. */}
           <details className="site-lang">
-            <summary className="site-lang-button" aria-label={t("chrome.language")}>
+            <summary className="site-lang-button" aria-label={`${siteLocaleLabels[locale]}, ${t("chrome.language")}`}>
               <Globe size={16} aria-hidden="true"/>
-              <span className="site-lang-rotator" aria-hidden="true">
-                <span className="site-lang-word">Language</span>
-                <span className="site-lang-word">भाषा</span>
-                <span className="site-lang-word">语言</span>
-              </span>
+              <span className="site-lang-current">{siteLocaleLabels[locale]}</span>
             </summary>
             <div className="site-lang-panel">
               {siteLocales.map((entry) => (

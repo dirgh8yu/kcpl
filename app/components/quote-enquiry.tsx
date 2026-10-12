@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { requestChallengeToken, turnstileSiteKey } from "./turnstile-challenge";
-import { ArrowUpRight, CheckCircle, Envelope, MapPin, Ruler, Scales } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import type { SiteLocale } from "../site-i18n";
 import { trackAnalyticsEvent } from "./analytics";
@@ -150,7 +150,7 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
     </div>
     <div className="quote-enquiry-main">
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><MapPin size={18}/><span>{c.route}</span><small>{c.required}</small></legend>
+        <legend><span>{c.route}</span><small>{c.required}</small></legend>
         <div className="quote-form-grid quote-form-grid-route">
           <label><span>{c.origin}</span><input value={values.origin} onChange={(event) => setField("origin", event.target.value)} placeholder={c.cityCountry} autoComplete="address-level2" maxLength={120} required/></label>
           <label><span>{c.destination}</span><input value={values.destination} onChange={(event) => setField("destination", event.target.value)} placeholder={c.cityCountry} autoComplete="address-level2" maxLength={120} required/></label>
@@ -159,7 +159,7 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
       </fieldset>
 
       <fieldset className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><Scales size={18}/><span>{c.cargo}</span><small>{c.available}</small></legend>
+        <legend><span>{c.cargo}</span><small>{c.available}</small></legend>
         <a className="quote-skip" href="#quote-contact">{c.skipCargo}</a>
         <div className="quote-form-grid quote-form-grid-cargo">
           <label className="quote-field-wide"><span>{c.cargoType}</span><input value={values.cargoType} onChange={(event) => setField("cargoType", event.target.value)} placeholder={c.cargoExample} maxLength={160}/></label>
@@ -171,7 +171,7 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
       </fieldset>
 
       <fieldset id="quote-contact" className="quote-form-section" disabled={submitState.status === "submitting"}>
-        <legend><Ruler size={18}/><span>{c.contact}</span><small>{c.contactRequired}</small></legend>
+        <legend><span>{c.contact}</span><small>{c.contactRequired}</small></legend>
         <div className="quote-form-grid quote-form-grid-contact">
           <label><span>{c.name}</span><input value={values.contactName} onChange={(event) => setField("contactName", event.target.value)} autoComplete="name" placeholder={c.nameExample} maxLength={120} required/></label>
           <label><span>{c.email}</span><input value={values.contactEmail} onChange={(event) => setField("contactEmail", event.target.value)} type="email" autoComplete="email" placeholder={c.emailExample} maxLength={254} required/></label>
@@ -184,7 +184,7 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
 
     <aside className="quote-email-panel">
       <div className="quote-email-panel-index">{c.review}</div>
-      {submitState.status === "success" ? <CheckCircle size={30} strokeWidth={1.5}/> : <Envelope size={28} strokeWidth={1.25}/>} 
+      {submitState.status === "success" ? <CheckCircle size={30} strokeWidth={1.5}/> : null}
       <h2 ref={confirmationHeading} tabIndex={submitState.status === "success" ? -1 : undefined}>{submitState.status === "success" ? c.received : c.sendTo}</h2>
       <p>{submitState.status === "success" ? c.receivedCopy : c.reviewCopy}</p>
       <div className="quote-email-summary">
@@ -193,7 +193,7 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
         <span><small>{c.dimensions}</small><strong>{dimensions}</strong></span>
         {submitState.status === "success" && <span><small>{c.reference}</small><strong>{submitState.reference}</strong></span>}
       </div>
-      {submitState.status !== "success" && <button type="submit" disabled={submitState.status === "submitting"}>{submitState.status === "submitting" ? c.submitting : c.submit} <ArrowUpRight size={18}/></button>}
+      {submitState.status !== "success" && <button type="submit" disabled={submitState.status === "submitting"}>{submitState.status === "submitting" ? c.submitting : c.submit}</button>}
       {submitState.status === "success" && <p className="quote-email-handoff" role="status" aria-live="polite">{c.success(submitState.reference)}</p>}
       {submitState.status === "error" && <p className="quote-email-handoff" role="alert">{submitState.message} {c.emailFallback} <a href={mailtoHref}>{c.emailAction}</a>.</p>}
       <small className="quote-email-note">{c.privacy}</small>
