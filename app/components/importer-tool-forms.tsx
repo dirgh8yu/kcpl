@@ -246,7 +246,7 @@ export function VolumeEstimator({ locale, copy, shared, quotePath }: { locale: S
       query.set("length", used[0].length.trim()); query.set("width", used[0].width.trim()); query.set("height", used[0].height.trim()); query.set("dimensionUnit", units.length);
     }
     const search = query.toString();
-    if (search) quoteHref = `${quotePath}?${search}`;
+    if (search) quoteHref = `${quotePath}${quotePath.includes("?") ? "&" : "?"}${search}`;
   }
 
   return (

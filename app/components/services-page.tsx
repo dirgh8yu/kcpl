@@ -62,7 +62,6 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
       <section className="service-banner">
         <Image src={service.image} alt="" fill sizes="100vw" priority className={`service-banner-image service-photo-${service.key}`}/>
         <div className="service-banner-copy">
-          <p className="eyebrow">{t("services.title")}</p>
           <h1 className="section-title">{t(text(service.key, "title"))}</h1>
           <p className="section-intro">{t(text(service.key, "summary"))}</p>
         </div>

@@ -1,4 +1,5 @@
-import { QuoteEnquiry, QuoteValues } from "../../components/quote-enquiry";
+import type { QuoteValues } from "../../components/quote-enquiry";
+import { QuoteConcierge } from "../../components/quote-concierge";
 import { SiteShell } from "../../components/site-chrome";
 import { createPageMetadata } from "../../seo";
 import { siteText } from "../../site-i18n";
@@ -10,11 +11,7 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
   const query = await searchParams;
   return (
     <SiteShell locale="zh" path="/quote">
-      <section className="section page-head">
-        <h1 className="section-title">{siteText("zh", "quote.title")}</h1>
-        <p className="section-intro">{siteText("zh", "quote.intro")}</p>
-      </section>
-      <section className="section quote-section"><QuoteEnquiry initial={query} locale="zh"/></section>
+      <QuoteConcierge locale="zh" initial={query} title={siteText("zh", "quote.title")} intro={siteText("zh", "quote.intro")}/>
     </SiteShell>
   );
 }

@@ -29,6 +29,7 @@ import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { tmsModes, type TmsMode } from "../rating/tms-rating";
 import { ensureBookingArtifacts, TMS_BOOKING_ARTIFACT_SEED_VERSION } from "./tms-booking-artifacts.server";
+import { createPartnerNotification } from "../../partner/partner-notifications.server";
 import {
   bookingRetryDecision,
   repeatedRejectedTenderDecision,
@@ -249,7 +250,7 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
   const now = new Date().toISOString();
   const orderEventRef = orderRef.collection("events").doc(eventId());
   try {
-    return await db.runTransaction(async (transaction) => {
+    const outcome = await db.runTransaction(async (transaction) => {
       const order = await transaction.get(orderRef);
       if (!order.exists) return { kind: "missing_order" as const };
       const orderData = order.data() as Record<string, unknown>;
@@ -327,6 +328,18 @@ export async function createTmsTender(input: TenderCreateInput, actor: Actor, st
       });
       return { kind: "created" as const, tender: tenderFromData(id, data)! };
     });
+    if (outcome.kind === "created") {
+      const tender = outcome.tender;
+      await createPartnerNotification({
+        partnerId: tender.partner_id,
+        type: "tender",
+        title: "New tender from KCPL",
+        detail: `${tender.tender_reference} · ${tender.origin} → ${tender.destination} · ${tender.currency} ${tender.offered_cost.toFixed(tender.currency === "JPY" ? 0 : 2)} · respond by ${tender.response_due_at}`,
+        href: `/partner/tenders/${encodeURIComponent(tender.id)}`,
+        dedupeKey: `tender-sent:${tender.id}`,
+      }).catch(() => undefined);
+    }
+    return outcome;
   } catch {
     return { kind: "unavailable" as const };
   }
@@ -498,6 +511,45 @@ export async function respondToTmsTender(tenderIdValue: string, input: TenderRes
 export async function respondToTmsTenderFromEdi990(tenderIdValue: string, input: Edi990TransitionInput, actor: Actor) {
   if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
   return applyTenderResponse(tenderIdValue, { status: input.status, note: input.note, counterCost: null, counterCurrency: null }, actor, null, input.expectedUpdatedAt ?? null, input.expectedStatus ?? null, input);
+}
+
+export type PartnerTenderResponder = {
+  partnerId: string;
+  partnerName: string;
+  displayName: string;
+  email: string;
+};
+
+/**
+ * A carrier's response from the partner portal.
+ *
+ * The partner is and remains the actor on the event, but the response goes
+ * through the same tender transaction as staff and EDI. Privilege is checked
+ * here — this session may answer only a tender sent to its own partner id —
+ * and no staff capability is invented or borrowed for it.
+ */
+export async function respondToTmsTenderFromPartner(
+  tenderIdValue: string,
+  input: TenderResponseInput,
+  partner: PartnerTenderResponder,
+) {
+  if (!firebaseRuntimeConfigured()) return { kind: "unavailable" as const };
+  if (input.status === "countered" && (input.counterCost === null || input.counterCost === undefined || !Number.isFinite(input.counterCost) || input.counterCost < 0 || !input.counterCurrency || !crmCurrencies.includes(input.counterCurrency))) {
+    return { kind: "invalid_counter" as const };
+  }
+  const preflight = await tenderSnapshot(tenderIdValue);
+  if (!preflight) return { kind: "missing" as const };
+  if (preflight.tender.partner_id !== partner.partnerId.trim().toUpperCase()) return { kind: "forbidden" as const };
+  if (preflight.tender.status !== "sent") return { kind: "invalid_transition" as const };
+  return applyTenderResponse(
+    preflight.tender.id,
+    { ...input, note: input.note?.trim().slice(0, 1000) },
+    { name: `${partner.displayName} at ${partner.partnerName} (partner portal)`, email: partner.email },
+    null,
+    preflight.tender.updated_at,
+    preflight.tender.status,
+    undefined,
+  );
 }
 
 export async function cancelTmsTender(tenderIdValue: string, note: string, actor: Actor, staff: KcplStaffContext) {

@@ -151,6 +151,10 @@ export function productionRuntimeReadiness(env: RuntimeEnv = process.env): Produ
     { key: "KCPL_TRACKING_INGEST_SECRET", value: text(env, "KCPL_TRACKING_INGEST_SECRET") },
   ], "KCPL_TRACKING_INGEST_SECRET is missing; machine tracking updates answer 503 and shipment visibility depends entirely on staff entry.");
 
+  capability(checks, "free-time-ingest", "Carrier free-time ingestion", [
+    { key: "KCPL_FREE_TIME_INGEST_SECRET", value: text(env, "KCPL_FREE_TIME_INGEST_SECRET") || text(env, "KCPL_TRACKING_INGEST_SECRET") },
+  ], "KCPL_FREE_TIME_INGEST_SECRET is missing; carrier free-time allowances must be entered by staff. The tracking secret can be reused if no separate feed credential is issued.");
+
   capability(checks, "pickup-integration", "Pickup integration", [
     { key: "KCPL_PICKUP_INTEGRATION_SECRET", value: text(env, "KCPL_PICKUP_INTEGRATION_SECRET") },
   ], "KCPL_PICKUP_INTEGRATION_SECRET is missing; machine pickup callbacks answer 503.");

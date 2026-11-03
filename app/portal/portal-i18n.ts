@@ -326,9 +326,11 @@ const en = {
   "ship.current_location": "Current location",
   "ship.eta": "Estimated arrival",
   "ship.carrier_reference": "Carrier reference",
-  "ship.milestones_title": "Milestones",
-  "ship.no_milestones_title": "No milestones recorded yet",
-  "ship.no_milestones_description": "Updates appear here as KCPL progresses the shipment.",
+  "ship.activity_title": "Activity",
+  "ship.activity_lead": "Milestones, paperwork and confirmations in one record.",
+  "ship.activity_confirmed": "Delivery confirmed",
+  "ship.activity_empty_title": "No activity recorded yet",
+  "ship.activity_empty_description": "Updates, documents and confirmations appear here as KCPL progresses the shipment.",
   "ship.sent_by_you_suffix": " · sent by you",
 
   /* Delivery confirmation */
@@ -617,6 +619,19 @@ const en = {
   "mail.see_invoice_line": "See the invoice and pay online: {url}",
   "mail.inv_sent_because": "Sent to {customer} because this invoice is on your KCPL account. You can turn these emails off in the portal under Notifications.",
 
+  /* Online payment */
+  "pay.title": "Pay online",
+  "pay.open": "Pay online",
+  "pay.amount": "Amount to pay",
+  "pay.amount_hint": "The full balance, or part of it",
+  "pay.gateway": "Payment method",
+  "pay.rate": "Paid in rupees at NPR {rate} per {currency}",
+  "pay.minimum": "Minimum online payment NPR {amount}",
+  "pay.submit": "Continue to payment",
+  "pay.working": "Opening payment…",
+  "pay.note": "You will continue to the gateway's secure page. KCPL does not store your card or wallet credentials.",
+  "pay.failed": "The payment could not be started. Try again, or send a payment receipt instead.",
+
   /* Push notifications on this device */
   "push.title": "Notifications on your phone",
   "push.turn_on": "Turn on notifications",
@@ -900,9 +915,11 @@ const ne: Record<PortalTextKey, string> = {
   "ship.current_location": "हालको स्थान",
   "ship.eta": "अनुमानित आगमन",
   "ship.carrier_reference": "क्यारियर सन्दर्भ",
-  "ship.milestones_title": "मुख्य चरण",
-  "ship.no_milestones_title": "अहिलेसम्म कुनै चरण दर्ता भएको छैन",
-  "ship.no_milestones_description": "KCPL ले ढुवानी अघि बढाउँदै जाँदा अद्यावधिक यहाँ देखिनेछ।",
+  "ship.activity_title": "गतिविधि",
+  "ship.activity_lead": "मुख्य चरण, कागजात र प्राप्ति पुष्टि एउटै अभिलेखमा।",
+  "ship.activity_confirmed": "डेलिभरी पुष्टि भयो",
+  "ship.activity_empty_title": "अहिलेसम्म कुनै गतिविधि दर्ता भएको छैन",
+  "ship.activity_empty_description": "KCPL ले ढुवानी अघि बढाउँदै जाँदा अद्यावधिक, कागजात र पुष्टि यहाँ देखिनेछ।",
   "ship.sent_by_you_suffix": " · तपाईंले पठाएको",
 
   "msg.title": "KCPL सँग सन्देश",
@@ -1183,6 +1200,18 @@ const ne: Record<PortalTextKey, string> = {
   "mail.see_invoice": "बिल हेर्नुहोस्",
   "mail.see_invoice_line": "बिल हेर्नुहोस् र अनलाइन तिर्नुहोस्: {url}",
   "mail.inv_sent_because": "यो बिल तपाईंको KCPL खातामा भएकाले {customer} लाई पठाइएको। यी इमेल पोर्टलको सूचना सेटिङबाट बन्द गर्न सकिन्छ।",
+
+  "pay.title": "अनलाइन भुक्तानी",
+  "pay.open": "अनलाइन तिर्नुहोस्",
+  "pay.amount": "तिर्ने रकम",
+  "pay.amount_hint": "पूरै बाँकी रकम वा त्यसको केही भाग",
+  "pay.gateway": "भुक्तानीको तरिका",
+  "pay.rate": "नेपाली रुपैयाँमा, प्रति {currency} NPR {rate} दरले",
+  "pay.minimum": "अनलाइन भुक्तानीको न्यूनतम रकम NPR {amount}",
+  "pay.submit": "भुक्तानीमा जानुहोस्",
+  "pay.working": "भुक्तानी खोल्दै…",
+  "pay.note": "तपाईं गेटवेको सुरक्षित पृष्ठमा जानुहुनेछ। KCPL ले तपाईंको कार्ड वा वालेटको विवरण राख्दैन।",
+  "pay.failed": "भुक्तानी सुरु गर्न सकिएन। फेरि प्रयास गर्नुहोस् वा भुक्तानीको रसिद पठाउनुहोस्।",
 
   "push.title": "तपाईंको फोनमा सूचना",
   "push.turn_on": "सूचना खोल्नुहोस्",

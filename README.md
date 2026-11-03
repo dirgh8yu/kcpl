@@ -129,6 +129,10 @@ access. Management provisions logins at **Organisation → Customer Portal Acces
 See [`docs/customer-portal.md`](docs/customer-portal.md) for the authority model,
 redaction rules, provisioning runbook and known gaps.
 
+Carrier tenders, quote attribution, the shipment activity feed, web payments and
+carrier free-time ingestion are described in
+[`docs/connected-features.md`](docs/connected-features.md).
+
 ## Security notes
 
 - Never commit production secrets, private keys or service-account JSON.

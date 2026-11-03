@@ -133,7 +133,7 @@ test("the quote route checks attestation before it does CRM or Firestore work", 
 });
 
 test("the form only asks for a token when a site key is configured", () => {
-  const form = readFileSync(new URL("../app/components/quote-enquiry.tsx", import.meta.url), "utf8");
+  const form = readFileSync(new URL("../app/components/quote-concierge.tsx", import.meta.url), "utf8");
   const helper = readFileSync(
     new URL("../app/components/turnstile-challenge.ts", import.meta.url),
     "utf8",

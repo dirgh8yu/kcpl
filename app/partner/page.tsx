@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Truck } from "lucide-react";
 import { SignInLayout } from "../admin/sign-in-layout";
-import { OpsBadge, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../admin/operations-ui";
+import { OpsBadge, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsMono, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../admin/operations-ui";
 import { shipmentStatusLabels, type ShipmentStatus } from "../shipment-types";
 import { getPartnerAccess } from "./partner-auth";
 import { listPartnerShipments } from "./partner-data.server";
+import { listPartnerTenders } from "./partner-tenders.server";
+import { listPartnerNotifications } from "./partner-notifications.server";
+import { buildPartnerScorecard } from "./partner-scorecard";
 import { PartnerLogin } from "./partner-login";
 import { PartnerShell } from "./partner-shell";
 
@@ -23,10 +26,32 @@ export default async function PartnerHome() {
   if (access.kind === "unconfigured") return <SignInLayout title="KCPL partner portal" lead="The partner portal isn’t set up on this site yet."/>;
   if (access.kind === "signed-out") return <SignInLayout title="Sign in to the KCPL partner portal" help="No login yet? Ask your KCPL contact to add you."><PartnerLogin/></SignInLayout>;
   const shipments = await listPartnerShipments(access.session).catch(() => null);
+  const tenderResult = await listPartnerTenders(access.session).catch(() => ({ kind: "unavailable" as const }));
+  const tenders = tenderResult.kind === "ready" ? tenderResult.tenders : [];
+  const scorecard = buildPartnerScorecard(tenders);
+  const notifications = await listPartnerNotifications(access.session, 20).catch(() => []);
+  const unread = notifications.filter((notification) => !notification.read_at).slice(0, 5);
   return <PartnerShell session={access.session}>
     <OpsPage>
       <OpsPageHeader eyebrow={access.session.partnerName} title="Shipments" description="The shipments KCPL has shared with you. Open one to post a milestone or send a document."/>
       <div className="ops-content">
+        {scorecard.tenders ? <OpsMetricStrip columns={4}>
+          <OpsMetric label="Tenders" value={scorecard.tenders} detail={`${scorecard.awaiting} awaiting your response`}/>
+          <OpsMetric label="Response rate" value={`${scorecard.response_rate}%`} detail={`${scorecard.responded} answered`}/>
+          <OpsMetric label="Offer acceptance" value={`${scorecard.acceptance_rate}%`} detail={`${scorecard.accepted} accepted`}/>
+          <OpsMetric label="On time" value={`${scorecard.on_time_rate}%`} detail={`${scorecard.on_time} inside deadline`}/>
+        </OpsMetricStrip> : null}
+        {unread.length ? <OpsSurface title="Notifications" action={<OpsBadge tone="warning">{unread.length} unread</OpsBadge>}>
+          <ul className="portal-document-list">
+            {unread.map((notification) => <li key={notification.id}>
+              <span className="portal-document-main">
+                <Link href={notification.href} className="ops-cell-link"><strong>{notification.title}</strong></Link>
+                <span>{notification.detail}</span>
+              </span>
+              <span className="ops-cell-secondary">{day(notification.created_at)}</span>
+            </li>)}
+          </ul>
+        </OpsSurface> : null}
         <OpsSurface title={shipments ? `${shipments.length} shipment${shipments.length === 1 ? "" : "s"}` : "Shipments"} flush>
           {shipments === null ? <OpsEmptyState compact icon={<Truck size={17} strokeWidth={1.75} aria-hidden="true"/>} title="Shipments didn’t load" description="Try again in a minute."/>
             : shipments.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table" data-row-link>

@@ -6,6 +6,7 @@ import { telHref, whatsappHref } from "../contact-links";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { SiteShell } from "./site-chrome";
+import { TrackingLinkEntry } from "./tracking-link-entry";
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
@@ -42,18 +43,17 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
       </section>
       <section className="section section-proof">
         <div className="section-head">
-          <p className="eyebrow">{t("home.proof_eyebrow")}</p>
           <h2 className="section-title">{t("sectors.cases_title")}</h2>
           <p className="section-intro">{t("sectors.cases_intro")}</p>
         </div>
         <div className="record-list">
           {cases.map((item) => (
             <article key={item.title} className="record">
-              <p className="proof-kicker">{item.kicker}</p>
               <div>
                 <h3 className="proof-title">{item.title}</h3>
                 <p className="proof-copy">{item.copy}</p>
                 <p className="proof-meta">{item.meta}</p>
+                <p className="record-kicker">{item.kicker}</p>
               </div>
             </article>
           ))}
@@ -189,6 +189,7 @@ export function TrackPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("track.intro")}</p>
       </section>
       <section className="section about-split track-options">
+        <TrackingLinkEntry locale={locale}/>
         <div>
           <h2 className="service-block-title">{t("track.portal_title")}</h2>
           <p className="about-copy">{t("track.portal_copy")}</p>

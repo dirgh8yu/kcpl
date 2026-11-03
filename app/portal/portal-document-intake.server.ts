@@ -1,5 +1,7 @@
 import { createDirectNotification } from "../admin/notifications/notification-centre.server";
+import { documentReadingConfigured, readShipmentDocument } from "../admin/document-reading.server";
 import { firebaseAdminDb } from "../firebase-admin.server";
+import { after } from "next/server";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../shipment-document-types";
 import { validateShipmentDocumentBytes } from "../shipment-document-policy";
 import { uploadShipmentDocument } from "../shipment-documents.server";
@@ -110,6 +112,18 @@ export async function receivePortalDocument(session: PortalSession, reference: s
     // A notification failure must not turn a successful upload into an error
     // the customer is asked to retry, so it is awaited but never thrown.
     await notifyAssignedOperator(admitted.normalized, documentType, session.customerName, file.name);
+
+    // Read the customer's paper once, outside the request. Staff still decide
+    // whether the extracted fields are applied; this only saves them opening
+    // every PDF to find the invoice number, dates or containers.
+    if (documentReadingConfigured()) {
+      const documentId = result.document.id;
+      after(async () => {
+        await readShipmentDocument(admitted.normalized, documentId, { name: "KCPL document reader", email: "reader@kcpl.system" }).catch((error) => {
+          console.error("KCPL automatic document reading failed", error);
+        });
+      });
+    }
 
     return { status: 201, body: { ok: true, message: "Sent to KCPL. It will show as confirmed once the team has checked it." } };
   } catch (error) {

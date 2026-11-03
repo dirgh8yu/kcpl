@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { CircleDot } from "lucide-react";
+import { CircleDot, FileText, Receipt } from "lucide-react";
 import { OpsBadge, OpsDetailGrid, OpsDetailItem, OpsEmptyState, OpsMono, OpsPage, OpsPageHeader, OpsSurface, OpsTimeline } from "../../../admin/operations-ui";
 import { shipmentDocumentTypeLabels, type ShipmentDocumentType } from "../../../shipment-document-types";
 import { shipmentStatusLabels, type ShipmentStatus } from "../../../shipment-types";
@@ -11,6 +11,7 @@ import { PartnerShipmentActions } from "./partner-shipment-actions";
 import { PartnerBills } from "./partner-bills";
 import { listPartnerBills } from "../../partner-bills.server";
 import { nepalOperationalDate } from "../../../invoice-effective-status";
+import { mergeTimeline, portalTimeline } from "../../../shipment-timeline";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,18 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
   if (!detail) notFound();
   const { shipment, events, documents } = detail;
   const bills = await listPartnerBills(access.session, shipment.reference).catch(() => []);
+  const activity = mergeTimeline([
+    ...portalTimeline(events, documents, null),
+    ...bills.map((bill) => ({
+      id: `bill:${bill.reference}`,
+      at: bill.invoice_date,
+      kind: "bill" as const,
+      title: `Invoice ${bill.invoice_number}`,
+      detail: `${bill.currency} ${bill.total.toFixed(2)} · ${bill.status_label}`,
+      location: null,
+      audience: "partner" as const,
+    })),
+  ]);
   return <PartnerShell session={access.session}>
     <OpsPage>
       <OpsPageHeader
@@ -54,10 +67,10 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
               <OpsDetailItem label="Your role">{shipment.role}</OpsDetailItem>
             </OpsDetailGrid>
           </OpsSurface> : null}
-          <OpsSurface title="Milestones">
+          <OpsSurface title="Activity" description="Milestones, documents and invoices in one record.">
             <OpsTimeline
-              entries={events.map((event) => ({ id: event.id, title: event.title, meta: when(event.event_time), body: <>{event.details ? <p className="portal-timeline-detail">{event.details}</p> : null}{[event.location, event.author_name].filter(Boolean).length ? <span className="portal-timeline-location">{[event.location, event.author_name].filter(Boolean).join(" · ")}</span> : null}</>, icon: <CircleDot size={12} strokeWidth={2} aria-hidden="true"/> }))}
-              empty={<OpsEmptyState compact icon={<CircleDot size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No milestones yet" description="Post the first one above."/>}
+              entries={activity.map((entry) => ({ id: entry.id, title: entry.title, meta: when(entry.at), body: <>{entry.detail ? <p className="portal-timeline-detail">{entry.detail}</p> : null}{entry.location ? <span className="portal-timeline-location">{entry.location}</span> : null}</>, icon: entry.kind === "document" ? <FileText size={12} strokeWidth={2} aria-hidden="true"/> : entry.kind === "bill" ? <Receipt size={12} strokeWidth={2} aria-hidden="true"/> : <CircleDot size={12} strokeWidth={2} aria-hidden="true"/> }))}
+              empty={<OpsEmptyState compact icon={<CircleDot size={16} strokeWidth={1.75} aria-hidden="true"/>} title="No activity yet" description="Post the first milestone above."/>}
             />
           </OpsSurface>
           <OpsSurface title="Documents you sent" description="KCPL reviews each one before it goes any further.">

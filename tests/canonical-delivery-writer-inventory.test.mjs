@@ -297,8 +297,8 @@ const reviewedClassifications = [
   },
   {
     file: "app/shipment-free-time.server.ts",
-    category: "F",
-    rationale: "Read-only accessor for the free-time block on a shipment. One get, no mutation; writing free time goes through the namespaced admin route.",
+    category: "A",
+    rationale: "Reads the free-time block and writes only the namespaced free_time_* fields, one idempotency key and a Job File activity line for a carrier feed. It never writes shipment status, ETA or any canonical delivery field.",
   },
   {
     file: "app/portal/portal-notifications.server.ts",

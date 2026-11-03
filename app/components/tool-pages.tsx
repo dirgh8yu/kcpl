@@ -16,10 +16,9 @@ export function ToolsIndexPage({ locale }: { locale: SiteLocale }) {
       </section>
       <section className="section reference-index">
         <ol className="reference-index-list">
-          {toolSlugs.map((slug, index) => (
+          {toolSlugs.map((slug) => (
             <li key={slug}>
               <Link href={sitePath(locale, `/tools/${slug}`)} className="reference-index-link">
-                <span className="reference-index-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <span className="reference-index-body">
                   <span className="reference-index-title">{copy[slug].title}</span>
                   <span className="reference-index-copy">{copy[slug].description}</span>
@@ -38,7 +37,7 @@ export function ToolPage({ locale, slug }: { locale: SiteLocale; slug: ToolSlug 
   const copy = tools[locale];
   const page = copy[slug];
   const shared = { result: copy.result, optional: copy.optional, privacy: copy.privacy };
-  const quotePath = sitePath(locale, "/quote");
+  const quotePath = `${sitePath(locale, "/quote")}?tool=${encodeURIComponent(slug)}`;
   return (
     <SiteShell locale={locale} path={`/tools/${slug}`}>
       <section className="section page-head freight-guide-head">

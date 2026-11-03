@@ -20,6 +20,8 @@ import { PortalShell } from "../../portal-shell";
 import { PortalUnavailable, PortalWorkspaceUnavailable } from "../../portal-frame";
 import { portalDate, portalInvoiceStatusLabel, portalInvoiceTone, portalMoney } from "../../portal-format";
 import { PortalRemittancePanel } from "./portal-remittance-panel";
+import { PortalPaymentPanel } from "./portal-payment-panel";
+import { paymentOptionsFor } from "../../../payments/payments.server";
 import { portalTranslator } from "../../portal-i18n";
 import { recordTitle } from "../../../record-title";
 import { bsDateLabel } from "../../../nepali-calendar";
@@ -45,6 +47,9 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
   const remittances = result.kind === "ready"
     ? await listInvoiceRemittances(result.invoice.reference)
     : { kind: "unavailable" as const };
+  const payment = result.kind === "ready" && result.invoice.balance_due > 0
+    ? await paymentOptionsFor(access.session, result.invoice.reference).catch(() => null)
+    : null;
 
   // As issued, before credit notes; total is already net of them.
   const issuedTotal = result.kind === "ready" ? result.invoice.total + result.invoice.credit_total : 0;
@@ -176,6 +181,19 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
                   ) : null}
                 </OpsSurface>
               </section>
+
+              {payment ? (
+                <PortalPaymentPanel
+                  locale={locale}
+                  reference={result.invoice.reference}
+                  currency={payment.currency}
+                  balance={payment.balance}
+                  rate={payment.rate}
+                  rateDate={payment.rateDate}
+                  minimumNpr={payment.minimumNpr}
+                  gateways={payment.gateways}
+                />
+              ) : null}
 
               {/* A settled invoice has nothing to report a payment against,
                   unless receipts were already sent for it. */}

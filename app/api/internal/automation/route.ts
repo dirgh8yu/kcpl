@@ -1,5 +1,6 @@
 import { evaluateAutomationRules } from "../../../admin/alerts/alert-engine.server";
 import { evaluateFreightAutomation } from "../../../admin/alerts/freight-automation.server";
+import { dispatchTenderReminders } from "../../../admin/tenders/tms-tender-reminders.server";
 import { dispatchAllAssignmentEmails } from "../../../admin/notifications/assignment-email.server";
 import { dispatchPendingAlertEmails } from "../../../admin/notifications/notification-email.server";
 import { evaluatePayablesAlerts } from "../../../admin/payables/payables-alerts.server";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
       ]);
       return json({ ok: false, error: "Automation storage is unavailable." }, 503);
     }
+    const tenderReminders = await dispatchTenderReminders().catch(() => ({ kind: "unavailable" as const, created: 0 }));
     const [alertEmails, assignmentEmails, portalEmails] = await Promise.all([
       dispatchPendingAlertEmails(),
       dispatchAllAssignmentEmails(),
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
         automatic_tasks_created: freight.tasks_created,
         automatic_tasks_reopened: freight.tasks_reopened,
         automatic_tasks_completed: freight.tasks_auto_completed,
+        tender_reminders_created: tenderReminders.created,
         notification_emails_sent: (alertEmails.sent ?? 0) + assignmentEmails.sent,
         portal_emails_sent: portalEmails.kind === "completed" ? portalEmails.sent : 0,
         portal_shipments_watched: portalEmails.kind === "completed" ? portalEmails.watched : 0,

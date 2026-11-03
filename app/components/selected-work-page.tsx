@@ -14,7 +14,6 @@ export function SelectedWorkPage({ locale }: { locale: SiteLocale }) {
 
   return <SiteShell locale={locale} path="/work">
     <section className="section work-head">
-      <p className="eyebrow">{t("work.eyebrow")}</p>
       <h1 className="section-title">{t("work.title")}</h1>
       <p className="section-intro">{t("work.intro")}</p>
       <nav className="work-jump" aria-label={t("work.jump_label")}>
@@ -26,7 +25,6 @@ export function SelectedWorkPage({ locale }: { locale: SiteLocale }) {
       {stories.map(({ number, slug }) => <article key={slug} id={slug} className="work-record">
         <div className="work-record-heading">
           <div>
-            <p className="proof-kicker">{t(`home.proof_${number}_kicker`)}</p>
             <h2>{t(`home.proof_${number}_title`)}</h2>
           </div>
           <p className="work-record-route">{t(`work.story_${number}_route`)}<span>{t(`work.story_${number}_date`)}</span></p>

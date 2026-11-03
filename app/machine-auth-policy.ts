@@ -32,6 +32,14 @@ export function trackingMachineAuthorized(request: Request): MachineAuthorizatio
   });
 }
 
+export function freeTimeMachineAuthorized(request: Request): MachineAuthorizationResult {
+  return authorizeBearer(request, process.env.KCPL_FREE_TIME_INGEST_SECRET ?? process.env.KCPL_TRACKING_INGEST_SECRET ?? "", {
+    unconfigured: "Free-time ingestion is not configured.",
+    required: "Bearer authentication is required.",
+    failed: "Free-time authentication failed.",
+  });
+}
+
 export function pickupMachineAuthorized(request: Request): MachineAuthorizationResult {
   return authorizeBearer(request, process.env.KCPL_PICKUP_INTEGRATION_SECRET ?? "", {
     unconfigured: "Pickup integration is not configured.",

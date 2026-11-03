@@ -5,10 +5,16 @@ import { usePathname } from "next/navigation";
 
 const revealSelector = [
   ".section-title",
+  ".capability-figure",
+  ".capability-item",
   ".proof-story",
+  ".corridor-leg",
+  ".credibility-fact",
   ".work-record",
   ".sector-row",
   ".service-row",
+  ".gallery-item",
+  ".certificate-item",
 ].join(", ");
 
 export function SiteMotion() {

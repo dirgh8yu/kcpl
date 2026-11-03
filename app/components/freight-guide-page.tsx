@@ -63,10 +63,9 @@ export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
       </section>
       <section className="section reference-index">
         <ol className="reference-index-list">
-          {guideSlugs.map((slug, position) => (
+          {guideSlugs.map((slug) => (
             <li key={slug}>
               <Link href={sitePath(locale, `/guides/${slug}`)} className="reference-index-link">
-                <span className="reference-index-number" aria-hidden="true">{String(position + 1).padStart(2, "0")}</span>
                 <span className="reference-index-body">
                   <span className="reference-index-title">{guides[locale][slug].title}</span>
                   <span className="reference-index-copy">{guides[locale][slug].description}</span>

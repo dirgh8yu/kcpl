@@ -762,16 +762,18 @@ excluded from public analytics and from the public site's mobile quote CTA.
   the screens render in their empty states. That is enough to review layout, navigation,
   both languages and the empty copy; it is not enough to review a populated table. A
   provisioned test customer remains the way to see the portal with data in it.
-- **Document coverage is bounded.** `/portal/documents` scans the 40 most recently
+- **Document coverage is bounded.** `/portal/documents` scans the 200 most recently
   updated shipments (documents live in a per-shipment subcollection, so a full history
   scan costs one read per shipment). The workspace states the coverage when it is capped.
-- **Online payment is whole-balance, NPR, and untested against live gateways.** The
-  signatures are tested against the gateways' published formats, but the first real
-  payment in `test` mode is the first real round trip. Partial payments and foreign
-  currency invoices stay with KCPL accounts, as does a paid amount that disagrees.
-- **Free time is only as good as what staff record.** Nothing imports carrier free days
-  automatically, so an unrecorded allowance simply shows no countdown rather than a
-  wrong one.
+- **Online payment is still untested against live gateways.** The web portal now exposes
+  the payment engine's full-balance, part-payment and foreign-currency conversion paths,
+  and the signatures are tested against the gateways' published formats, but the first
+  real payment in `test` mode is the first real round trip. A paid amount that disagrees
+  with the invoice still goes to KCPL accounts.
+- **Free time is only as good as what the carrier sends.** A carrier or terminal can now
+  write allowances through `POST /api/integrations/free-time`, but each feed must be
+  configured with `KCPL_FREE_TIME_INGEST_SECRET`; with no feed, staff still enter the
+  allowance by hand and an unrecorded allowance shows no countdown.
 - **Remittances are not malware-scanned**, on the same terms as customer documents.
 - **Uploads are not malware-scanned.** Type, extension, size and magic bytes are
   checked, and files are served back only through authenticated, force-download routes

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CircleDot, FileText, Package } from "lucide-react";
+import { CircleDot, FileText, Package, ShieldCheck } from "lucide-react";
 import {
   OpsBadge,
   OpsDetailGrid,
@@ -44,6 +44,7 @@ import {
 import { PortalShipmentTrack } from "../../portal-shipment-track";
 import { portalTrackPosition } from "../../portal-track";
 import { recordTitle } from "../../../record-title";
+import { portalTimeline } from "../../../shipment-timeline";
 
 export const dynamic = "force-dynamic";
 /** The tab names the record, so a row of open tabs and the history read as
@@ -111,6 +112,7 @@ export default async function PortalShipmentPage({
 function ShipmentDetail({ detail, canSend, canRate, proof, claims, locale, requested }: { detail: PortalShipmentDetail; canSend: boolean; canRate: boolean; proof: PortalProofOfDelivery | null; claims: PortalClaimView[]; locale: PortalLocale; requested: string | null }) {
   const t = portalTranslator(locale);
   const { shipment, events, documents, checklist, freeTime, confirmation } = detail;
+  const timeline = portalTimeline(events, documents, confirmation);
   // Only paper the customer can send counts: a bill of lading KCPL prepares
   // is not something asked of them.
   const waiting = checklist.some((row) => row.uploadable && (row.state === "needed" || row.state === "resend"));
@@ -203,24 +205,24 @@ function ShipmentDetail({ detail, canSend, canRate, proof, claims, locale, reque
             </OpsSurface>
           ) : null}
 
-          <OpsSurface title={t("ship.milestones_title")}>
+          <OpsSurface title={t("ship.activity_title")} description={t("ship.activity_lead")}>
             <OpsTimeline
-              entries={events.map((event) => ({
-                id: event.id,
-                title: event.title,
-                meta: portalDateTime(event.event_time),
+              entries={timeline.map((entry) => ({
+                id: entry.id,
+                title: entry.kind === "confirmation" ? t("ship.activity_confirmed") : entry.title,
+                meta: portalDateTime(entry.at),
                 body: <>
-                  {event.details ? <p className="portal-timeline-detail">{event.details}</p> : null}
-                  {event.location ? <span className="portal-timeline-location">{event.location}</span> : null}
+                  {entry.detail ? <p className="portal-timeline-detail">{entry.kind === "document" ? portalDocumentLabel(entry.detail, locale) : entry.detail}</p> : null}
+                  {entry.location ? <span className="portal-timeline-location">{entry.location}</span> : null}
                 </>,
-                icon: <CircleDot size={12} strokeWidth={2} aria-hidden="true"/>,
+                icon: entry.kind === "document" ? <FileText size={12} strokeWidth={2} aria-hidden="true"/> : entry.kind === "confirmation" ? <ShieldCheck size={12} strokeWidth={2} aria-hidden="true"/> : <CircleDot size={12} strokeWidth={2} aria-hidden="true"/>,
               }))}
               empty={<OpsEmptyState
                 compact
                 kind="neutral"
                 icon={<CircleDot size={18}/>}
-                title={t("ship.no_milestones_title")}
-                description={t("ship.no_milestones_description")}
+                title={t("ship.activity_empty_title")}
+                description={t("ship.activity_empty_description")}
               />}
             />
           </OpsSurface>

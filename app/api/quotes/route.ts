@@ -8,6 +8,7 @@ import {
   quoteRateLimitPolicies,
 } from "./quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "./quote-rate-limit.server";
+import { sanitizeQuoteAttribution } from "../../quote-attribution";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -48,6 +49,7 @@ type QuotePayload = {
   phone?: unknown;
   website?: unknown;
   challengeToken?: unknown;
+  attribution?: unknown;
 };
 
 type CleanQuote = {
@@ -159,6 +161,7 @@ export async function POST(request: Request) {
   const reference = createReference();
   const createdAt = new Date().toISOString();
   const remoteAddress = clientAddress(request);
+  const attribution = sanitizeQuoteAttribution(payload.attribution);
 
   // Attestation first: a scripted client is refused before it can spend a shared
   // address budget that a legitimate customer behind the same NAT also needs.
@@ -257,6 +260,7 @@ export async function POST(request: Request) {
       crm_linked_at: null,
       crm_linked_by_name: null,
       crm_linked_by_email: null,
+      attribution,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

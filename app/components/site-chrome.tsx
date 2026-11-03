@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Check, Globe, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Check, Globe, InstagramLogo, List, MagnifyingGlass, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { telHref, whatsappHref } from "../contact-links";
 import { guideIndex } from "../guide-data";
@@ -22,6 +22,12 @@ const navigation = [
   { path: "/about", key: "chrome.about" },
   { path: "/contact", key: "chrome.contact" },
 ] as const;
+
+/** Keep the desktop header composed; the complete destination list remains in
+ * the disclosure menu and footer. */
+const primaryNavigation = navigation.filter((item) =>
+  ["/services", "/work", "/network", "/about", "/contact"].includes(item.path),
+);
 
 /**
  * The Gateway K exactly as the identity file records it: the crimson symbol,
@@ -54,11 +60,14 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
       <div className="site-header-inner">
         <SiteLogo locale={locale}/>
         <nav className="site-nav" aria-label={t("chrome.nav_label")}>
-          {navigation.map((item) => (
+          {primaryNavigation.map((item) => (
             <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
           ))}
         </nav>
         <div className="site-header-actions">
+          <Link href={sitePath(locale, "/search")} className="site-search-link" aria-label={t("chrome.search")} aria-current={isCurrent("/search", path) ? "page" : undefined}>
+            <MagnifyingGlass size={17} weight="bold" aria-hidden="true"/>
+          </Link>
           <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
           {/* The trigger cycles the word for "language" through the scripts the
             * site speaks, so a reader who cannot read the others still
@@ -97,6 +106,7 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
             <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
             <Link href={sitePath(locale, "/guides")} className="site-menu-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
             <Link href={sitePath(locale, "/tools")} className="site-menu-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
+            <Link href={sitePath(locale, "/search")} className="site-menu-link" aria-current={isCurrent("/search", path) ? "page" : undefined}>{t("chrome.search")}</Link>
             <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
             {/* The header's quote button is hidden on the narrowest screens, so the
               * menu carries it there instead of losing the primary action. */}
@@ -130,6 +140,7 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
           <Link href={sitePath(locale, "/track")} className="site-footer-link">{t("chrome.track")}</Link>
           <Link href={sitePath(locale, "/guides")} className="site-footer-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
           <Link href={sitePath(locale, "/tools")} className="site-footer-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
+          <Link href={sitePath(locale, "/search")} className="site-footer-link" aria-current={isCurrent("/search", path) ? "page" : undefined}>{t("chrome.search")}</Link>
           <Link href="/portal" className="site-footer-link">{t("chrome.portal")}</Link>
         </div>
         <div className="site-footer-col">

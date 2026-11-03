@@ -3,17 +3,19 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PartnerSession } from "./partner-auth";
+import { PartnerNav } from "./partner-nav";
 
-/** The partner portal's chrome: the mark, who is signed in for which partner, and sign out. One page needs no navigation. */
+/** The partner portal's chrome: the mark, the partner's work, and who is signed in. */
 export function PartnerShell({ session, children }: { session: PartnerSession; children: ReactNode }) {
   return (
     <div className="kcpl-admin-shell portal-shell" lang="en">
       <a className="portal-skip-link" href="#partner-content">Skip to content</a>
       <header className="portal-topbar">
-        <Link href="/partner" className="portal-brand" aria-label="KCPL partner portal shipments">
+        <Link href="/partner" className="portal-brand" aria-label="KCPL partner portal">
           <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={26} height={26} priority/>
           <span className="portal-brand-text"><strong>KCPL</strong><small>Partner portal</small></span>
         </Link>
+        <PartnerNav/>
         <div className="portal-account">
           <span className="portal-account-meta"><strong>{session.partnerName}</strong><small>{session.email}</small></span>
           <a href="/api/partner/session" className="portal-signout" aria-label="Sign out"><LogOut size={16} strokeWidth={1.75} aria-hidden="true"/></a>

@@ -22,6 +22,7 @@ function completeEnv() {
     // rather than an open one, and the probe is what makes that visible.
     KCPL_EDI_SECRET: "edi-secret-value",
     KCPL_TRACKING_INGEST_SECRET: "tracking-secret-value",
+    KCPL_FREE_TIME_INGEST_SECRET: "free-time-secret-value",
     KCPL_PICKUP_INTEGRATION_SECRET: "pickup-secret-value",
     KCPL_GPT_ACTION_SECRET: "gpt-action-secret-value",
     // Portal web push needs all three or the transport is skipped entirely.

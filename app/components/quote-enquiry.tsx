@@ -7,6 +7,7 @@ import { ArrowUpRight, CheckCircle, Envelope, MapPin, Ruler, Scales } from "@pho
 import { company } from "../company-data";
 import type { SiteLocale } from "../site-i18n";
 import { trackAnalyticsEvent } from "./analytics";
+import { captureQuoteAttribution } from "../quote-attribution";
 import { quoteCopy } from "./quote-copy";
 
 export type QuoteValues = {
@@ -27,6 +28,8 @@ const modeLabels: Record<string, string> = {
   road: "Road freight",
   unsure: "Not sure yet",
 };
+
+const quoteDraftKey = "kcpl-quote-draft-v1";
 
 type SubmitState =
   | { status: "idle" }
@@ -56,11 +59,51 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
     website: "",
   });
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const [draftState, setDraftState] = useState<"idle" | "saved" | "restored">("idle");
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const draftReady = useRef(false);
 
   useEffect(() => {
     if (submitState.status === "success") confirmationHeading.current?.focus();
   }, [submitState.status]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(quoteDraftKey);
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<typeof values>;
+        if (saved && typeof saved === "object") {
+          setValues((current) => ({ ...current, ...saved }));
+          setDraftState("restored");
+        }
+      }
+    } catch {
+      // A browser with storage disabled simply gets no draft.
+    }
+    draftReady.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (submitState.status === "success") {
+      try { window.localStorage.removeItem(quoteDraftKey); } catch { /* storage disabled */ }
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(quoteDraftKey, JSON.stringify(values));
+        setDraftState("saved");
+      } catch {
+        // The quote still submits; only the local draft is unavailable.
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [values, submitState.status]);
+
+  function clearDraft() {
+    try { window.localStorage.removeItem(quoteDraftKey); } catch { /* storage disabled */ }
+    setDraftState("idle");
+  }
 
   const setField = (field: keyof typeof values, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -117,10 +160,15 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
       const siteKey = turnstileSiteKey();
       const challengeToken = siteKey ? await requestChallengeToken(siteKey) : "";
 
+      const attribution = captureQuoteAttribution({
+        search: window.location.search,
+        referrer: document.referrer,
+        pathname: window.location.pathname,
+      });
       const response = await fetch("/api/quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...values, challengeToken }),
+        body: JSON.stringify({ ...values, challengeToken, attribution }),
       });
       const result = await response.json() as { ok?: boolean; reference?: string; error?: string };
       if (!response.ok || !result.ok || !result.reference) {
@@ -196,6 +244,10 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
       {submitState.status !== "success" && <button type="submit" disabled={submitState.status === "submitting"}>{submitState.status === "submitting" ? c.submitting : c.submit} <ArrowUpRight size={18}/></button>}
       {submitState.status === "success" && <p className="quote-email-handoff" role="status" aria-live="polite">{c.success(submitState.reference)}</p>}
       {submitState.status === "error" && <p className="quote-email-handoff" role="alert">{submitState.message} {c.emailFallback} <a href={mailtoHref}>{c.emailAction}</a>.</p>}
+      {submitState.status !== "success" && draftState !== "idle" ? <div className="quote-draft-state">
+        <span role="status">{draftState === "restored" ? c.draftRestored : c.draftSaved}</span>
+        <button type="button" onClick={clearDraft}>{c.draftClear}</button>
+      </div> : null}
       <small className="quote-email-note">{c.privacy}</small>
       <a href={`mailto:${company.email}`} className="quote-email-address">{company.email}</a>
     </aside>

@@ -51,7 +51,7 @@ const QUOTE_SCAN_LIMIT = 250;
 /** Documents live in a subcollection per shipment, so a cross-shipment view
  * costs one read per shipment. The document workspace therefore covers the
  * most recently updated shipments rather than the entire history. */
-const DOCUMENT_SHIPMENT_LIMIT = 40;
+const DOCUMENT_SHIPMENT_LIMIT = 200;
 
 type Unavailable = { kind: "unavailable" };
 
