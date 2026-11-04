@@ -4,7 +4,7 @@ import {
   quoteFunnelStage,
   sanitizeQuoteAttribution,
   type QuoteAttribution,
-} from "../../quote-attribution";
+} from "../../quote-attribution.ts";
 
 export type AttributionInvoice = {
   quote_reference?: string | null;
