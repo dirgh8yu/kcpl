@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { NotFoundPage } from "./components/not-found-page";
 import { SiteDocument } from "./site-document";
 import "./site.css";
+
+export const metadata: Metadata = { title: "Page not found | Kapileshwor Cargo" };
 
 /*
  * A URL that matches no segment at all has no root layout to fall into -- that

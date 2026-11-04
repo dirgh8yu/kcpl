@@ -85,7 +85,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("about.intro")}</p>
       </section>
       <section className="about-banner">
-        <Image src="/images/unsplash/warehouse-forklift.jpg" alt="" fill sizes="100vw" className="about-banner-image"/>
+        <Image src="/images/unsplash/warehouse-forklift.jpg" alt="" fill sizes="100vw" loading="eager" fetchPriority="high" className="about-banner-image"/>
       </section>
       <section className="section about-split">
         <div>

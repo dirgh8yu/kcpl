@@ -20,7 +20,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
         <p className="section-intro">{t("services.intro")}</p>
       </section>
       <section className="section service-index reveal-group">
-        {services.map((service) => (
+        {services.map((service, index) => (
           <Link key={service.slug} href={sitePath(locale, `/services/${service.slug}`)} className="service-row reveal">
             <div className="service-row-body">
               <h2 className="service-row-title">{t(text(service.key, "title"))}</h2>
@@ -28,7 +28,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
             </div>
             {/* Illustrative freight photography, not KCPL's own cargo, so it carries
               * no caption and is marked decorative. */}
-            <figure className="service-figure"><Image src={service.image} alt="" width={480} height={320} sizes="(max-width: 700px) 100vw, 220px" className={`service-photo service-photo-${service.key}`}/></figure>
+            <figure className="service-figure"><Image src={service.image} alt="" width={480} height={320} sizes="(max-width: 700px) 100vw, 340px" loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} className={`service-photo service-photo-${service.key}`}/></figure>
             <span className="service-row-arrow" aria-hidden="true"><ArrowRight size={20} weight="regular"/></span>
           </Link>
         ))}
