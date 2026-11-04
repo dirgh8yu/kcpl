@@ -68,19 +68,22 @@ export function QuoteEnquiry({ initial, locale = "en" }: { initial: QuoteValues;
   }, [submitState.status]);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(quoteDraftKey);
-      if (raw) {
-        const saved = JSON.parse(raw) as Partial<typeof values>;
-        if (saved && typeof saved === "object") {
-          setValues((current) => ({ ...current, ...saved }));
-          setDraftState("restored");
+    const timer = window.setTimeout(() => {
+      try {
+        const raw = window.localStorage.getItem(quoteDraftKey);
+        if (raw) {
+          const saved = JSON.parse(raw) as Partial<typeof values>;
+          if (saved && typeof saved === "object") {
+            setValues((current) => ({ ...current, ...saved }));
+            setDraftState("restored");
+          }
         }
+      } catch {
+        // A browser with storage disabled simply gets no draft.
       }
-    } catch {
-      // A browser with storage disabled simply gets no draft.
-    }
-    draftReady.current = true;
+      draftReady.current = true;
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {

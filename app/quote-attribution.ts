@@ -36,9 +36,12 @@ const limits: Record<QuoteAttributionKey, number> = {
 
 function clean(value: unknown, max: number) {
   if (typeof value !== "string") return "";
-  return value
-    .normalize("NFKC")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
+  return Array.from(value.normalize("NFKC"))
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code > 31 && code !== 127;
+    })
+    .join("")
     .trim()
     .slice(0, max);
 }

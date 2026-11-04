@@ -45,7 +45,7 @@ export function PartnerTenderResponse({ tenderId, currency, offeredCost }: { ten
       </OpsField>
       {mode === "counter" ? <div className="portal-form-grid">
         <OpsField label="Counter amount" hint={`Offered: ${currency} ${offeredCost.toFixed(2)}`}>
-          <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" autoFocus/>
+          <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal"/>
         </OpsField>
         <OpsField label="Currency">
           <select value={counterCurrency} onChange={(event) => setCounterCurrency(event.target.value as CrmCurrency)}>
