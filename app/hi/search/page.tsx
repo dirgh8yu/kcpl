@@ -10,5 +10,5 @@ export const metadata = {
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const value = (await searchParams).q;
-  return <SearchPage locale="hi" query={Array.isArray(value) ? value[0] : value}/>;
+  return <SearchPage locale="hi" query={Array.isArray(value) ? value[0] ?? "" : value ?? ""}/>;
 }
