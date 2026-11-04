@@ -1,5 +1,5 @@
-import { crmCurrencies, type CrmCurrency } from "../admin/crm/crm-data";
-import type { TmsTenderStatus } from "../admin/tenders/tms-tendering";
+import { crmCurrencies, type CrmCurrency } from "../admin/crm/crm-data.ts";
+import type { TmsTenderStatus } from "../admin/tenders/tms-tendering.ts";
 
 /*
  * The partner's view of a carrier tender.
