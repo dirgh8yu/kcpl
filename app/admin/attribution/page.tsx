@@ -1,4 +1,4 @@
-import "../../organisation-premium.css";
+import "../organisation-premium.css";
 import { Megaphone } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OpsBadge, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../operations-ui";
