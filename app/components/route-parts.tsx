@@ -1,10 +1,44 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
+import { CaretDown } from "@phosphor-icons/react/dist/ssr";
+import { RouteReveal } from "./route-reveal";
 
 /* The site's one recurring idea: a crimson line with stations on it. The spine
  * fills as the page scrolls, in CSS, so these stay server components. */
 
-export function Lined({ children }: { children: ReactNode }) {
-  return <div className="lined"><div className="spine" aria-hidden="true"><i/></div>{children}</div>;
+export function Lined({ children, reveal = false }: { children: ReactNode; reveal?: boolean }) {
+  return (
+    <div className="lined" data-reveal={reveal || undefined}>
+      <div className="spine" aria-hidden="true"><i/></div>
+      {reveal ? <RouteReveal/> : null}
+      {children}
+    </div>
+  );
+}
+
+/** Questions first, answers on a tap. Native <details>, so answers stay in the page
+ * for search engines and work without JavaScript. */
+export function QaList({ items }: { items: { question: string; answer: string }[] }) {
+  return (
+    <div className="qa">
+      {items.map((item) => (
+        <details key={item.question}>
+          <summary>{item.question}<CaretDown size={16} weight="bold" aria-hidden="true"/></summary>
+          <p>{item.answer}</p>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+/** An illustrative photograph on the line. Alt stays empty because the picture adds
+ * no information; docs/public-photo-sources.md records where each one came from. */
+export function Plate({ src, wide = false, position }: { src: string; wide?: boolean; position?: string }) {
+  return (
+    <figure className={wide ? "plate plate-wide" : "plate"}>
+      <Image src={src} alt="" width={wide ? 2000 : 1200} height={wide ? 860 : 840} sizes={wide ? "(max-width: 900px) 100vw, 80vw" : "(max-width: 900px) 100vw, 34vw"} style={position ? { objectPosition: position } : undefined}/>
+    </figure>
+  );
 }
 
 export function Stop({ title, intro, id, children, className = "" }: { title: string; intro?: ReactNode; id?: string; children?: ReactNode; className?: string }) {

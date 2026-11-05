@@ -194,10 +194,50 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .spine i { display: block; height: 100%; background: var(--crimson); }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .spine i { transform-origin: 50% 0; animation: spine-fill linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    .spine i { transform-origin: 50% 0; /* Inset 0: by default a view timeline takes in the page's scroll-padding, which would pull the front ahead of the reveal. */
+    animation: spine-fill linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(100% - 72svh); }
   }
 }
 @keyframes spine-fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* Staged reveal. Only route-reveal.tsx adds these classes, so the page reads fine without them.
+ * Parts carry their own transition-delay, which is what sets the reading order. */
+.site-root { --reveal-time: 480ms; --reveal-wipe-time: 700ms; --reveal-rise: 14px; }
+.reveal-part { transition: opacity var(--reveal-time) var(--ease-out), transform var(--reveal-time) var(--ease-out); }
+.reveal-wipe { clip-path: inset(-32px); transition: clip-path var(--reveal-wipe-time) var(--ease-out); }
+.reveal-wait .reveal-part { opacity: 0; transform: translateY(var(--reveal-rise)); }
+.reveal-wait .reveal-wipe { clip-path: inset(-32px 100% -32px -32px); }
+.stop::before, .stages li::before { transition: opacity 300ms ease, transform 300ms var(--ease-out); }
+.stop.reveal-wait::before, .stages li.reveal-wait::before { opacity: .35; transform: scale(.6); }
+.feature-band::before, .end-band::after { transform-origin: 50% 0; transition: transform var(--reveal-wipe-time) var(--ease-in-out); }
+.feature-band.reveal-wait::before, .end-band.reveal-wait::after { transform: scaleY(0); }
+.end-band::before { transition: opacity 200ms ease 350ms, transform 300ms var(--ease-out) 350ms; }
+.end-band.reveal-wait::before { opacity: 0; transform: scale(.6); }
+.page-head .mini svg { animation: mini-draw 900ms var(--ease-in-out) both; }
+@keyframes mini-draw { from { clip-path: inset(-8px 100% -8px -8px); } to { clip-path: inset(-8px); } }
+
+/* The first section under a page title is on screen at load, so CSS stages it: nothing
+ * flashes after hydration, and without JavaScript it still ends fully visible. The page
+ * title itself never waits. */
+@media (prefers-reduced-motion: no-preference) {
+  .page-head + .lined[data-reveal] > .stop:first-of-type:not(.reveal-wait) > :not(.stages) { animation: arrive var(--reveal-time) var(--ease-out) 330ms both; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type:not(.reveal-wait) > :nth-child(1) { animation-delay: 120ms; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type:not(.reveal-wait) > :nth-child(2) { animation-delay: 190ms; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type:not(.reveal-wait) > :nth-child(3) { animation-delay: 260ms; }
+  /* Guide stages on the first screen: the line draws from one to the next. */
+  .page-head + .lined[data-reveal] .stages li:nth-child(1) { --stage-at: 250ms; }
+  .page-head + .lined[data-reveal] .stages li:nth-child(2) { --stage-at: 700ms; }
+  .page-head + .lined[data-reveal] .stages li:nth-child(3) { --stage-at: 1150ms; }
+  .page-head + .lined[data-reveal] .stages li:nth-child(4) { --stage-at: 1600ms; }
+  .page-head + .lined[data-reveal] .stages li:nth-child(n+5) { --stage-at: 2050ms; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type .stages li:not(.reveal-wait) > * { animation: arrive var(--reveal-time) var(--ease-out) var(--stage-at) both; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type .stages li:not(.reveal-wait)::before { animation: station-arrive 300ms var(--ease-out) var(--stage-at) both; }
+  .page-head + .lined[data-reveal] > .stop:first-of-type .stages li:not(.reveal-wait)::after { animation: stage-line 500ms var(--ease-in-out) var(--stage-at) both; }
+}
+/* .01, not 0: browsers do not count fully transparent text as painted, which would report a slow page. */
+@keyframes arrive { from { opacity: .01; transform: translateY(var(--reveal-rise)); } }
+@keyframes station-arrive { from { opacity: .35; transform: scale(.6); } }
+@keyframes stage-line { from { transform: scaleY(0); } }
 .stop { --stop-top: clamp(64px, 8vw, 128px); --stop-size: clamp(30px, 4.2vw, 62px); position: relative; padding: var(--stop-top) var(--margin) clamp(32px, 4vw, 56px) var(--content-x); }
 .stop::before { content: ""; position: absolute; left: calc(var(--spine-x) + var(--line) / 2 - 9px); top: calc(var(--stop-top) + var(--stop-size) * .525 - 9px); width: 18px; height: 18px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
 .page-head + .lined .stop { --stop-top: clamp(40px, 5vw, 72px); --stop-size: clamp(26px, 2.9vw, 40px); }
@@ -205,7 +245,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .stop-intro { max-width: 36em; margin-top: 16px; color: var(--muted); font-size: clamp(16px, 1.2vw, 18px); }
 .stop-flush { padding-top: clamp(32px, 4vw, 56px); }
 .stop-flush::before { display: none; }
-.stop > .text-link, .stop > .btn { margin-top: clamp(20px, 2.4vw, 32px); }
+.stop > .text-link, .stop > .btn, .sector > div > .text-link { margin-top: clamp(20px, 2.4vw, 32px); }
 .block-title { font-size: clamp(20px, 1.8vw, 26px); line-height: 1.2; font-weight: 600; letter-spacing: -.02em; }
 .stop-split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 88px); }
 .stop-split > div { min-width: 0; }
@@ -317,10 +357,19 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 /* Inner pages */
 .check-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 5vw, 88px); margin-top: clamp(24px, 3vw, 40px); }
 .check-list li { padding: 12px 0 14px; border-top: 1px solid var(--rule); }
-.qa { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 5vw, 88px); margin-top: clamp(20px, 2.4vw, 32px); }
-.qa > div { padding: 16px 0 20px; border-top: 1px solid var(--rule); }
-.qa dt { font-size: clamp(18px, 1.4vw, 21px); font-weight: 600; letter-spacing: -.01em; }
-.qa dd { margin-top: 6px; color: var(--muted); }
+.qa { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 5vw, 88px); align-items: start; margin-top: clamp(20px, 2.4vw, 32px); }
+.qa details { border-top: 1px solid var(--rule); interpolate-size: allow-keywords; }
+.qa summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 14px 0; font-size: clamp(18px, 1.4vw, 21px); line-height: 1.3; font-weight: 600; letter-spacing: -.01em; list-style: none; cursor: pointer; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:active { transform: none; }
+.qa summary svg { flex: none; transition: transform 200ms var(--ease-out); }
+.qa details[open] summary svg { transform: rotate(180deg); }
+.qa details::details-content { height: 0; overflow: hidden; opacity: 0; transition: height 200ms var(--ease-out), opacity 200ms var(--ease-out), content-visibility 200ms allow-discrete; }
+.qa details[open]::details-content { height: auto; opacity: 1; }
+.qa p { padding-bottom: 18px; color: var(--muted); }
+@media (hover: hover) and (pointer: fine) {
+  .qa summary:hover { color: var(--crimson); }
+}
 .stop > .qa + .text-link { margin-top: 4px; }
 .link-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 5vw, 88px); margin-top: clamp(20px, 3vw, 32px); }
 .link-list a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 10px 0; border-top: 1px solid var(--rule); font-weight: 600; text-decoration: none; }
@@ -330,6 +379,9 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .sector { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(24px, 4vw, 64px); align-items: start; }
 .sector-list { max-width: 36em; margin-top: 14px; font-weight: 600; }
 .plate img { aspect-ratio: 10 / 7; }
+.plate-wide { margin-top: clamp(32px, 4vw, 56px); }
+.plate-wide img { aspect-ratio: 21 / 9; }
+.sector .check-list { grid-template-columns: 1fr; }
 .work-date { margin-top: 12px; color: var(--muted); }
 .work-record .mini { margin-top: clamp(24px, 3vw, 36px); max-width: 760px; }
 .work-detail { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 44px); margin-top: clamp(24px, 3vw, 40px); }
@@ -351,7 +403,8 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .stages { max-width: 46em; margin-top: clamp(20px, 2.4vw, 32px); }
 .stages li { position: relative; padding: 0 0 24px 32px; }
 .stages li::before { content: ""; position: absolute; z-index: 1; left: 0; top: 4px; width: 18px; height: 18px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
-.stages li:not(:last-child)::after { content: ""; position: absolute; left: 7px; top: 4px; bottom: -4px; width: 4px; background: var(--crimson); }
+.stages li:not(:last-child)::after { content: ""; position: absolute; left: 7px; top: 4px; bottom: -4px; width: 4px; background: var(--crimson); transform-origin: 50% 0; transition: transform 600ms var(--ease-in-out); }
+.stages li.reveal-wait::after { transform: scaleY(0); }
 .stages h3 { font-size: clamp(18px, 1.4vw, 21px); font-weight: 600; letter-spacing: -.01em; }
 .stages p { margin-top: 6px; color: var(--muted); }
 .legal { max-width: 52em; padding: clamp(24px, 3vw, 40px) var(--margin) clamp(64px, 8vw, 112px); }
@@ -494,7 +547,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 
 @media (max-width: 900px) {
   .site-root { --header: 64px; --spine-x: calc(var(--margin) + 4px); --content-x: calc(var(--margin) + 36px); --line: 6px; }
-  .site-root { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .site-root { padding-bottom: calc(68px + env(safe-area-inset-bottom)); --reveal-time: 320ms; --reveal-wipe-time: 450ms; --reveal-rise: 8px; }
   .site-header { gap: 8px; }
   .site-lockup { gap: 8px; }
   .site-lockup-mark { width: 30px; height: 30px; }
@@ -550,6 +603,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   .rail-window { grid-row: 2; grid-column: 1 / -1; }
   .rail-track img { height: 28px; }
   .stories, .svc-list, .two-photos, .facts, .stop-split, .check-list, .qa, .link-list, .sector, .work-detail, .lanes, .contact-grid, .tool-layout, .tool-explain, .quote, .gallery { grid-template-columns: 1fr; }
+  .plate-wide img { aspect-ratio: 3 / 2; }
   .certs { grid-template-columns: 1fr 1fr; }
   .certs-large { grid-template-columns: 1fr; }
   .quote-fields { grid-template-columns: 1fr; }
@@ -575,6 +629,21 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   .rail-window { mask-image: none; }
   .rail-button { display: none; }
   .site-pop-panel { animation: none; }
+  /* Fewer and gentler: a short fade stays, because it still shows order. Nothing moves. */
+  .reveal-part, .reveal-wipe { clip-path: none; transition: opacity 200ms ease; }
+  .reveal-wait .reveal-part { transform: none; }
+  .reveal-wait .reveal-wipe { clip-path: none; opacity: 0; }
+  .stop::before, .stages li::before, .stages li::after, .end-band::before, .end-band::after, .feature-band::before { transition: none; }
+  .stop.reveal-wait::before, .stages li.reveal-wait::before, .end-band.reveal-wait::before { transform: none; }
+  .stages li.reveal-wait::after, .feature-band.reveal-wait::before, .end-band.reveal-wait::after { transform: none; }
+  .page-head .mini svg { animation: none; }
+  .qa details::details-content, .qa summary svg { transition: none; }
+}
+
+/* Paper has no scrolling, so everything prints, answers included. */
+@media print {
+  .reveal-wait .reveal-part, .reveal-wait .reveal-wipe { opacity: 1; transform: none; clip-path: none; }
+  .qa details::details-content { height: auto; opacity: 1; content-visibility: visible; }
 }
 
 /* Devanagari needs room for vowel marks, and neither script takes Latin's tight tracking. */

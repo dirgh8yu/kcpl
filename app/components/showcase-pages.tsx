@@ -11,9 +11,13 @@ import { SiteShell } from "./site-chrome";
 /* Only photographs with a recorded source and no other company's branding. */
 const galleryImages: { src: string; key: SiteTextKey; width: number; height: number }[] = [
   { src: "/images/unsplash/ship-aerial.jpg", key: "gallery.ocean", width: 2200, height: 1585 },
-  { src: "/images/unsplash/nepal-road.jpg", key: "gallery.road", width: 2200, height: 1467 },
+  { src: "/images/unsplash/ghat-road.jpg", key: "gallery.road", width: 2000, height: 1131 },
   { src: "/images/unsplash/port-aerial.jpg", key: "gallery.gateway", width: 2200, height: 1730 },
   { src: "/images/unsplash/warehouse-forklift.jpg", key: "gallery.handling", width: 1800, height: 1695 },
+  { src: "/images/unsplash/air-pallets.jpg", key: "gallery.air", width: 2000, height: 1335 },
+  { src: "/images/unsplash/heavy-lift.jpg", key: "svc.project.title", width: 2000, height: 1334 },
+  { src: "/images/unsplash/warehouse-racks.jpg", key: "svc.warehouse.title", width: 2000, height: 1334 },
+  { src: "/images/unsplash/howrah-bridge.jpg", key: "route.kolkata", width: 2000, height: 1125 },
 ];
 
 const awardCertificates = [2022, 2023, 2024, 2025] as const;
@@ -62,7 +66,7 @@ export function AwardsPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/awards">
       <PageHead title={t("awards.title")} intro={t("awards.intro")}/>
-      <Lined>
+      <Lined reveal>
         <section className="stop awards-summary">
           <p className="stop-intro">{t("awards.context")}</p>
           <Link href={lcci.href} target="_blank" rel="noopener noreferrer" aria-label={t("awards.issuer")}>

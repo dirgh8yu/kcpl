@@ -7,13 +7,13 @@ import { services } from "../services-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { Credentials } from "./credentials";
-import { Lined, MiniRoute, PageHead, Stop } from "./route-parts";
+import { Lined, MiniRoute, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { TrackingLinkEntry } from "./tracking-link-entry";
 
 export function SectorsPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
-  const sectorImages = ["/images/unsplash/port-aerial.jpg", "/images/unsplash/warehouse-forklift.jpg", "/images/unsplash/ship-aerial.jpg"];
+  const sectorImages = ["/images/unsplash/substation.jpg", "/images/unsplash/rug-hands.jpg", "/images/unsplash/freight-train.jpg"];
   const sectors = [1, 2, 3].map((n) => ({
     title: t(`sectors.s${n}_title` as "sectors.s1_title"),
     copy: t(`sectors.s${n}_copy` as "sectors.s1_copy"),
@@ -29,7 +29,7 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/sectors">
       <PageHead title={t("sectors.title")} intro={t("sectors.intro")}/>
-      <Lined>
+      <Lined reveal>
         {sectors.map((sector) => (
           <section key={sector.title} className="stop sector">
             <div>
@@ -37,7 +37,7 @@ export function SectorsPage({ locale }: { locale: SiteLocale }) {
               <p className="stop-intro">{sector.copy}</p>
               <p className="sector-list">{sector.list}</p>
             </div>
-            <figure className="plate"><Image src={sector.image} alt="" width={1200} height={840} sizes="(max-width: 900px) 100vw, 34vw"/></figure>
+            <Plate src={sector.image}/>
           </section>
         ))}
         <Stop title={t("sectors.cases_title")} intro={t("sectors.cases_intro")}>
@@ -67,7 +67,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/about">
       <PageHead title={t("about.title")} intro={t("about.intro")}/>
-      <Lined>
+      <Lined reveal>
         <section className="stop stop-split">
           <div><h2 className="block-title">{t("about.how_title")}</h2><p>{t("about.how_copy")}</p></div>
           <div><h2 className="block-title">{t("about.leadership_title")}</h2><p>{t("about.leadership_copy")}</p></div>
@@ -76,6 +76,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
           <dl className="facts">
             {desks.map((desk) => <div key={desk.title}><dt>{desk.title}</dt><dd>{desk.copy}</dd></div>)}
           </dl>
+          <Plate src="/images/unsplash/kathmandu.jpg" wide position="50% 92%"/>
         </Stop>
         <Stop title={t("about.credentials_title")}><Credentials locale={locale}/></Stop>
         <ClosingBand locale={locale}/>
@@ -191,11 +192,12 @@ export function AgentsPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/agents">
       <PageHead title={t("agents.title")} intro={t("agents.intro")}/>
-      <Lined>
+      <Lined reveal>
         <Stop title={t("agents.handle_title")}>
           <ul className="check-list">
             {([1, 2, 3, 4] as const).map((n) => <li key={n}>{t(`agents.handle_${n}`)}</li>)}
           </ul>
+          <Plate src="/images/unsplash/howrah-bridge.jpg" wide position="50% 30%"/>
         </Stop>
         <Stop title={t("agents.networks_title")} intro={t("network.agents_copy")}>
           <ul className="marks">
@@ -218,12 +220,10 @@ export function FaqPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/faq">
       <PageHead title={t("faq.title")} intro={t("faq.intro")}/>
-      <Lined>
+      <Lined reveal>
         {services.map((service) => (
           <Stop key={service.slug} title={text(service.key, "title")}>
-            <dl className="qa">
-              {[1, 2].map((number) => <div key={number}><dt>{text(service.key, `q${number}`)}</dt><dd>{text(service.key, `a${number}`)}</dd></div>)}
-            </dl>
+            <QaList items={[1, 2].map((number) => ({ question: text(service.key, `q${number}`), answer: text(service.key, `a${number}`) }))}/>
             <Link href={sitePath(locale, `/services/${service.slug}`)} className="text-link">{text(service.key, "title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           </Stop>
         ))}

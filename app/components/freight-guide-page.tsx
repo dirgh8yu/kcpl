@@ -5,9 +5,20 @@ import { faqNode, graph } from "../structured-data";
 import { sitePath, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
-import { Lined, PageHead, Stop } from "./route-parts";
+import { Lined, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
+
+/* Only photographs with a recorded source and no other company's branding. */
+const guidePhotos: Record<GuideSlug, { src: string; position?: string }> = {
+  "importing-to-nepal": { src: "/images/unsplash/ghat-tunnel.jpg" },
+  "exporting-from-nepal": { src: "/images/unsplash/warp-threads.jpg" },
+  "customs-clearance-in-nepal": { src: "/images/unsplash/container-marks.jpg", position: "35% 40%" },
+  "sea-freight-through-india": { src: "/images/unsplash/port-sunset.jpg" },
+  "air-freight-to-kathmandu": { src: "/images/unsplash/airport-dollies.jpg" },
+  "hs-codes-and-import-duty": { src: "/images/unsplash/tariff-ledger.jpg" },
+  "free-time-and-demurrage": { src: "/images/unsplash/container-yard.jpg", position: "30% 50%" },
+};
 
 export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: GuideSlug }) {
   const guide = guides[locale][slug];
@@ -20,17 +31,22 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
       <PageHead title={guide.title} intro={guide.intro}>
         <Link href={sitePath(locale, "/guides")} className="back-link"><ArrowLeft size={15} weight="bold" aria-hidden="true"/>{index.title}</Link>
       </PageHead>
-      <Lined>
+      <Lined reveal>
         <Stop title={guide.routeTitle}>
           <ol className="stages">
             {guide.stages.map((stage) => <li key={stage.title}><h3>{stage.title.replace(/^\d+\s*\/\s*/, "")}</h3><p>{stage.copy}</p></li>)}
           </ol>
         </Stop>
-        <Stop title={guide.documentsTitle} intro={guide.documentsIntro}>
-          <ul className="check-list">{guide.documents.map((item) => <li key={item}>{item}</li>)}</ul>
-        </Stop>
+        <section className="stop sector">
+          <div>
+            <h2 className="stop-title">{guide.documentsTitle}</h2>
+            <p className="stop-intro">{guide.documentsIntro}</p>
+            <ul className="check-list">{guide.documents.map((item) => <li key={item}>{item}</li>)}</ul>
+          </div>
+          <Plate {...guidePhotos[slug]}/>
+        </section>
         <Stop title={guide.questionsTitle}>
-          <dl className="qa">{guide.questions.map((item) => <div key={item.question}><dt>{item.question}</dt><dd>{item.answer}</dd></div>)}</dl>
+          <QaList items={guide.questions}/>
         </Stop>
         <section className="stop page-actions">
           <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{guide.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
@@ -66,7 +82,7 @@ export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/guides">
       <PageHead title={index.title} intro={index.intro}/>
-      <Lined>
+      <Lined reveal>
         <Stop title={toolCopy.index.title} intro={toolCopy.index.intro}>
           <IndexList items={toolSlugs.map((slug) => ({ href: sitePath(locale, `/tools/${slug}`), title: toolCopy[slug].title, copy: toolCopy[slug].description }))}/>
         </Stop>

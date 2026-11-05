@@ -301,6 +301,9 @@ There are no content cards. The two working containers are plates.
 - **Border:** none.
 - **Internal Padding:** up to 36px on the quote plate and 28px on tool plates.
 
+### Photographs
+Illustrative Unsplash photographs, each listed in `docs/public-photo-sources.md`, with an empty alt because they add no information. At most one to a section: beside the text on service, sector and guide pages (`.sector`, 7fr of text to 5fr of photograph at 10:7), or across the column where the subject is wide (`.plate-wide`, 21:9, 3:2 on phones). Quote, contact, track, tools, FAQ, careers, awards and legal pages carry none because they are for doing or checking something; on the network page the route and the map are the image; movement stories stay without pictures because they are anonymous.
+
 ### Inputs / Fields
 - **Style:** a paper tile with a 14px Warm Grey label stacked over a borderless 16px, 600 value. Route ends carry the 2px ink ring, ordinary form fields the quiet ring. Tool inputs are the working variant: 48px tall, a 1px hairline border and a label above the box, with unit suffixes on a canvas tile.
 - **Focus:** the ring becomes 2px crimson in 160ms; tool inputs show a 2px crimson outline. The caret is crimson.
@@ -316,6 +319,8 @@ The signature component and the home page's form. Choosing a freight mode rerout
 
 ### Spine and Stops
 The spine fills with crimson as the page scrolls, using a view-driven timeline where supported. It stands solid crimson without support or under reduced motion. Each stop places one station beside its heading.
+
+On long pages the spine also paces the reading. Its front holds at 72% of the screen height, and `route-reveal.tsx` calls a section in when its station reaches that line: heading, then intro, then items at 60ms apart (35ms on phones), over 480ms (320ms on phones), once per visit. Images and drawn routes wipe in from the left over 700ms (450ms on phones). Sections already on screen at load are never hidden; the first section under a page title arrives through CSS instead. Reduced motion keeps a 200ms fade and drops all movement, and without JavaScript everything is simply visible. Privacy, terms, quote, track, tools, contact, careers, gallery and search stay still, because people are reading closely or typing there.
 
 ### Mini Route
 A movement's own small route: evenly spaced stations with the line lifted over any rerouted stops. Beyond four stops it turns vertical on phones. At band scale it runs in white at 6px with 16px labels.
@@ -341,6 +346,7 @@ Follows the site's ground, Manrope, a heading up to 42px at 500, and the 52px ch
 - **Do** use ink for the selected state of an option and crimson for the action.
 - **Do** keep crimson bands to two inks, including their focus rings.
 - **Do** give every motion a reduced-motion fallback, and let the signature draw play once per load or per mode change.
+- **Do** let long pages arrive in reading order, and open long answers on a tap. Never hold back a headline, a form, or anything a person is typing into.
 - **Do** use Phosphor icons, bold for arrows, and Manrope tabular numerals for calculated figures.
 - **Do** keep controls at 44px or taller, form text at 16px, and check every layout in Nepali, Hindi and Chinese.
 
