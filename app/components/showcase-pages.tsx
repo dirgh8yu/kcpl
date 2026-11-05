@@ -29,8 +29,8 @@ export async function GalleryPage({ locale }: { locale: SiteLocale }) {
   catch (error) { console.error("Could not load published KCPL gallery", error); }
   const hasPublishedImages = Boolean(managed?.length);
   const images = hasPublishedImages
-    ? managed!.map((item) => ({ src: `/api/gallery/${item.id}/image`, title: item.title, alt: item.alt, width: item.width, height: item.height, managed: true }))
-    : galleryImages.map((item) => ({ src: item.src, title: t(item.key), alt: t(item.key), width: item.width, height: item.height, managed: false }));
+    ? managed!.map((item) => ({ src: `/api/gallery/${item.id}/image`, title: item.title, alt: item.alt, width: item.width, height: item.height }))
+    : galleryImages.map((item) => ({ src: item.src, title: t(item.key), alt: t(item.key), width: item.width, height: item.height }));
   return (
     <SiteShell locale={locale} path="/gallery">
       <PageHead title={t("gallery.title")} intro={t("gallery.intro")}/>
@@ -38,7 +38,7 @@ export async function GalleryPage({ locale }: { locale: SiteLocale }) {
         {images.map((item, index) => (
           <figure key={item.src}>
             <a href={item.src} target="_blank" rel="noopener noreferrer" aria-label={item.title ? `${item.title}, ${t("chrome.gallery")}` : `${t("chrome.gallery")} ${index + 1}`}>
-              <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 900px) 100vw, 50vw" unoptimized={item.managed}/>
+              <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 900px) 100vw, 50vw" loading={index < 2 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : undefined}/>
             </a>
             {item.title ? <figcaption>{item.title}</figcaption> : null}
           </figure>

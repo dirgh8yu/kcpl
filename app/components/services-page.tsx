@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { guides, type GuideSlug } from "../guide-data";
 import { services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
+import { tools, type ToolSlug } from "../tool-data";
 import { ClosingBand } from "./closing-band";
 import { ServiceList } from "./home-page";
 import { Lined, MiniRoute, PageHead, Plate, QaList, Stop } from "./route-parts";
@@ -22,6 +24,18 @@ const servicePhotos: Record<ServiceSlug, { src: string; position?: string }> = {
   "project-cargo": { src: "/images/unsplash/heavy-lift.jpg" },
   warehousing: { src: "/images/unsplash/warehouse-racks.jpg" },
   delivery: { src: "/images/unsplash/clipboard-sign.jpg" },
+};
+
+/* The guides link to the services, and this links back, so a reader and a crawler
+ * can reach the deeper pages from the page they arrived on. */
+const serviceResources: Record<ServiceSlug, { guides: GuideSlug[]; tool: ToolSlug }> = {
+  "air-freight": { guides: ["air-freight-to-kathmandu", "exporting-from-nepal"], tool: "volume-weight" },
+  "ocean-freight": { guides: ["sea-freight-through-india", "free-time-and-demurrage"], tool: "storage-charges" },
+  "road-freight": { guides: ["importing-to-nepal", "sea-freight-through-india"], tool: "volume-weight" },
+  "customs-clearance": { guides: ["customs-clearance-in-nepal", "hs-codes-and-import-duty"], tool: "duty-estimate" },
+  "project-cargo": { guides: ["importing-to-nepal", "customs-clearance-in-nepal"], tool: "volume-weight" },
+  warehousing: { guides: ["free-time-and-demurrage", "importing-to-nepal"], tool: "storage-charges" },
+  delivery: { guides: ["importing-to-nepal", "exporting-from-nepal"], tool: "volume-weight" },
 };
 
 export function ServicesPage({ locale }: { locale: SiteLocale }) {
@@ -80,6 +94,14 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         </Stop>
         <Stop title={t("services.ask")} intro={t(text(service.key, "ask"))}>
           <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
+        </Stop>
+        <Stop title={t("chrome.resources")}>
+          <ul className="link-list">
+            {serviceResources[slug].guides.map((guide) => (
+              <li key={guide}><Link href={sitePath(locale, `/guides/${guide}`)}>{guides[locale][guide].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            ))}
+            <li><Link href={sitePath(locale, `/tools/${serviceResources[slug].tool}`)}>{tools[locale][serviceResources[slug].tool].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+          </ul>
         </Stop>
         <Stop title={t("services.related")}>
           <ul className="link-list">

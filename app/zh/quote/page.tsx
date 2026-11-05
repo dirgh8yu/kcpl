@@ -1,4 +1,3 @@
-import type { QuoteValues } from "../../components/quote-enquiry";
 import { QuoteConcierge } from "../../components/quote-concierge";
 import { SiteShell } from "../../components/site-chrome";
 import { createPageMetadata } from "../../seo";
@@ -7,11 +6,10 @@ import "../../site.css";
 
 export const metadata = createPageMetadata({ title: siteText("zh", "quote.meta_title"), description: siteText("zh", "quote.meta_description"), path: "/zh/quote" });
 
-export default async function QuotePage({ searchParams }: { searchParams: Promise<QuoteValues> }) {
-  const query = await searchParams;
+export default function QuotePage() {
   return (
     <SiteShell locale="zh" path="/quote">
-      <QuoteConcierge locale="zh" initial={query} title={siteText("zh", "quote.title")} intro={siteText("zh", "quote.intro")}/>
+      <QuoteConcierge locale="zh" title={siteText("zh", "quote.title")} intro={siteText("zh", "quote.intro")}/>
     </SiteShell>
   );
 }
