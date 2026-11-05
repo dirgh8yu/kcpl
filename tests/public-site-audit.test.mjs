@@ -142,6 +142,15 @@ test("forms and legal pages stay still", async () => {
   assert.doesNotMatch(await readFile(repo("app/components/tool-pages.tsx"), "utf8"), /<Lined reveal>/);
 });
 
+test("the network map shows at once, and the photo is only a stand-in for a map that failed", async () => {
+  const map = await readFile(repo("app/components/network-map.tsx"), "utf8");
+  assert.match(map, /\{mapUnavailable \? <Image src="\/images\/nepal-satellite/, "the photo must not render while the map loads");
+  assert.doesNotMatch(map, /on\("idle"/, "nothing waits for the last tile");
+  // Visitors read a hidden canvas over a full-strength photo as the map itself.
+  assert.deepEqual(declarations(".network-map-canvas").filter(({ prop }) => prop === "opacity"), []);
+  assert.ok(declarations(".network-map-fallback-image").some(({ prop, value }) => prop === "opacity" && Number(value) < 1));
+});
+
 test("the 404 page has a title and a visible way back", async () => {
   for (const path of ["app/not-found.tsx", "app/(en)/not-found.tsx"]) {
     assert.match(await readFile(repo(path), "utf8"), /export const metadata: Metadata = \{ title: "Page not found/, path);
