@@ -409,10 +409,9 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .network-map-filters { display: flex; flex-wrap: wrap; gap: 2px; }
 .network-map-filter, .network-map-places button { min-height: 44px; padding: 6px 12px; border: 0; background: transparent; color: var(--ink); font: 600 14px/1.2 var(--font-manrope), var(--font-devanagari-sans), system-ui, sans-serif; cursor: pointer; }
 .network-map-filter[aria-pressed="true"], .network-map-places button[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.network-map-stage { position: relative; height: clamp(360px, 62svh, 640px); margin-top: 16px; overflow: hidden; background: #dfe3e3; }
-.network-map-fallback-image { object-fit: cover; }
-.network-map-canvas { position: absolute; inset: 0; opacity: 0; transition: opacity 400ms ease; }
-.network-map-stage.is-ready .network-map-canvas { opacity: 1; }
+.network-map-stage { position: relative; height: clamp(360px, 62svh, 640px); margin-top: 16px; overflow: hidden; background: var(--canvas); box-shadow: inset 0 0 0 1px var(--rule); }
+.network-map-fallback-image { object-fit: cover; opacity: .42; filter: saturate(.5); }
+.network-map-canvas { position: absolute; inset: 0; }
 .network-map-marker { width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .network-map-marker::before { content: ""; display: block; width: 18px; height: 18px; margin: 3px; border: 3px solid var(--kcpl-black); border-radius: 50%; background: var(--kcpl-white); }
 .network-map-marker.is-selected::before { background: var(--kcpl-crimson); }
