@@ -141,7 +141,7 @@ export function QuoteConcierge({
         <div className="quote-card">
           <CheckCircle size={32} aria-hidden="true"/>
           <h2 ref={successHeading} tabIndex={-1}>{c.received}</h2>
-          <p>{c.replyTime} {c.receivedCopy}</p>
+          <p>{c.receivedCopy} {c.replyTime}</p>
           <code>{reference}</code>
           <p>{c.packing}</p>
           <a href={`mailto:${company.email}?subject=${encodeURIComponent(`Quote ${reference}`)}`} className="text-link">{company.email}<ArrowRight size={15} weight="bold" aria-hidden="true"/></a>

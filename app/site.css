@@ -389,6 +389,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .quote-hint { color: var(--muted); }
 .quote-summary { padding-top: 12px; border-top: 1px solid var(--rule); }
 .quote-summary b { font-weight: 700; }
+.quote-summary svg { display: inline; vertical-align: -2px; }
 .quote-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px 24px; }
 .quote-card code { justify-self: start; padding: 8px 12px; background: var(--canvas); font-family: var(--font-mono-tech), ui-monospace, monospace; font-size: 16px; font-weight: 600; }
 
