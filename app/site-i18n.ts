@@ -135,7 +135,7 @@ const en = {
 
   /* Home */
   "home.meta_title": "Kapileshwor Cargo | Freight Forwarding in Nepal",
-  "home.meta_description": "KCPL is a Kathmandu freight and logistics company established in 2015, coordinating air, ocean and road freight, customs documentation and project cargo for Nepalese importers and exporters.",
+  "home.meta_description": "Kathmandu-based KCPL coordinates air, ocean and road freight, customs documentation and project cargo for importers and exporters into and out of Nepal.",
   "home.hero_title": "One team plans the whole route.",
   "home.hero_intro": "Air, ocean, cross-border road and project cargo. One Kathmandu team coordinates gateways, customs and delivery for importers and exporters.",
   "home.hero_cta": "Request a quote",
@@ -189,7 +189,7 @@ const en = {
   "home.proof_link": "Read the movement stories",
 
   "work.meta_title": "Selected Freight and Project Cargo Work",
-  "work.meta_description": "Anonymized, evidence-led KCPL movement stories: infrastructure breakbulk through Kolkata and Birgunj, a disrupted Kathmandu air export, and container delivery to Nepalgunj.",
+  "work.meta_description": "Read three anonymized KCPL freight stories covering infrastructure breakbulk, a disrupted Kathmandu air export and container delivery to Nepalgunj.",
   "work.eyebrow": "Selected work",
   "work.title": "Movements, documented.",
   "work.intro": "A shipment is only complete when the handoffs are accounted for. These three examples are drawn from KCPL's operational correspondence and describe only the outcomes the record supports.",
@@ -238,7 +238,7 @@ const en = {
 
   /* Services */
   "services.meta_title": "Freight Forwarding Services in Nepal",
-  "services.meta_description": "Air, ocean and road freight, customs and documentation, project cargo, warehousing and delivery, coordinated from Kathmandu for Nepalese importers and exporters.",
+  "services.meta_description": "Explore air, ocean and road freight, customs documentation, project cargo, warehousing and delivery coordinated from Kathmandu for Nepalese trade.",
   "services.title": "Services",
   "services.intro": "Seven services that make up one movement. Most shipments use several, planned together rather than handed between desks.",
   "services.detail_link": "Service detail",
@@ -330,7 +330,7 @@ const en = {
   "svc.warehouse.docs": "Receipt on arrival, stock record against the consignment, and a release and dispatch record when the cargo leaves.",
 
   "svc.delivery.title": "Delivery and proof",
-  "svc.delivery.summary": "Final delivery coordination and the evidence that a movement actually closed.",
+  "svc.delivery.summary": "Coordinate final cargo delivery in Nepal, including receiving windows, unloading records, signed receipts and proof shared with parties closing the file.",
   "svc.delivery.p1": "Delivery scheduling with the consignee and the site.",
   "svc.delivery.p2": "Unloading evidence and signed delivery receipts.",
   "svc.delivery.p3": "Status updates through the movement, and a record at the end of it.",
@@ -563,7 +563,7 @@ const en = {
   "faq.title": "Questions shippers ask",
   "faq.intro": "Plain answers, grouped by service. If yours is not here, ask the team.",
   "careers.meta_title": "Careers at KCPL",
-  "careers.meta_description": "Working in freight, customs and documentation at KCPL in Nepal.",
+  "careers.meta_description": "Learn about working with KCPL on freight, customs and documentation in Nepal, see whether roles are listed, and find where to send your experience.",
   "careers.title": "Careers at KCPL",
   "careers.intro": "KCPL's work runs from Kathmandu to Nepal's gateways. No open roles are listed here yet.",
   "careers.write_title": "Write to the team",

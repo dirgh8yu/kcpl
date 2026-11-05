@@ -35,7 +35,10 @@ export const organizationNode = {
     postalCode: "44600",
     addressCountry: "NP",
   },
-  areaServed: { "@type": "Country", name: "Nepal" },
+  areaServed: [
+    { "@type": "Country", name: "Nepal" },
+    "International freight routes into and out of Nepal",
+  ],
   /* Coordinates read off KCPL's own Google Business listing, which carries the
    * same telephone number as this site. hasMap points back at that listing so
    * the two records can be reconciled rather than drifting. */
@@ -118,7 +121,7 @@ function crumbLabel(locale: SiteLocale, path: string) {
  * A trail for any public path. Home alone is not a breadcrumb, so the home page
  * gets nothing rather than a one-item list.
  */
-export function breadcrumbNode(locale: SiteLocale, path: string) {
+export function breadcrumbItems(locale: SiteLocale, path: string) {
   if (path === "/") return null;
   const segments = path.split("/").filter(Boolean);
   const trail = segments.map((_, index) => `/${segments.slice(0, index + 1).join("/")}`);
@@ -128,6 +131,12 @@ export function breadcrumbNode(locale: SiteLocale, path: string) {
     if (name) items.push({ name, path: step });
   }
   if (items.length < 2) return null;
+  return items;
+}
+
+export function breadcrumbNode(locale: SiteLocale, path: string) {
+  const items = breadcrumbItems(locale, path);
+  if (!items) return null;
   return {
     "@type": "BreadcrumbList",
     "@id": `${absoluteUrl(sitePath(locale, path))}#breadcrumb`,

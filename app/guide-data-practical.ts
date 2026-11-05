@@ -43,7 +43,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
     },
     "sea-freight-through-india": {
       title: "Sea Freight to Nepal Through Indian Ports",
-      description: "How ocean freight reaches landlocked Nepal: Kolkata, Haldia and Visakhapatnam as gateways, transit through India by rail or road, and the handover at the border.",
+      description: "See how ocean freight reaches Nepal through Kolkata, Haldia or Visakhapatnam, with rail or road transit across India and a planned border handover.",
       intro: "Nepal has no seaport, so ocean cargo lands in India and continues in transit to the border. The gateway, the transit mode and the documents for the Indian leg matter as much as the ocean booking.",
       routeTitle: "How the route is planned",
       stages: [

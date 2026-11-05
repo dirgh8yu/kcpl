@@ -37,7 +37,10 @@ const pagePrefixes: Record<string, string[]> = {
 
 function prefixesFor(path: string) {
   const service = services.find((entry) => path === `/services/${entry.slug}`);
-  if (service) return [...sharedPrefixes, "services.", `svc.${service.key}.`];
+  if (service) return [...sharedPrefixes,
+    "services.covers", "services.how_title", "services.lanes_title", "services.docs_title",
+    "services.questions_title", "services.ask", "services.related", `svc.${service.key}.`,
+  ];
   return [...sharedPrefixes, ...(pagePrefixes[path] ?? [])];
 }
 

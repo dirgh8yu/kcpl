@@ -51,9 +51,10 @@ export function Stop({ title, intro, id, children, className = "" }: { title: st
   );
 }
 
-export function PageHead({ title, intro, children }: { title: string; intro?: ReactNode; children?: ReactNode }) {
+export function PageHead({ title, intro, breadcrumb, children }: { title: string; intro?: ReactNode; breadcrumb?: ReactNode; children?: ReactNode }) {
   return (
     <header className="page-head">
+      {breadcrumb}
       <h1 className="page-title">{title}</h1>
       {intro ? <p className="page-intro">{intro}</p> : null}
       {children}

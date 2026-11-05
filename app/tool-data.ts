@@ -116,7 +116,7 @@ export const tools: Record<SiteLocale, ToolsCopy> = {
   en: {
     index: {
       title: "Free tools for importers",
-      description: "Free calculators for shipping into Nepal: estimate customs duty and VAT, storage and demurrage past free time, and the volume and chargeable weight of a consignment.",
+      description: "Use free Nepal import calculators to estimate customs duty and VAT, storage and demurrage after free time, plus consignment volume and chargeable weight.",
       intro: "Three sums importers into Nepal work out before a shipment moves. Each runs in your browser, keeps nothing you enter, and gives an estimate to plan with, not a quotation or a customs assessment.",
       open: "Open the calculator",
     },

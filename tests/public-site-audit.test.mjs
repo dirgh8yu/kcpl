@@ -3,6 +3,10 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 import nextConfig from "../next.config.ts";
+import { guideIndex, guides } from "../app/guide-data.ts";
+import { siteText } from "../app/site-i18n.ts";
+import { tools } from "../app/tool-data.ts";
+
 
 const require = createRequire(import.meta.url);
 const postcss = require("postcss");
@@ -185,3 +189,24 @@ test("the 404 page has a title and a visible way back", async () => {
   const page = await readFile(repo("app/components/not-found-page.tsx"), "utf8");
   assert.match(page, /<Link href="\/" className="btn">Return home<\/Link>/);
 });
+
+test("phase-one English metadata descriptions stay within 140–155 Unicode characters", () => {
+  const descriptions = new Map([
+    ["/", siteText("en", "home.meta_description")],
+    ["/guides", guideIndex.en.description],
+    ["/guides/importing-to-nepal", guides.en["importing-to-nepal"].description],
+    ["/guides/exporting-from-nepal", guides.en["exporting-from-nepal"].description],
+    ["/work", siteText("en", "work.meta_description")],
+    ["/tools", tools.en.index.description],
+    ["/services", siteText("en", "services.meta_description")],
+    ["/guides/sea-freight-through-india", guides.en["sea-freight-through-india"].description],
+    ["/services/delivery", siteText("en", "svc.delivery.summary")],
+    ["/careers", siteText("en", "careers.meta_description")],
+  ]);
+
+  for (const [path, description] of descriptions) {
+    const count = [...description].length;
+    assert.ok(count >= 140 && count <= 155, `${path} description has ${count} Unicode characters`);
+  }
+});
+
