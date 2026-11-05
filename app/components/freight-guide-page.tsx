@@ -5,7 +5,7 @@ import { faqNode, graph } from "../structured-data";
 import { sitePath, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
-import { Lined, PageHead, Stop } from "./route-parts";
+import { Lined, PageHead, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 
@@ -20,7 +20,7 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
       <PageHead title={guide.title} intro={guide.intro}>
         <Link href={sitePath(locale, "/guides")} className="back-link"><ArrowLeft size={15} weight="bold" aria-hidden="true"/>{index.title}</Link>
       </PageHead>
-      <Lined>
+      <Lined reveal>
         <Stop title={guide.routeTitle}>
           <ol className="stages">
             {guide.stages.map((stage) => <li key={stage.title}><h3>{stage.title.replace(/^\d+\s*\/\s*/, "")}</h3><p>{stage.copy}</p></li>)}
@@ -30,7 +30,7 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
           <ul className="check-list">{guide.documents.map((item) => <li key={item}>{item}</li>)}</ul>
         </Stop>
         <Stop title={guide.questionsTitle}>
-          <dl className="qa">{guide.questions.map((item) => <div key={item.question}><dt>{item.question}</dt><dd>{item.answer}</dd></div>)}</dl>
+          <QaList items={guide.questions}/>
         </Stop>
         <section className="stop page-actions">
           <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{guide.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
@@ -66,7 +66,7 @@ export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/guides">
       <PageHead title={index.title} intro={index.intro}/>
-      <Lined>
+      <Lined reveal>
         <Stop title={toolCopy.index.title} intro={toolCopy.index.intro}>
           <IndexList items={toolSlugs.map((slug) => ({ href: sitePath(locale, `/tools/${slug}`), title: toolCopy[slug].title, copy: toolCopy[slug].description }))}/>
         </Stop>

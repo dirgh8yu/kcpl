@@ -14,7 +14,7 @@ export function SelectedWorkPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/work">
       <PageHead title={t("work.title")} intro={t("work.intro")}/>
-      <Lined>
+      <Lined reveal>
         {stories.map((story) => (
           <article key={story.slug} id={story.slug} className="stop work-record">
             <h2 className="stop-title">{t(`home.proof_${story.number}_title`)}</h2>

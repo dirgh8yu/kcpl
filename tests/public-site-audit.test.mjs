@@ -110,6 +110,38 @@ test("no public page ships a photograph without a recorded source", async () => 
   for (const path of ["ship-dusk", "port-crane", "air-cargo", "forklift-loading"]) assert.ok(![...used].some((entry) => entry.includes(path)), path);
 });
 
+test("staged reveal never hides content on its own, and the line and the reveal agree", async () => {
+  // Hidden states exist only under classes the client adds, so without JavaScript nothing is hidden.
+  site.walkDecls("opacity", (decl) => {
+    if (decl.value !== "0" || !/reveal/.test(decl.parent.selector)) return;
+    assert.match(decl.parent.selector, /\.reveal-wait/, decl.parent.selector);
+  });
+  const reveal = await readFile(repo("app/components/route-reveal.tsx"), "utf8");
+  assert.doesNotMatch(reveal, /addEventListener\("scroll"/, "the spine is CSS; no scroll listeners");
+  assert.match(reveal, /LINE_AT = 0\.72/);
+  assert.ok(declarations(".spine i").some(({ prop, value }) => prop === "animation-range" && value.includes("28svh") && value.includes("72svh")), "the spine's front must sit where the reveal fires");
+  for (const required of ["focusin", ".site-footer", "getBoundingClientRect().top < window.innerHeight"]) assert.ok(reveal.includes(required), required);
+});
+
+test("long answers open on a tap and stay in the page", async () => {
+  const parts = await readFile(repo("app/components/route-parts.tsx"), "utf8");
+  assert.match(parts, /<details key=/);
+  for (const path of ["services-page", "freight-guide-page", "interior-pages"]) {
+    const code = await readFile(repo(`app/components/${path}.tsx`), "utf8");
+    assert.match(code, /<QaList/, path);
+    assert.doesNotMatch(code, /<dl className="qa"/, path);
+  }
+});
+
+test("forms and legal pages stay still", async () => {
+  const pages = await readFile(repo("app/components/interior-pages.tsx"), "utf8");
+  for (const name of ["ContactPage", "TrackPage", "CareersPage"]) {
+    const body = pages.slice(pages.indexOf(`export function ${name}`));
+    assert.match(body.slice(0, body.indexOf("</SiteShell>")), /<Lined>/, name);
+  }
+  assert.doesNotMatch(await readFile(repo("app/components/tool-pages.tsx"), "utf8"), /<Lined reveal>/);
+});
+
 test("the 404 page has a title and a visible way back", async () => {
   for (const path of ["app/not-found.tsx", "app/(en)/not-found.tsx"]) {
     assert.match(await readFile(repo(path), "utf8"), /export const metadata: Metadata = \{ title: "Page not found/, path);

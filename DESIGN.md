@@ -317,6 +317,8 @@ The signature component and the home page's form. Choosing a freight mode rerout
 ### Spine and Stops
 The spine fills with crimson as the page scrolls, using a view-driven timeline where supported. It stands solid crimson without support or under reduced motion. Each stop places one station beside its heading.
 
+On long pages the spine also paces the reading. Its front holds at 72% of the screen height, and `route-reveal.tsx` calls a section in when its station reaches that line: heading, then intro, then items at 60ms apart (35ms on phones), over 480ms (320ms on phones), once per visit. Images and drawn routes wipe in from the left over 700ms (450ms on phones). Sections already on screen at load are never hidden; the first section under a page title arrives through CSS instead. Reduced motion keeps a 200ms fade and drops all movement, and without JavaScript everything is simply visible. Privacy, terms, quote, track, tools, contact, careers, gallery and search stay still, because people are reading closely or typing there.
+
 ### Mini Route
 A movement's own small route: evenly spaced stations with the line lifted over any rerouted stops. Beyond four stops it turns vertical on phones. At band scale it runs in white at 6px with 16px labels.
 
@@ -341,6 +343,7 @@ Follows the site's ground, Manrope, a heading up to 42px at 500, and the 52px ch
 - **Do** use ink for the selected state of an option and crimson for the action.
 - **Do** keep crimson bands to two inks, including their focus rings.
 - **Do** give every motion a reduced-motion fallback, and let the signature draw play once per load or per mode change.
+- **Do** let long pages arrive in reading order, and open long answers on a tap. Never hold back a headline, a form, or anything a person is typing into.
 - **Do** use Phosphor icons, bold for arrows, and Manrope tabular numerals for calculated figures.
 - **Do** keep controls at 44px or taller, form text at 16px, and check every layout in Nepali, Hindi and Chinese.
 

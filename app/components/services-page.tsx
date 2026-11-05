@@ -5,7 +5,7 @@ import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { ServiceList } from "./home-page";
-import { Lined, MiniRoute, PageHead, Stop } from "./route-parts";
+import { Lined, MiniRoute, PageHead, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 
@@ -18,7 +18,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/services">
       <PageHead title={t("services.title")} intro={t("services.intro")}/>
-      <Lined>
+      <Lined reveal>
         <Stop title={t("home.capability_title")}><ServiceList locale={locale}/></Stop>
         <Stop title={t("services.cargo_title")} intro={t("services.cargo_copy")}>
           <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
@@ -42,7 +42,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
       <PageHead title={t(text(service.key, "title"))} intro={t(text(service.key, "summary"))}>
         <MiniRoute stops={t(text(service.key, "stops"))}/>
       </PageHead>
-      <Lined>
+      <Lined reveal>
         <Stop title={t("services.covers")}>
           <ul className="check-list">
             {["p1", "p2", "p3", "p4", "p5", "p6"].map((part) => <li key={part}>{t(text(service.key, part))}</li>)}
@@ -54,11 +54,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           <div><h2 className="block-title">{t("services.docs_title")}</h2><p>{t(text(service.key, "docs"))}</p></div>
         </section>
         <Stop title={t("services.questions_title")}>
-          <dl className="qa">
-            {[1, 2].map((number) => (
-              <div key={number}><dt>{t(text(service.key, `q${number}`))}</dt><dd>{t(text(service.key, `a${number}`))}</dd></div>
-            ))}
-          </dl>
+          <QaList items={[1, 2].map((number) => ({ question: t(text(service.key, `q${number}`)), answer: t(text(service.key, `a${number}`)) }))}/>
         </Stop>
         <Stop title={t("services.ask")} intro={t(text(service.key, "ask"))}>
           <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>

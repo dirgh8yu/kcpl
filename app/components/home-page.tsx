@@ -48,7 +48,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           submit: t("home.plan_cta"),
         }}/>
       </section>
-      <Lined>
+      <Lined reveal>
         <ClientRail labels={{ title: t("home.clients_title"), pause: t("home.clients_pause"), play: t("home.clients_play") }}/>
         <Stop title={t("home.proof_title")} intro={t("home.proof_intro")}/>
         <section className="feature-band">

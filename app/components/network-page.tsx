@@ -26,7 +26,7 @@ export function NetworkPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/network">
       <PageHead title={t("network.title")} intro={t("network.intro")}/>
-      <Lined>
+      <Lined reveal>
         <Stop title={t("network.staffed_title")} intro={t("network.staffed_copy")}>
           <RouteDiagram names={names} ends={{ from: copy.origin, to: copy.destination }}/>
           <RouteFork names={names}/>

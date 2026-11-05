@@ -62,7 +62,7 @@ export function AwardsPage({ locale }: { locale: SiteLocale }) {
   return (
     <SiteShell locale={locale} path="/awards">
       <PageHead title={t("awards.title")} intro={t("awards.intro")}/>
-      <Lined>
+      <Lined reveal>
         <section className="stop awards-summary">
           <p className="stop-intro">{t("awards.context")}</p>
           <Link href={lcci.href} target="_blank" rel="noopener noreferrer" aria-label={t("awards.issuer")}>

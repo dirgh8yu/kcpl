@@ -34,3 +34,14 @@ Quoted from the owner's own answers, so later work need not re-derive them.
 - Track a shipment, question 96 "Where should 'Track a shipment' live?", answered "Menu and footer, as now" (answers artifact doc `q096`, 2026-11-05). Track is not a header link.
 - Header: the written intent the owner confirmed with "Yes, start" read "Navigation: Services, Case studies, Network, Resources, About, Contact" and "Header: language and quote only. Search and the portal move to the menu, and the portal also goes in the footer". The menu therefore exists at every width.
 - Direction: the owner chose "B, The Line (Recommended)" from the three built directions.
+
+## Motion decisions on record
+
+The owner answered ten questions on motion on 2026-11-06, which replace "one authored moment" as the motion rule for long pages. The goal is less text arriving at once.
+
+- A section arrives when the crimson line reaches its station. Order inside it: heading, intro, then items. About half a second, once per visit.
+- Long question and answer sections open on a tap. Guide steps appear as the line draws from one to the next.
+- Staged: home, services, sectors, case studies, network, about, awards, agents, guides and FAQ. Still: privacy, terms, quote, track, tools. Contact, careers, gallery and search were not in the owner's list, so they also stay still.
+- First screen: the headline is instant and only the line draws.
+- Photos and certificates wipe in along the line. Phones use the same idea, quicker and with shorter moves.
+
