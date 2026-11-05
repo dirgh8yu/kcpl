@@ -1,6 +1,13 @@
 import type { SiteLocale } from "../site-i18n";
 
 const en = {
+  routeTitle: "Where is the cargo going?",
+  replyTo: "Where should KCPL reply?",
+  detailsTitle: "Who and what",
+  detailsCopy: "Your name is needed. The rest helps KCPL reply with a real plan.",
+  replyTime: "KCPL replies within one working day.",
+  packing: "Have a packing list? Send it to the same address with your reference.",
+  orCall: "Prefer to talk?",
   essentials: "Essential details",
   progress: (count: number) => `${count} of 5 entered`,
   route: "Route",
@@ -70,6 +77,13 @@ const en = {
 export const quoteCopy: Record<SiteLocale, typeof en> = {
   en,
   ne: {
+    routeTitle: "कार्गो कहाँ जाँदैछ?",
+    replyTo: "KCPL ले कहाँ जवाफ पठाओस्?",
+    detailsTitle: "को र के",
+    detailsCopy: "तपाईंको नाम आवश्यक छ। बाँकी विवरणले KCPL लाई ठोस योजनासहित जवाफ दिन मद्दत गर्छ।",
+    replyTime: "KCPL एक कार्य दिनभित्र जवाफ दिन्छ।",
+    packing: "प्याकिङ लिस्ट छ? आफ्नो रेफरेन्ससहित त्यही ठेगानामा पठाउनुहोस्।",
+    orCall: "कुरा गर्न चाहनुहुन्छ?",
     essentials: "अनिवार्य विवरण",
     progress: (count) => `५ मध्ये ${count} भरियो`,
     route: "रुट",
@@ -136,6 +150,13 @@ export const quoteCopy: Record<SiteLocale, typeof en> = {
     notSpecified: "उल्लेख छैन",
   },
   zh: {
+    routeTitle: "货物要运往哪里？",
+    replyTo: "KCPL 应回复到哪里？",
+    detailsTitle: "联系人与货物",
+    detailsCopy: "姓名为必填。其余信息有助于 KCPL 给出切实的方案。",
+    replyTime: "KCPL 会在一个工作日内回复。",
+    packing: "有装箱单？请连同参考号发送至同一邮箱。",
+    orCall: "想直接沟通？",
     essentials: "必填信息",
     progress: (count) => `已填写 ${count}/5 项`,
     route: "运输路线",
@@ -202,6 +223,13 @@ export const quoteCopy: Record<SiteLocale, typeof en> = {
     notSpecified: "未填写",
   },
   hi: {
+    routeTitle: "कार्गो कहाँ जा रहा है?",
+    replyTo: "KCPL कहाँ जवाब दे?",
+    detailsTitle: "कौन और क्या",
+    detailsCopy: "आपका नाम ज़रूरी है। बाकी जानकारी से KCPL ठोस योजना के साथ जवाब दे पाता है।",
+    replyTime: "KCPL एक कार्य दिवस के भीतर जवाब देता है।",
+    packing: "पैकिंग लिस्ट है? अपने संदर्भ नंबर के साथ उसी पते पर भेजें।",
+    orCall: "बात करना चाहते हैं?",
     essentials: "ज़रूरी जानकारी",
     progress: (count) => `5 में से ${count} भरे गए`,
     route: "मार्ग",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { PageHead } from "../components/route-parts";
 import { SiteShell } from "../components/site-chrome";
 import "../site.css";
 
@@ -13,11 +14,9 @@ export default function PublicError({ error, reset }: { error: Error & { digest?
 
   return (
     <SiteShell locale="en" path="/">
-      <section className="section page-head">
-        <h1 className="section-title">This page could not be loaded.</h1>
-        <p className="section-intro">The request failed before the page finished rendering.</p>
-        <button type="button" onClick={reset} className="section-link contact-action">Try again</button>
-      </section>
+      <PageHead title="This page could not be loaded." intro="The request failed before the page finished rendering.">
+        <button type="button" onClick={reset} className="btn">Try again</button>
+      </PageHead>
     </SiteShell>
   );
 }

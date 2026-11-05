@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { OpsEmptyState, OpsPage, OpsPageHeader } from "../admin/operations-ui";
 import { portalText, type PortalLocale } from "./portal-i18n";
 import { SignInLayout } from "../admin/sign-in-layout";
+import "./portal-sign-in.css";
 
 /** Shown when Firebase is not configured for this deployment at all, on the
  *  sign-in page's own layout: it stands where that page would. */
@@ -15,6 +16,7 @@ export function PortalUnavailable({
 }) {
   return (
     <SignInLayout
+      tone="public"
       title={title}
       lead={detail}
       help={<>To follow a single shipment, <Link href="/track">track it without signing in</Link>.</>}

@@ -66,3 +66,9 @@ yarn-error.log*
 /data/
 
 /.graphifyignore
+
+# Impeccable working files: previews and captures, not source
+.impeccable/directions/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/questions/

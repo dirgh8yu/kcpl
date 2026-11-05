@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-05T09:59:00.284219+00:00",
+  "title": "Design System: Kapileshwor Cargo public website",
+  "extensions": {
+    "colorMeta": {
+      "crimson": {
+        "role": "primary",
+        "displayName": "KCPL Crimson",
+        "canonical": "#dc143c",
+        "tonalRamp": [
+          "oklch(15.0% 0.222 20.1)",
+          "oklch(26.4% 0.222 20.1)",
+          "oklch(37.9% 0.222 20.1)",
+          "oklch(49.3% 0.222 20.1)",
+          "oklch(60.7% 0.222 20.1)",
+          "oklch(72.1% 0.222 20.1)",
+          "oklch(83.6% 0.222 20.1)",
+          "oklch(95.0% 0.222 20.1)"
+        ]
+      },
+      "crimson-deep": {
+        "role": "primary",
+        "displayName": "Pressed Crimson",
+        "canonical": "#b80f31",
+        "tonalRamp": [
+          "oklch(15.0% 0.194 20.0)",
+          "oklch(26.4% 0.194 20.0)",
+          "oklch(37.9% 0.194 20.0)",
+          "oklch(49.3% 0.194 20.0)",
+          "oklch(60.7% 0.194 20.0)",
+          "oklch(72.1% 0.194 20.0)",
+          "oklch(83.6% 0.194 20.0)",
+          "oklch(95.0% 0.194 20.0)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#101010",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Off-White Canvas",
+        "canonical": "#f6f6f3",
+        "tonalRamp": [
+          "oklch(15.0% 0.004 106.5)",
+          "oklch(26.4% 0.004 106.5)",
+          "oklch(37.9% 0.004 106.5)",
+          "oklch(49.3% 0.004 106.5)",
+          "oklch(60.7% 0.004 106.5)",
+          "oklch(72.1% 0.004 106.5)",
+          "oklch(83.6% 0.004 106.5)",
+          "oklch(95.0% 0.004 106.5)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Warm Grey",
+        "canonical": "#565650",
+        "tonalRamp": [
+          "oklch(15.0% 0.010 106.8)",
+          "oklch(26.4% 0.010 106.8)",
+          "oklch(37.9% 0.010 106.8)",
+          "oklch(49.3% 0.010 106.8)",
+          "oklch(60.7% 0.010 106.8)",
+          "oklch(72.1% 0.010 106.8)",
+          "oklch(83.6% 0.010 106.8)",
+          "oklch(95.0% 0.010 106.8)"
+        ]
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Placeholder Grey",
+        "canonical": "#74746d",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 106.7)",
+          "oklch(26.4% 0.011 106.7)",
+          "oklch(37.9% 0.011 106.7)",
+          "oklch(49.3% 0.011 106.7)",
+          "oklch(60.7% 0.011 106.7)",
+          "oklch(72.1% 0.011 106.7)",
+          "oklch(83.6% 0.011 106.7)",
+          "oklch(95.0% 0.011 106.7)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(16 16 16 / 16%)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "rule-on-ink": {
+        "role": "neutral",
+        "displayName": "Hairline on Ink",
+        "canonical": "rgb(255 255 255 / 30%)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The home headline only."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "The single H1 of an inner page."
+      },
+      "band-title": {
+        "displayName": "Band Title",
+        "purpose": "The closing band."
+      },
+      "stop-title": {
+        "displayName": "Stop Title",
+        "purpose": "Each station's section heading."
+      },
+      "feature-title": {
+        "displayName": "Feature Title",
+        "purpose": "A movement staged on a crimson band."
+      },
+      "panel-title": {
+        "displayName": "Panel Title",
+        "purpose": "The heading inside a plate."
+      },
+      "block-title": {
+        "displayName": "Block Title",
+        "purpose": "Subsections inside a stop."
+      },
+      "item-title": {
+        "displayName": "Item Title",
+        "purpose": "Questions, stages and search results."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Intros in Warm Grey and long-form prose."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, station names, rail titles, navigation."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons and text links."
+      },
+      "input": {
+        "displayName": "Input",
+        "purpose": "Typed values."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "The quote reference number; real data only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "popover",
+        "value": "0 12px 32px rgb(16 16 16 / 16%)",
+        "purpose": "Language and menu panels."
+      },
+      {
+        "name": "map-label",
+        "value": "0 8px 22px rgb(16 16 16 / 16%)",
+        "purpose": "The selection card over the network map."
+      },
+      {
+        "name": "certificate",
+        "value": "0 8px 22px rgb(16 16 16 / 12%)",
+        "purpose": "Award certificates, as paper objects on the page."
+      },
+      {
+        "name": "quiet-ring",
+        "value": "inset 0 0 0 1px rgb(16 16 16 / 16%)",
+        "purpose": "Form fields and tool option blocks at rest."
+      },
+      {
+        "name": "route-ring",
+        "value": "inset 0 0 0 2px #101010",
+        "purpose": "The two ends of the route and the box-form field."
+      },
+      {
+        "name": "focus-ring",
+        "value": "inset 0 0 0 2px #dc143c",
+        "purpose": "Any ring on focus."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Arrow nudges and popover entry."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "The route draw and the phone stop-list draw."
+      },
+      {
+        "name": "state",
+        "value": "160ms ease",
+        "purpose": "Fill, colour and ring changes on controls."
+      },
+      {
+        "name": "arrow-nudge",
+        "value": "200ms",
+        "purpose": "Arrow moves 4px right on hover."
+      },
+      {
+        "name": "line-dim",
+        "value": "280ms ease",
+        "purpose": "Lines and stations dimming when the route changes."
+      },
+      {
+        "name": "route-draw",
+        "value": "1500ms",
+        "purpose": "The route draws once on load and on each mode change; the western branch starts 700ms later."
+      },
+      {
+        "name": "stops-draw",
+        "value": "900ms",
+        "purpose": "The phone stop list draws downward."
+      },
+      {
+        "name": "spine-fill",
+        "value": "view() cover 0% to cover 100%, linear",
+        "purpose": "The spine fills on scroll where supported and without reduced motion."
+      },
+      {
+        "name": "rail",
+        "value": "70s linear infinite",
+        "purpose": "Client logo marquee, with a pause control."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "menu",
+        "value": "1100px"
+      },
+      {
+        "name": "phone",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The quote action and form submits. Chamfered 10px, focus ring drawn inside.",
+      "html": "<button class=\"ds-btn\">Continue to quote<svg width=\"17\" height=\"17\" viewBox=\"0 0 256 256\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z\"/></svg></button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px; border: 0; font: 700 16px/1 var(--font-manrope), system-ui, sans-serif; white-space: nowrap; cursor: pointer; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); transition: background-color 160ms ease; background: var(--kcpl-crimson); color: #fff; } .ds-btn:hover { background: #b80f31; } .ds-btn:focus-visible { outline: 2px solid #fff; outline-offset: -5px; }"
+    },
+    {
+      "name": "White Button",
+      "kind": "button",
+      "refersTo": "button-white",
+      "description": "The primary action on a crimson band.",
+      "html": "<div class=\"ds-on-crimson\"><a class=\"ds-btn-white\" href=\"#\">Request a quote<svg width=\"17\" height=\"17\" viewBox=\"0 0 256 256\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z\"/></svg></a></div>",
+      "css": ".ds-on-crimson { padding: 24px; background: var(--kcpl-crimson); } .ds-btn-white { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px; border: 0; font: 700 16px/1 var(--font-manrope), system-ui, sans-serif; white-space: nowrap; cursor: pointer; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); transition: background-color 160ms ease; background: #fff; color: var(--kcpl-crimson); text-decoration: none; } .ds-btn-white:hover { background: var(--kcpl-canvas); } .ds-btn-white:focus-visible { outline: 2px solid var(--kcpl-crimson); outline-offset: -5px; }"
+    },
+    {
+      "name": "Text Link",
+      "kind": "button",
+      "description": "Secondary action. Bold, with an arrow that nudges on hover.",
+      "html": "<a class=\"ds-link\" href=\"#\">Network and coverage<svg width=\"17\" height=\"17\" viewBox=\"0 0 256 256\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z\"/></svg></a>",
+      "css": ".ds-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--kcpl-black); font: 700 16px/1.3 var(--font-manrope), system-ui, sans-serif; text-decoration: none; } .ds-link svg { transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-link:hover { color: var(--kcpl-crimson); } .ds-link:hover svg { transform: translateX(4px); } .ds-link:focus-visible { outline: 2px solid var(--kcpl-crimson); outline-offset: 3px; }"
+    },
+    {
+      "name": "Route Field",
+      "kind": "input",
+      "refersTo": "route-field",
+      "description": "Origin and destination at the two ends of the route.",
+      "html": "<label class=\"ds-route-field\"><span>Origin</span><input placeholder=\"City, country\"></label>",
+      "css": ".ds-route-field { display: block; padding: 12px 16px; background: #fff; box-shadow: inset 0 0 0 2px var(--kcpl-black); transition: box-shadow 160ms ease; font-family: var(--font-manrope), system-ui, sans-serif; } .ds-route-field:focus-within { box-shadow: inset 0 0 0 2px var(--kcpl-crimson); } .ds-route-field span { display: block; font-size: 14px; font-weight: 500; color: #565650; } .ds-route-field input { display: block; width: 100%; margin-top: 2px; padding: 0; border: 0; background: transparent; color: var(--kcpl-black); font: 600 16px/1.5 var(--font-manrope), system-ui, sans-serif; caret-color: var(--kcpl-crimson); outline: 0; } .ds-route-field input::placeholder { color: #74746d; font-weight: 500; opacity: 1; }"
+    },
+    {
+      "name": "Form Field",
+      "kind": "input",
+      "refersTo": "form-field",
+      "description": "Ordinary quote fields, with the quiet ring at rest.",
+      "html": "<label class=\"ds-field\"><span>Where should KCPL reply?</span><input type=\"email\" placeholder=\"you@company.com\"></label>",
+      "css": ".ds-field { display: block; padding: 12px 16px; background: #fff; box-shadow: inset 0 0 0 1px rgb(16 16 16 / 16%); transition: box-shadow 160ms ease; font-family: var(--font-manrope), system-ui, sans-serif; } .ds-field:focus-within { box-shadow: inset 0 0 0 2px var(--kcpl-crimson); } .ds-field span { display: block; font-size: 14px; font-weight: 500; color: #565650; } .ds-field input { display: block; width: 100%; margin-top: 2px; padding: 0; border: 0; background: transparent; color: var(--kcpl-black); font: 600 16px/1.5 var(--font-manrope), system-ui, sans-serif; caret-color: var(--kcpl-crimson); outline: 0; } .ds-field input::placeholder { color: #74746d; font-weight: 500; opacity: 1; }"
+    },
+    {
+      "name": "Freight Mode Options",
+      "kind": "chip",
+      "refersTo": "mode-option-selected",
+      "description": "Selected fills ink; crimson stays reserved for the action.",
+      "html": "<div class=\"ds-mode\"><label><input type=\"radio\" name=\"ds-mode\" checked><span>Sea</span></label><label><input type=\"radio\" name=\"ds-mode\"><span>Air</span></label><label><input type=\"radio\" name=\"ds-mode\"><span>Road</span></label><label><input type=\"radio\" name=\"ds-mode\"><span>Not sure</span></label></div>",
+      "css": ".ds-mode { display: flex; flex-wrap: wrap; gap: 2px; font-family: var(--font-manrope), system-ui, sans-serif; color: var(--kcpl-black); } .ds-mode label { position: relative; cursor: pointer; } .ds-mode input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; } .ds-mode span { display: block; padding: 8px 12px; font-size: 14px; font-weight: 600; white-space: nowrap; transition: background-color 160ms ease, color 160ms ease; } .ds-mode label:hover input:not(:checked) + span { background: rgb(16 16 16 / 16%); } .ds-mode input:checked + span { background: var(--kcpl-black); color: #fff; } .ds-mode input:focus-visible + span { outline: 2px solid var(--kcpl-crimson); outline-offset: 2px; }"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "description": "Sticky canvas header with no divider; the current link turns crimson.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">Services</a><a href=\"#\">Case studies</a><a href=\"#\">Network</a><a href=\"#\">Resources</a><a href=\"#\">About</a><a href=\"#\">Contact</a></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; gap: clamp(14px, 2vw, 30px); padding: 24px 0; background: var(--kcpl-canvas); font-family: var(--font-manrope), system-ui, sans-serif; } .ds-nav a { color: var(--kcpl-black); font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap; } .ds-nav a:hover { color: var(--kcpl-crimson); } .ds-nav a:focus-visible { outline: 2px solid var(--kcpl-crimson); outline-offset: 3px; } .ds-nav a[aria-current] { color: var(--kcpl-crimson); font-weight: 700; }"
+    },
+    {
+      "name": "Quote Plate",
+      "kind": "card",
+      "refersTo": "plate",
+      "description": "The working container for forms. Chamfered 18px; there are no content cards.",
+      "html": "<div class=\"ds-plate-ground\"><div class=\"ds-plate\"><h3>Where is the cargo going?</h3><p>One plate, one question.</p></div></div>",
+      "css": ".ds-plate-ground { padding: 24px; background: var(--kcpl-canvas); } .ds-plate { display: grid; gap: 16px; padding: clamp(20px, 3vw, 36px); background: #fff; color: var(--kcpl-black); font-family: var(--font-manrope), system-ui, sans-serif; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); } .ds-plate h3 { margin: 0; font-size: clamp(24px, 2.4vw, 34px); font-weight: 500; line-height: 1.1; letter-spacing: -.025em; } .ds-plate p { margin: 0; color: #565650; }"
+    },
+    {
+      "name": "Mini Route",
+      "kind": "custom",
+      "refersTo": "station",
+      "description": "A movement's own route: crimson line and ink-ringed stations.",
+      "html": "<ol class=\"ds-mini\"><li><i></i>Kolkata</li><li><i></i>Birgunj</li><li><i></i>Kathmandu</li></ol>",
+      "css": ".ds-mini { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; font: 600 14px/1.3 var(--font-manrope), system-ui, sans-serif; color: var(--kcpl-black); } .ds-mini::before { content: ''; position: absolute; left: 16.67%; right: 16.67%; top: 7px; height: 4px; background: var(--kcpl-crimson); } .ds-mini li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; } .ds-mini i { width: 18px; height: 18px; border: 3px solid var(--kcpl-black); border-radius: 50%; background: var(--kcpl-white); box-sizing: border-box; }"
+    },
+    {
+      "name": "Closing Band",
+      "kind": "custom",
+      "refersTo": "end-band",
+      "description": "Full-bleed crimson in two inks, ending the line in a white terminus.",
+      "html": "<section class=\"ds-band\"><h2>Tell us the cargo, the route and the date.</h2><a class=\"ds-band-btn\" href=\"#\">Request a quote<svg width=\"17\" height=\"17\" viewBox=\"0 0 256 256\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z\"/></svg></a></section>",
+      "css": ".ds-band { position: relative; padding: 48px 32px 48px 96px; background: var(--kcpl-crimson); color: #fff; font-family: var(--font-manrope), system-ui, sans-serif; } .ds-band::before { content: ''; position: absolute; left: 32px; top: 0; width: 8px; height: 66px; background: #fff; } .ds-band::after { content: ''; position: absolute; left: 22px; top: 52px; width: 28px; height: 28px; border-radius: 50%; background: #fff; } .ds-band h2 { max-width: 13em; margin: 0; font-size: clamp(36px, 6vw, 92px); font-weight: 500; line-height: 1.02; letter-spacing: -.04em; } .ds-band-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px; border: 0; font: 700 16px/1 var(--font-manrope), system-ui, sans-serif; white-space: nowrap; cursor: pointer; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); transition: background-color 160ms ease; margin-top: 32px; background: #fff; color: var(--kcpl-crimson); text-decoration: none; } .ds-band-btn:hover { background: var(--kcpl-canvas); } .ds-band-btn:focus-visible { outline: 2px solid var(--kcpl-crimson); outline-offset: -5px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Line",
+    "overview": "The whole site is one transit diagram. A thick crimson line with white stations on it starts at the origin field on the home page, runs through the route diagram to the destination field, and continues down the left of marketing and guide pages as a spine with one station per section. On the crimson bands the same line carries through in white. A new surface joins this system by finding its place on the line, not by adding a decorative layer around it.\n\nThe ground is off-white and quiet, the type is one family at a modest display weight, and separation comes from hairlines and whitespace. Crimson is never rationed into small accents: it appears as the line, as primary controls, and as whole bands. Density is generous on marketing pages and tighter on quote and tool pages, where chamfered plates hold the working parts. Photographs appear rarely, so the diagram stays the main image.\n\nThe geometry comes from the Gateway K logo. Its corners are cut, so buttons, plates and photographs are cut the same way, and the ground legs of the line bend at 45 degrees.",
+    "keyCharacteristics": [
+      "One crimson line with stations as the recurring device, from the home route to small routes inside stories and forms.",
+      "Off-white ground, ink text, crimson used whole.",
+      "Chamfered top-left and bottom-right corners on controls, plates and photographs; everything else stays square.",
+      "Manrope at weight 500 for large headings, with tight tracking in Latin only.",
+      "Hairline rows in place of cards for lists; two-ink crimson bands for emphasis."
+    ],
+    "rules": [
+      {
+        "name": "The Whole Crimson Rule",
+        "body": "Crimson appears at full strength as a line, a control or a band. It never becomes a tinted surface fill. The one sanctioned reduction is state on the diagram: an inactive line drops to 14% opacity so the chosen route reads, the undecided air arc sits at 55%, and that dimming belongs to the line alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Inks Rule",
+        "body": "On a crimson band there are two inks, crimson and white. Text, line, rings, focus outlines and the white button all follow it; muted grey and ink never appear there.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Accent Rule",
+        "body": "A second accent is allowed only for charts and status. The public site currently ships none.",
+        "section": "colors"
+      },
+      {
+        "name": "The Script Respect Rule",
+        "body": "Latin's tight tracking is never applied to other scripts. Devanagari display sets at line-height 1.25 with zero tracking, and body at 1.7, so vowel marks do not clip. Chinese display sets at 1.2 with -0.01em tracking and phrase-aware line breaks.",
+        "section": "typography"
+      },
+      {
+        "name": "The Real Data Rule",
+        "body": "Monospace marks a value that is actually data. It is never a costume for labels or headings.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sections Rule",
+        "body": "Sections, plates and bands never cast shadows. A clip-path removes outer shadows and outlines, so anything chamfered and focusable draws its focus ring inside.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Certificates As Issued Rule",
+        "body": "Award certificates are never chamfered, cropped or tinted. Client logos on the rail are greyscale at 85% opacity with a multiply blend. The Gateway K is never recoloured or redrawn.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do put new sections on the line as a stop, with a station beside the heading and content on the shared left edge.",
+      "Do chamfer only the top-left and bottom-right corners, 10px on controls and 18px on plates and photographs.",
+      "Do separate list items with a top hairline and whitespace.",
+      "Do use ink for the selected state of an option and crimson for the action.",
+      "Do keep crimson bands to two inks, including their focus rings.",
+      "Do give every motion a reduced-motion fallback, and let the signature draw play once per load or per mode change.",
+      "Do use Phosphor icons, bold for arrows, and Manrope tabular numerals for calculated figures.",
+      "Do keep controls at 44px or taller, form text at 16px, and check every layout in Nepali, Hindi and Chinese."
+    ],
+    "donts": [
+      "Don't use a tinted crimson surface, or any second accent outside charts and status.",
+      "Don't build grids of bordered or shadowed cards; plates are for forms and results only.",
+      "Don't use soft rounded corners, or bend a ground route at anything other than a 45-degree cut. The air arc is the only curve.",
+      "Don't stage a stock photograph under an overlaid headline; the route is the main image.",
+      "Don't put a chamfer on certificates or redraw, recolour or crop the Gateway K.",
+      "Don't apply tight Latin tracking to Devanagari or Chinese.",
+      "Don't use monospace for anything but real data.",
+      "Don't add small uppercase labels above headings; a section opens with its station and title.",
+      "Don't use AI-generated images, video, other companies' branding in photographs, or faces other than Ramesh Mishra's portrait.",
+      "Don't make Track a header link, or place the tagline anywhere but the footer."
+    ]
+  }
+}

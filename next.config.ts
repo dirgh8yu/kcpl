@@ -54,9 +54,11 @@ const nextConfig: NextConfig = {
    * Instances scale to zero and lose their disk cache, so a long TTL keeps
    * visitors off a cold encode. Replace a photo under a new filename, because
    * there is no way to invalidate this cache. */
+  poweredByHeader: false,
   images: { unoptimized: false, formats: ["image/avif", "image/webp"], minimumCacheTTL: 2678400 },
   async redirects() {
     return [
+      { source: "/favicon.ico", destination: "/icon-192.png", permanent: true },
       { source: "/tracking", destination: "/track", permanent: true },
       { source: "/services/sea-freight", destination: "/services/ocean-freight", permanent: true },
       { source: "/services/break-bulk-cargo", destination: "/services/project-cargo", permanent: true },

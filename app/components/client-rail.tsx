@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import useEmblaCarousel from "embla-carousel-react";
-import AutoScroll from "embla-carousel-auto-scroll";
+import { useState } from "react";
 import Image from "next/image";
-import { siteTranslator, type SiteLocale } from "../site-i18n";
+import { Pause, Play } from "@phosphor-icons/react/dist/ssr";
 
 const organisations = [
   { name: "Pinggao Group Co Ltd", logo: "pinggao.png" },
@@ -26,78 +24,31 @@ const organisations = [
   { name: "STERLITE POWER INDIA", logo: "sterlite.svg" },
 ] as const;
 
-export function ClientRail({ locale }: { locale: SiteLocale }) {
-  const t = siteTranslator(locale);
-  const sectionRef = useRef<HTMLElement>(null);
-  const isVisible = useRef(false);
-  const isHovering = useRef(false);
-  const [autoScroll] = useState(() => AutoScroll({ speed: 0.8, startDelay: 400, playOnInit: false, stopOnInteraction: true, stopOnFocusIn: true }));
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start", slidesToScroll: 1, breakpoints: { "(prefers-reduced-motion: reduce)": { duration: 0 } } }, [autoScroll]);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!emblaApi || !section) return;
-    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncPlayback = () => {
-      if (motionPreference.matches || document.hidden || !isVisible.current || isHovering.current) autoScroll.stop();
-      else autoScroll.play();
-    };
-    const onPointerEnter = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      isHovering.current = true;
-      autoScroll.stop();
-    };
-    const onPointerLeave = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      isHovering.current = false;
-      syncPlayback();
-    };
-    const observer = new IntersectionObserver(([entry]) => {
-      isVisible.current = entry.isIntersecting;
-      syncPlayback();
-    }, { threshold: 0.35 });
-    observer.observe(section);
-    section.addEventListener("pointerenter", onPointerEnter);
-    section.addEventListener("pointerleave", onPointerLeave);
-    motionPreference.addEventListener("change", syncPlayback);
-    document.addEventListener("visibilitychange", syncPlayback);
-
-    return () => {
-      observer.disconnect();
-      section.removeEventListener("pointerenter", onPointerEnter);
-      section.removeEventListener("pointerleave", onPointerLeave);
-      motionPreference.removeEventListener("change", syncPlayback);
-      document.removeEventListener("visibilitychange", syncPlayback);
-      autoScroll.stop();
-    };
-  }, [emblaApi, autoScroll]);
-
+/* A CSS marquee over two copies of the list. The second copy is hidden from
+ * assistive tech, and the button satisfies WCAG's pause requirement. */
+function Logos({ hidden = false }: { hidden?: boolean }) {
   return (
-    // One carousel landmark, named by its heading; each logo a slide in it. A
-    // list of role="group" items was invalid markup, and a second region with
-    // the same name made two indistinguishable landmarks.
-    <section ref={sectionRef} className="client-rail" aria-roledescription="carousel" aria-labelledby="client-rail-title">
-      <div className="client-rail-head">
-        <h2 id="client-rail-title">{t("home.clients_title")}</h2>
-      </div>
-      <div className="client-rail-viewport" ref={emblaRef}>
-        <div className="client-rail-track">
-          {organisations.map((organisation, index) => (
-            <div key={organisation.name} className="client-rail-item" role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${organisations.length}: ${organisation.name}`}>
-              {"logo" in organisation ? (
-                /* sizes mirrors the CSS box (.client-rail-logo: max 160px wide
-                 * on desktop, 132px under 620px), so the browser picks from
-                 * width-based candidates instead of assuming the full 220px
-                 * intrinsic width at 1x/2x — the rail stops fetching 640px
-                 * files for logos that render at ~112px. */
-                <Image className="client-rail-logo" src={`/images/clients/${organisation.logo}`} alt={organisation.name} width={220} height={90} sizes="(max-width: 620px) 132px, 160px" />
-              ) : (
-                <span className={`client-rail-name${organisation.name.length > 22 ? " client-rail-name-long" : ""}`}>{organisation.name}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+    <ul className="rail-track" aria-hidden={hidden || undefined}>
+      {organisations.map((organisation) => (
+        <li key={organisation.name}>
+          {"logo" in organisation
+            ? <Image src={`/images/clients/${organisation.logo}`} alt={hidden ? "" : organisation.name} width={220} height={90} sizes="150px"/>
+            : <span className="rail-word">{organisation.name}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ClientRail({ labels }: { labels: { title: string; pause: string; play: string } }) {
+  const [paused, setPaused] = useState(false);
+  return (
+    <section className={`rail${paused ? " is-paused" : ""}`} aria-labelledby="client-rail-title">
+      <h2 id="client-rail-title" className="rail-title">{labels.title}</h2>
+      <div className="rail-window"><Logos/><Logos hidden/></div>
+      <button type="button" className="rail-button" aria-label={paused ? labels.play : labels.pause} onClick={() => setPaused((value) => !value)}>
+        {paused ? <Play size={14} weight="bold" aria-hidden="true"/> : <Pause size={14} weight="bold" aria-hidden="true"/>}
+      </button>
     </section>
   );
 }
