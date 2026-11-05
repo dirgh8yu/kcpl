@@ -136,7 +136,7 @@ const en = {
   /* Home */
   "home.meta_title": "Kapileshwor Cargo | Freight Forwarding in Nepal",
   "home.meta_description": "Kathmandu-based KCPL coordinates air, ocean and road freight, customs documentation and project cargo for importers and exporters into and out of Nepal.",
-  "home.hero_title": "One team plans the whole route.",
+  "home.hero_title": "One team plans freight into and out of Nepal.",
   "home.hero_intro": "Air, ocean, cross-border road and project cargo. One Kathmandu team coordinates gateways, customs and delivery for importers and exporters.",
   "home.hero_cta": "Request a quote",
   "home.hero_secondary": "See what we handle",
