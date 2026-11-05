@@ -204,7 +204,7 @@ export const tools: Record<SiteLocale, ToolsCopy> = {
     },
     "volume-weight": {
       title: "Volume and chargeable weight calculator",
-      description: "Work out a consignment's volume in cubic metres, its air-freight chargeable weight, its sea-freight weight or measure, and how much of a container it fills.",
+      description: "Work out cargo volume in cubic metres, air-freight chargeable weight, sea-freight weight or measure, and how much of a container the shipment fills.",
       intro: "Enter each size of package once, with how many there are. The calculator adds up the volume and weight and shows what air and sea freight would charge on.",
       lengthUnit: "Dimensions in",
       weightUnit: "Weight in",

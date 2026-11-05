@@ -1,51 +1,51 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "b8c7df8f6c8dc523",
+      "fingerprint": "f5ea364132a2e898",
       "lastmod": "2026-11-05"
     },
     "ne/": {
-      "fingerprint": "506f20d46ceeaffc",
+      "fingerprint": "189435ac28a4ac59",
       "lastmod": "2026-11-05"
     },
     "zh/": {
-      "fingerprint": "2922e16906cd966e",
+      "fingerprint": "191f51addbcc378b",
       "lastmod": "2026-11-05"
     },
     "hi/": {
-      "fingerprint": "d910481ddd5254c6",
+      "fingerprint": "58171edb987e27ad",
       "lastmod": "2026-11-05"
     },
     "en/services": {
-      "fingerprint": "a3287784d231c58c",
+      "fingerprint": "5887ecd4440ded04",
       "lastmod": "2026-11-05"
     },
     "ne/services": {
-      "fingerprint": "35e0d8bb46cbec05",
+      "fingerprint": "ea890b8bf35ace9d",
       "lastmod": "2026-11-05"
     },
     "zh/services": {
-      "fingerprint": "0b0bee1c70f73867",
+      "fingerprint": "2c2f7e6bb2e940e0",
       "lastmod": "2026-11-05"
     },
     "hi/services": {
-      "fingerprint": "3a051e1162348c70",
+      "fingerprint": "2246d34861238a0f",
       "lastmod": "2026-11-05"
     },
     "en/sectors": {
-      "fingerprint": "c024388e52468e69",
+      "fingerprint": "faa8aaf50b2fa567",
       "lastmod": "2026-11-05"
     },
     "ne/sectors": {
-      "fingerprint": "29b1e081235ce7ed",
+      "fingerprint": "ad94a1d4f7de56b8",
       "lastmod": "2026-11-05"
     },
     "zh/sectors": {
-      "fingerprint": "c5c4b8a66b3a3e32",
+      "fingerprint": "b7fe0fcc4d126c07",
       "lastmod": "2026-11-05"
     },
     "hi/sectors": {
-      "fingerprint": "b45293a9649e64e4",
+      "fingerprint": "fabeb80a6d0d7ce3",
       "lastmod": "2026-11-05"
     },
     "en/work": {
@@ -161,19 +161,19 @@
       "lastmod": "2026-11-05"
     },
     "en/about": {
-      "fingerprint": "297c0174b55e5514",
+      "fingerprint": "d1d92cdc05b408cc",
       "lastmod": "2026-11-05"
     },
     "ne/about": {
-      "fingerprint": "124cff363f6440d3",
+      "fingerprint": "20934c106e945117",
       "lastmod": "2026-11-05"
     },
     "zh/about": {
-      "fingerprint": "96602346e608d8e4",
+      "fingerprint": "8704ddfb4229b99e",
       "lastmod": "2026-11-05"
     },
     "hi/about": {
-      "fingerprint": "65056b4113dd0690",
+      "fingerprint": "041ba72ea89937b6",
       "lastmod": "2026-11-05"
     },
     "en/contact": {
@@ -321,19 +321,19 @@
       "lastmod": "2026-11-05"
     },
     "en/services/project-cargo": {
-      "fingerprint": "af987d4b4973b5e0",
+      "fingerprint": "501348c25e91cf7b",
       "lastmod": "2026-11-05"
     },
     "ne/services/project-cargo": {
-      "fingerprint": "bdf5e2c45494dae0",
+      "fingerprint": "c4dfd4a3c6f020fc",
       "lastmod": "2026-11-05"
     },
     "zh/services/project-cargo": {
-      "fingerprint": "c8845b44501ace37",
+      "fingerprint": "b0d6708a10503dbb",
       "lastmod": "2026-11-05"
     },
     "hi/services/project-cargo": {
-      "fingerprint": "eb3bfa5ea3fbf7af",
+      "fingerprint": "8316305758b5b46d",
       "lastmod": "2026-11-05"
     },
     "en/services/warehousing": {
@@ -497,7 +497,7 @@
       "lastmod": "2026-10-11"
     },
     "en/tools": {
-      "fingerprint": "6ca08e2634abd87b",
+      "fingerprint": "037a59cea5755f81",
       "lastmod": "2026-11-05"
     },
     "ne/tools": {
@@ -513,8 +513,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/duty-estimate": {
-      "fingerprint": "b28872f9d035df4c",
-      "lastmod": "2026-10-11"
+      "fingerprint": "9002bd22c075ad69",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/duty-estimate": {
       "fingerprint": "3fadb99be3b07c51",
@@ -529,8 +529,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/storage-charges": {
-      "fingerprint": "b8b4af1d340e170a",
-      "lastmod": "2026-10-11"
+      "fingerprint": "709ac617ba615e40",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/storage-charges": {
       "fingerprint": "cac1689f3ede3db1",
@@ -545,8 +545,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/volume-weight": {
-      "fingerprint": "5671e04ddb173cb0",
-      "lastmod": "2026-10-11"
+      "fingerprint": "7f1178197a49b00f",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/volume-weight": {
       "fingerprint": "4f161125cf713b21",

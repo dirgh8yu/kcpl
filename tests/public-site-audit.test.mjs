@@ -198,6 +198,7 @@ test("phase-one English metadata descriptions stay within 140–155 Unicode char
     ["/guides/exporting-from-nepal", guides.en["exporting-from-nepal"].description],
     ["/work", siteText("en", "work.meta_description")],
     ["/tools", tools.en.index.description],
+    ["/tools/volume-weight", tools.en["volume-weight"].description],
     ["/services", siteText("en", "services.meta_description")],
     ["/guides/sea-freight-through-india", guides.en["sea-freight-through-india"].description],
     ["/services/delivery", siteText("en", "svc.delivery.summary")],
