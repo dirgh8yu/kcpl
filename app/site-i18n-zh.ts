@@ -101,7 +101,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.hero_intro": "空运、海运、跨境公路与项目货物。一个加德满都团队为进出口客户统筹口岸、清关与交付。",
   "home.hero_cta": "获取报价",
   "home.hero_secondary": "查看承运范围",
-  "home.hero_trust": "成立于 2015 年 · 2022–2025 年出口卓越奖",
+  "home.hero_trust": "成立于 2015 年 · 2022-2025 年出口卓越奖",
   "home.plan_title": "规划路线。",
   "home.plan_note": "本页不公布约束性运价。KCPL 会根据实际货物确认路线、设备和价格。",
   "home.plan_cta": "继续询价",

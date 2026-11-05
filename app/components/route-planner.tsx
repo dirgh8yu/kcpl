@@ -38,6 +38,7 @@ function phoneStops(mode: Mode, branch: string | undefined, typed: string): Stat
  * choosing a freight mode redraws the line between them. */
 export function RoutePlanner({ action, labels }: { action: string; labels: RoutePlannerLabels }) {
   const [mode, setMode] = useState<Mode>("sea");
+  const [touched, setTouched] = useState(false);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const typed = `${origin} ${destination}`;
@@ -51,7 +52,7 @@ export function RoutePlanner({ action, labels }: { action: string; labels: Route
           <span>{labels.origin}</span>
           <input name="origin" value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder={labels.originHint} autoComplete="off" maxLength={120}/>
         </label>
-        <RouteDiagram names={labels.stations} mode={mode} branch={branch}/>
+        <RouteDiagram names={labels.stations} mode={mode} branch={branch} touched={touched}/>
         {/* Keyed so that a change of mode draws the line again. */}
         <ol className="route-stops" key={`${mode}-${branch}`} aria-hidden="true">
           {phoneStops(mode, branch, typed).map((id) => <li key={id}>{labels.stations[id]}</li>)}
@@ -67,7 +68,7 @@ export function RoutePlanner({ action, labels }: { action: string; labels: Route
           <div>
             {modeOrder.map((value) => (
               <label key={value}>
-                <input type="radio" name="mode" value={value} checked={mode === value} onChange={() => setMode(value)}/>
+                <input type="radio" name="mode" value={value} checked={mode === value} onChange={() => { setMode(value); setTouched(true); }}/>
                 <span>{labels.modes[value]}</span>
               </label>
             ))}

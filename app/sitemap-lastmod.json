@@ -1,19 +1,19 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "6bcdd4af1bbe6e9a",
+      "fingerprint": "60784e0243981b5d",
       "lastmod": "2026-11-05"
     },
     "ne/": {
-      "fingerprint": "24e3403465787735",
+      "fingerprint": "506f20d46ceeaffc",
       "lastmod": "2026-11-05"
     },
     "zh/": {
-      "fingerprint": "ca13235d7eeb37b2",
+      "fingerprint": "2922e16906cd966e",
       "lastmod": "2026-11-05"
     },
     "hi/": {
-      "fingerprint": "6330face22161d1a",
+      "fingerprint": "d910481ddd5254c6",
       "lastmod": "2026-11-05"
     },
     "en/services": {
@@ -97,11 +97,11 @@
       "lastmod": "2026-11-05"
     },
     "en/awards": {
-      "fingerprint": "0ca8bcce07735df1",
+      "fingerprint": "b30e71326f23b256",
       "lastmod": "2026-11-05"
     },
     "ne/awards": {
-      "fingerprint": "05a4b97f7e97a674",
+      "fingerprint": "841f376cf2e7b6c7",
       "lastmod": "2026-11-05"
     },
     "zh/awards": {
@@ -109,7 +109,7 @@
       "lastmod": "2026-11-05"
     },
     "hi/awards": {
-      "fingerprint": "e5ad7ef5edc1f2a8",
+      "fingerprint": "231a4bdcf1c0a9f0",
       "lastmod": "2026-11-05"
     },
     "en/agents": {

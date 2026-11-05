@@ -16,9 +16,9 @@ const stations: { id: StationId; x: number; y: number; below: boolean; line: str
   { id: "surkhet", x: 640, y: 180, below: true, line: "west" },
 ];
 
-export function RouteDiagram({ names, mode, branch, ends }: { names: Record<StationId, string>; mode?: string; branch?: string; ends?: { from: string; to: string } }) {
+export function RouteDiagram({ names, mode, branch, ends, touched }: { names: Record<StationId, string>; mode?: string; branch?: string; ends?: { from: string; to: string }; touched?: boolean }) {
   return (
-    <div className="route-map" data-mode={mode} data-branch={branch}>
+    <div className="route-map" data-mode={mode} data-branch={branch} data-touched={touched || undefined}>
       <svg viewBox="0 0 800 240" aria-hidden="true">
         <path className="route-base" d={westPath}/>
         <path className="route-base" d={mainPath}/>

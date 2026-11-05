@@ -41,6 +41,7 @@ export function QuoteConcierge({
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
+  const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState("");
   const successHeading = useRef<HTMLHeadingElement>(null);
@@ -62,13 +63,19 @@ export function QuoteConcierge({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
+    // The first field needing attention gets the focus; aria-invalid marks the rest.
+    const focusFirstInvalid = () => requestAnimationFrame(() => form.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus());
     if (step === 0) {
       const message = firstStepError();
       setError(message);
-      if (!message) setStep(1);
+      setChecked(Boolean(message));
+      if (message) focusFirstInvalid();
+      else setStep(1);
       return;
     }
-    if (!name.trim() || firstStepError()) { setError(c.invalid); return; }
+    if (!name.trim() || firstStepError()) { setError(c.invalid); setChecked(true); focusFirstInvalid(); return; }
+    setChecked(false);
     if (submitting) return;
     setSubmitting(true);
     setError("");
@@ -140,7 +147,7 @@ export function QuoteConcierge({
           <a href={`mailto:${company.email}?subject=${encodeURIComponent(`Quote ${reference}`)}`} className="text-link">{company.email}<ArrowRight size={15} weight="bold" aria-hidden="true"/></a>
         </div>
       ) : (
-        <form className="quote-card" onSubmit={submit} noValidate aria-busy={submitting} onChange={() => { if (error) setError(""); }}>
+        <form className="quote-card" onSubmit={submit} noValidate aria-busy={submitting} onChange={() => { if (error) { setError(""); setChecked(false); } }}>
           <ol className="quote-steps" aria-label={c.stepProgress(step + 1, 2)}>
             <li aria-current={step === 0 ? "step" : undefined}><i aria-hidden="true"/>{c.route}</li>
             <li aria-current={step === 1 ? "step" : undefined}><i aria-hidden="true"/>{c.contact}</li>
@@ -148,8 +155,8 @@ export function QuoteConcierge({
           {step === 0 ? <>
             <h2>{c.routeTitle}</h2>
             <div className="quote-route">
-              <label className="field"><span>{c.origin}</span><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} aria-required="true"/></label>
-              <label className="field"><span>{c.destination}</span><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} aria-required="true"/></label>
+              <label className="field"><span>{c.origin}</span><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-invalid={checked && !origin.trim() ? true : undefined}/></label>
+              <label className="field"><span>{c.destination}</span><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-invalid={checked && !destination.trim() ? true : undefined}/></label>
             </div>
             <fieldset className="mode-field">
               <legend>{c.mode}</legend>
@@ -159,12 +166,12 @@ export function QuoteConcierge({
                 ))}
               </div>
             </fieldset>
-            <label className="field"><span>{c.replyTo}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder={c.emailExample} maxLength={254} aria-required="true"/></label>
+            <label className="field"><span>{c.replyTo}</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder={c.emailExample} maxLength={254} enterKeyHint="next" aria-required="true" aria-invalid={checked && !validEmail.test(email.trim()) ? true : undefined}/></label>
           </> : <>
             <h2 ref={stepHeading} tabIndex={-1}>{c.detailsTitle}</h2>
             <p className="quote-hint">{c.detailsCopy}</p>
             <div className="quote-fields">
-              <label className="field"><span>{c.name}</span><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder={c.nameExample} maxLength={120} aria-required="true"/></label>
+              <label className="field"><span>{c.name}</span><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder={c.nameExample} maxLength={120} aria-required="true" aria-invalid={checked && !name.trim() ? true : undefined}/></label>
               <label className="field"><span>{c.company}</span><input value={companyName} onChange={(event) => setCompanyName(event.target.value)} autoComplete="organization" placeholder={c.companyExample} maxLength={160}/></label>
               <label className="field"><span>{c.phone}</span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" placeholder={c.phoneExample} maxLength={80}/></label>
               <label className="field"><span>{c.timing}</span><input value={timing} onChange={(event) => setTiming(event.target.value)} placeholder={c.timingExample} maxLength={120}/></label>
@@ -175,7 +182,7 @@ export function QuoteConcierge({
           </>}
           {error ? <p className="form-error" role="alert">{error}</p> : null}
           <div className="quote-actions">
-            {step === 1 ? <button type="button" className="text-link" onClick={() => { setError(""); setStep(0); }}>{c.back}</button> : null}
+            {step === 1 ? <button type="button" className="text-link" onClick={() => { setError(""); setChecked(false); setStep(0); }}>{c.back}</button> : null}
             <button type="submit" className="btn" disabled={submitting}>{step === 0 ? c.next : submitting ? c.submitting : c.submit}<ArrowRight size={17} weight="bold" aria-hidden="true"/></button>
           </div>
           <p className="quote-hint">{c.privacy}</p>
