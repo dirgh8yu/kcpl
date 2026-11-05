@@ -1,13 +1,8 @@
+import { movementStories as stories } from "../movement-data";
 import { siteTranslator, type SiteLocale } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { Lined, MiniRoute, PageHead } from "./route-parts";
 import { SiteShell } from "./site-chrome";
-
-const stories = [
-  { number: 1, slug: "infrastructure" },
-  { number: 2, slug: "air-export", bend: [1, 3] },
-  { number: 3, slug: "western-nepal" },
-] as const;
 
 export function SelectedWorkPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);

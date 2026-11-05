@@ -1,6 +1,7 @@
 import type { GuideSlug } from "./guide-data";
 import type { ServiceSlug } from "./services-data";
 import { siteText } from "./site-i18n.ts";
+import { movementStories, type MovementSlug } from "./movement-data.ts";
 
 export type ContentSource = { label: string; href: string };
 
@@ -13,7 +14,7 @@ export type DepthSection = {
 export type DepthContent = {
   sections: DepthSection[];
   sources: ContentSource[];
-  movement?: { href: `/work#${"air-export" | "infrastructure" | "western-nepal"}`; label: string };
+  movement?: { href: `/work#${MovementSlug}`; label: string };
 };
 
 const tepcImports = "https://tepc.gov.np/pages/imports-transit-procedure";
@@ -34,11 +35,16 @@ export const depthReferenceCopy = {
 
 export const depthMovementCopy = { title: "A related documented movement" };
 
+function movementReference(number: (typeof movementStories)[number]["number"]) {
+  const story = movementStories.find((entry) => entry.number === number)!;
+  return { href: `/work#${story.slug}` as const, label: siteText("en", `home.proof_${story.number}_title`) };
+}
+
 const documentedMovements = {
-  airExport: { href: "/work#air-export", label: siteText("en", "home.proof_2_title") },
-  infrastructure: { href: "/work#infrastructure", label: siteText("en", "home.proof_1_title") },
-  westernNepal: { href: "/work#western-nepal", label: siteText("en", "home.proof_3_title") },
-} as const;
+  airExport: movementReference(2),
+  infrastructure: movementReference(1),
+  westernNepal: movementReference(3),
+};
 
 export const guideDepth: Record<GuideSlug, DepthContent> = {
   "importing-to-nepal": {

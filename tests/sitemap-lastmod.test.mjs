@@ -4,6 +4,7 @@ import test from "node:test";
 import { guides, guideSlugs } from "../app/guide-data.ts";
 import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth } from "../app/content-depth.ts";
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
+import { movementStories } from "../app/movement-data.ts";
 import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../app/sitemap-lastmod.json", import.meta.url), "utf8"));
@@ -127,5 +128,12 @@ test("movement-link heading restamps only English pages that show movement evide
     assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]).sort(), expected);
   } finally {
     depthMovementCopy.title = original;
+  }
+});
+
+test("guide and service evidence links target existing movement records", () => {
+  const targets = new Set(movementStories.map(({ slug }) => `/work#${slug}`));
+  for (const content of [...Object.values(guideDepth), ...Object.values(serviceDepth)]) {
+    if (content.movement) assert.ok(targets.has(content.movement.href), `missing work record: ${content.movement.href}`);
   }
 });
