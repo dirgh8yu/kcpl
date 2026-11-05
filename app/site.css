@@ -253,6 +253,8 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .stop-split .text-link, .stop-split .btn, .contact-grid .text-link { margin-top: 14px; }
 .stop-split::before, .lanes::before, .contact-grid::before { top: calc(var(--stop-top) + 4px); }
 .prose { max-width: 40em; margin-top: 18px; font-size: clamp(17px, 1.3vw, 19px); }
+.content-depth-copy { display: grid; gap: 16px; max-width: 40em; margin-top: 18px; font-size: clamp(17px, 1.3vw, 19px); line-height: 1.55; }
+.content-sources .link-list { margin-top: clamp(24px, 3vw, 40px); }
 .page-head { padding: clamp(32px, 6vw, 88px) var(--margin) clamp(8px, 2vw, 24px); }
 .breadcrumbs { margin-bottom: clamp(14px, 2vw, 24px); color: var(--muted); font-size: 14px; font-weight: 600; }
 .breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }

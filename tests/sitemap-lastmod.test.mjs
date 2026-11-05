@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { guides, guideSlugs } from "../app/guide-data.ts";
+import { depthReferenceCopy, guideDepth, serviceDepth } from "../app/content-depth.ts";
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
 import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
 
@@ -74,5 +75,41 @@ test("services-index metadata does not restamp service detail pages", () => {
     assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]), ["en/services"]);
   } finally {
     dictionary["services.meta_description"] = original;
+  }
+});
+
+test("a depth edit changes only its English page fingerprint", () => {
+  const cases = [
+    ...Object.entries(guideDepth).map(([slug, content]) => [`en/guides/${slug}`, content]),
+    ...Object.entries(serviceDepth).map(([slug, content]) => [`en/services/${slug}`, content]),
+  ];
+  for (const [expected, content] of cases) {
+    const before = fingerprintAll();
+    const paragraphs = content.sections[0].paragraphs;
+    const original = paragraphs[0];
+    try {
+      paragraphs[0] = `${original} Test-only editorial change.`;
+      const after = fingerprintAll();
+      const changed = Object.keys(after).filter((key) => after[key] !== before[key]);
+      assert.deepEqual(changed, [expected], `${expected} must not restamp other pages or translations`);
+    } finally {
+      paragraphs[0] = original;
+    }
+  }
+});
+
+test("shared reference copy restamps only the English pages that render it", () => {
+  const before = fingerprintAll();
+  const original = depthReferenceCopy.intro;
+  const expected = [
+    ...Object.entries(guideDepth).filter(([, content]) => content.sources.length).map(([slug]) => `en/guides/${slug}`),
+    ...Object.entries(serviceDepth).filter(([, content]) => content.sources.length).map(([slug]) => `en/services/${slug}`),
+  ].sort();
+  try {
+    depthReferenceCopy.intro = `${original} Test-only editorial change.`;
+    const after = fingerprintAll();
+    assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]).sort(), expected);
+  } finally {
+    depthReferenceCopy.intro = original;
   }
 });

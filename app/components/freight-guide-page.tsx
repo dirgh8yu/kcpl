@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
+import { guideDepth } from "../content-depth";
 import { faqNode, graph } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
+import { ContentDepth } from "./content-depth";
 import { Lined, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
@@ -44,6 +46,7 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
           </div>
           <Plate {...guidePhotos[slug]}/>
         </section>
+        {locale === "en" ? <ContentDepth content={guideDepth[slug]}/> : null}
         <Stop title={guide.questionsTitle}>
           <QaList items={guide.questions}/>
         </Stop>

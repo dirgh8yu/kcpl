@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { services } from "./services-data.ts";
+import { depthReferenceCopy, guideDepth, serviceDepth, type DepthContent } from "./content-depth.ts";
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
@@ -62,10 +63,16 @@ function toolPageSource(locale: SiteLocale, path: string) {
  * claiming an editorial change when the markup moved is the inaccuracy that
  * makes lastmod worthless.
  */
+function depthPageSource(depth: DepthContent) {
+  return { depth, references: depth.sources.length ? depthReferenceCopy : null };
+}
+
 export function contentFingerprint(locale: SiteLocale, path: string) {
   const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
   if (guideSlugs.includes(guideSlug as GuideSlug)) {
-    return createHash("sha256").update(JSON.stringify(guides[locale][guideSlug as GuideSlug])).digest("hex").slice(0, 16);
+    const slug = guideSlug as GuideSlug;
+    const source = locale === "en" ? { guide: guides[locale][slug], depth: depthPageSource(guideDepth[slug]) } : guides[locale][slug];
+    return createHash("sha256").update(JSON.stringify(source)).digest("hex").slice(0, 16);
   }
   if (path === "/guides") {
     const listed = guideSlugs.map((slug) => [guides[locale][slug].title, guides[locale][slug].description]);
@@ -79,7 +86,10 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
     .filter((key) => prefixes.some((prefix) => key.startsWith(prefix)))
     .sort()
     .map((key) => `${key}=${dictionary[key as keyof typeof dictionary]}`);
-  return createHash("sha256").update(entries.join("\n")).digest("hex").slice(0, 16);
+  const service = services.find((entry) => path === `/services/${entry.slug}`);
+  const depth = locale === "en" && service ? serviceDepth[service.slug] : null;
+  const source = depth ? `${entries.join("\n")}\n${JSON.stringify(depthPageSource(depth))}` : entries.join("\n");
+  return createHash("sha256").update(source).digest("hex").slice(0, 16);
 }
 
 /** Every path the sitemap covers, so the script and the sitemap agree on the set. */
