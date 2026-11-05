@@ -71,6 +71,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      /* Every page is also reachable on the App Hosting address. Only that host gets
+       * this: without the `has` it would take the whole site out of search. */
+      { source: "/:path*", has: [{ type: "host", value: ".+\\.hosted\\.app" }], headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       ...["/admin/:path*", "/portal/:path*"].map((source) => ({
         source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],

@@ -151,6 +151,33 @@ test("the network map shows at once, and the photo is only a stand-in for a map 
   assert.ok(declarations(".network-map-fallback-image").some(({ prop, value }) => prop === "opacity" && Number(value) < 1));
 });
 
+test("noindex on the App Hosting address can never reach the real site", async () => {
+  const headers = await nextConfig.headers();
+  const noindex = headers.filter((rule) => rule.headers.some(({ key, value }) => key === "X-Robots-Tag" && value.includes("noindex")));
+  const siteWide = noindex.filter((rule) => rule.source === "/:path*");
+  assert.equal(siteWide.length, 1);
+  const host = siteWide[0].has?.find((item) => item.type === "host")?.value;
+  assert.ok(host, "a site-wide noindex must be limited to one host");
+  const matches = (name) => new RegExp(`^${host}$`).test(name);
+  assert.ok(matches("kcpl--kcpl-82574.asia-southeast1.hosted.app"));
+  for (const name of ["kapileshworcargo.com.np", "www.kapileshworcargo.com.np", "localhost"]) assert.equal(matches(name), false, name);
+});
+
+test("service pages link on to guides and tools", async () => {
+  const code = await readFile(repo("app/components/services-page.tsx"), "utf8");
+  assert.match(code, /Record<ServiceSlug, \{ guides: GuideSlug\[\]; tool: ToolSlug \}>/);
+  assert.match(code, /`\/guides\/\$\{guide\}`/);
+  assert.match(code, /`\/tools\/\$\{serviceResources\[slug\]\.tool\}`/);
+});
+
+test("the quote page stays static, and published gallery photographs are resized", async () => {
+  for (const path of ["(en)", "ne", "hi", "zh"]) {
+    assert.doesNotMatch(await readFile(repo(`app/${path}/quote/page.tsx`), "utf8"), /searchParams/, path);
+  }
+  assert.match(await readFile(repo("app/components/quote-concierge.tsx"), "utf8"), /window\.location\.search/);
+  assert.doesNotMatch(await readFile(repo("app/components/showcase-pages.tsx"), "utf8"), /unoptimized/);
+});
+
 test("the 404 page has a title and a visible way back", async () => {
   for (const path of ["app/not-found.tsx", "app/(en)/not-found.tsx"]) {
     assert.match(await readFile(repo(path), "utf8"), /export const metadata: Metadata = \{ title: "Page not found/, path);

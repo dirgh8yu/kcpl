@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { telHref } from "../contact-links";
@@ -16,8 +16,18 @@ type Mode = "air" | "sea" | "road" | "unsure";
 const modeOrder: Mode[] = ["sea", "air", "road", "unsure"];
 const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const neverChanges = () => () => {};
+
+/* The query is read in the browser rather than on the server, so the page stays static
+ * and the CDN can serve it while the server sleeps. A link with values remounts the form
+ * once, on load, with them filled in. */
+export function QuoteConcierge({ locale, title, intro }: { locale: SiteLocale; title: string; intro: string }) {
+  const search = useSyncExternalStore(neverChanges, () => window.location.search, () => "");
+  return <QuoteForm key={search} locale={locale} initial={Object.fromEntries(new URLSearchParams(search))} title={title} intro={intro}/>;
+}
+
 /* Two steps: the least that lets KCPL reply comes first, the rest second. */
-export function QuoteConcierge({
+function QuoteForm({
   locale,
   initial,
   title,
