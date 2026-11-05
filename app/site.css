@@ -243,6 +243,9 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .feature-copy h3 { font-size: clamp(28px, 3.6vw, 52px); line-height: 1.06; letter-spacing: -.03em; }
 .feature-copy .text-link { margin-top: 10px; }
 .site-root .feature-band :focus-visible { outline-color: #fff; }
+@media (hover: hover) and (pointer: fine) {
+  .feature-band .text-link:hover { color: var(--ink); }
+}
 
 /* Client rail */
 .rail { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(16px, 2vw, 32px); padding: clamp(20px, 2.4vw, 32px) var(--margin) clamp(20px, 2.4vw, 32px) var(--content-x); }
