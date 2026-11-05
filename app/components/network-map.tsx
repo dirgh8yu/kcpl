@@ -36,8 +36,7 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
   const markersRef = useRef<MapLibreMarker[]>([]);
   const [filter, setFilter] = useState<Filter>("operations");
   const [selectedId, setSelectedId] = useState("kathmandu");
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tilesReady, setTilesReady] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const visiblePoints = networkPoints.filter((point) => filter === "all" || point.groups.includes(filter));
   const selectedPoint = networkPoints.find((point) => point.id === selectedId) ?? networkPoints[0];
@@ -66,8 +65,9 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
         });
         mapRef.current = instance;
         instance.addControl(new NavigationControl({ showCompass: false }), "top-right");
-        instance.on("load", () => setMapLoaded(true));
-        instance.on("idle", () => setTilesReady(true));
+        // The map shows from here and fills in as its tiles arrive; nothing waits for the last one.
+        setMapReady(true);
+        instance.on("load", () => setMapUnavailable(false));
         instance.on("error", () => {
           if (!instance?.isStyleLoaded()) setMapUnavailable(true);
         });
@@ -89,7 +89,7 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapLoaded || !map) return;
+    if (!mapReady || !map) return;
     let removed = false;
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
@@ -115,13 +115,13 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
     };
   // The marker event closes over the current filter's points; selection styling is updated separately.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, mapLoaded]);
+  }, [filter, mapReady]);
 
   useEffect(() => {
     markersRef.current.forEach((marker) => {
       marker.getElement().classList.toggle("is-selected", marker.getElement().dataset.pointId === selectedId);
     });
-  }, [selectedId, filter, mapLoaded]);
+  }, [selectedId, filter, mapReady]);
 
   function focusPoint(point: NetworkPoint) {
     setSelectedId(point.id);
@@ -153,8 +153,9 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
           ))}
         </div>
       </div>
-      <div className={`network-map-stage${tilesReady ? " is-ready" : ""}`}>
-        <Image src="/images/nepal-satellite-nasa-regional.jpg" alt="" fill sizes="100vw" className="network-map-fallback-image"/>
+      <div className="network-map-stage">
+        {/* Only when the map cannot load: a stand-in, not something to read as the map. */}
+        {mapUnavailable ? <Image src="/images/nepal-satellite-nasa-regional.jpg" alt="" fill sizes="100vw" className="network-map-fallback-image"/> : null}
         <div ref={containerRef} className="network-map-canvas" role="group" aria-label={labels.map}/>
         {mapUnavailable && <p className="network-map-unavailable" role="status">{labels.unavailable}</p>}
         <div className="network-map-selection" aria-live="polite">
