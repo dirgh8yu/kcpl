@@ -65,7 +65,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   -webkit-user-select: none;
   user-select: none;
   clip-path: var(--cut);
-  transition: transform 160ms ease-out, background-color 160ms ease;
+  transition: transform 160ms ease-out, background-color 160ms ease, color 160ms ease;
 }
 .site-root .btn:focus-visible { outline-color: #fff; outline-offset: -5px; }
 .btn:disabled { opacity: .6; cursor: progress; }
@@ -88,7 +88,9 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 8px; font-weight: 600; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) {
   .btn:not(.btn-white):not(:disabled):hover { background: var(--crimson-deep); }
-  .btn-white:hover { background: var(--canvas); }
+  .btn-white:hover { background: var(--ink); color: #fff; }
+  .btn svg { transition: transform 200ms var(--ease-out); }
+  .btn:not(:disabled):hover svg { transform: translateX(4px); }
   .text-link svg { transition: transform 200ms var(--ease-out); }
   .text-link:hover svg { transform: translateX(4px); }
   .text-link:hover, .back-link:hover { color: var(--crimson); }
@@ -306,7 +308,10 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .end-band::after { height: calc(var(--band-top) + var(--band-size) * .51); }
 .end-band-title { max-width: 13em; font-size: var(--band-size); line-height: 1.02; letter-spacing: -.04em; }
 .end-band-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; margin-top: clamp(24px, 3vw, 40px); }
-.end-band-actions > a:not(.btn) { color: #fff; text-decoration: underline; }
+.end-band-actions > a:not(.btn) { color: #fff; text-decoration: underline; transition: color 160ms ease, transform 160ms ease-out; }
+@media (hover: hover) and (pointer: fine) {
+  .end-band-actions > a:not(.btn):hover { color: var(--ink); }
+}
 .site-root .end-band :focus-visible { outline-color: #fff; }
 
 /* Inner pages */
