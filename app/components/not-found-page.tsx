@@ -8,8 +8,13 @@ export function NotFoundPage() {
     <SiteShell locale="en" path="/">
       <section className="section page-head">
         <h1 className="section-title">This page is not available.</h1>
-        <p className="section-intro">The address may be incorrect, or the page may no longer exist.</p>
-        <Link href="/quote" className="section-link contact-action">Request a quote</Link>
+        <div>
+          <p className="section-intro">The address may be incorrect, or the page may no longer exist.</p>
+          <div className="not-found-actions">
+            <Link href="/" className="button-primary">Return home</Link>
+            <Link href="/quote" className="section-link">Request a quote</Link>
+          </div>
+        </div>
       </section>
     </SiteShell>
   );
