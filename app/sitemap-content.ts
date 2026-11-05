@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { services } from "./services-data.ts";
-import { depthReferenceCopy, guideDepth, serviceDepth, type DepthContent } from "./content-depth.ts";
+import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth, type DepthContent } from "./content-depth.ts";
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
@@ -64,7 +64,7 @@ function toolPageSource(locale: SiteLocale, path: string) {
  * makes lastmod worthless.
  */
 function depthPageSource(depth: DepthContent) {
-  return { depth, references: depth.sources.length ? depthReferenceCopy : null };
+  return { depth, references: depth.sources.length ? depthReferenceCopy : null, movementTitle: depth.movement ? depthMovementCopy.title : null };
 }
 
 export function contentFingerprint(locale: SiteLocale, path: string) {

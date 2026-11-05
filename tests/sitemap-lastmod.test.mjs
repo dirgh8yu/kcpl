@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { guides, guideSlugs } from "../app/guide-data.ts";
-import { depthReferenceCopy, guideDepth, serviceDepth } from "../app/content-depth.ts";
+import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth } from "../app/content-depth.ts";
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
 import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
 
@@ -111,5 +111,21 @@ test("shared reference copy restamps only the English pages that render it", () 
     assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]).sort(), expected);
   } finally {
     depthReferenceCopy.intro = original;
+  }
+});
+
+test("movement-link heading restamps only English pages that show movement evidence", () => {
+  const before = fingerprintAll();
+  const original = depthMovementCopy.title;
+  const expected = [
+    ...Object.entries(guideDepth).filter(([, content]) => content.movement).map(([slug]) => `en/guides/${slug}`),
+    ...Object.entries(serviceDepth).filter(([, content]) => content.movement).map(([slug]) => `en/services/${slug}`),
+  ].sort();
+  try {
+    depthMovementCopy.title = `${original} Test-only editorial change.`;
+    const after = fingerprintAll();
+    assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]).sort(), expected);
+  } finally {
+    depthMovementCopy.title = original;
   }
 });

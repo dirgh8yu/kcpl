@@ -1,5 +1,6 @@
 import type { GuideSlug } from "./guide-data";
 import type { ServiceSlug } from "./services-data";
+import { siteText } from "./site-i18n.ts";
 
 export type ContentSource = { label: string; href: string };
 
@@ -12,6 +13,7 @@ export type DepthSection = {
 export type DepthContent = {
   sections: DepthSection[];
   sources: ContentSource[];
+  movement?: { href: `/work#${"air-export" | "infrastructure" | "western-nepal"}`; label: string };
 };
 
 const tepcImports = "https://tepc.gov.np/pages/imports-transit-procedure";
@@ -30,8 +32,17 @@ export const depthReferenceCopy = {
   intro: "General procedures can change. Check the current source and the requirements for the specific shipment before acting.",
 };
 
+export const depthMovementCopy = { title: "A related documented movement" };
+
+const documentedMovements = {
+  airExport: { href: "/work#air-export", label: siteText("en", "home.proof_2_title") },
+  infrastructure: { href: "/work#infrastructure", label: siteText("en", "home.proof_1_title") },
+  westernNepal: { href: "/work#western-nepal", label: siteText("en", "home.proof_3_title") },
+} as const;
+
 export const guideDepth: Record<GuideSlug, DepthContent> = {
   "importing-to-nepal": {
+    movement: documentedMovements.westernNepal,
     sections: [
       {
         title: "Treat the import as one connected file",
@@ -61,6 +72,7 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
     ],
   },
   "exporting-from-nepal": {
+    movement: documentedMovements.airExport,
     sections: [
       {
         title: "Agree the export before booking transport",
@@ -89,6 +101,7 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
     ],
   },
   "customs-clearance-in-nepal": {
+    movement: documentedMovements.infrastructure,
     sections: [
       {
         title: "Build a filing-ready customs record",
@@ -118,6 +131,7 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
     ],
   },
   "sea-freight-through-india": {
+    movement: documentedMovements.westernNepal,
     sections: [
       {
         title: "Connect the seaport decision to Nepal delivery",
@@ -147,6 +161,7 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
     ],
   },
   "air-freight-to-kathmandu": {
+    movement: documentedMovements.airExport,
     sections: [
       {
         title: "Decide the scope before comparing air options",
@@ -232,6 +247,7 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
 
 export const serviceDepth: Record<ServiceSlug, DepthContent> = {
   "air-freight": {
+    movement: documentedMovements.airExport,
     sections: [{
       title: "What a workable air-freight plan contains",
       paragraphs: [
@@ -247,6 +263,7 @@ export const serviceDepth: Record<ServiceSlug, DepthContent> = {
     sources: [{ label: "Nepal TEPC — Import and Export by Air", href: tepcAir }],
   },
   "ocean-freight": {
+    movement: documentedMovements.westernNepal,
     sections: [{
       title: "Plan the container, gateway and inland leg together",
       paragraphs: [
@@ -266,6 +283,7 @@ export const serviceDepth: Record<ServiceSlug, DepthContent> = {
     ],
   },
   "road-freight": {
+    movement: documentedMovements.westernNepal,
     sections: [{
       title: "Scope the road movement before selecting equipment",
       paragraphs: [
@@ -282,6 +300,7 @@ export const serviceDepth: Record<ServiceSlug, DepthContent> = {
     sources: [{ label: "Government of India — 2023 Treaty of Transit protocol", href: transitTreaty }],
   },
   "customs-clearance": {
+    movement: documentedMovements.infrastructure,
     sections: [{
       title: "What customs and document support can control",
       paragraphs: [
@@ -301,6 +320,7 @@ export const serviceDepth: Record<ServiceSlug, DepthContent> = {
     ],
   },
   "project-cargo": {
+    movement: documentedMovements.infrastructure,
     sections: [{
       title: "Design the method from the largest piece and the site",
       paragraphs: [
@@ -332,6 +352,7 @@ export const serviceDepth: Record<ServiceSlug, DepthContent> = {
     sources: [],
   },
   delivery: {
+    movement: documentedMovements.westernNepal,
     sections: [{
       title: "Define completion before the vehicle leaves",
       paragraphs: [
