@@ -59,7 +59,8 @@ export function NetworkMap({ labels }: { labels: NetworkMapLabels }) {
           maxZoom: 11,
           renderWorldCopies: false,
           scrollZoom: false,
-          cooperativeGestures: false,
+          // A map must not trap a thumb that is scrolling the page.
+          cooperativeGestures: window.matchMedia("(pointer: coarse)").matches,
           dragRotate: false,
           pitchWithRotate: false,
         });

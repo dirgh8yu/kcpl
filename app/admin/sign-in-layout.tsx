@@ -8,8 +8,10 @@ import type { ReactNode } from "react";
  * access. No card and no artwork; it is a door, and what people came for is
  * behind it. The mark goes back to the public website.
  */
-export function SignInLayout({ title, lead, help, children }: {
+export function SignInLayout({ title, lead, help, children, tone }: {
   title: string;
+  /** Customers arrive from the public website, so their door looks like it. */
+  tone?: "public";
   /** One short line under the title, only where the page needs saying what it is. */
   lead?: ReactNode;
   /** Who to ask for access, and anything else a person stuck here needs. */
@@ -17,7 +19,7 @@ export function SignInLayout({ title, lead, help, children }: {
   children?: ReactNode;
 }) {
   return (
-    <main className="kcpl-admin-shell sign-in">
+    <main className={`kcpl-admin-shell sign-in${tone === "public" ? " sign-in-public" : ""}`}>
       <div className="kcpl-admin-content sign-in-page">
         <div className="sign-in-column">
           <Link href="/" className="sign-in-brand" aria-label="Kapileshwor Cargo website">

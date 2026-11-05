@@ -1,33 +1,34 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, Check, Globe, InstagramLogo, List, MagnifyingGlass, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
+import { CaretDown, Check, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
 import { telHref, whatsappHref } from "../contact-links";
-import { guideIndex } from "../guide-data";
-import { tools } from "../tool-data";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
-import { SiteMotion } from "./site-motion";
+import { SiteMenus } from "./site-menus";
 import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
-/** Nav is declared once: the header, the mobile disclosure and the footer all read it. */
-const navigation = [
+const primaryNavigation = [
   { path: "/services", key: "chrome.services" },
-  { path: "/sectors", key: "chrome.sectors" },
   { path: "/work", key: "chrome.work" },
   { path: "/network", key: "chrome.network" },
-  { path: "/gallery", key: "chrome.gallery" },
-  { path: "/awards", key: "chrome.awards" },
+  { path: "/guides", key: "chrome.resources" },
   { path: "/about", key: "chrome.about" },
   { path: "/contact", key: "chrome.contact" },
 ] as const;
 
-/** Keep the desktop header composed; the complete destination list remains in
- * the disclosure menu and footer. */
-const primaryNavigation = navigation.filter((item) =>
-  ["/services", "/work", "/network", "/about", "/contact"].includes(item.path),
-);
+/** Reached from the menu and the footer rather than the header bar. The gallery
+ * keeps its address but stays out of navigation until it has more photographs. */
+const moreNavigation = [
+  { path: "/sectors", key: "chrome.sectors" },
+  { path: "/awards", key: "chrome.awards" },
+  { path: "/agents", key: "chrome.agents" },
+  { path: "/faq", key: "chrome.faq" },
+  { path: "/careers", key: "chrome.careers" },
+  { path: "/track", key: "chrome.track" },
+  { path: "/search", key: "chrome.search" },
+] as const;
 
 /**
  * The Gateway K exactly as the identity file records it: the crimson symbol,
@@ -37,7 +38,7 @@ const primaryNavigation = navigation.filter((item) =>
 export function SiteLogo({ locale }: { locale: SiteLocale }) {
   return (
     <Link href={sitePath(locale, "/")} className="site-lockup" aria-label={company.name}>
-      <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={34} height={34} className="site-lockup-mark" priority/>
+      <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={38} height={38} className="site-lockup-mark" loading="eager"/>
       <span className="site-lockup-text">
         <span className="site-lockup-name">Kapileshwor</span>
         <span className="site-lockup-meta">Cargo Pvt. Ltd.</span>
@@ -57,60 +58,42 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
   return (
     <header className="site-header">
       <a href="#main" className="site-skip">{t("chrome.skip")}</a>
-      <div className="site-header-inner">
-        <SiteLogo locale={locale}/>
-        <nav className="site-nav" aria-label={t("chrome.nav_label")}>
-          {primaryNavigation.map((item) => (
-            <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
-          ))}
-        </nav>
-        <div className="site-header-actions">
-          <Link href={sitePath(locale, "/search")} className="site-search-link" aria-label={t("chrome.search")} aria-current={isCurrent("/search", path) ? "page" : undefined}>
-            <MagnifyingGlass size={17} weight="bold" aria-hidden="true"/>
-          </Link>
-          <Link href="/portal" className="site-portal-link">{t("chrome.portal")}<ArrowUpRight size={15} aria-hidden="true"/></Link>
-          {/* The trigger cycles the word for "language" through the scripts the
-            * site speaks, so a reader who cannot read the others still
-            * recognises the control. Nepali and Hindi share भाषा, so three
-            * words cover four languages. The rotation is decoration: the
-            * accessible name is fixed and the globe carries the meaning when
-            * motion is switched off. */}
-          <details className="site-lang">
-            <summary className="site-lang-button" aria-label={t("chrome.language")}>
-              <Globe size={16} aria-hidden="true"/>
-              <span className="site-lang-rotator" aria-hidden="true">
-                <span className="site-lang-word">Language</span>
-                <span className="site-lang-word">भाषा</span>
-                <span className="site-lang-word">语言</span>
-              </span>
-            </summary>
-            <div className="site-lang-panel">
-              {siteLocales.map((entry) => (
-                entry === locale
-                  ? <span key={entry} className="site-lang-option" aria-current="true" lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}<Check size={14} weight="bold" aria-hidden="true"/></span>
-                  : <Link key={entry} href={sitePath(entry, path)} className="site-lang-option" hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}</Link>
+      <SiteLogo locale={locale}/>
+      <nav className="site-nav" aria-label={t("chrome.nav_label")}>
+        {primaryNavigation.map((item) => (
+          <Link key={item.path} href={sitePath(locale, item.path)} className="site-nav-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+        ))}
+      </nav>
+      <div className="site-header-actions">
+        {/* Native disclosures: keyboard accessible on their own, and a navigation
+          * renders the header again already closed. */}
+        <details className="site-pop site-lang">
+          <summary className="site-pop-button" aria-label={`${t("chrome.language")}: ${siteLocaleLabels[locale]}`}>
+            <span>{locale.toUpperCase()}</span><CaretDown size={12} weight="bold" aria-hidden="true"/>
+          </summary>
+          <div className="site-pop-panel">
+            {siteLocales.map((entry) => (
+              entry === locale
+                ? <span key={entry} className="site-pop-link" aria-current="true" lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}<Check size={14} weight="bold" aria-hidden="true"/></span>
+                : <Link key={entry} href={sitePath(entry, path)} className="site-pop-link" hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}</Link>
+            ))}
+          </div>
+        </details>
+        <Link href={sitePath(locale, "/quote")} className="btn btn-small site-cta" data-analytics-event="quote_tap">{t("chrome.quote")}</Link>
+        <details className="site-pop site-menu">
+          <summary className="site-pop-button" aria-label={t("chrome.menu")}>
+            <List className="site-menu-open" size={22} aria-hidden="true"/><X className="site-menu-close" size={22} aria-hidden="true"/>
+          </summary>
+          <div className="site-pop-panel site-menu-panel">
+            <div className="site-menu-primary">
+              {primaryNavigation.map((item) => (
+                <Link key={item.path} href={sitePath(locale, item.path)} className="site-pop-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
               ))}
             </div>
-          </details>
-          <Link href={sitePath(locale, "/quote")} className="site-cta">{t("chrome.quote")}</Link>
-        </div>
-        {/* A native disclosure rather than a client component: it is keyboard
-          * accessible on its own, ships no JavaScript, and a navigation renders
-          * the header again already closed. */}
-        <details className="site-menu">
-          <summary className="site-menu-button" aria-label={t("chrome.menu")}><List className="site-menu-open-icon" size={19} aria-hidden="true"/><X className="site-menu-close-icon" size={19} aria-hidden="true"/><span>{t("chrome.menu")}</span></summary>
-          <div className="site-menu-panel">
-            {navigation.map((item) => (
-              <Link key={item.path} href={sitePath(locale, item.path)} className="site-menu-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+            {moreNavigation.map((item) => (
+              <Link key={item.path} href={sitePath(locale, item.path)} className="site-pop-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
             ))}
-            <Link href={sitePath(locale, "/track")} className="site-menu-link" aria-current={isCurrent("/track", path) ? "page" : undefined}>{t("chrome.track")}</Link>
-            <Link href={sitePath(locale, "/guides")} className="site-menu-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
-            <Link href={sitePath(locale, "/tools")} className="site-menu-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
-            <Link href={sitePath(locale, "/search")} className="site-menu-link" aria-current={isCurrent("/search", path) ? "page" : undefined}>{t("chrome.search")}</Link>
-            <Link href="/portal" className="site-menu-link">{t("chrome.portal")}</Link>
-            {/* The header's quote button is hidden on the narrowest screens, so the
-              * menu carries it there instead of losing the primary action. */}
-            <Link href={sitePath(locale, "/quote")} className="site-menu-link site-menu-quote">{t("chrome.quote")}</Link>
+            <Link href="/portal" className="site-pop-link">{t("chrome.portal")}</Link>
           </div>
         </details>
       </div>
@@ -120,45 +103,34 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
 
 export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string }) {
   const t = siteTranslator(locale);
+  const address = company.addressLines.join(", ");
   return (
     <footer className="site-footer">
-      <div className="site-footer-grid">
-        <div className="site-footer-brand">
-          <SiteLogo locale={locale}/>
-          <p className="site-footer-tagline">{t("company.tagline")}</p>
-          <p className="site-footer-note">{t("company.established")}</p>
-        </div>
-        <div className="site-footer-col">
-          <h2 className="site-footer-heading">{t("chrome.footer_company")}</h2>
-          {navigation.map((item) => (
-            <Link key={item.path} href={sitePath(locale, item.path)} className="site-footer-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
-          ))}
-        </div>
-        <div className="site-footer-col">
-          <h2 className="site-footer-heading">{t("chrome.footer_services")}</h2>
-          <Link href={sitePath(locale, "/quote")} className="site-footer-link">{t("chrome.quote")}</Link>
-          <Link href={sitePath(locale, "/track")} className="site-footer-link">{t("chrome.track")}</Link>
-          <Link href={sitePath(locale, "/guides")} className="site-footer-link" aria-current={isCurrent("/guides", path) ? "page" : undefined}>{guideIndex[locale].title}</Link>
-          <Link href={sitePath(locale, "/tools")} className="site-footer-link" aria-current={isCurrent("/tools", path) ? "page" : undefined}>{tools[locale].index.title}</Link>
-          <Link href={sitePath(locale, "/search")} className="site-footer-link" aria-current={isCurrent("/search", path) ? "page" : undefined}>{t("chrome.search")}</Link>
-          <Link href="/portal" className="site-footer-link">{t("chrome.portal")}</Link>
-        </div>
-        <div className="site-footer-col">
-          <h2 className="site-footer-heading">{t("chrome.footer_contact")}</h2>
-          <p className="site-footer-address">{company.addressLines.join(", ")}</p>
-          <a href={telHref(company.phones[0])} className="site-footer-link" data-analytics-event="call_tap">{company.phones[0]}</a>
-          <a href={`mailto:${company.email}`} className="site-footer-link">{company.email}</a>
-          {/* The one social profile KCPL runs. It is linked here as well as
-            * declared in the schema graph, so the machine-readable claim and
-            * the page agree. */}
-          <a href={company.instagram} className="site-footer-link site-footer-social" rel="me noreferrer" target="_blank"><InstagramLogo size={15} aria-hidden="true"/> Instagram</a>
-        </div>
+      <div className="site-footer-brand">
+        <SiteLogo locale={locale}/>
+        <p>{t("company.tagline")}</p>
       </div>
+      <address className="site-footer-contact">
+        <p>{address}</p>
+        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">{t("chrome.maps")}</a>
+      </address>
+      <div className="site-footer-contact">
+        <a href={telHref(company.phones[0])} data-analytics-event="call_tap">{company.phones[0]}</a>
+        <a href={`mailto:${company.email}`}>{company.email}</a>
+        {/* The one social profile KCPL runs, so the schema graph's claim and the page agree. */}
+        <a href={company.instagram} rel="me noreferrer" target="_blank"><InstagramLogo size={15} aria-hidden="true"/> Instagram</a>
+      </div>
+      <nav className="site-footer-links" aria-label={t("chrome.footer_company")}>
+        {moreNavigation.map((item) => (
+          <Link key={item.path} href={sitePath(locale, item.path)} aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+        ))}
+        <Link href="/portal">{t("chrome.portal")}</Link>
+        <Link href={sitePath(locale, "/privacy")} aria-current={isCurrent("/privacy", path) ? "page" : undefined}>{t("chrome.privacy")}</Link>
+        <Link href={sitePath(locale, "/terms")} aria-current={isCurrent("/terms", path) ? "page" : undefined}>{t("chrome.terms")}</Link>
+      </nav>
       <div className="site-footer-base">
         <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")}</p>
         <p>{t("chrome.photo_note")}</p>
-        <Link href={sitePath(locale, "/privacy")} className="site-footer-link" aria-current={isCurrent("/privacy", path) ? "page" : undefined}>{t("chrome.privacy")}</Link>
-        <Link href={sitePath(locale, "/terms")} className="site-footer-link" aria-current={isCurrent("/terms", path) ? "page" : undefined}>{t("chrome.terms")}</Link>
       </div>
     </footer>
   );
@@ -204,7 +176,7 @@ export function SiteShell({ locale, path, children }: { locale: SiteLocale; path
         * that knows both which page and which language. */}
       {breadcrumb ? <StructuredData data={breadcrumb}/> : null}
       <SiteHeader locale={locale} path={path}/>
-      <SiteMotion/>
+      <SiteMenus/>
       <main id="main">{children}</main>
       <SiteFooter locale={locale} path={path}/>
       <SiteActionBar locale={locale} path={path}/>

@@ -1,0 +1,12 @@
+/* Customers reach this page from the public website, so it follows that site.
+ * The staff sign-in keeps the app's own canvas. Login logic is untouched. */
+.sign-in.sign-in-public { --admin-canvas: var(--kcpl-canvas); background: var(--kcpl-canvas); font-family: var(--font-manrope), system-ui, sans-serif; }
+.sign-in.sign-in-public .sign-in-page { background: var(--kcpl-canvas); }
+.sign-in.sign-in-public .sign-in-column { width: min(420px, 100%); }
+.sign-in.sign-in-public .sign-in-column h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 500; line-height: 1.08; letter-spacing: -.03em; text-wrap: balance; }
+.sign-in.sign-in-public .sign-in-lead { color: #565650; font-size: 16px; line-height: 1.5; }
+.sign-in.sign-in-public input { font-size: 16px; border-radius: 0; }
+.sign-in.sign-in-public .sign-in-submit { min-height: 52px; border: 0; border-radius: 0; background: var(--kcpl-crimson); color: #fff; font-size: 16px; font-weight: 700; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+@media (hover: hover) and (pointer: fine) {
+  .sign-in.sign-in-public .sign-in-submit:hover { background: #b80f31; }
+}

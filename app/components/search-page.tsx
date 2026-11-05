@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { publicSearchIndex, searchKindLabel, searchPublicSite } from "../public-search";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { PageHead } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 
 export function SearchPage({ locale, query }: { locale: SiteLocale; query: string }) {
@@ -9,18 +10,16 @@ export function SearchPage({ locale, query }: { locale: SiteLocale; query: strin
   const results = searchPublicSite(locale, query);
   const total = publicSearchIndex(locale).length;
   return <SiteShell locale={locale} path="/search">
-    <section className="section page-head search-head">
-      <h1 className="section-title">{t("search.title")}</h1>
-      <p className="section-intro">{t("search.intro")}</p>
-      <form className="site-search-form" action={sitePath(locale, "/search")} method="get" role="search">
+    <PageHead title={t("search.title")} intro={t("search.intro")}>
+      <form className="box-form" action={sitePath(locale, "/search")} method="get" role="search">
         <label>
           <span className="sr-only">{t("search.title")}</span>
           <input name="q" defaultValue={query} placeholder={t("search.placeholder")} autoComplete="off" spellCheck={false}/>
         </label>
-        <button type="submit"><MagnifyingGlass size={17} weight="bold" aria-hidden="true"/>{t("search.action")}</button>
+        <button type="submit" className="btn"><MagnifyingGlass size={17} weight="bold" aria-hidden="true"/>{t("search.action")}</button>
       </form>
-    </section>
-    <section className="section search-results" aria-live="polite">
+    </PageHead>
+    <section className="search-results" aria-live="polite">
       {query.trim() ? <>
         <p className="search-count">{t("search.results")} · {results.length} / {total}</p>
         {results.length ? <ol className="search-result-list">

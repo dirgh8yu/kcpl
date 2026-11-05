@@ -55,39 +55,59 @@ test("public text stays at 12px or more, apart from the logo wordmark", () => {
 });
 
 test("public fields are 16px, because iOS zooms into anything smaller", () => {
-  for (const selector of [".quote-concierge-grid input", ".track-link-entry input", ".site-search-form input"]) {
-    const sizes = declarations(selector).filter((decl) => decl.prop === "font-size");
-    assert.ok(sizes.length, selector);
-    for (const { value } of sizes) assert.equal(value, "16px", selector);
+  // The shared field rule sets the font shorthand; nothing may set a smaller size.
+  for (const selector of [".field input", ".route-end input", ".box-form input"]) {
+    assert.ok(declarations(selector).some(({ prop, value }) => prop === "font" && /\b16px\//.test(value)), selector);
   }
+  site.walkRules((rule) => {
+    if (!/(^|\s)input(\s|,|:|$)/.test(rule.selector)) return;
+    rule.walkDecls("font-size", (decl) => assert.ok(parseFloat(decl.value) >= 16, `${rule.selector}: ${decl.value}`));
+  });
 });
 
 test("the page ends above the phone action bar", () => {
-  const footer = declarations(".site-footer");
-  assert.ok(footer.some(({ prop, media }) => prop === "padding-bottom" && /max-width: 760px/.test(media ?? "")));
-  // A base `padding` comes later in the file and would cancel the phone rule.
-  assert.deepEqual(footer.filter(({ prop, media }) => /^padding/.test(prop) && !media), []);
+  const padded = declarations(".site-root").filter(({ prop, media }) => prop === "padding-bottom" && /max-width: 900px/.test(media ?? ""));
+  assert.ok(padded.length);
+  assert.ok(declarations(".site-action-bar").some(({ prop, value, media }) => prop === "position" && value === "fixed" && /max-width: 900px/.test(media ?? "")));
 });
 
 test("the phone quote button keeps white text on crimson", () => {
-  // The bar only shows on phones, so any base colour here overrides its white text.
-  assert.deepEqual(declarations(".site-action").filter(({ prop, media }) => prop === "color" && !media), []);
-  assert.ok(declarations(".site-action-primary").some(({ prop, value }) => prop === "color" && value === "#fff"));
+  const primary = declarations(".site-action-primary");
+  assert.ok(primary.some(({ prop, value }) => prop === "color" && value === "#fff"));
+  assert.ok(primary.some(({ prop, value }) => prop === "background" && value === "var(--crimson)"));
 });
 
-test("the phone map card is anchored to one edge, so it cannot stretch", () => {
+test("the map card is anchored to one corner, so it cannot stretch", () => {
   const card = declarations(".network-map-selection");
-  const phone = card.filter(({ media }) => /max-width: 760px/.test(media ?? ""));
-  assert.ok(phone.some(({ prop, value }) => prop === "bottom" && value === "auto"));
-  assert.ok(phone.some(({ prop }) => prop === "top"));
-  assert.deepEqual(card.filter(({ prop, media }) => prop === "top" && !/max-width: 760px/.test(media ?? "")), []);
+  assert.ok(card.some(({ prop }) => prop === "bottom"));
+  assert.deepEqual(card.filter(({ prop }) => prop === "top" || prop === "right"), []);
 });
 
-test("the logo keeps its width and the phone header drops the rotating word", () => {
+test("the logo keeps its width on every screen", () => {
   assert.ok(declarations(".site-lockup").some(({ prop, value }) => prop === "flex-shrink" && value === "0"));
-  assert.ok(declarations(".site-lang-rotator").some(({ prop, value, media }) => prop === "display" && value === "none" && /max-width: 430px/.test(media ?? "")));
-  // The panel must open inward now the trigger sits at the screen's right edge.
-  assert.ok(declarations(".site-lang-panel").some(({ prop, media }) => prop === "inset-inline" && /max-width: 430px/.test(media ?? "")));
+});
+
+test("hover styles only apply where hovering exists, and every moving thing can stop", () => {
+  const ungated = [];
+  site.walkRules((rule) => {
+    if (!rule.selector.includes(":hover")) return;
+    if (rule.parent.type === "atrule" && /hover:\s*hover/.test(rule.parent.params)) return;
+    ungated.push(rule.selector);
+  });
+  assert.deepEqual(ungated, []);
+  const reduced = [];
+  site.walkAtRules("media", (media) => { if (/prefers-reduced-motion: reduce/.test(media.params)) media.walkRules((rule) => reduced.push(rule.selector)); });
+  for (const selector of [".rail-track", ".route-draw, .route-map[data-mode=\"air\"] .route-air"]) assert.ok(reduced.includes(selector), selector);
+});
+
+test("no public page ships a photograph without a recorded source", async () => {
+  const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
+  const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));
+  const used = new Set(code.join("\n").match(/\/images\/unsplash\/[\w-]+\.jpg/g));
+  assert.ok(used.size);
+  for (const path of used) assert.ok(sources.includes(path.slice(1)), path);
+  // These carry other companies' branding, which the owner ruled out.
+  for (const path of ["ship-dusk", "port-crane", "air-cargo", "forklift-loading"]) assert.ok(![...used].some((entry) => entry.includes(path)), path);
 });
 
 test("the 404 page has a title and a visible way back", async () => {
@@ -95,7 +115,5 @@ test("the 404 page has a title and a visible way back", async () => {
     assert.match(await readFile(repo(path), "utf8"), /export const metadata: Metadata = \{ title: "Page not found/, path);
   }
   const page = await readFile(repo("app/components/not-found-page.tsx"), "utf8");
-  assert.match(page, /<Link href="\/" className="button-primary">Return home<\/Link>/);
-  // A bare .section-link is near-black, on this page's near-black heading band.
-  assert.ok(declarations(".not-found-actions .section-link").some(({ prop, value }) => prop === "color" && value === "#fff"));
+  assert.match(page, /<Link href="\/" className="btn">Return home<\/Link>/);
 });

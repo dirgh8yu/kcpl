@@ -4,13 +4,13 @@
  * render it so data-only readers -- the sitemap, the structured data -- can
  * import it without pulling the page components in behind it. */
 export const services = [
-  { slug: "air-freight", key: "air", image: "/images/unsplash/air-cargo.jpg" },
-  { slug: "ocean-freight", key: "ocean", image: "/images/unsplash/ship-dusk.jpg" },
-  { slug: "road-freight", key: "road", image: "/images/unsplash/nepal-road.jpg" },
-  { slug: "customs-clearance", key: "customs", image: "/images/unsplash/port-aerial.jpg" },
-  { slug: "project-cargo", key: "project", image: "/images/unsplash/port-crane.jpg" },
-  { slug: "warehousing", key: "warehouse", image: "/images/unsplash/warehouse-forklift.jpg" },
-  { slug: "delivery", key: "delivery", image: "/images/unsplash/forklift-loading.jpg" },
+  { slug: "air-freight", key: "air" },
+  { slug: "ocean-freight", key: "ocean" },
+  { slug: "road-freight", key: "road" },
+  { slug: "customs-clearance", key: "customs" },
+  { slug: "project-cargo", key: "project" },
+  { slug: "warehousing", key: "warehouse" },
+  { slug: "delivery", key: "delivery" },
 ] as const;
 
 export type ServiceKey = (typeof services)[number]["key"];

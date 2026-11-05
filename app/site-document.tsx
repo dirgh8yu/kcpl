@@ -26,9 +26,8 @@ const instrumentSerif = Instrument_Serif({ variable: "--font-instrument", subset
 const notoDevanagari = Noto_Serif_Devanagari({ variable: "--font-devanagari", subsets: ["devanagari"], weight: ["400", "600"], preload: false });
 // The identity file records Noto Sans Devanagari for Nepali, so the public site sets
 // Nepali in the sans to match the Manrope wordmark rather than the portal's serif.
-// The public site sets all metadata, labels and navigation in mono: on an
-// operational board those are readings, not prose.
-const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"] });
+// Mono is for real data only, so it is fetched only where a page uses it.
+const plexMono = IBM_Plex_Mono({ variable: "--font-mono-tech", subsets: ["latin"], weight: ["400", "500", "600"], preload: false });
 const notoDevanagariSans = Noto_Sans_Devanagari({ variable: "--font-devanagari-sans", subsets: ["devanagari"], weight: ["400", "600", "700"], preload: false });
 
 const fontVariables = [geist, manrope, inter, instrumentSerif, notoDevanagari, notoDevanagariSans, plexMono].map((font) => font.variable).join(" ");
@@ -63,6 +62,7 @@ export const baseViewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#f6f6f3",
 };
 
 /* Identity and site nodes ride on every page; the page-specific nodes -- the

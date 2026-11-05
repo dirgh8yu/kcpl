@@ -1,46 +1,35 @@
-import Link from "next/link";
-import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
-import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { siteTranslator, type SiteLocale } from "../site-i18n";
+import { ClosingBand } from "./closing-band";
+import { Lined, MiniRoute, PageHead } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 
 const stories = [
   { number: 1, slug: "infrastructure" },
-  { number: 2, slug: "air-export" },
+  { number: 2, slug: "air-export", bend: [1, 3] },
   { number: 3, slug: "western-nepal" },
 ] as const;
 
 export function SelectedWorkPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
-
-  return <SiteShell locale={locale} path="/work">
-    <section className="section work-head">
-      <h1 className="section-title">{t("work.title")}</h1>
-      <p className="section-intro">{t("work.intro")}</p>
-      <nav className="work-jump" aria-label={t("work.jump_label")}>
-        {stories.map(({ number, slug }) => <a key={slug} href={`#${slug}`}>{t(`home.proof_${number}_kicker`)}<ArrowRight size={15} aria-hidden="true"/></a>)}
-      </nav>
-    </section>
-
-    <section className="work-records" aria-label={t("work.eyebrow")}>
-      {stories.map(({ number, slug }) => <article key={slug} id={slug} className="work-record">
-        <div className="work-record-heading">
-          <div>
-            <h2>{t(`home.proof_${number}_title`)}</h2>
-          </div>
-          <p className="work-record-route">{t(`work.story_${number}_route`)}<span>{t(`work.story_${number}_date`)}</span></p>
-        </div>
-        <div className="work-record-detail">
-          <div><h3>{t("work.brief")}</h3><p>{t(`work.story_${number}_brief`)}</p></div>
-          <div><h3>{t("work.coordination")}</h3><p>{t(`work.story_${number}_coordination`)}</p></div>
-          <div><h3>{t("work.outcome")}</h3><p>{t(`work.story_${number}_outcome`)}</p></div>
-        </div>
-      </article>)}
-      <p className="work-disclosure">{t("work.disclosure")}</p>
-    </section>
-
-    <section className="section work-contact">
-      <div><h2>{t("work.cta_title")}</h2><p>{t("work.cta_copy")}</p></div>
-      <Link href={sitePath(locale, "/quote")} className="button-primary">{t("home.hero_cta")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-    </section>
-  </SiteShell>;
+  return (
+    <SiteShell locale={locale} path="/work">
+      <PageHead title={t("work.title")} intro={t("work.intro")}/>
+      <Lined>
+        {stories.map((story) => (
+          <article key={story.slug} id={story.slug} className="stop work-record">
+            <h2 className="stop-title">{t(`home.proof_${story.number}_title`)}</h2>
+            <p className="work-date">{t(`work.story_${story.number}_route`)} · {t(`work.story_${story.number}_date`)}</p>
+            <MiniRoute stops={t(`home.proof_${story.number}_stops`)} bend={"bend" in story ? story.bend : undefined}/>
+            <div className="work-detail">
+              <div><h3>{t("work.brief")}</h3><p>{t(`work.story_${story.number}_brief`)}</p></div>
+              <div><h3>{t("work.coordination")}</h3><p>{t(`work.story_${story.number}_coordination`)}</p></div>
+              <div><h3>{t("work.outcome")}</h3><p>{t(`work.story_${story.number}_outcome`)}</p></div>
+            </div>
+          </article>
+        ))}
+        <section className="stop"><p className="stop-intro">{t("work.disclosure")}</p></section>
+        <ClosingBand locale={locale}/>
+      </Lined>
+    </SiteShell>
+  );
 }

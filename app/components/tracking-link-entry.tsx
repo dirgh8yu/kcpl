@@ -23,10 +23,8 @@ export function TrackingLinkEntry({ locale }: { locale: SiteLocale }) {
     router.push(`/t/${token}`);
   }
 
-  return <div className="track-link-entry">
-    <h2 className="service-block-title">{t("track.link_title")}</h2>
-    <p className="about-copy">{t("track.link_copy")}</p>
-    <form onSubmit={open} noValidate>
+  return <div className="track-box">
+    <form className="box-form" onSubmit={open} noValidate>
       <label>
         <span>{t("track.link_label")}</span>
         <input
@@ -39,8 +37,8 @@ export function TrackingLinkEntry({ locale }: { locale: SiteLocale }) {
           aria-describedby={error ? "track-link-error" : undefined}
         />
       </label>
-      <button type="submit">{t("track.link_action")}<ArrowUpRight size={17} weight="bold" aria-hidden="true"/></button>
+      <button type="submit" className="btn">{t("track.link_action")}<ArrowUpRight size={17} weight="bold" aria-hidden="true"/></button>
     </form>
-    {error ? <p id="track-link-error" className="track-link-error" role="alert">{error}</p> : null}
+    {error ? <p id="track-link-error" className="form-error" role="alert">{error}</p> : null}
   </div>;
 }
