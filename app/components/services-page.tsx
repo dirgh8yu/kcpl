@@ -5,13 +5,24 @@ import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClosingBand } from "./closing-band";
 import { ServiceList } from "./home-page";
-import { Lined, MiniRoute, PageHead, QaList, Stop } from "./route-parts";
+import { Lined, MiniRoute, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 
 export { services, type ServiceKey, type ServiceSlug } from "../services-data";
 
 const text = (key: ServiceKey, part: string) => `svc.${key}.${part}` as SiteTextKey;
+
+/* Only photographs with a recorded source and no other company's branding. */
+const servicePhotos: Record<ServiceSlug, { src: string; position?: string }> = {
+  "air-freight": { src: "/images/unsplash/air-pallets.jpg", position: "70% 100%" },
+  "ocean-freight": { src: "/images/unsplash/ship-terminal.jpg", position: "30% 50%" },
+  "road-freight": { src: "/images/unsplash/ghat-trucks.jpg", position: "100% 70%" },
+  "customs-clearance": { src: "/images/unsplash/container-plate.jpg", position: "20% 50%" },
+  "project-cargo": { src: "/images/unsplash/heavy-lift.jpg" },
+  warehousing: { src: "/images/unsplash/warehouse-racks.jpg" },
+  delivery: { src: "/images/unsplash/clipboard-sign.jpg" },
+};
 
 export function ServicesPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
@@ -20,9 +31,14 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
       <PageHead title={t("services.title")} intro={t("services.intro")}/>
       <Lined reveal>
         <Stop title={t("home.capability_title")}><ServiceList locale={locale}/></Stop>
-        <Stop title={t("services.cargo_title")} intro={t("services.cargo_copy")}>
-          <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-        </Stop>
+        <section className="stop sector">
+          <div>
+            <h2 className="stop-title">{t("services.cargo_title")}</h2>
+            <p className="stop-intro">{t("services.cargo_copy")}</p>
+            <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          </div>
+          <Plate src="/images/unsplash/port-aerial.jpg"/>
+        </section>
         <ClosingBand locale={locale}/>
       </Lined>
     </SiteShell>
@@ -48,7 +64,13 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
             {["p1", "p2", "p3", "p4", "p5", "p6"].map((part) => <li key={part}>{t(text(service.key, part))}</li>)}
           </ul>
         </Stop>
-        <Stop title={t("services.how_title")}><p className="prose">{t(text(service.key, "how"))}</p></Stop>
+        <section className="stop sector">
+          <div>
+            <h2 className="stop-title">{t("services.how_title")}</h2>
+            <p className="prose">{t(text(service.key, "how"))}</p>
+          </div>
+          <Plate {...servicePhotos[slug]}/>
+        </section>
         <section className="stop stop-split">
           <div><h2 className="block-title">{t("services.lanes_title")}</h2><p>{t(text(service.key, "lanes"))}</p></div>
           <div><h2 className="block-title">{t("services.docs_title")}</h2><p>{t(text(service.key, "docs"))}</p></div>

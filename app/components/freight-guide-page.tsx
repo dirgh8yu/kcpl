@@ -5,9 +5,20 @@ import { faqNode, graph } from "../structured-data";
 import { sitePath, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
-import { Lined, PageHead, QaList, Stop } from "./route-parts";
+import { Lined, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
+
+/* Only photographs with a recorded source and no other company's branding. */
+const guidePhotos: Record<GuideSlug, { src: string; position?: string }> = {
+  "importing-to-nepal": { src: "/images/unsplash/ghat-tunnel.jpg" },
+  "exporting-from-nepal": { src: "/images/unsplash/warp-threads.jpg" },
+  "customs-clearance-in-nepal": { src: "/images/unsplash/container-marks.jpg", position: "35% 40%" },
+  "sea-freight-through-india": { src: "/images/unsplash/port-sunset.jpg" },
+  "air-freight-to-kathmandu": { src: "/images/unsplash/airport-dollies.jpg" },
+  "hs-codes-and-import-duty": { src: "/images/unsplash/tariff-ledger.jpg" },
+  "free-time-and-demurrage": { src: "/images/unsplash/container-yard.jpg", position: "30% 50%" },
+};
 
 export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: GuideSlug }) {
   const guide = guides[locale][slug];
@@ -26,9 +37,14 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
             {guide.stages.map((stage) => <li key={stage.title}><h3>{stage.title.replace(/^\d+\s*\/\s*/, "")}</h3><p>{stage.copy}</p></li>)}
           </ol>
         </Stop>
-        <Stop title={guide.documentsTitle} intro={guide.documentsIntro}>
-          <ul className="check-list">{guide.documents.map((item) => <li key={item}>{item}</li>)}</ul>
-        </Stop>
+        <section className="stop sector">
+          <div>
+            <h2 className="stop-title">{guide.documentsTitle}</h2>
+            <p className="stop-intro">{guide.documentsIntro}</p>
+            <ul className="check-list">{guide.documents.map((item) => <li key={item}>{item}</li>)}</ul>
+          </div>
+          <Plate {...guidePhotos[slug]}/>
+        </section>
         <Stop title={guide.questionsTitle}>
           <QaList items={guide.questions}/>
         </Stop>

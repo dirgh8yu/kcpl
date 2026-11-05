@@ -81,7 +81,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         <Stop title={t("home.corridor_title")} intro={t("home.corridor_intro")}>
           <div className="two-photos">
             <figure>
-              <Image src="/images/unsplash/nepal-road.jpg" alt="" width={2200} height={1467} sizes="(max-width: 900px) 100vw, 44vw" style={{ objectPosition: "50% 78%" }}/>
+              <Image src="/images/unsplash/ghat-road.jpg" alt="" width={2000} height={1131} sizes="(max-width: 900px) 100vw, 44vw"/>
               <figcaption><b>{t("home.corridor_in_title")}</b>{t("home.corridor_in_copy")}</figcaption>
             </figure>
             <figure>

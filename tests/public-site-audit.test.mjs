@@ -102,7 +102,7 @@ test("hover styles only apply where hovering exists, and every moving thing can 
 
 test("no public page ships a photograph without a recorded source", async () => {
   const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
-  const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));
+  const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "freight-guide-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));
   const used = new Set(code.join("\n").match(/\/images\/unsplash\/[\w-]+\.jpg/g));
   assert.ok(used.size);
   for (const path of used) assert.ok(sources.includes(path.slice(1)), path);

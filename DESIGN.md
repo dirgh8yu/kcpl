@@ -301,6 +301,9 @@ There are no content cards. The two working containers are plates.
 - **Border:** none.
 - **Internal Padding:** up to 36px on the quote plate and 28px on tool plates.
 
+### Photographs
+Illustrative Unsplash photographs, each listed in `docs/public-photo-sources.md`, with an empty alt because they add no information. At most one to a section: beside the text on service, sector and guide pages (`.sector`, 7fr of text to 5fr of photograph at 10:7), or across the column where the subject is wide (`.plate-wide`, 21:9, 3:2 on phones). Quote, contact, track, tools, FAQ, careers, awards and legal pages carry none because they are for doing or checking something; on the network page the route and the map are the image; movement stories stay without pictures because they are anonymous.
+
 ### Inputs / Fields
 - **Style:** a paper tile with a 14px Warm Grey label stacked over a borderless 16px, 600 value. Route ends carry the 2px ink ring, ordinary form fields the quiet ring. Tool inputs are the working variant: 48px tall, a 1px hairline border and a label above the box, with unit suffixes on a canvas tile.
 - **Focus:** the ring becomes 2px crimson in 160ms; tool inputs show a 2px crimson outline. The caret is crimson.

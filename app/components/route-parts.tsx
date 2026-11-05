@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr";
 import { RouteReveal } from "./route-reveal";
 
@@ -27,6 +28,16 @@ export function QaList({ items }: { items: { question: string; answer: string }[
         </details>
       ))}
     </div>
+  );
+}
+
+/** An illustrative photograph on the line. Alt stays empty because the picture adds
+ * no information; docs/public-photo-sources.md records where each one came from. */
+export function Plate({ src, wide = false, position }: { src: string; wide?: boolean; position?: string }) {
+  return (
+    <figure className={wide ? "plate plate-wide" : "plate"}>
+      <Image src={src} alt="" width={wide ? 2000 : 1200} height={wide ? 860 : 840} sizes={wide ? "(max-width: 900px) 100vw, 80vw" : "(max-width: 900px) 100vw, 34vw"} style={position ? { objectPosition: position } : undefined}/>
+    </figure>
   );
 }
 
