@@ -18,6 +18,14 @@ env:
       - BUILD
       - RUNTIME
 
+  # Owner-confirmed public GA4 measurement ID. The existing analytics component
+  # loads Google Analytics only after the visitor allows analytics.
+  - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
+    value: G-JRFK4409GH
+    availability:
+      - BUILD
+      - RUNTIME
+
   # One-tap providers on the customer portal's sign-in, in order: "google",
   # "apple" or "google,apple". Each must also be enabled in Firebase
   # Authentication (Apple needs an Apple Developer Services ID), or its button
