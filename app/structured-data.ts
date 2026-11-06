@@ -10,8 +10,8 @@ import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey }
 /* Schema.org for the public site. Everything here restates something the site
  * already says in its own markup -- address, services, the page you are on --
  * because a claim that appears only in JSON-LD is a claim a reader cannot check.
- * Opening hours, coordinates and social profiles are absent on purpose: nobody
- * has given us those, and inventing them would be inventing them. */
+ * Opening hours and coordinates match KCPL's Google Business listing, and the
+ * hours are also printed on the contact page. */
 
 export const organizationId = `${siteUrl}/#organization`;
 const websiteId = `${siteUrl}/#website`;
@@ -53,7 +53,7 @@ export const organizationNode = {
     "@type": "OpeningHoursSpecification",
     dayOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     opens: "09:00",
-    closes: "17:00",
+    closes: "17:30",
   },
   sameAs: [company.instagram],
   contactPoint: {
