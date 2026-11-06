@@ -466,7 +466,7 @@ const en = {
   "about.meta_title": "About Kapileshwor Cargo",
   "about.meta_description": "Kapileshwor Cargo Pvt. Ltd., a Kathmandu freight and logistics company established in 2015, led by Managing Director Ramesh Mishra.",
   "about.title": "About KCPL",
-  "about.intro": "Kapileshwor Cargo Pvt. Ltd. is a freight and logistics company in Kathmandu, established in 2015, working for businesses importing into Nepal and exporting to international markets.",
+  "about.intro": "Kapileshwor Cargo Pvt. Ltd. is a freight and logistics company in Kathmandu, established in 2015, working for businesses importing into Nepal and exporting to international markets. You may also see our name typed as Kapileshwar Cargo or Kapileshor Cargo.",
   "about.how_title": "How the work runs",
   "about.how_copy": "A freight movement passes through several hands: the shipper and origin agent, carrier, gateway operator, border or customs desk, inland transporter and consignee. KCPL keeps one operational thread across those handovers. The team checks the booking and transport documents, follows the cargo against confirmed milestones, raises missing or inconsistent paperwork before it becomes a clearance problem, and names the next action when the plan changes. The file closes on delivery evidence, not merely on an arrival notice. Overseas legs are carried out with counterpart agents, not presented as KCPL-owned offices.",
   "about.desks_title": "Who handles what",
