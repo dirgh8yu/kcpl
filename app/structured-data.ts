@@ -3,6 +3,8 @@ import { absoluteUrl, siteName, siteUrl } from "./seo";
 import { services } from "./services-data";
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data";
+import { guideReview } from "./guide-review";
+import sitemapLastmod from "./sitemap-lastmod.json";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -178,6 +180,45 @@ export function faqNode(locale: SiteLocale, slug: GuideSlug) {
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
+}
+
+/** Owner-confirmed organization authorship and individual review are separate. */
+export function guideArticleNodes(slug: GuideSlug, imagePath: string) {
+  const guide = guides.en[slug];
+  const url = absoluteUrl(`/guides/${slug}`);
+  return [
+    {
+      "@type": "Article",
+      "@id": `${url}#article`,
+      url,
+      headline: guide.title,
+      description: guide.description,
+      inLanguage: siteLocaleTags.en,
+      mainEntityOfPage: { "@id": `${url}#webpage` },
+      author: { "@type": "Organization", "@id": organizationId, name: guideReview.organization, url: siteUrl },
+      publisher: { "@id": organizationId },
+      dateModified: sitemapLastmod.entries[`en/guides/${slug}`].lastmod,
+      image: absoluteUrl(imagePath),
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${url}#webpage`,
+      url,
+      name: guide.title,
+      inLanguage: siteLocaleTags.en,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": `${url}#article` },
+      breadcrumb: { "@id": `${url}#breadcrumb` },
+      lastReviewed: guideReview.reviewedAt,
+      reviewedBy: {
+        "@type": "Person",
+        name: guideReview.reviewer,
+        jobTitle: guideReview.role,
+        url: absoluteUrl("/about#leadership"),
+        worksFor: { "@id": organizationId },
+      },
+    },
+  ];
 }
 
 /** One @graph per page rather than a stack of script tags, so the nodes can

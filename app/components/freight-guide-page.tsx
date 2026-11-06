@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
 import { guideDepth } from "../content-depth";
-import { faqNode, graph } from "../structured-data";
+import { faqNode, graph, guideArticleNodes } from "../structured-data";
+import { guideReview } from "../guide-review";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
@@ -30,8 +31,14 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
 
   return (
     <SiteShell locale={locale} path={`/guides/${slug}`}>
-      <StructuredData data={graph([faqNode(locale, slug)])}/>
-      <PageHead title={guide.title} intro={guide.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/guides/${slug}`}/>}/>
+      <StructuredData data={graph([faqNode(locale, slug), ...(locale === "en" ? guideArticleNodes(slug, guidePhotos[slug].src) : [])])}/>
+      <PageHead title={guide.title} intro={guide.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/guides/${slug}`}/>}>
+        {locale === "en" ? <p className="guide-review">
+          {guideReview.labels.author} {guideReview.organization}<br/>
+          {guideReview.labels.reviewer} <Link href="/about#leadership">{guideReview.reviewer}, {guideReview.role}</Link>. {guideReview.labels.reviewedAt}{" "}
+          <time dateTime={guideReview.reviewedAt}>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${guideReview.reviewedAt}T00:00:00Z`))}</time>.
+        </p> : null}
+      </PageHead>
       <Lined reveal>
         <Stop title={guide.routeTitle}>
           <ol className="stages">

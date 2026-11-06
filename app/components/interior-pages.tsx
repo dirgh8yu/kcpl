@@ -70,7 +70,7 @@ export function AboutPage({ locale }: { locale: SiteLocale }) {
       <Lined reveal>
         <section className="stop stop-split">
           <div><h2 className="block-title">{t("about.how_title")}</h2><p>{t("about.how_copy")}</p></div>
-          <div><h2 className="block-title">{t("about.leadership_title")}</h2><p>{t("about.leadership_copy")}</p></div>
+          <div id="leadership"><h2 className="block-title">{t("about.leadership_title")}</h2><p>{t("about.leadership_copy")}</p></div>
         </section>
         <Stop title={t("about.desks_title")}>
           <dl className="facts">
