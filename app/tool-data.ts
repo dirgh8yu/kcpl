@@ -116,7 +116,7 @@ export const tools: Record<SiteLocale, ToolsCopy> = {
   en: {
     index: {
       title: "Free tools for importers",
-      description: "Free calculators for shipping into Nepal: estimate customs duty and VAT, storage and demurrage past free time, and the volume and chargeable weight of a consignment.",
+      description: "Use free Nepal import calculators to estimate customs duty and VAT, storage and demurrage after free time, plus consignment volume and chargeable weight.",
       intro: "Three sums importers into Nepal work out before a shipment moves. Each runs in your browser, keeps nothing you enter, and gives an estimate to plan with, not a quotation or a customs assessment.",
       open: "Open the calculator",
     },
@@ -204,7 +204,7 @@ export const tools: Record<SiteLocale, ToolsCopy> = {
     },
     "volume-weight": {
       title: "Volume and chargeable weight calculator",
-      description: "Work out a consignment's volume in cubic metres, its air-freight chargeable weight, its sea-freight weight or measure, and how much of a container it fills.",
+      description: "Work out cargo volume in cubic metres, air-freight chargeable weight, sea-freight weight or measure, and how much of a container the shipment fills.",
       intro: "Enter each size of package once, with how many there are. The calculator adds up the volume and weight and shows what air and sea freight would charge on.",
       lengthUnit: "Dimensions in",
       weightUnit: "Weight in",

@@ -5,6 +5,7 @@ import { services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools, type ToolSlug } from "../tool-data";
+import { Breadcrumbs } from "./breadcrumbs";
 import { ClosingBand } from "./closing-band";
 import { ServiceList } from "./home-page";
 import { Lined, MiniRoute, PageHead, Plate, QaList, Stop } from "./route-parts";
@@ -42,14 +43,18 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   return (
     <SiteShell locale={locale} path="/services">
-      <PageHead title={t("services.title")} intro={t("services.intro")}/>
+      <PageHead title={t("services.title")} intro={t("services.intro")} breadcrumb={<Breadcrumbs locale={locale} path="/services"/>}/>
       <Lined reveal>
         <Stop title={t("home.capability_title")}><ServiceList locale={locale}/></Stop>
         <section className="stop sector">
           <div>
             <h2 className="stop-title">{t("services.cargo_title")}</h2>
             <p className="stop-intro">{t("services.cargo_copy")}</p>
-            <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+            <div className="page-actions">
+              <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+              <Link href={sitePath(locale, "/guides")} className="text-link">{t("chrome.resources")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+              <Link href={sitePath(locale, "/network")} className="text-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+            </div>
           </div>
           <Plate src="/images/unsplash/port-aerial.jpg"/>
         </section>
@@ -69,7 +74,11 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
       {/* The page describes one service; the node says the same thing to a
         * crawler and points back at the organisation that provides it. */}
       <StructuredData data={graph([serviceNode(locale, slug)])}/>
-      <PageHead title={t(text(service.key, "title"))} intro={t(text(service.key, "summary"))}>
+      <PageHead
+        title={t(text(service.key, "title"))}
+        intro={t(text(service.key, "summary"))}
+        breadcrumb={<Breadcrumbs locale={locale} path={`/services/${slug}`}/>}
+      >
         <MiniRoute stops={t(text(service.key, "stops"))}/>
       </PageHead>
       <Lined reveal>

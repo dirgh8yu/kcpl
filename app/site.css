@@ -254,10 +254,19 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .stop-split::before, .lanes::before, .contact-grid::before { top: calc(var(--stop-top) + 4px); }
 .prose { max-width: 40em; margin-top: 18px; font-size: clamp(17px, 1.3vw, 19px); }
 .page-head { padding: clamp(32px, 6vw, 88px) var(--margin) clamp(8px, 2vw, 24px); }
+.breadcrumbs { margin-bottom: clamp(14px, 2vw, 24px); color: var(--muted); font-size: 14px; font-weight: 600; }
+.breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
+.breadcrumbs li { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; }
+.breadcrumbs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: none; }
+.breadcrumb-separator { margin-right: 6px; color: var(--muted); }
+@media (hover: hover) and (pointer: fine) {
+  .breadcrumbs a:hover { color: var(--crimson); text-decoration: underline; }
+}
 .page-title { max-width: 14em; font-size: clamp(38px, 5.6vw, 84px); line-height: 1.02; font-weight: 500; letter-spacing: -.04em; }
 .page-intro { max-width: 40em; margin-top: 18px; color: var(--muted); font-size: clamp(16px, 1.3vw, 19px); }
 .page-head .mini { margin-top: clamp(28px, 4vw, 48px); max-width: 960px; }
 .page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.sector > div > .page-actions { margin-top: clamp(20px, 2.4vw, 32px); }
 .page-actions::before { display: none; }
 .not-found-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-top: 24px; }
 

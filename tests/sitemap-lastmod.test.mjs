@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { guides, guideSlugs } from "../app/guide-data.ts";
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
-import { siteLocales } from "../app/site-i18n.ts";
+import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../app/sitemap-lastmod.json", import.meta.url), "utf8"));
 
@@ -61,5 +61,18 @@ test("every guide points somewhere real: its service, its calculator and other g
     assert.ok(toolSlugs.includes(links.tool), `${slug} links to an unknown tool`);
     assert.ok(links.next.length >= 1 && !links.next.includes(slug), `${slug} must lead to other guides`);
     for (const next of links.next) assert.ok(guideSlugs.includes(next), `${slug} links to unknown guide ${next}`);
+  }
+});
+
+test("services-index metadata does not restamp service detail pages", () => {
+  const dictionary = siteDictionary("en");
+  const original = dictionary["services.meta_description"];
+  const before = fingerprintAll();
+  try {
+    dictionary["services.meta_description"] = `${original} Test-only metadata change.`;
+    const after = fingerprintAll();
+    assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]), ["en/services"]);
+  } finally {
+    dictionary["services.meta_description"] = original;
   }
 });

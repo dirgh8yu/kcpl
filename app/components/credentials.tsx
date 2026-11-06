@@ -13,7 +13,6 @@ export function Credentials({ locale }: { locale: SiteLocale }) {
     { label: t("home.credibility_award"), detail: t("home.credibility_award_detail") },
     { label: t("home.credibility_storage"), detail: t("home.credibility_storage_detail") },
     { label: t("home.credibility_member"), detail: t("home.credibility_member_detail") },
-    { label: t("home.credibility_projects"), detail: t("home.credibility_projects_detail") },
     { label: t("home.credibility_staff"), detail: t("network.staffed_places") },
   ];
   return (

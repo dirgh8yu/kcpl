@@ -135,8 +135,8 @@ const en = {
 
   /* Home */
   "home.meta_title": "Kapileshwor Cargo | Freight Forwarding in Nepal",
-  "home.meta_description": "KCPL is a Kathmandu freight and logistics company established in 2015, coordinating air, ocean and road freight, customs documentation and project cargo for Nepalese importers and exporters.",
-  "home.hero_title": "One team plans the whole route.",
+  "home.meta_description": "Kathmandu-based KCPL coordinates air, ocean and road freight, customs documentation and project cargo for importers and exporters into and out of Nepal.",
+  "home.hero_title": "One team plans freight into and out of Nepal.",
   "home.hero_intro": "Air, ocean, cross-border road and project cargo. One Kathmandu team coordinates gateways, customs and delivery for importers and exporters.",
   "home.hero_cta": "Request a quote",
   "home.hero_secondary": "See what we handle",
@@ -189,7 +189,7 @@ const en = {
   "home.proof_link": "Read the movement stories",
 
   "work.meta_title": "Selected Freight and Project Cargo Work",
-  "work.meta_description": "Anonymized, evidence-led KCPL movement stories: infrastructure breakbulk through Kolkata and Birgunj, a disrupted Kathmandu air export, and container delivery to Nepalgunj.",
+  "work.meta_description": "Read three anonymized KCPL freight stories covering infrastructure breakbulk, a disrupted Kathmandu air export and container delivery to Nepalgunj.",
   "work.eyebrow": "Selected work",
   "work.title": "Movements, documented.",
   "work.intro": "A shipment is only complete when the handoffs are accounted for. These three examples are drawn from KCPL's operational correspondence and describe only the outcomes the record supports.",
@@ -228,8 +228,6 @@ const en = {
   "home.storage_road_label": "sqm road cargo storage",
   "home.credibility_member": "Memberships",
   "home.credibility_member_detail": "CPL and NEFFA member",
-  "home.credibility_projects": "Infrastructure",
-  "home.credibility_projects_detail": "Project handling agent on NEA transmission and substation work",
 
   "home.cta_title": "Tell us the cargo, the route and the date.",
   "home.cta_copy": "Send the origin, destination, mode, weight and dimensions, and KCPL will come back on how the movement should be planned.",
@@ -238,7 +236,7 @@ const en = {
 
   /* Services */
   "services.meta_title": "Freight Forwarding Services in Nepal",
-  "services.meta_description": "Air, ocean and road freight, customs and documentation, project cargo, warehousing and delivery, coordinated from Kathmandu for Nepalese importers and exporters.",
+  "services.meta_description": "Explore air, ocean and road freight, customs documentation, project cargo, warehousing and delivery coordinated from Kathmandu for Nepalese trade.",
   "services.title": "Services",
   "services.intro": "Seven services that make up one movement. Most shipments use several, planned together rather than handed between desks.",
   "services.detail_link": "Service detail",
@@ -313,7 +311,7 @@ const en = {
   "svc.project.p6": "Delivery reports and photographs from site, because a project closes on evidence.",
   "svc.project.ask": "Piece dimensions and weights, total packages, site access, required completion date.",
   "svc.project.how": "An oversized movement is decided by the route before it is decided by the rate. The road is surveyed, the equipment is chosen against the piece rather than the other way round, and the border and customs steps are booked into the same plan as the transport. Open-top and flat-rack units, over-height pieces, special trailers and over-dimensional consignments are handled on that basis. Delivery to a live construction site is phased where the site can take only part of a consignment at a time, and it is evidenced package by package.",
-  "svc.project.lanes": "Substation and transmission-line cargo moves through Indian gateways and Nepal's entry points to inland project sites, including the Kathmandu Valley and western Nepal. Customs, dispatch and the receiving sequence are planned for the specific site. KCPL has acted as a project handling agent on Nepal Electricity Authority movements.",
+  "svc.project.lanes": "Substation and transmission-line cargo moves through Indian gateways and Nepal's entry points to inland project sites, including the Kathmandu Valley and western Nepal. Customs, dispatch and the receiving sequence are planned for the specific site.",
   "svc.project.docs": "Route survey, handling and method plan, customs exemption documents, dispatch documents, phased site delivery reports, photographs and proof of delivery.",
 
   "svc.warehouse.title": "Warehousing and packaging",
@@ -330,7 +328,7 @@ const en = {
   "svc.warehouse.docs": "Receipt on arrival, stock record against the consignment, and a release and dispatch record when the cargo leaves.",
 
   "svc.delivery.title": "Delivery and proof",
-  "svc.delivery.summary": "Final delivery coordination and the evidence that a movement actually closed.",
+  "svc.delivery.summary": "Coordinate final cargo delivery in Nepal, including receiving windows, unloading records, signed receipts and proof shared with parties closing the file.",
   "svc.delivery.p1": "Delivery scheduling with the consignee and the site.",
   "svc.delivery.p2": "Unloading evidence and signed delivery receipts.",
   "svc.delivery.p3": "Status updates through the movement, and a record at the end of it.",
@@ -428,7 +426,7 @@ const en = {
   "sectors.title": "Sectors and projects",
   "sectors.intro": "Three kinds of work recur. Each has its own failure points, which is what the planning is really for.",
   "sectors.s1_title": "Infrastructure and energy",
-  "sectors.s1_copy": "Infrastructure cargo often arrives as a sequence of containers, breakbulk pieces and documents rather than one delivery. KCPL has acted as a project handling agent on Nepal Electricity Authority transmission and substation work, coordinating gateway handling, customs paperwork, inland transport and phased delivery to site. Piece dimensions, lifting needs, access and receiving capacity are reviewed before the transport plan is confirmed. KCPL coordinates the logistics; it does not take responsibility for delivery of the construction project itself.",
+  "sectors.s1_copy": "Infrastructure cargo often arrives as a sequence of containers, breakbulk pieces and documents rather than one delivery. Piece dimensions, lifting needs, access and receiving capacity are reviewed before the transport plan is confirmed. KCPL coordinates the logistics; it does not take responsibility for delivery of the construction project itself.",
   "sectors.s1_list": "Substation equipment. Transmission-line components. Phased inland site delivery.",
   "sectors.s2_title": "Textiles, carpets and handicrafts",
   "sectors.s2_copy": "Nepalese manufacturers export textiles, carpets, felt and handicrafts in both small consolidated lots and full containers. Air from Kathmandu can serve a time-sensitive order; ocean freight adds collection, consolidation and an Indian gateway before the international sea leg. The packing list, commercial invoice, certificate of origin where required, booking and buyer delivery terms need to agree. KCPL coordinates those handovers and follows the shipment beyond departure so the exporter and buyer know what is still outstanding.",
@@ -563,7 +561,7 @@ const en = {
   "faq.title": "Questions shippers ask",
   "faq.intro": "Plain answers, grouped by service. If yours is not here, ask the team.",
   "careers.meta_title": "Careers at KCPL",
-  "careers.meta_description": "Working in freight, customs and documentation at KCPL in Nepal.",
+  "careers.meta_description": "Learn about working with KCPL on freight, customs and documentation in Nepal, see whether roles are listed, and find where to send your experience.",
   "careers.title": "Careers at KCPL",
   "careers.intro": "KCPL's work runs from Kathmandu to Nepal's gateways. No open roles are listed here yet.",
   "careers.write_title": "Write to the team",
@@ -757,8 +755,6 @@ const ne: Record<SiteTextKey, string> = {
   "home.storage_road_label": "वर्गमिटर रोड कार्गो भण्डारण",
   "home.credibility_member": "सदस्यता",
   "home.credibility_member_detail": "CPL र NEFFA सदस्य",
-  "home.credibility_projects": "पूर्वाधार",
-  "home.credibility_projects_detail": "NEA प्रसारण र सबस्टेसन कामको प्रोजेक्ट ह्यान्डलिङ एजेन्ट",
 
   "home.cta_title": "कार्गो, रुट र मिति भन्नुहोस्।",
   "home.cta_copy": "मूल, गन्तव्य, मोड, तौल र नाप पठाउनुहोस्। मुभमेन्ट कसरी योजना गर्ने भनेर KCPL जवाफ दिन्छ।",
@@ -842,7 +838,7 @@ const ne: Record<SiteTextKey, string> = {
   "svc.project.p6": "साइटबाट डेलिभरी रिपोर्ट र फोटो, किनभने परियोजना प्रमाणमा टुङ्गिन्छ।",
   "svc.project.ask": "प्रति पिस नाप र तौल, कुल प्याकेज, साइट पहुँच, सम्पन्न गर्नुपर्ने मिति।",
   "svc.project.how": "ठूलो आकारको मुभमेन्ट दररेटले भन्दा पहिले रुटले तय गर्छ। बाटोको सर्वेक्षण हुन्छ, उपकरण सामानअनुसार छानिन्छ, उल्टो होइन, र सीमा तथा भन्सारका चरण ढुवानीकै योजनामा समावेश हुन्छन्। ओपन-टप र फ्ल्याट-र्‍याक युनिट, अग्ला सामान, विशेष ट्रेलर र ओभर-डाइमेन्सनल खेप यसै आधारमा सम्हालिन्छन्। चालू निर्माण स्थलमा एकैपटक पूरा खेप अट्दैन भने डेलिभरी चरणबद्ध गरिन्छ, र प्याकेजैपिच्छे प्रमाणसहित अभिलेख राखिन्छ।",
-  "svc.project.lanes": "सबस्टेसन र प्रसारण लाइनका कार्गो भारतीय गेटवे र नेपालका प्रवेश नाकाबाट काठमाडौँ उपत्यका तथा पश्चिम नेपालसहितका भित्री परियोजना साइटसम्म जान्छन्। भन्सार, डिस्प्याच र प्राप्त गर्ने क्रम सम्बन्धित साइटअनुसार योजना गरिन्छ। KCPL ले नेपाल विद्युत् प्राधिकरणका मुभमेन्टमा प्रोजेक्ट ह्यान्डलिङ एजेन्टका रूपमा काम गरेको छ।",
+  "svc.project.lanes": "सबस्टेसन र प्रसारण लाइनका कार्गो भारतीय गेटवे र नेपालका प्रवेश नाकाबाट काठमाडौँ उपत्यका तथा पश्चिम नेपालसहितका भित्री परियोजना साइटसम्म जान्छन्। भन्सार, डिस्प्याच र प्राप्त गर्ने क्रम सम्बन्धित साइटअनुसार योजना गरिन्छ।",
   "svc.project.docs": "रुट सर्वेक्षण, ह्यान्डलिङ र विधि योजना, भन्सार छुटका कागजात, डिस्प्याच कागजात, चरणबद्ध साइट डेलिभरी प्रतिवेदन, तस्बिर र डेलिभरीको प्रमाण।",
 
   "svc.warehouse.title": "भण्डारण र प्याकेजिङ",
@@ -957,7 +953,7 @@ const ne: Record<SiteTextKey, string> = {
   "sectors.title": "क्षेत्र र परियोजना",
   "sectors.intro": "तीन किसिमका काम बारम्बार आउँछन्। हरेकका आ-आफ्नै जोखिम बिन्दु छन्, र योजना त्यसैका लागि हो।",
   "sectors.s1_title": "पूर्वाधार र ऊर्जा",
-  "sectors.s1_copy": "पूर्वाधार कार्गो प्रायः एउटै डेलिभरी होइन; कन्टेनर, ब्रेकबल्क सामान र कागजातको क्रम हो। KCPL ले नेपाल विद्युत् प्राधिकरणका प्रसारण र सबस्टेसन काममा प्रोजेक्ट ह्यान्डलिङ एजेन्टका रूपमा गेटवे ह्यान्डलिङ, भन्सार कागजात, भित्री यातायात र साइटमा चरणबद्ध डेलिभरी समन्वय गरेको छ। यातायात योजना पुष्टि गर्नुअघि प्रत्येक सामानको नाप, उठाउने आवश्यकता, साइट पहुँच र प्राप्त गर्ने क्षमता जाँचिन्छ। KCPL ले रसद समन्वय गर्छ; निर्माण परियोजना सम्पन्न गर्ने जिम्मा लिँदैन।",
+  "sectors.s1_copy": "पूर्वाधार कार्गो प्रायः एउटै डेलिभरी होइन; कन्टेनर, ब्रेकबल्क सामान र कागजातको क्रम हो। यातायात योजना पुष्टि गर्नुअघि प्रत्येक सामानको नाप, उठाउने आवश्यकता, साइट पहुँच र प्राप्त गर्ने क्षमता जाँचिन्छ। KCPL ले रसद समन्वय गर्छ; निर्माण परियोजना सम्पन्न गर्ने जिम्मा लिँदैन।",
   "sectors.s1_list": "सबस्टेसन उपकरण। प्रसारण लाइनका सामान। चरणबद्ध भित्री साइट डेलिभरी।",
   "sectors.s2_title": "टेक्सटायल, गलैँचा र ह्यान्डिक्राफ्ट",
   "sectors.s2_copy": "नेपाली उत्पादकले कपडा, कार्पेट, फेल्ट र हस्तकला साना समेकित खेप र पूरै कन्टेनर दुवैमा निर्यात गर्छन्। समयसीमा कडा हुँदा काठमाडौँबाट एयर उपयोगी हुन सक्छ; समुद्री ढुवानीमा अन्तर्राष्ट्रिय खण्डअघि सङ्कलन, कन्सोलिडेसन र भारतीय गेटवे जोडिन्छ। प्याकिङ लिस्ट, व्यापारिक इनभ्वाइस, आवश्यक भए मूल प्रमाणपत्र, बुकिङ र खरिदकर्ताको डेलिभरी सर्त मिल्नुपर्छ। KCPL ले ती ह्यान्डओभर समन्वय गरी सामान छुटेपछि पनि बाँकी कामको स्थिति पछ्याउँछ।",

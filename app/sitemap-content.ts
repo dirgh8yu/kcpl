@@ -17,7 +17,7 @@ import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
 const sharedPrefixes = ["chrome.", "company.", "cookies."];
 
 const pagePrefixes: Record<string, string[]> = {
-  "/": ["home.", "stats.", "svc."],
+  "/": ["home.", "stats.", "svc.", "network.staffed_places"],
   "/services": ["services.", "svc."],
   "/sectors": ["sectors."],
   "/work": ["work.", "home.proof_"],
@@ -27,7 +27,7 @@ const pagePrefixes: Record<string, string[]> = {
   "/agents": ["agents."],
   "/faq": ["faq."],
   "/careers": ["careers."],
-  "/about": ["about.", "stats."],
+  "/about": ["about.", "stats.", "home.credibility_award", "home.credibility_storage", "home.credibility_member", "home.credibility_staff", "network.staffed_places"],
   "/contact": ["contact."],
   "/quote": ["quote."],
   "/track": ["track."],
@@ -37,7 +37,10 @@ const pagePrefixes: Record<string, string[]> = {
 
 function prefixesFor(path: string) {
   const service = services.find((entry) => path === `/services/${entry.slug}`);
-  if (service) return [...sharedPrefixes, "services.", `svc.${service.key}.`];
+  if (service) return [...sharedPrefixes,
+    "services.covers", "services.how_title", "services.lanes_title", "services.docs_title",
+    "services.questions_title", "services.ask", "services.related", `svc.${service.key}.`,
+  ];
   return [...sharedPrefixes, ...(pagePrefixes[path] ?? [])];
 }
 

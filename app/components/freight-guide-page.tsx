@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
 import { faqNode, graph } from "../structured-data";
-import { sitePath, type SiteLocale } from "../site-i18n";
+import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
 import { Lined, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
+import { Breadcrumbs } from "./breadcrumbs";
 
 /* Only photographs with a recorded source and no other company's branding. */
 const guidePhotos: Record<GuideSlug, { src: string; position?: string }> = {
@@ -28,9 +29,7 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
   return (
     <SiteShell locale={locale} path={`/guides/${slug}`}>
       <StructuredData data={graph([faqNode(locale, slug)])}/>
-      <PageHead title={guide.title} intro={guide.intro}>
-        <Link href={sitePath(locale, "/guides")} className="back-link"><ArrowLeft size={15} weight="bold" aria-hidden="true"/>{index.title}</Link>
-      </PageHead>
+      <PageHead title={guide.title} intro={guide.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/guides/${slug}`}/>}/>
       <Lined reveal>
         <Stop title={guide.routeTitle}>
           <ol className="stages">
@@ -77,11 +76,12 @@ function IndexList({ items }: { items: { href: string; title: string; copy: stri
 
 /** Resources: the guides and the tools together, so a reader sees both from one page. */
 export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
+  const t = siteTranslator(locale);
   const index = guideIndex[locale];
   const toolCopy = tools[locale];
   return (
     <SiteShell locale={locale} path="/guides">
-      <PageHead title={index.title} intro={index.intro}/>
+      <PageHead title={index.title} intro={index.intro} breadcrumb={<Breadcrumbs locale={locale} path="/guides"/>}/>
       <Lined reveal>
         <Stop title={toolCopy.index.title} intro={toolCopy.index.intro}>
           <IndexList items={toolSlugs.map((slug) => ({ href: sitePath(locale, `/tools/${slug}`), title: toolCopy[slug].title, copy: toolCopy[slug].description }))}/>
@@ -89,6 +89,11 @@ export function GuidesIndexPage({ locale }: { locale: SiteLocale }) {
         <Stop title={index.title}>
           <IndexList items={guideSlugs.map((slug) => ({ href: sitePath(locale, `/guides/${slug}`), title: guides[locale][slug].title, copy: guides[locale][slug].description }))}/>
         </Stop>
+        <section className="stop page-actions">
+          <Link href={sitePath(locale, "/services")} className="text-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/network")} className="text-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/sectors")} className="text-link">{t("services.sectors_title")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+        </section>
         <ClosingBand locale={locale}/>
       </Lined>
     </SiteShell>

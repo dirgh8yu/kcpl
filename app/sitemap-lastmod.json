@@ -1,55 +1,55 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "60784e0243981b5d",
+      "fingerprint": "630234d6e3d95fbf",
       "lastmod": "2026-11-05"
     },
     "ne/": {
-      "fingerprint": "506f20d46ceeaffc",
+      "fingerprint": "189435ac28a4ac59",
       "lastmod": "2026-11-05"
     },
     "zh/": {
-      "fingerprint": "2922e16906cd966e",
+      "fingerprint": "191f51addbcc378b",
       "lastmod": "2026-11-05"
     },
     "hi/": {
-      "fingerprint": "d910481ddd5254c6",
+      "fingerprint": "58171edb987e27ad",
       "lastmod": "2026-11-05"
     },
     "en/services": {
-      "fingerprint": "9448e7353562b6a9",
+      "fingerprint": "5887ecd4440ded04",
       "lastmod": "2026-11-05"
     },
     "ne/services": {
-      "fingerprint": "35e0d8bb46cbec05",
+      "fingerprint": "ea890b8bf35ace9d",
       "lastmod": "2026-11-05"
     },
     "zh/services": {
-      "fingerprint": "0b0bee1c70f73867",
+      "fingerprint": "2c2f7e6bb2e940e0",
       "lastmod": "2026-11-05"
     },
     "hi/services": {
-      "fingerprint": "3a051e1162348c70",
+      "fingerprint": "2246d34861238a0f",
       "lastmod": "2026-11-05"
     },
     "en/sectors": {
-      "fingerprint": "c024388e52468e69",
+      "fingerprint": "faa8aaf50b2fa567",
       "lastmod": "2026-11-05"
     },
     "ne/sectors": {
-      "fingerprint": "29b1e081235ce7ed",
+      "fingerprint": "ad94a1d4f7de56b8",
       "lastmod": "2026-11-05"
     },
     "zh/sectors": {
-      "fingerprint": "c5c4b8a66b3a3e32",
+      "fingerprint": "b7fe0fcc4d126c07",
       "lastmod": "2026-11-05"
     },
     "hi/sectors": {
-      "fingerprint": "b45293a9649e64e4",
+      "fingerprint": "fabeb80a6d0d7ce3",
       "lastmod": "2026-11-05"
     },
     "en/work": {
-      "fingerprint": "4533ea68005f1c29",
+      "fingerprint": "98a83a90e4b150e5",
       "lastmod": "2026-11-05"
     },
     "ne/work": {
@@ -145,7 +145,7 @@
       "lastmod": "2026-11-05"
     },
     "en/careers": {
-      "fingerprint": "549b2b54283b0041",
+      "fingerprint": "05b1bee0e53f1bf6",
       "lastmod": "2026-11-05"
     },
     "ne/careers": {
@@ -161,19 +161,19 @@
       "lastmod": "2026-11-05"
     },
     "en/about": {
-      "fingerprint": "297c0174b55e5514",
+      "fingerprint": "d1d92cdc05b408cc",
       "lastmod": "2026-11-05"
     },
     "ne/about": {
-      "fingerprint": "124cff363f6440d3",
+      "fingerprint": "20934c106e945117",
       "lastmod": "2026-11-05"
     },
     "zh/about": {
-      "fingerprint": "96602346e608d8e4",
+      "fingerprint": "8704ddfb4229b99e",
       "lastmod": "2026-11-05"
     },
     "hi/about": {
-      "fingerprint": "65056b4113dd0690",
+      "fingerprint": "041ba72ea89937b6",
       "lastmod": "2026-11-05"
     },
     "en/contact": {
@@ -257,120 +257,120 @@
       "lastmod": "2026-11-05"
     },
     "en/services/air-freight": {
-      "fingerprint": "7218f43cd7060e9a",
+      "fingerprint": "6bd81de213a35b24",
       "lastmod": "2026-11-05"
     },
     "ne/services/air-freight": {
-      "fingerprint": "e83b76037df8e7fe",
+      "fingerprint": "7c1c6b71a11e4582",
       "lastmod": "2026-11-05"
     },
     "zh/services/air-freight": {
-      "fingerprint": "ac9100400bbebed6",
+      "fingerprint": "c04e5c730a2b08b7",
       "lastmod": "2026-11-05"
     },
     "hi/services/air-freight": {
-      "fingerprint": "8966d245f98a972a",
+      "fingerprint": "89884292af48aa62",
       "lastmod": "2026-11-05"
     },
     "en/services/ocean-freight": {
-      "fingerprint": "7b4868da10976985",
+      "fingerprint": "acbec454becf835e",
       "lastmod": "2026-11-05"
     },
     "ne/services/ocean-freight": {
-      "fingerprint": "ef18bf42889d3b68",
+      "fingerprint": "ec9fef995631638b",
       "lastmod": "2026-11-05"
     },
     "zh/services/ocean-freight": {
-      "fingerprint": "bea5fbd5149a869c",
+      "fingerprint": "1921c5c75e8f5a0a",
       "lastmod": "2026-11-05"
     },
     "hi/services/ocean-freight": {
-      "fingerprint": "96fbc8122ee4875b",
+      "fingerprint": "d22f7aacc2e2ba47",
       "lastmod": "2026-11-05"
     },
     "en/services/road-freight": {
-      "fingerprint": "29806e21814e4667",
+      "fingerprint": "1b64fe9cf0a5bcac",
       "lastmod": "2026-11-05"
     },
     "ne/services/road-freight": {
-      "fingerprint": "72a10a9491e77cb8",
+      "fingerprint": "cd6fa44f729ca4a7",
       "lastmod": "2026-11-05"
     },
     "zh/services/road-freight": {
-      "fingerprint": "3d17a7f1d5b74e27",
+      "fingerprint": "cd9c634976fa6fd8",
       "lastmod": "2026-11-05"
     },
     "hi/services/road-freight": {
-      "fingerprint": "bdb94cd8a569725f",
+      "fingerprint": "f67add3defa83f57",
       "lastmod": "2026-11-05"
     },
     "en/services/customs-clearance": {
-      "fingerprint": "31c0d5dcbe0fa0b3",
+      "fingerprint": "fd68ca4913a358f1",
       "lastmod": "2026-11-05"
     },
     "ne/services/customs-clearance": {
-      "fingerprint": "c770cd17d1673054",
+      "fingerprint": "d50e620e33b0a3a6",
       "lastmod": "2026-11-05"
     },
     "zh/services/customs-clearance": {
-      "fingerprint": "0f2900c573aa6ef9",
+      "fingerprint": "18f2e1e91d609d40",
       "lastmod": "2026-11-05"
     },
     "hi/services/customs-clearance": {
-      "fingerprint": "ef836f4376c2951f",
+      "fingerprint": "72e558635c55ab79",
       "lastmod": "2026-11-05"
     },
     "en/services/project-cargo": {
-      "fingerprint": "492d8a18ea18a604",
+      "fingerprint": "501348c25e91cf7b",
       "lastmod": "2026-11-05"
     },
     "ne/services/project-cargo": {
-      "fingerprint": "da97a45553e18097",
+      "fingerprint": "c4dfd4a3c6f020fc",
       "lastmod": "2026-11-05"
     },
     "zh/services/project-cargo": {
-      "fingerprint": "1f66f97ade4add65",
+      "fingerprint": "b0d6708a10503dbb",
       "lastmod": "2026-11-05"
     },
     "hi/services/project-cargo": {
-      "fingerprint": "b93a06361bfa6502",
+      "fingerprint": "8316305758b5b46d",
       "lastmod": "2026-11-05"
     },
     "en/services/warehousing": {
-      "fingerprint": "932db4db102c7918",
+      "fingerprint": "7ff89b6e533fd6b6",
       "lastmod": "2026-11-05"
     },
     "ne/services/warehousing": {
-      "fingerprint": "db869e51724e7f10",
+      "fingerprint": "0f09d30488941e87",
       "lastmod": "2026-11-05"
     },
     "zh/services/warehousing": {
-      "fingerprint": "c044944d155ff954",
+      "fingerprint": "6283dac3d3fadf4e",
       "lastmod": "2026-11-05"
     },
     "hi/services/warehousing": {
-      "fingerprint": "6932104bf744c451",
+      "fingerprint": "7a25f1b81ffd9f50",
       "lastmod": "2026-11-05"
     },
     "en/services/delivery": {
-      "fingerprint": "79988a18465dd08b",
+      "fingerprint": "69f93fe34b3b673b",
       "lastmod": "2026-11-05"
     },
     "ne/services/delivery": {
-      "fingerprint": "75697561f286dba5",
+      "fingerprint": "24d2e2cc0b41b18d",
       "lastmod": "2026-11-05"
     },
     "zh/services/delivery": {
-      "fingerprint": "c8cd55d9d079077f",
+      "fingerprint": "343b4e39f6d9792b",
       "lastmod": "2026-11-05"
     },
     "hi/services/delivery": {
-      "fingerprint": "42cefe365999173b",
+      "fingerprint": "11678c441c872019",
       "lastmod": "2026-11-05"
     },
     "en/guides": {
-      "fingerprint": "9e8b81f79fc51c5a",
-      "lastmod": "2026-10-11"
+      "fingerprint": "1a37362257ebe09c",
+      "lastmod": "2026-11-05"
     },
     "ne/guides": {
       "fingerprint": "c0b6b2e2eca0d97f",
@@ -385,8 +385,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/importing-to-nepal": {
-      "fingerprint": "db0169511b55e431",
-      "lastmod": "2026-09-23"
+      "fingerprint": "6563dba72dcc9988",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/importing-to-nepal": {
       "fingerprint": "2d859aad9417619d",
@@ -401,8 +401,8 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/exporting-from-nepal": {
-      "fingerprint": "d446c17f6eceeb1f",
-      "lastmod": "2026-09-23"
+      "fingerprint": "f6b0ddf6456d4c5c",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/exporting-from-nepal": {
       "fingerprint": "755240e6640d8d48",
@@ -433,8 +433,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/sea-freight-through-india": {
-      "fingerprint": "92996373e4f4f710",
-      "lastmod": "2026-10-11"
+      "fingerprint": "acf69e7785a45de5",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/sea-freight-through-india": {
       "fingerprint": "3a3db91a1b89b47d",
@@ -497,8 +497,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools": {
-      "fingerprint": "f1b36b971f198b25",
-      "lastmod": "2026-10-11"
+      "fingerprint": "037a59cea5755f81",
+      "lastmod": "2026-11-05"
     },
     "ne/tools": {
       "fingerprint": "5fe7170216b8d64e",
@@ -513,8 +513,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/duty-estimate": {
-      "fingerprint": "b28872f9d035df4c",
-      "lastmod": "2026-10-11"
+      "fingerprint": "9002bd22c075ad69",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/duty-estimate": {
       "fingerprint": "3fadb99be3b07c51",
@@ -529,8 +529,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/storage-charges": {
-      "fingerprint": "b8b4af1d340e170a",
-      "lastmod": "2026-10-11"
+      "fingerprint": "709ac617ba615e40",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/storage-charges": {
       "fingerprint": "cac1689f3ede3db1",
@@ -545,8 +545,8 @@
       "lastmod": "2026-10-11"
     },
     "en/tools/volume-weight": {
-      "fingerprint": "5671e04ddb173cb0",
-      "lastmod": "2026-10-11"
+      "fingerprint": "7f1178197a49b00f",
+      "lastmod": "2026-11-05"
     },
     "ne/tools/volume-weight": {
       "fingerprint": "4f161125cf713b21",

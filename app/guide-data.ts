@@ -29,7 +29,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
   en: {
     "importing-to-nepal": {
       title: "Importing Freight to Nepal",
-      description: "A practical guide to importing freight into Nepal: choosing an Indian gateway, preparing shipment documents, planning transit and customs handovers, and arranging final delivery.",
+      description: "Plan an import to Nepal: choose an Indian gateway, prepare freight documents, align transit and customs handovers, and arrange final delivery.",
       intro: "An ocean import into Nepal does not end when the vessel reaches India. The gateway, transit movement, border clearance and final delivery have to be planned as one shipment.",
       routeTitle: "How the movement is planned",
       stages: [
@@ -50,7 +50,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
     },
     "exporting-from-nepal": {
       title: "Exporting Freight from Nepal",
-      description: "A practical guide to exporting from Nepal by air or ocean: collection, cargo and trade documents, Kathmandu and Indian-gateway routes, and coordination with destination agents.",
+      description: "Plan an export from Nepal by air or ocean: prepare cargo and trade documents, choose Kathmandu or Indian-gateway routes, and coordinate destination agents.",
       intro: "A Nepal export works best when the cargo, collection date, buyer's delivery terms and destination handover are agreed before a carrier is booked.",
       routeTitle: "How the movement is planned",
       stages: [
@@ -230,7 +230,7 @@ export const guideLinks: Record<GuideSlug, { service: string; tool: ToolSlug; ne
 export const guideIndex: Record<SiteLocale, { title: string; description: string; intro: string; related: string; open: string }> = {
   en: {
     title: "Freight guides",
-    description: "Practical guides to shipping into and out of Nepal: customs clearance, sea freight through Indian ports, air freight into Kathmandu, HS codes and duty, and free time and demurrage.",
+    description: "Plan freight into and out of Nepal with practical guides to customs, Indian port gateways, air cargo, HS codes, import duty, free time and demurrage.",
     intro: "Plain answers to common questions about moving freight into and out of Nepal, written as planning checklists. Requirements depend on the goods and change over time, so confirm the details for each shipment.",
     related: "Related guides",
     open: "Read the guide",
