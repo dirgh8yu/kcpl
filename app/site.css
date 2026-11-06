@@ -266,6 +266,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 }
 .page-title { max-width: 14em; font-size: clamp(38px, 5.6vw, 84px); line-height: 1.02; font-weight: 500; letter-spacing: -.04em; }
 .page-intro { max-width: 40em; margin-top: 18px; color: var(--muted); font-size: clamp(16px, 1.3vw, 19px); }
+.guide-review { max-width: 48em; margin-top: 18px; color: var(--muted); font-size: 14px; }
 .page-head .mini { margin-top: clamp(28px, 4vw, 48px); max-width: 960px; }
 .page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
 .sector > div > .page-actions { margin-top: clamp(20px, 2.4vw, 32px); }

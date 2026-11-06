@@ -6,6 +6,7 @@ import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth } from 
 import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
 import { movementStories } from "../app/movement-data.ts";
 import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
+import { guideReview } from "../app/guide-review.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../app/sitemap-lastmod.json", import.meta.url), "utf8"));
 
@@ -96,6 +97,18 @@ test("a depth edit changes only its English page fingerprint", () => {
     } finally {
       paragraphs[0] = original;
     }
+  }
+});
+
+test("a confirmed review edit restamps only the seven reviewed English guides", () => {
+  const before = fingerprintAll();
+  const original = guideReview.reviewedAt;
+  try {
+    guideReview.reviewedAt = "2026-11-07";
+    const after = fingerprintAll();
+    assert.deepEqual(Object.keys(after).filter((key) => after[key] !== before[key]), guideSlugs.map((slug) => `en/guides/${slug}`));
+  } finally {
+    guideReview.reviewedAt = original;
   }
 });
 
