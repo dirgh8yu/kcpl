@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guides, type GuideSlug } from "../guide-data";
+import { serviceDepth } from "../content-depth";
 import { services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools, type ToolSlug } from "../tool-data";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ClosingBand } from "./closing-band";
+import { ContentDepth } from "./content-depth";
 import { ServiceList } from "./home-page";
 import { Lined, MiniRoute, PageHead, Plate, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
@@ -98,6 +100,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
           <div><h2 className="block-title">{t("services.lanes_title")}</h2><p>{t(text(service.key, "lanes"))}</p></div>
           <div><h2 className="block-title">{t("services.docs_title")}</h2><p>{t(text(service.key, "docs"))}</p></div>
         </section>
+        {locale === "en" ? <ContentDepth content={serviceDepth[slug]}/> : null}
         <Stop title={t("services.questions_title")}>
           <QaList items={[1, 2].map((number) => ({ question: t(text(service.key, `q${number}`)), answer: t(text(service.key, `a${number}`)) }))}/>
         </Stop>

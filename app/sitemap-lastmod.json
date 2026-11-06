@@ -257,7 +257,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/air-freight": {
-      "fingerprint": "6bd81de213a35b24",
+      "fingerprint": "1c94c9e44f763136",
       "lastmod": "2026-11-05"
     },
     "ne/services/air-freight": {
@@ -273,7 +273,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/ocean-freight": {
-      "fingerprint": "acbec454becf835e",
+      "fingerprint": "bc6c4ff1134aff23",
       "lastmod": "2026-11-05"
     },
     "ne/services/ocean-freight": {
@@ -289,7 +289,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/road-freight": {
-      "fingerprint": "1b64fe9cf0a5bcac",
+      "fingerprint": "aa2c31726a8cbf60",
       "lastmod": "2026-11-05"
     },
     "ne/services/road-freight": {
@@ -305,7 +305,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/customs-clearance": {
-      "fingerprint": "fd68ca4913a358f1",
+      "fingerprint": "57f55ed7d3a7f7a1",
       "lastmod": "2026-11-05"
     },
     "ne/services/customs-clearance": {
@@ -321,7 +321,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/project-cargo": {
-      "fingerprint": "501348c25e91cf7b",
+      "fingerprint": "c9e5fee70f3b0263",
       "lastmod": "2026-11-05"
     },
     "ne/services/project-cargo": {
@@ -337,7 +337,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/warehousing": {
-      "fingerprint": "7ff89b6e533fd6b6",
+      "fingerprint": "45508d7737986158",
       "lastmod": "2026-11-05"
     },
     "ne/services/warehousing": {
@@ -353,7 +353,7 @@
       "lastmod": "2026-11-05"
     },
     "en/services/delivery": {
-      "fingerprint": "69f93fe34b3b673b",
+      "fingerprint": "554192901c6c5404",
       "lastmod": "2026-11-05"
     },
     "ne/services/delivery": {
@@ -385,7 +385,7 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/importing-to-nepal": {
-      "fingerprint": "6563dba72dcc9988",
+      "fingerprint": "d87a1cc8e12a65f9",
       "lastmod": "2026-11-05"
     },
     "ne/guides/importing-to-nepal": {
@@ -401,7 +401,7 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/exporting-from-nepal": {
-      "fingerprint": "f6b0ddf6456d4c5c",
+      "fingerprint": "ccd17b7620352d80",
       "lastmod": "2026-11-05"
     },
     "ne/guides/exporting-from-nepal": {
@@ -417,8 +417,8 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/customs-clearance-in-nepal": {
-      "fingerprint": "7278afac46a63c71",
-      "lastmod": "2026-10-11"
+      "fingerprint": "2c6922118f5c3e76",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/customs-clearance-in-nepal": {
       "fingerprint": "04fc994104fdb714",
@@ -433,7 +433,7 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/sea-freight-through-india": {
-      "fingerprint": "acf69e7785a45de5",
+      "fingerprint": "e3ae60ec9489bca4",
       "lastmod": "2026-11-05"
     },
     "ne/guides/sea-freight-through-india": {
@@ -449,8 +449,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/air-freight-to-kathmandu": {
-      "fingerprint": "ae60b3ae7a0db5ed",
-      "lastmod": "2026-10-11"
+      "fingerprint": "beb53d23e6d42da0",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/air-freight-to-kathmandu": {
       "fingerprint": "f1d8408c48e92aad",
@@ -465,8 +465,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/hs-codes-and-import-duty": {
-      "fingerprint": "5362fa763e49d9bb",
-      "lastmod": "2026-10-11"
+      "fingerprint": "6dc9b3ea1d4b8bc3",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/hs-codes-and-import-duty": {
       "fingerprint": "eeb461590097e55c",
@@ -481,8 +481,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/free-time-and-demurrage": {
-      "fingerprint": "76bc998a996871de",
-      "lastmod": "2026-10-11"
+      "fingerprint": "82640109e279b2b0",
+      "lastmod": "2026-11-05"
     },
     "ne/guides/free-time-and-demurrage": {
       "fingerprint": "b8252109828f3ed0",
