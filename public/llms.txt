@@ -1,0 +1,34 @@
+# Kapileshwor Cargo Pvt. Ltd. (KCPL)
+
+> Kathmandu freight forwarder coordinating commercial cargo into and out of Nepal. Established in 2015. Services include air, ocean and road freight, customs and documentation, project cargo, warehousing and packaging, and delivery.
+
+## Company and contact
+
+- [About KCPL](https://kapileshworcargo.com.np/about): Company background and management.
+- [Contact](https://kapileshworcargo.com.np/contact): Current office details and enquiry contacts.
+- [Network](https://kapileshworcargo.com.np/network): Nepal and Indian-gateway connections; international handling is coordinated with counterpart agents.
+- [Request a quote](https://kapileshworcargo.com.np/quote): Provide the shipment origin, destination and contact details for a shipment-specific proposal.
+
+## Services
+
+- [Air freight](https://kapileshworcargo.com.np/services/air-freight): Planning air cargo movements to and from Nepal.
+- [Ocean freight](https://kapileshworcargo.com.np/services/ocean-freight): Indian seaport handovers and inland connections to Nepal.
+- [Road freight](https://kapileshworcargo.com.np/services/road-freight): Cross-border and inland movement planning.
+- [Customs and documentation](https://kapileshworcargo.com.np/services/customs-clearance): Shipment records, customs preparation and clearance coordination.
+- [Project cargo](https://kapileshworcargo.com.np/services/project-cargo): Planning specialist and oversized cargo movements.
+- [Warehousing and packaging](https://kapileshworcargo.com.np/services/warehousing): Storage and shipment preparation.
+- [Delivery and proof](https://kapileshworcargo.com.np/services/delivery): Delivery handover and receipt documentation.
+
+## Freight guides
+
+- [Importing freight to Nepal](https://kapileshworcargo.com.np/guides/importing-to-nepal): Route selection, shipment information and import handovers.
+- [Exporting freight from Nepal](https://kapileshworcargo.com.np/guides/exporting-from-nepal): Export preparation and destination coordination.
+- [Sea freight through India](https://kapileshworcargo.com.np/guides/sea-freight-through-india): How seaports connect to landlocked Nepal.
+- [Air freight to Kathmandu](https://kapileshworcargo.com.np/guides/air-freight-to-kathmandu): Planning an air cargo arrival.
+- [Customs clearance in Nepal](https://kapileshworcargo.com.np/guides/customs-clearance-in-nepal): Documents and customs preparation.
+- [HS codes and import duty](https://kapileshworcargo.com.np/guides/hs-codes-and-import-duty): Classification and duty-estimate limitations.
+- [Free time and demurrage](https://kapileshworcargo.com.np/guides/free-time-and-demurrage): Release planning and time-related charges.
+
+## Planning tools
+
+- [Freight tools](https://kapileshworcargo.com.np/tools): Volume, weight, storage and duty planning aids. Results are estimates, not binding rates or customs determinations.
