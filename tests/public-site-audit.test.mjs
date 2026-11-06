@@ -6,6 +6,8 @@ import nextConfig from "../next.config.ts";
 import { guideIndex, guides } from "../app/guide-data.ts";
 import { siteText } from "../app/site-i18n.ts";
 import { tools } from "../app/tool-data.ts";
+import { company } from "../app/company-data.ts";
+import { sitemapPaths } from "../app/sitemap-content.ts";
 
 
 const require = createRequire(import.meta.url);
@@ -165,6 +167,26 @@ test("noindex on the App Hosting address can never reach the real site", async (
   const matches = (name) => new RegExp(`^${host}$`).test(name);
   assert.ok(matches("kcpl--kcpl-82574.asia-southeast1.hosted.app"));
   for (const name of ["kapileshworcargo.com.np", "www.kapileshworcargo.com.np", "localhost"]) assert.equal(matches(name), false, name);
+});
+
+test("indexed WordPress entry points redirect permanently to their matching public pages", async () => {
+  const rules = await nextConfig.redirects();
+  const paths = sitemapPaths();
+  for (const [source, destination] of [["/our-services", "/services"], ["/request-quote", "/quote"]]) {
+    const matches = rules.filter((rule) => rule.source === source);
+    assert.equal(matches.length, 1, `${source} must have one unambiguous redirect`);
+    assert.equal(matches[0].destination, destination);
+    assert.equal(matches[0].permanent, true);
+    assert.ok(paths.includes(destination), `${destination} must remain a real page`);
+    assert.ok(!rules.some((rule) => rule.source === destination), "the replacement must not create a redirect chain");
+  }
+  assert.ok(!rules.some((rule) => rule.source === "/:path*"), "unknown URLs must retain their real 404");
+});
+
+test("approved typo aliases have visible context and do not replace the company name", () => {
+  assert.equal(company.name, "Kapileshwor Cargo Pvt. Ltd.");
+  assert.deepEqual(company.searchAliases, ["Kapileshwar Cargo", "Kapileshor Cargo"]);
+  for (const name of company.searchAliases) assert.ok(siteText("en", "about.intro").includes(name));
 });
 
 test("service pages link on to guides and tools", async () => {

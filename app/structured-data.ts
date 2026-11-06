@@ -20,7 +20,7 @@ export const organizationNode = {
   "@type": ["Organization", "LocalBusiness"],
   "@id": organizationId,
   name: company.name,
-  alternateName: company.shortName,
+  alternateName: [company.shortName, ...company.searchAliases],
   url: siteUrl,
   logo: { "@type": "ImageObject", "@id": `${siteUrl}/#logo`, url: absoluteUrl("/images/brand/kcpl-gateway-k.svg"), caption: company.name },
   image: { "@id": `${siteUrl}/#logo` },

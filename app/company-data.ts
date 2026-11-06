@@ -1,6 +1,8 @@
 export const company = {
   name: "Kapileshwor Cargo Pvt. Ltd.",
   shortName: "KCPL",
+  // Owner-approved typo spellings; the company name above remains canonical.
+  searchAliases: ["Kapileshwar Cargo", "Kapileshor Cargo"],
   founded: 2015,
   managingDirector: "Ramesh Mishra",
   addressLines: [
