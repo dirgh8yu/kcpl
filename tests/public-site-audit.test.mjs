@@ -103,7 +103,7 @@ test("hover styles only apply where hovering exists, and every moving thing can 
   assert.deepEqual(ungated, []);
   const reduced = [];
   site.walkAtRules("media", (media) => { if (/prefers-reduced-motion: reduce/.test(media.params)) media.walkRules((rule) => reduced.push(rule.selector)); });
-  for (const selector of [".rail-track", ".route-draw, .route-map[data-mode=\"air\"] .route-air"]) assert.ok(reduced.includes(selector), selector);
+  for (const selector of [".rail-track", ".route-draw, .route-map[data-mode=\"air\"] .route-air", ".k-draw, .k-st, .k-name, .k-card"]) assert.ok(reduced.includes(selector), selector);
 });
 
 test("no public page ships a photograph without a recorded source", async () => {
@@ -231,4 +231,21 @@ test("phase-one English metadata descriptions stay within 140–155 Unicode char
     const count = [...description].length;
     assert.ok(count >= 140 && count <= 155, `${path} description has ${count} Unicode characters`);
   }
+});
+
+test("the home customs list names every border office once, each with its Nepali name", async () => {
+  const { customsPoints } = await import("../app/customs-points.ts");
+  assert.equal(customsPoints.china.length, 9);
+  assert.equal(customsPoints.india.length, 23);
+  const all = [...customsPoints.china, ...customsPoints.india];
+  assert.equal(new Set(all.map(([en]) => en)).size, all.length);
+  for (const [en, ne] of all) assert.match(ne, /[ऀ-ॿ]/, en);
+});
+
+test("the home page lists the customs points, then clients, then credentials before the movement records", async () => {
+  const home = await readFile(repo("app/components/home-page.tsx"), "utf8");
+  const at = (text) => { const index = home.indexOf(text); assert.ok(index > 0, text); return index; };
+  assert.ok(at("home.customs_title") < at("<ClientRail"));
+  assert.ok(at("<ClientRail") < at("home.credibility_title"));
+  assert.ok(at("home.credibility_title") < at("home.proof_title"));
 });

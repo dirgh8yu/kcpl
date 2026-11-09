@@ -4,8 +4,10 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { services } from "../services-data";
 import { sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClientRail } from "./client-rail";
+import { customsPoints } from "../customs-points";
 import { ClosingBand } from "./closing-band";
 import { Credentials } from "./credentials";
+import { CustomsList } from "./customs-list";
 import { quoteCopy } from "./quote-copy";
 import { Lined, MiniRoute, Stop } from "./route-parts";
 import { RoutePlanner } from "./route-planner";
@@ -35,6 +37,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         <div className="home-hero-top">
           <h1>{t("home.hero_title")}</h1>
           <p>{t("home.hero_intro")}</p>
+          <small>{t("home.hero_trust").split(" · ").map((part, index) => <span key={part}>{index ? " · " : ""}<span className="nowrap">{part}</span></span>)}</small>
         </div>
         <RoutePlanner action={sitePath(locale, "/quote")} labels={{
           origin: copy.origin,
@@ -43,13 +46,27 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           destinationHint: t("home.plan_destination_hint"),
           mode: copy.mode,
           modes: { sea: t("home.mode_sea"), air: t("home.mode_air"), road: t("home.mode_road"), unsure: t("home.mode_unsure") },
-          stations: { kolkata: t("route.kolkata"), raxaul: t("route.raxaul"), birgunj: t("route.birgunj"), kathmandu: t("route.kathmandu"), nepalgunj: t("route.nepalgunj"), surkhet: t("route.surkhet") },
+          route: {
+            stations: { inland: t("route.shigatse_lhasa"), kerung: t("route.kerung"), rasuwa: t("route.rasuwagadhi"), tatopani: t("route.tatopani"), kolkata: t("route.kolkata"), birgunj: t("route.raxaul_birgunj"), nepalgunj: t("route.nepalgunj"), surkhet: t("route.surkhet"), kathmandu: t("route.kathmandu") },
+            info: { inland: t("route.info_inland"), kerung: t("route.info_kerung"), rasuwa: t("route.info_rasuwa"), tatopani: t("route.info_tatopani"), kolkata: t("route.info_kolkata"), birgunj: t("route.info_birgunj"), nepalgunj: t("route.info_nepalgunj"), surkhet: t("route.info_surkhet"), kathmandu: t("route.info_kathmandu") },
+            arms: { china: t("route.china"), india: t("route.india") },
+            summary: t("route.summary"),
+          },
           notes: { sea: t("home.plan_note_sea"), air: t("home.plan_note_air"), road: t("home.plan_note_road"), unsure: t("home.plan_note_unsure"), out: t("home.plan_note_out") },
           submit: t("home.plan_cta"),
         }}/>
       </section>
       <Lined reveal>
+        <Stop title={t("home.customs_title")}>
+          <CustomsList
+            names={{ china: customsPoints.china.map(([en, ne]) => (locale === "ne" || locale === "hi" ? ne : en)), india: customsPoints.india.map(([en, ne]) => (locale === "ne" || locale === "hi" ? ne : en)) }}
+            labels={{ china: t("home.customs_china"), india: t("home.customs_india"), more: t("home.customs_more") }}
+          />
+        </Stop>
         <ClientRail labels={{ title: t("home.clients_title"), pause: t("home.clients_pause"), play: t("home.clients_play") }}/>
+        <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")}>
+          <Credentials locale={locale}/>
+        </Stop>
         <Stop title={t("home.proof_title")} intro={t("home.proof_intro")}/>
         <section className="feature-band">
           <MiniRoute stops={t("home.proof_2_stops")} bend={[1, 3]}/>
@@ -72,9 +89,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             ))}
           </div>
         </section>
-        <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")}>
-          <Credentials locale={locale}/>
-        </Stop>
         <Stop title={t("home.capability_title")} intro={t("home.capability_intro")}>
           <ServiceList locale={locale}/>
         </Stop>

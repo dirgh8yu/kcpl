@@ -148,16 +148,19 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 }
 
 /* The route on the home page. */
-.home-hero { padding: clamp(24px, 4vh, 48px) var(--margin) 0; }
-.home-hero-top { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(24px, 4vw, 72px); align-items: end; }
-.home-hero h1 { font-size: clamp(40px, 6.1vw, 92px); line-height: 1.01; letter-spacing: -.04em; }
-.home-hero-top p { max-width: 32em; color: var(--muted); font-size: clamp(16px, 1.2vw, 18px); }
-.route-form { margin-top: clamp(24px, 5vh, 56px); }
-.route { display: grid; grid-template-columns: clamp(190px, 17vw, 250px) minmax(0, 1fr) clamp(190px, 17vw, 250px); align-items: center; }
+/* Clipped at its foot so the line from the Origin box ends exactly where the page spine begins. */
+.home-hero { --end-w: clamp(170px, 13vw, 210px); padding: clamp(20px, 4vh, 44px) var(--margin) 0; overflow-y: clip; }
+.home-hero-top { text-align: center; }
+.home-hero h1 { max-width: 12.5em; margin: 0 auto; font-size: clamp(40px, 6.1vw, 92px); line-height: 1.01; letter-spacing: -.04em; text-wrap: balance; }
+.home-hero-top p { margin-top: 16px; color: var(--muted); font-size: clamp(16px, 1.25vw, 19px); }
+.home-hero-top small { display: block; margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.nowrap { white-space: nowrap; }
+.route-form { margin-top: clamp(32px, 6vh, 64px); }
+.route { display: grid; grid-template-columns: var(--end-w) minmax(0, 1fr) var(--end-w); align-items: center; }
 .route-end { position: relative; z-index: 1; display: block; padding: 12px 16px; background: var(--paper); box-shadow: inset 0 0 0 2px var(--ink); transition: box-shadow 160ms ease; }
 .route-end:focus-within { box-shadow: inset 0 0 0 2px var(--crimson); }
 .route-end > span { display: block; font-size: 14px; font-weight: 500; color: var(--muted); }
-.route-end-origin::after { content: ""; position: absolute; left: 24px; top: 100%; width: var(--line); height: clamp(200px, 26vw, 300px); background: var(--crimson); }
+.route-end-origin::after { content: ""; position: absolute; left: 24px; top: 100%; width: var(--line); height: 100vh; background: var(--crimson); }
 .route-map { position: relative; aspect-ratio: 800 / 240; }
 .route-map svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .route-map path { fill: none; stroke: var(--crimson); stroke-width: 9; stroke-linejoin: round; transition: opacity 280ms ease; }
@@ -167,7 +170,6 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .route-west { animation-delay: 700ms; }
 .route-map[data-touched] .route-main, .route-map[data-touched] .route-air { animation-duration: 650ms; }
 @keyframes route-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes stops-draw { from { transform: scaleY(0); } }
 .station { position: absolute; width: 0; height: 0; transition: opacity 280ms ease; }
 .station i { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
 .station b { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); font-size: 14px; font-weight: 600; white-space: nowrap; }
@@ -183,8 +185,61 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 .route-map[data-branch="west"] .station[data-line~="main"]:not([data-id="kolkata"]) { opacity: .3; }
 .route-map[data-branch="main"] .route-west { opacity: .14; }
 .route-map[data-branch="main"] .station[data-line~="west"] { opacity: .3; }
-.route-stops { display: none; }
-.route-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; margin-top: clamp(24px, 4vh, 44px); padding-left: clamp(190px, 17vw, 250px); padding-bottom: clamp(16px, 2.4vh, 24px); }
+.route-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; margin-top: clamp(16px, 3vh, 32px); padding-left: var(--end-w); padding-bottom: clamp(16px, 2.4vh, 24px); }
+
+/* The K: the home route drawn as the Gateway K, China above and India below, meeting at
+ * Kathmandu. k-route.tsx sets each part's timing; nothing moves once it has drawn. */
+.k-map { position: relative; }
+.k-route { position: relative; }
+.k-tall { display: none; }
+.k-route svg { display: block; width: 100%; height: auto; overflow: visible; }
+.k-route path { fill: none; stroke-linejoin: miter; stroke-miterlimit: 8; transition: opacity 300ms ease; }
+.k-arm { stroke: var(--crimson); stroke-width: 9; }
+.k-branch { stroke: var(--crimson); stroke-width: 4.5; }
+.k-air { stroke: var(--crimson); stroke-width: 3; opacity: 0; }
+.k-gap { fill: var(--canvas); }
+.k-hit { stroke: transparent; stroke-width: 30; pointer-events: stroke; }
+.k-draw { stroke-dasharray: 1; animation: route-draw var(--t) var(--e) var(--d) backwards; }
+.k-route[data-focus] [data-arm] { opacity: .2; }
+.k-route[data-focus="china"] [data-arm~="china"], .k-route[data-focus="india"] [data-arm~="india"], .k-route[data-focus="air"] .k-air { opacity: 1; }
+.k-route:not([data-focus="air"]) .k-air { opacity: 0; }
+.k-st { position: absolute; z-index: 2; width: 0; height: 0; transition: opacity 300ms ease; animation: k-arrive 320ms var(--ease-out) var(--d) backwards; }
+.k-route[data-focus] .k-st[data-arm]:not(.is-lit) { opacity: .28; }
+.k-st button { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; touch-action: manipulation; }
+.k-st button::before { content: ""; position: absolute; inset: 7px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); transition: background-color 200ms ease, border-color 200ms ease; }
+.site-root .k-st button:focus-visible { outline: none; }
+.k-st button:focus-visible::before { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 5px var(--crimson); }
+.k-st b { position: absolute; font-size: 14px; font-weight: 600; line-height: 1.2; white-space: nowrap; pointer-events: none; }
+.k-above b { left: 0; bottom: 16px; transform: translateX(-50%); }
+.k-below b { left: 0; top: 16px; transform: translateX(-50%); }
+.k-right b, .k-under b { left: 18px; top: -9px; }
+.k-left b { right: 18px; top: -9px; text-align: right; }
+.k-hub button { left: -18px; top: -18px; width: 36px; height: 36px; }
+.k-hub button::before { inset: 5px; border-width: 4px; background: var(--crimson); }
+.k-hub b { font-weight: 800; }
+.k-wide .k-under b { left: 20px; top: 12px; }
+.k-name { position: absolute; font-size: 12px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); white-space: nowrap; pointer-events: none; transition: opacity 300ms ease, color 300ms ease; animation: k-fade 400ms var(--ease-out) 250ms backwards; }
+.k-route[data-focus="china"] .k-name[data-arm="china"], .k-route[data-focus="india"] .k-name[data-arm="india"] { color: var(--ink); }
+.k-card { position: absolute; z-index: 4; width: max-content; max-width: 260px; padding: 8px 12px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 600; line-height: 1.4; pointer-events: none; animation: k-card 150ms var(--ease-out); }
+.k-card-below { translate: -50% 20px; }
+.k-card-lower { translate: -50% 40px; }
+.k-card-above { translate: -50% calc(-100% - 20px); }
+.k-card-left { translate: calc(-100% - 26px) -50%; }
+@keyframes k-arrive { from { opacity: 0; transform: scale(.4); } }
+@keyframes k-fade { from { opacity: 0; } }
+@keyframes k-card { from { opacity: 0; transform: translateY(6px); } }
+
+/* The customs list under the hero. Pointing at a name lights its arm of the K. */
+.customs { display: grid; grid-template-columns: 1fr 2.4fr; gap: 24px clamp(24px, 4vw, 64px); margin-top: clamp(24px, 3vw, 36px); }
+.customs h3 { padding-bottom: 10px; border-bottom: 1px solid var(--rule); color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.customs ul { list-style: none; columns: 2; column-gap: 28px; }
+.customs-india ul { columns: 4; }
+.customs li { break-inside: avoid; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 15px; font-weight: 500; }
+.customs-more { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .customs li:hover { color: var(--crimson); }
+  .site-root:has(.customs-china li:hover) .k-route [data-arm]:not([data-arm~="china"]), .site-root:has(.customs-india li:hover) .k-route [data-arm]:not([data-arm~="india"]) { opacity: .2; }
+}
 .route-note { flex: 1 1 18em; color: var(--muted); font-size: 16px; }
 .route-controls .btn { margin-left: auto; }
 
@@ -570,17 +625,19 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   .site-menu-panel { position: fixed; left: 0; right: 0; top: var(--header); padding: 8px var(--margin) 96px; max-height: calc(100dvh - var(--header)); overflow: auto; overscroll-behavior: contain; animation: none; }
   .site-menu-panel .site-pop-link { min-height: 50px; padding: 12px 0; font-size: 18px; border-bottom: 1px solid var(--rule); }
 
-  .home-hero { display: flex; flex-direction: column; padding-top: 18px; }
-  .home-hero-top { display: contents; }
-  .home-hero-top p { order: 2; padding: 4px 0 8px 32px; }
-  .route-form { margin-top: 18px; }
+  .home-hero { padding-top: 18px; }
+  .route-form { margin-top: 24px; }
   .route { display: block; }
   .route-map { display: none; }
-  .route-stops { position: relative; display: block; }
-  .route-stops::before, .route-stops::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: var(--line); background: var(--rule); }
-  .route-stops::after { background: var(--crimson); transform-origin: 50% 0; animation: stops-draw 650ms var(--ease-in-out) both; }
-  .route-stops li { position: relative; z-index: 1; padding: 7px 0 7px 32px; font-size: 16px; font-weight: 600; }
-  .route-stops li::before { content: ""; position: absolute; left: -1px; top: 50%; margin-top: -8px; width: 16px; height: 16px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
+  .route .route-end-origin { margin-bottom: -2px; }
+  .route .route-end:last-child { margin-top: -2px; }
+  .k-wide { display: none; }
+  .k-tall { display: block; width: min(100%, 380px); margin: 0 auto; }
+  .k-tall .k-arm { stroke-width: 7; }
+  .k-tall .k-branch { stroke-width: 3.5; }
+  .k-tall .k-air { stroke-width: 2.5; }
+  .k-st b { font-size: 13px; }
+  .k-left b { max-width: 96px; white-space: normal; }
   .route-end { padding: 9px 14px; }
   .route-end-origin::after { display: none; }
   .route-controls { position: relative; display: grid; gap: 12px; margin-top: 14px; padding-left: 32px; }
@@ -588,6 +645,10 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   .route-controls::before { content: ""; position: absolute; left: 4px; top: -14px; bottom: -220px; width: var(--line); background: var(--crimson); }
   .route-controls .btn { width: 100%; margin: 0; }
   .route-note { order: 3; }
+  .customs { grid-template-columns: 1fr; }
+  .customs ul, .customs-india ul { columns: 2; }
+  .customs.is-folded .customs-china li:nth-child(n+5), .customs.is-folded .customs-india li:nth-child(n+7) { display: none; }
+  .customs-more { display: inline-flex; justify-self: start; }
   .mode-field > div { display: grid; grid-template-columns: repeat(4, 1fr); }
   .mode-field span { padding: 12px 2px; font-size: 14px; text-align: center; white-space: normal; }
   .tool-choice span { padding: 12px; }
@@ -635,7 +696,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 
 @media (prefers-reduced-motion: reduce) {
   .route-draw, .route-map[data-mode="air"] .route-air { animation: none; stroke-dasharray: none; }
-  .route-stops::after { animation: none; }
+  .k-draw, .k-st, .k-name, .k-card { animation: none; }
   .rail-track { animation: none; flex-wrap: wrap; flex-shrink: 1; row-gap: 20px; }
   .rail-track[aria-hidden] { display: none; }
   .rail-window { mask-image: none; }
@@ -661,3 +722,4 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 /* Devanagari needs room for vowel marks, and neither script takes Latin's tight tracking. */
 .site-root-deva :is(.home-hero h1, .page-title, .stop-title, .end-band-title, .feature-copy h3) { line-height: 1.25; letter-spacing: 0; }
 .site-root-zh :is(.home-hero h1, .page-title, .stop-title, .end-band-title, .feature-copy h3) { line-height: 1.2; letter-spacing: -.01em; word-break: auto-phrase; }
+.site-root-deva :is(.k-name, .customs h3), .site-root-zh :is(.k-name, .customs h3) { letter-spacing: .04em; }
