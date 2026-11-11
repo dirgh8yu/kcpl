@@ -1,22 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { CaretDown, Check, InstagramLogo, List, Phone, WhatsappLogo, X } from "@phosphor-icons/react/dist/ssr";
 import { company } from "../company-data";
+import { services } from "../services-data";
 import { telHref, whatsappHref } from "../contact-links";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
 import { SiteMenus } from "./site-menus";
-import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 
+const home = { path: "/", key: "chrome.home" } as const;
+const resources = { path: "/guides", key: "chrome.resources" } as const;
+
+/** The header bar: five links. Everything else is in the menu and the footer. */
 const primaryNavigation = [
   { path: "/services", key: "chrome.services" },
   { path: "/work", key: "chrome.work" },
   { path: "/network", key: "chrome.network" },
-  { path: "/guides", key: "chrome.resources" },
   { path: "/about", key: "chrome.about" },
   { path: "/contact", key: "chrome.contact" },
 ] as const;
+
+/** The menu's large links, in the order a visitor reads the site. */
+const menuNavigation = [home, primaryNavigation[0], primaryNavigation[1], primaryNavigation[2], resources, primaryNavigation[3], primaryNavigation[4]] as const;
 
 /** Reached from the menu and the footer rather than the header bar. The gallery
  * keeps its address but stays out of navigation until it has more photographs. */
@@ -84,17 +91,21 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
           <summary className="site-pop-button" aria-label={t("chrome.menu")}>
             <List className="site-menu-open" size={22} aria-hidden="true"/><X className="site-menu-close" size={22} aria-hidden="true"/>
           </summary>
-          <div className="site-pop-panel site-menu-panel">
-            <div className="site-menu-primary">
-              {primaryNavigation.map((item) => (
-                <Link key={item.path} href={sitePath(locale, item.path)} className="site-pop-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+          <nav className="site-menu-panel" aria-label={t("chrome.menu")}>
+            <ul className="site-menu-list">
+              {menuNavigation.map((item, index) => (
+                <li key={item.path} style={{ "--i": index } as CSSProperties}>
+                  <Link href={sitePath(locale, item.path)} aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+                </li>
               ))}
+            </ul>
+            <div className="site-menu-foot">
+              {moreNavigation.map((item) => (
+                <Link key={item.path} href={sitePath(locale, item.path)} aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
+              ))}
+              <Link href="/portal">{t("chrome.portal")}</Link>
             </div>
-            {moreNavigation.map((item) => (
-              <Link key={item.path} href={sitePath(locale, item.path)} className="site-pop-link" aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
-            ))}
-            <Link href="/portal" className="site-pop-link">{t("chrome.portal")}</Link>
-          </div>
+          </nav>
         </details>
       </div>
     </header>
@@ -104,33 +115,62 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
 export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string }) {
   const t = siteTranslator(locale);
   const address = company.addressLines.join(", ");
+  const current = (itemPath: string) => (isCurrent(itemPath, path) ? "page" as const : undefined);
   return (
     <footer className="site-footer">
-      <div className="site-footer-brand">
-        <SiteLogo locale={locale}/>
-        <p>{t("company.tagline")}</p>
+      <div className="site-footer-cols">
+        <div>
+          <h2 className="label">{t("chrome.footer_contact")}</h2>
+          <address>
+          <p>{company.addressLines.map((line) => <span key={line}>{line}<br/></span>)}
+            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">{t("chrome.maps")}</a></p>
+          <p><a href={telHref(company.phones[0])} data-analytics-event="call_tap">{company.phones[0]}</a><br/>
+            <a href={`mailto:${company.email}`}>{company.email}</a></p>
+          <p>{t("contact.hours_value")}</p>
+          {/* The one social profile KCPL runs, so the schema graph's claim and the page agree. */}
+          <p><a href={company.instagram} rel="me noreferrer" target="_blank"><InstagramLogo size={15} aria-hidden="true"/> Instagram</a></p>
+          </address>
+        </div>
+        <nav className="site-footer-pages" aria-label={t("chrome.footer_company")}>
+          <div>
+            <h2 className="label">{t("chrome.footer_services")}</h2>
+            <ul>
+              {services.map((service) => (
+                <li key={service.slug}><Link href={sitePath(locale, `/services/${service.slug}`)} aria-current={current(`/services/${service.slug}`)}>{siteText(locale, `svc.${service.key}.title` as SiteTextKey)}</Link></li>
+              ))}
+              <li><Link href={sitePath(locale, resources.path)} aria-current={current(resources.path)}>{t(resources.key)}</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="label">{t("chrome.footer_company")}</h2>
+            <ul>
+              {[...primaryNavigation.slice(1), ...moreNavigation].map((item) => (
+                <li key={item.path}><Link href={sitePath(locale, item.path)} aria-current={current(item.path)}>{t(item.key)}</Link></li>
+              ))}
+              <li><Link href="/portal">{t("chrome.portal")}</Link></li>
+            </ul>
+          </div>
+        </nav>
+        <div>
+          <h2 className="label">{t("about.credentials_title")}</h2>
+          <ul>
+            <li>{t("home.credibility_award")}, {t("home.credibility_award_detail")}</li>
+            <li>{t("home.credibility_member_detail")}</li>
+            <li>{t("company.established")}</li>
+          </ul>
+        </div>
       </div>
-      <address className="site-footer-contact">
-        <p>{address}</p>
-        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer">{t("chrome.maps")}</a>
-      </address>
-      <div className="site-footer-contact">
-        <a href={telHref(company.phones[0])} data-analytics-event="call_tap">{company.phones[0]}</a>
-        <a href={`mailto:${company.email}`}>{company.email}</a>
-        {/* The one social profile KCPL runs, so the schema graph's claim and the page agree. */}
-        <a href={company.instagram} rel="me noreferrer" target="_blank"><InstagramLogo size={15} aria-hidden="true"/> Instagram</a>
-      </div>
-      <nav className="site-footer-links" aria-label={t("chrome.footer_company")}>
-        {moreNavigation.map((item) => (
-          <Link key={item.path} href={sitePath(locale, item.path)} aria-current={isCurrent(item.path, path) ? "page" : undefined}>{t(item.key)}</Link>
-        ))}
-        <Link href="/portal">{t("chrome.portal")}</Link>
-        <Link href={sitePath(locale, "/privacy")} aria-current={isCurrent("/privacy", path) ? "page" : undefined}>{t("chrome.privacy")}</Link>
-        <Link href={sitePath(locale, "/terms")} aria-current={isCurrent("/terms", path) ? "page" : undefined}>{t("chrome.terms")}</Link>
-      </nav>
       <div className="site-footer-base">
-        <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")}</p>
-        <p>{t("chrome.photo_note")}</p>
+        <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")} {t("chrome.photo_note")}</p>
+        <nav aria-label={t("chrome.language")}>
+          {siteLocales.map((entry) => (
+            <Link key={entry} href={sitePath(entry, path)} hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]} aria-current={entry === locale ? "true" : undefined}>{siteLocaleLabels[entry]}</Link>
+          ))}
+        </nav>
+        <span>
+          <Link href={sitePath(locale, "/privacy")} aria-current={current("/privacy")}>{t("chrome.privacy")}</Link>
+          <Link href={sitePath(locale, "/terms")} aria-current={current("/terms")}>{t("chrome.terms")}</Link>
+        </span>
       </div>
     </footer>
   );

@@ -1,26 +1,26 @@
-import Image from "next/image";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { services } from "../services-data";
 import { sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClientRail } from "./client-rail";
-import { customsPoints } from "../customs-points";
 import { ClosingBand } from "./closing-band";
-import { Credentials } from "./credentials";
-import { CustomsList } from "./customs-list";
 import { quoteCopy } from "./quote-copy";
-import { Lined, MiniRoute, Stop } from "./route-parts";
+import { Lined, Stop } from "./route-parts";
 import { RoutePlanner } from "./route-planner";
 import { SiteShell } from "./site-chrome";
 
+/** Every service in large type, each on its own thin branch of the page line. */
 export function ServiceList({ locale }: { locale: SiteLocale }) {
   return (
-    <ul className="svc-list">
-      {services.map((service) => (
-        <li key={service.slug}>
+    <ul className="svc">
+      {services.map((service, index) => (
+        <li key={service.slug} style={{ "--i": index } as CSSProperties}>
+          <span className="br" aria-hidden="true"><i/></span><i className="dot" aria-hidden="true"/>
           <Link href={sitePath(locale, `/services/${service.slug}`)}>
-            <b>{siteText(locale, `svc.${service.key}.title` as SiteTextKey)}<ArrowRight size={16} weight="bold" aria-hidden="true"/></b>
+            <b>{siteText(locale, `svc.${service.key}.title` as SiteTextKey)}</b>
             <span>{siteText(locale, `svc.${service.key}.summary` as SiteTextKey)}</span>
+            <ArrowRight size={20} weight="bold" aria-hidden="true"/>
           </Link>
         </li>
       ))}
@@ -56,54 +56,35 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           submit: t("home.plan_cta"),
         }}/>
       </section>
-      <Lined reveal>
-        <Stop title={t("home.customs_title")}>
-          <CustomsList
-            names={{ china: customsPoints.china.map(([en, ne]) => (locale === "ne" || locale === "hi" ? ne : en)), india: customsPoints.india.map(([en, ne]) => (locale === "ne" || locale === "hi" ? ne : en)) }}
-            labels={{ china: t("home.customs_china"), india: t("home.customs_india"), more: t("home.customs_more") }}
-          />
+      <Lined reveal tracks>
+        <ClientRail title={t("home.clients_title")}/>
+        <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")} line="a-b">
+          {/* Only what KCPL can back with a document. The figures stay in Latin numerals in every language. */}
+          <dl className="figures">
+            <div><dt><b>2015</b>{t("home.fact_established")}</dt><dd>{t("company.established_where")}</dd></div>
+            <div><dt><b>2022–25</b>{t("awards.label")}</dt><dd>{t("awards.issuer")}</dd></div>
+            <div><dt><b>6</b>{t("home.credibility_staff")}</dt><dd>{t("network.staffed_places")}</dd></div>
+            <div><dt><b>6,000+</b>{t("home.credibility_storage")}</dt><dd>{t("home.credibility_storage_detail")}</dd></div>
+          </dl>
         </Stop>
-        <ClientRail labels={{ title: t("home.clients_title"), pause: t("home.clients_pause"), play: t("home.clients_play") }}/>
-        <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")}>
-          <Credentials locale={locale}/>
-        </Stop>
-        <Stop title={t("home.proof_title")} intro={t("home.proof_intro")}/>
-        <section className="feature-band">
-          <MiniRoute stops={t("home.proof_2_stops")} bend={[1, 3]}/>
-          <div className="feature-copy">
-            <h3>{t("home.proof_2_title")}</h3>
+        {/* The one crossing on this page: the line goes over the band as the movement's own route. */}
+        <section className="band">
+          <span className="band-cross" aria-hidden="true"><i/></span>
+          <ol className="band-stops">
+            {t("home.proof_2_stops").split("|").map((name) => <li key={name}><i aria-hidden="true"/><b>{name}</b></li>)}
+          </ol>
+          <div className="band-copy">
+            <h2 className="band-title">{t("home.proof_2_title")}</h2>
             <div>
               <p>{t("home.proof_2_copy")}</p>
               <Link href={sitePath(locale, "/work#air-export")} className="text-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
             </div>
           </div>
         </section>
-        <section className="stop stop-flush">
-          <div className="stories">
-            {([[1, "infrastructure"], [3, "western-nepal"]] as const).map(([number, slug]) => (
-              <Link key={slug} href={sitePath(locale, `/work#${slug}`)} className="story">
-                <MiniRoute stops={t(`home.proof_${number}_stops`)}/>
-                <h3>{t(`home.proof_${number}_title`)}</h3>
-                <p>{t(`home.proof_${number}_copy`)}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-        <Stop title={t("home.capability_title")} intro={t("home.capability_intro")}>
+        <div className="ret" aria-hidden="true"><i/></div>
+        <Stop title={t("home.capability_title")} intro={t("home.capability_intro")} line="a">
           <ServiceList locale={locale}/>
-        </Stop>
-        <Stop title={t("home.corridor_title")} intro={t("home.corridor_intro")}>
-          <div className="two-photos">
-            <figure>
-              <Image src="/images/unsplash/ghat-road.jpg" alt="" width={2000} height={1131} sizes="(max-width: 900px) 100vw, 44vw"/>
-              <figcaption><b>{t("home.corridor_in_title")}</b>{t("home.corridor_in_copy")}</figcaption>
-            </figure>
-            <figure>
-              <Image src="/images/unsplash/ship-aerial.jpg" alt="" width={2200} height={1585} sizes="(max-width: 900px) 100vw, 44vw"/>
-              <figcaption><b>{t("home.corridor_out_title")}</b>{t("home.corridor_out_copy")}</figcaption>
-            </figure>
-          </div>
-          <Link href={sitePath(locale, "/network")} className="text-link">{t("home.corridor_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/services")} className="text-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </Stop>
         <ClosingBand locale={locale}/>
       </Lined>

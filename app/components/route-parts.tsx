@@ -3,13 +3,15 @@ import Image from "next/image";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr";
 import { RouteReveal } from "./route-reveal";
 
-/* The site's one recurring idea: a crimson line with stations on it. The spine
+/* The site's one recurring idea: a crimson line with stations on it. The line
  * fills as the page scrolls, in CSS, so these stay server components. */
 
-export function Lined({ children, reveal = false }: { children: ReactNode; reveal?: boolean }) {
+/** `tracks` is for a rebuilt page, whose sections each draw their own piece of the line
+ * (see `line` on Stop). Without it the page gets one straight spine. */
+export function Lined({ children, reveal = false, tracks = false }: { children: ReactNode; reveal?: boolean; tracks?: boolean }) {
   return (
     <div className="lined" data-reveal={reveal || undefined}>
-      <div className="spine" aria-hidden="true"><i/></div>
+      {tracks ? null : <div className="spine" aria-hidden="true"><i/></div>}
       {reveal ? <RouteReveal/> : null}
       {children}
     </div>
@@ -41,9 +43,12 @@ export function Plate({ src, wide = false, position }: { src: string; wide?: boo
   );
 }
 
-export function Stop({ title, intro, id, children, className = "" }: { title: string; intro?: ReactNode; id?: string; children?: ReactNode; className?: string }) {
+/** `line` draws this section's piece of the page line: "a" runs straight down the left
+ * track, "a-b" steps across to the second track just above the heading. */
+export function Stop({ title, intro, id, children, className = "", line }: { title: string; intro?: ReactNode; id?: string; children?: ReactNode; className?: string; line?: "a" | "a-b" }) {
   return (
-    <section id={id} className={`stop ${className}`.trim()}>
+    <section id={id} className={`stop ${className}`.trim()} data-line={line}>
+      {line ? <span className="ln" aria-hidden="true"><i/></span> : null}
       <h2 className="stop-title">{title}</h2>
       {intro ? <p className="stop-intro">{intro}</p> : null}
       {children}

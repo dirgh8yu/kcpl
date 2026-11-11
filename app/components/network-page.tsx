@@ -3,7 +3,9 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guides } from "../guide-data";
 import { networkGroupNames } from "../network-data";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
+import { customsPoints } from "../customs-points";
 import { ClosingBand } from "./closing-band";
+import { CustomsList } from "./customs-list";
 import { NetworkMap } from "./network-map";
 import { quoteCopy } from "./quote-copy";
 import { RouteDiagram, RouteFork } from "./route-diagram";
@@ -22,6 +24,8 @@ export function NetworkPage({ locale }: { locale: SiteLocale }) {
     { title: t("network.origins_title"), items: networkGroupNames("origins") },
     { title: t("network.destinations_title"), items: networkGroupNames("destinations") },
   ];
+  // The department lists its offices in Nepali as well, which Nepali and Hindi readers get.
+  const deva = locale === "ne" || locale === "hi";
   const names = { kolkata: t("route.kolkata"), raxaul: t("route.raxaul"), birgunj: t("route.birgunj"), kathmandu: t("route.kathmandu"), nepalgunj: t("route.nepalgunj"), surkhet: t("route.surkhet") };
   return (
     <SiteShell locale={locale} path="/network">
@@ -30,6 +34,12 @@ export function NetworkPage({ locale }: { locale: SiteLocale }) {
         <Stop title={t("network.staffed_title")} intro={t("network.staffed_copy")}>
           <RouteDiagram names={names} ends={{ from: copy.origin, to: copy.destination }}/>
           <RouteFork names={names}/>
+        </Stop>
+        <Stop title={t("network.customs_title")}>
+          <CustomsList
+            names={{ china: customsPoints.china.map(([en, ne]) => (deva ? ne : en)), india: customsPoints.india.map(([en, ne]) => (deva ? ne : en)) }}
+            labels={{ china: t("network.customs_china"), india: t("network.customs_india"), more: t("network.customs_more") }}
+          />
         </Stop>
         <NetworkMap labels={{
           title: t("network.map_title"),
