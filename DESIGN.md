@@ -171,6 +171,8 @@ components:
 
 Scope: every public page in all four languages, plus the customer sign-in page, which follows this site. Admin and the portal's signed-in app have their own design system and are not covered here.
 
+**Refresh in progress (November 2026).** The public site is being rebuilt in four stages. Stage 1 is in: headings are weight 700 (the home headline stays at 500), body text is 18px on desktop, the header steps aside on the way down the page, the menu fills the screen with each page as a station, the footer is three calm columns, and the home page's line runs on two tracks with one crossing at the crimson band. The sections below still describe the site before the refresh; they are re-recorded when the last stage lands.
+
 ## Overview
 
 **Creative North Star: "The Line"**

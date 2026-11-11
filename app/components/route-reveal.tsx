@@ -13,16 +13,16 @@ import { useEffect } from "react";
 
 // Where the spine's front sits on screen. site.css uses the same 72% in its animation-range.
 const LINE_AT = 0.72;
-const UNITS = ".stop, .feature-band, .end-band, .rail, .network-map-section, .stages li";
+const UNITS = ".stop, .band, .end-band, .clients, .network-map-section, .stages li";
 // Containers whose children arrive one at a time, rather than as a block.
-const GROUPS = ".svc-list, .check-list, .qa, .link-list, .stories, .story, .certs, .two-photos, .facts, .marks, .credentials, .stop-split > div, .sector > div, .work-detail, .feature-copy, .feature-copy > div, .mini, .mini > ol";
+const GROUPS = ".svc, .svc-list, .check-list, .qa, .link-list, .stories, .story, .certs, .facts, .figures, .clients-list, .marks, .credentials, .stop-split > div, .sector > div, .work-detail, .band-stops, .band-copy, .band-copy > div, .mini, .mini > ol";
 // Images and drawn lines wipe in along the route instead of fading.
-const WIPES = ".certs figure, .two-photos figure, .plate, .mini svg";
+const WIPES = ".certs figure, .plate, .mini svg";
 const SETTLE_MS = 1700;
 
 function partsOf(element: Element): HTMLElement[] {
   return [...element.children].flatMap((child) => {
-    if (child.matches(".stages")) return []; // Each stage is its own unit.
+    if (child.matches(".stages, .ln, .band-cross")) return []; // Each stage is its own unit, and the line never waits.
     return child.matches(GROUPS) ? partsOf(child) : [child as HTMLElement];
   });
 }

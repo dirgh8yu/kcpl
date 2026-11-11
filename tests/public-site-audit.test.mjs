@@ -103,7 +103,9 @@ test("hover styles only apply where hovering exists, and every moving thing can 
   assert.deepEqual(ungated, []);
   const reduced = [];
   site.walkAtRules("media", (media) => { if (/prefers-reduced-motion: reduce/.test(media.params)) media.walkRules((rule) => reduced.push(rule.selector)); });
-  for (const selector of [".rail-track", ".route-draw, .route-map[data-mode=\"air\"] .route-air", ".k-draw, .k-st, .k-name, .k-card"]) assert.ok(reduced.includes(selector), selector);
+  for (const selector of [".route-draw, .route-map[data-mode=\"air\"] .route-air", ".k-draw, .k-st, .k-name, .k-card", ".site-pop-panel, .site-menu-panel, .site-menu-list li", ".site-header, .br i"]) assert.ok(reduced.includes(selector), selector);
+  // Nothing on the public site moves for ever.
+  site.walkDecls(/^animation/, (decl) => assert.doesNotMatch(decl.value, /infinite/, decl.parent.selector));
 });
 
 test("no public page ships a photograph without a recorded source", async () => {
@@ -125,7 +127,9 @@ test("staged reveal never hides content on its own, and the line and the reveal 
   const reveal = await readFile(repo("app/components/route-reveal.tsx"), "utf8");
   assert.doesNotMatch(reveal, /addEventListener\("scroll"/, "the spine is CSS; no scroll listeners");
   assert.match(reveal, /LINE_AT = 0\.72/);
-  assert.ok(declarations(".spine i").some(({ prop, value }) => prop === "animation-range" && value.includes("28svh") && value.includes("72svh")), "the spine's front must sit where the reveal fires");
+  for (const line of [".spine i", ".ln i"]) assert.ok(declarations(line).some(({ prop, value }) => prop === "animation-range" && value.includes("28svh") && value.includes("72svh")), `${line}: the line's front must sit where the reveal fires`);
+  // The line itself never waits: a hidden piece would leave a gap in it.
+  assert.match(reveal, /child\.matches\("\.stages, \.ln, \.band-cross"\)/);
   for (const required of ["focusin", ".site-footer", "getBoundingClientRect().top < window.innerHeight"]) assert.ok(reveal.includes(required), required);
 });
 
@@ -233,7 +237,7 @@ test("phase-one English metadata descriptions stay within 140–155 Unicode char
   }
 });
 
-test("the home customs list names every border office once, each with its Nepali name", async () => {
+test("the customs list names every border office once, each with its Nepali name", async () => {
   const { customsPoints } = await import("../app/customs-points.ts");
   assert.equal(customsPoints.china.length, 9);
   assert.equal(customsPoints.india.length, 23);
@@ -242,10 +246,23 @@ test("the home customs list names every border office once, each with its Nepali
   for (const [en, ne] of all) assert.match(ne, /[ऀ-ॿ]/, en);
 });
 
-test("the home page lists the customs points, then clients, then credentials before the movement records", async () => {
+test("the home page runs clients, credentials, the featured movement, then services, and Network keeps the customs list", async () => {
   const home = await readFile(repo("app/components/home-page.tsx"), "utf8");
   const at = (text) => { const index = home.indexOf(text); assert.ok(index > 0, text); return index; };
-  assert.ok(at("home.customs_title") < at("<ClientRail"));
   assert.ok(at("<ClientRail") < at("home.credibility_title"));
-  assert.ok(at("home.credibility_title") < at("home.proof_title"));
+  assert.ok(at("home.credibility_title") < at("home.proof_2_title"));
+  assert.ok(at("home.proof_2_title") < at("home.capability_title"));
+  assert.ok(at("home.capability_title") < at("<ClosingBand"));
+  // A rebuilt page draws its line section by section, so every section carries a piece of it.
+  assert.match(home, /<Lined reveal tracks>/);
+  assert.equal(home.match(/<Stop /g).length, home.match(/<Stop [^>]*line="/g).length);
+  assert.match(await readFile(repo("app/components/network-page.tsx"), "utf8"), /<CustomsList/);
+});
+
+test("the header steps aside without trapping anyone, and the menu closes behind focus", async () => {
+  const menus = await readFile(repo("app/components/site-menus.tsx"), "utf8");
+  assert.match(menus, /addEventListener\("scroll", onScroll, \{ passive: true \}\)/);
+  assert.match(menus, /addEventListener\("focusin", onFocus\)/);
+  // A header that holds the focus, or an open menu, never slides away.
+  assert.ok(site.toString().includes(".site-header.is-away:not(:focus-within, :has([open]))"));
 });

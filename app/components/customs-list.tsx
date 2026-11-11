@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-/** Every customs point, one quiet column per border. Pointing at a name lights its arm
- * of the hero drawing (site.css does that with :has). Phones show a few until asked. */
+/** Every customs point, one quiet column per border. Phones show a few until asked. On a
+ * page that also carries the K drawing, pointing at a name lights its arm (site.css, :has). */
 export function CustomsList({ names, labels }: { names: Record<"china" | "india", string[]>; labels: { china: string; india: string; more: string } }) {
   const [open, setOpen] = useState(false);
   return (

@@ -1,20 +1,20 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "3ae5c71d878ebf8d",
-      "lastmod": "2026-11-09"
+      "fingerprint": "6902d71843116b14",
+      "lastmod": "2026-11-11"
     },
     "ne/": {
-      "fingerprint": "46e1926278e41209",
-      "lastmod": "2026-11-09"
+      "fingerprint": "b2a11a0eb48c0bbd",
+      "lastmod": "2026-11-11"
     },
     "zh/": {
-      "fingerprint": "aeaff19c77068867",
-      "lastmod": "2026-11-09"
+      "fingerprint": "dba7900788575812",
+      "lastmod": "2026-11-11"
     },
     "hi/": {
-      "fingerprint": "b987066167bb9962",
-      "lastmod": "2026-11-09"
+      "fingerprint": "b8e7d6b0a60dbac4",
+      "lastmod": "2026-11-11"
     },
     "en/services": {
       "fingerprint": "5887ecd4440ded04",
@@ -65,20 +65,20 @@
       "lastmod": "2026-11-05"
     },
     "en/network": {
-      "fingerprint": "097308540e294bd6",
-      "lastmod": "2026-11-05"
+      "fingerprint": "6fcd6de12a7afe8b",
+      "lastmod": "2026-11-11"
     },
     "ne/network": {
-      "fingerprint": "848d213bdabf9735",
-      "lastmod": "2026-11-05"
+      "fingerprint": "cec713c8c83ff2e4",
+      "lastmod": "2026-11-11"
     },
     "zh/network": {
-      "fingerprint": "09646166b76a5baa",
-      "lastmod": "2026-11-05"
+      "fingerprint": "6d0d50b2d9b542b9",
+      "lastmod": "2026-11-11"
     },
     "hi/network": {
-      "fingerprint": "97837ae49afaff07",
-      "lastmod": "2026-11-05"
+      "fingerprint": "265ad88b0b8a17f8",
+      "lastmod": "2026-11-11"
     },
     "en/gallery": {
       "fingerprint": "af49fcfa83f6cadc",

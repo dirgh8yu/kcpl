@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
-import { Pause, Play } from "@phosphor-icons/react/dist/ssr";
 
 const organisations = [
   { name: "Pinggao Group Co Ltd", logo: "pinggao.png" },
@@ -24,31 +20,21 @@ const organisations = [
   { name: "STERLITE POWER INDIA", logo: "sterlite.svg" },
 ] as const;
 
-/* A CSS marquee over two copies of the list. The second copy is hidden from
- * assistive tech, and the button satisfies WCAG's pause requirement. */
-function Logos({ hidden = false }: { hidden?: boolean }) {
+/** The organisations KCPL has moved cargo for: a still row, every logo in one colour. */
+export function ClientRail({ title }: { title: string }) {
   return (
-    <ul className="rail-track" aria-hidden={hidden || undefined}>
-      {organisations.map((organisation) => (
-        <li key={organisation.name}>
-          {"logo" in organisation
-            ? <Image src={`/images/clients/${organisation.logo}`} alt={hidden ? "" : organisation.name} width={220} height={90} sizes="150px"/>
-            : <span className="rail-word">{organisation.name}</span>}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export function ClientRail({ labels }: { labels: { title: string; pause: string; play: string } }) {
-  const [paused, setPaused] = useState(false);
-  return (
-    <section className={`rail${paused ? " is-paused" : ""}`} aria-labelledby="client-rail-title">
-      <h2 id="client-rail-title" className="rail-title">{labels.title}</h2>
-      <div className="rail-window"><Logos/><Logos hidden/></div>
-      <button type="button" className="rail-button" aria-label={paused ? labels.play : labels.pause} onClick={() => setPaused((value) => !value)}>
-        {paused ? <Play size={14} weight="bold" aria-hidden="true"/> : <Pause size={14} weight="bold" aria-hidden="true"/>}
-      </button>
+    <section className="clients" data-line="a" aria-labelledby="clients-title">
+      <span className="ln" aria-hidden="true"><i/></span>
+      <h2 id="clients-title" className="label">{title}</h2>
+      <ul className="clients-list">
+        {organisations.map((organisation) => (
+          <li key={organisation.name}>
+            {"logo" in organisation
+              ? <Image src={`/images/clients/${organisation.logo}`} alt={organisation.name} width={220} height={90} sizes="150px"/>
+              : <span>{organisation.name}</span>}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
