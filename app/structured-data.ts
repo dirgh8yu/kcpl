@@ -239,7 +239,8 @@ export function blogPostingNode(slug: string) {
     description: post.description,
     inLanguage: siteLocaleTags.en,
     datePublished: post.published,
-    dateModified: recorded?.lastmod ?? post.published,
+    // lastmod is stamped in UTC, so it can read a day behind a post published that morning in Nepal.
+    dateModified: recorded && recorded.lastmod > post.published ? recorded.lastmod : post.published,
     author: { "@type": "Organization", "@id": organizationId, name: siteName, url: siteUrl },
     publisher: { "@id": organizationId },
     image: absoluteUrl(blogPhotos[post.cover].src),

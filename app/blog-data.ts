@@ -68,7 +68,7 @@ export const blogPosts: readonly BlogPost[] = [
     title: "How a power transformer reaches a Nepal substation",
     description: "How KCPL plans a power transformer move into Nepal: the route survey, the lift at the port, the papers, holding the unit and setting it down at site.",
     intro: "A transformer travels as one piece, so its heaviest and tallest moment decides the whole plan. The move is worked out backwards, from the plinth it will stand on to the port where it lands.",
-    published: "2026-11-26",
+    published: "2026-11-27",
     cover: "mountain-approach",
     coverCaption: "The way in to a hill site, seen from the cab. The bends, the edge and the overhead lines all go on the survey.",
     sections: [
@@ -139,7 +139,7 @@ export const blogPosts: readonly BlogPost[] = [
     title: "Your container has reached Birgunj. What happens next?",
     description: "What happens between a sea container reaching the Birgunj dry port and you collecting it: release, transit, rail, customs, duty and the empty return.",
     intro: "Rail to the Birgunj dry port is the usual way a sea container reaches Nepal. Arriving is not the end. A few steps decide whether you collect in days or pay for waiting.",
-    published: "2026-11-26",
+    published: "2026-11-27",
     cover: "freight-train",
     coverCaption: "Containers for Nepal usually make the inland leg by rail.",
     sections: [
@@ -188,7 +188,7 @@ export const blogPosts: readonly BlogPost[] = [
     title: "Telex release or original bill of lading: what to ask for",
     description: "How the bill of lading is released, on paper or by telex, often decides when a Nepal-bound container leaves the Indian port. What importers should ask for.",
     intro: "The bill of lading is the document that releases your cargo. Whether it is released on paper or by message often decides if a Nepal-bound container leaves the Indian port on time.",
-    published: "2026-11-26",
+    published: "2026-11-27",
     cover: "clipboard-sign",
     coverCaption: "Most release problems start on paper, long before the container moves.",
     sections: [
