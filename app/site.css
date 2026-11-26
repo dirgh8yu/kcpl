@@ -413,7 +413,8 @@ html:has(.site-menu[open]) { overflow: hidden; }
 .clients { position: relative; padding: clamp(48px, 6vw, 88px) var(--margin) 0 var(--content-x); }
 .clients-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(24px, 3vw, 44px) clamp(20px, 3vw, 48px); align-items: center; margin-top: 24px; }
 .clients-list li { display: flex; justify-content: center; }
-.clients-list img { width: auto; max-width: 100%; height: var(--h, 34px); object-fit: contain; filter: grayscale(1) contrast(1.1); mix-blend-mode: multiply; opacity: .72; }
+/* In their own colours. Multiply drops the white boxes some logo files carry into the page's paper colour. */
+.clients-list img { width: auto; max-width: 100%; height: var(--h, 34px); object-fit: contain; mix-blend-mode: multiply; }
 .clients-list span { display: block; color: var(--muted); font-size: 17px; font-weight: 800; letter-spacing: .02em; text-align: center; }
 
 /* Home sections, also used by inner pages. */

@@ -28,7 +28,7 @@ function logoHeight(ratio: number) {
   return Math.max(20, Math.min(56, Math.round(36 * (3 / ratio) ** 0.45)));
 }
 
-/** The organisations KCPL has moved cargo for: a still row, every logo in one colour. */
+/** The organisations KCPL has moved cargo for: a still row, each logo in its own colours. */
 export function ClientRail({ title }: { title: string }) {
   return (
     <section className="clients" data-line="a" aria-labelledby="clients-title">
