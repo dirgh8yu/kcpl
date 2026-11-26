@@ -1,5 +1,13 @@
 import type { GuideSlug } from "./guide-data.ts";
 import type { ToolSlug } from "./tool-data.ts";
+import { airPosts } from "./blog-posts/air.ts";
+import { borderPosts } from "./blog-posts/borders.ts";
+import { costPosts } from "./blog-posts/costs.ts";
+import { customsPosts } from "./blog-posts/customs.ts";
+import { exportPosts } from "./blog-posts/exports.ts";
+import { planningPosts } from "./blog-posts/planning.ts";
+import { projectPosts } from "./blog-posts/project.ts";
+import { seaPosts } from "./blog-posts/sea.ts";
 
 /*
  * The blog. English only until someone at KCPL checks a translation, so these
@@ -24,6 +32,24 @@ export const blogPhotos = {
   "freight-train": { src: "/images/unsplash/freight-train.jpg", width: 2000, height: 1500, kcpl: false, alt: "" },
   "clipboard-sign": { src: "/images/unsplash/clipboard-sign.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
   "container-yard": { src: "/images/unsplash/container-yard.jpg", width: 2000, height: 1125, kcpl: false, alt: "" },
+  "airport-dollies": { src: "/images/unsplash/airport-dollies.jpg", width: 2000, height: 1195, kcpl: false, alt: "" },
+  "container-marks": { src: "/images/unsplash/container-marks.jpg", width: 2000, height: 1125, kcpl: false, alt: "" },
+  "container-plate": { src: "/images/unsplash/container-plate.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "ghat-road": { src: "/images/unsplash/ghat-road.jpg", width: 2000, height: 1131, kcpl: false, alt: "" },
+  "ghat-trucks": { src: "/images/unsplash/ghat-trucks.jpg", width: 2000, height: 1367, kcpl: false, alt: "" },
+  "ghat-tunnel": { src: "/images/unsplash/ghat-tunnel.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "howrah-bridge": { src: "/images/unsplash/howrah-bridge.jpg", width: 2000, height: 1125, kcpl: false, alt: "" },
+  kathmandu: { src: "/images/unsplash/kathmandu.jpg", width: 2000, height: 1021, kcpl: false, alt: "" },
+  "nepal-road": { src: "/images/unsplash/nepal-road.jpg", width: 2200, height: 1467, kcpl: false, alt: "" },
+  "port-aerial": { src: "/images/unsplash/port-aerial.jpg", width: 2200, height: 1730, kcpl: false, alt: "" },
+  "rug-hands": { src: "/images/unsplash/rug-hands.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "ship-aerial": { src: "/images/unsplash/ship-aerial.jpg", width: 2200, height: 1585, kcpl: false, alt: "" },
+  "ship-terminal": { src: "/images/unsplash/ship-terminal.jpg", width: 2000, height: 1125, kcpl: false, alt: "" },
+  substation: { src: "/images/unsplash/substation.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "tariff-ledger": { src: "/images/unsplash/tariff-ledger.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "warehouse-forklift": { src: "/images/unsplash/warehouse-forklift.jpg", width: 1800, height: 1695, kcpl: false, alt: "" },
+  "warehouse-racks": { src: "/images/unsplash/warehouse-racks.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
+  "warp-threads": { src: "/images/unsplash/warp-threads.jpg", width: 2000, height: 1334, kcpl: false, alt: "" },
 } satisfies Record<string, BlogPhoto>;
 
 export type BlogPhotoKey = keyof typeof blogPhotos;
@@ -35,8 +61,23 @@ export type BlogBlock =
   | { type: "list"; title?: string; items: readonly string[] }
   | { type: "steps"; items: readonly { title: string; copy: string }[] };
 
+/* Topics order the archive on the blog index, and a post's "Keep reading" stays inside its topic. */
+export const blogTopics = [
+  { id: "sea", title: "Sea freight into Nepal", intro: "Containers from overseas ports, through India's gateways, to the dry port at Birgunj." },
+  { id: "borders", title: "Borders and road corridors", intro: "Trucks across the India border, and the Himalayan crossings with China." },
+  { id: "customs", title: "Customs and documents", intro: "The papers that release cargo, and how Nepal customs reads them." },
+  { id: "exports", title: "Exporting from Nepal", intro: "Carpets, felt, garments and more, from Kathmandu to buyers abroad." },
+  { id: "air", title: "Air freight", intro: "Kathmandu's airport, chargeable weight, and cargo that cannot wait." },
+  { id: "project", title: "Project and heavy cargo", intro: "Oversized loads and phased deliveries to power and infrastructure sites." },
+  { id: "costs", title: "Costs, terms and charges", intro: "Incoterms, quotes, duty, and the clocks that run up charges." },
+  { id: "planning", title: "Planning, delivery and risk", intro: "Seasons, insurance, receiving, and proof that the cargo arrived." },
+] as const;
+
+export type BlogTopicId = (typeof blogTopics)[number]["id"];
+
 export type BlogPost = {
   slug: string;
+  topic: BlogTopicId;
   title: string;
   /** 140 to 155 characters, for search results. */
   description: string;
@@ -45,6 +86,8 @@ export type BlogPost = {
   cover: BlogPhotoKey;
   coverCaption: string;
   sections: readonly { title: string; blocks: readonly BlogBlock[] }[];
+  /** Plain questions a shipper asks, answered honestly, including where the answer is no. */
+  questions?: readonly { question: string; answer: string }[];
   related: { service: { href: string; label: string }; guides: readonly GuideSlug[]; tool?: ToolSlug };
 };
 
@@ -53,18 +96,22 @@ export const blogIndex = {
   metaTitle: "Blog",
   intro: "How freight really moves into and out of Nepal: the papers, the borders and the heavy lifts, written by the team that plans them.",
   description: "Notes from KCPL's freight desk on moving cargo into and out of Nepal: project cargo, Indian gateways, Birgunj clearance and the papers that release it.",
-  more: "More notes",
+  more: "Start here",
+  topics: "Browse by topic",
+  notes: "notes",
   read: "Read the note",
   related: "Keep reading",
+  questions: "Questions people ask",
   author: "Kapileshwor Cargo",
   kcplCredit: "Photograph: KCPL",
   illustrative: "Illustrative photograph",
   minutes: "min read",
 };
 
-export const blogPosts: readonly BlogPost[] = [
+const firstPosts: readonly BlogPost[] = [
   {
     slug: "moving-power-transformers-to-nepal",
+    topic: "project",
     title: "How a power transformer reaches a Nepal substation",
     description: "How KCPL plans a power transformer move into Nepal: the route survey, the lift at the port, the papers, holding the unit and setting it down at site.",
     intro: "A transformer travels as one piece, so its heaviest and tallest moment decides the whole plan. The move is worked out backwards, from the plinth it will stand on to the port where it lands.",
@@ -136,6 +183,7 @@ export const blogPosts: readonly BlogPost[] = [
   },
   {
     slug: "container-at-birgunj-what-happens-next",
+    topic: "sea",
     title: "Your container has reached Birgunj. What happens next?",
     description: "What happens between a sea container reaching the Birgunj dry port and you collecting it: release, transit, rail, customs, duty and the empty return.",
     intro: "Rail to the Birgunj dry port is the usual way a sea container reaches Nepal. Arriving is not the end. A few steps decide whether you collect in days or pay for waiting.",
@@ -185,6 +233,7 @@ export const blogPosts: readonly BlogPost[] = [
   },
   {
     slug: "telex-release-or-original-bill-of-lading",
+    topic: "customs",
     title: "Telex release or original bill of lading: what to ask for",
     description: "How the bill of lading is released, on paper or by telex, often decides when a Nepal-bound container leaves the Indian port. What importers should ask for.",
     intro: "The bill of lading is the document that releases your cargo. Whether it is released on paper or by message often decides if a Nepal-bound container leaves the Indian port on time.",
@@ -234,6 +283,9 @@ export const blogPosts: readonly BlogPost[] = [
   },
 ];
 
+/* The first three are the featured notes on the index; the rest follow by topic. */
+export const blogPosts: readonly BlogPost[] = [...firstPosts, ...seaPosts, ...borderPosts, ...customsPosts, ...exportPosts, ...airPosts, ...projectPosts, ...costPosts, ...planningPosts];
+
 export const blogSlugs = blogPosts.map((post) => post.slug);
 
 export function blogPost(slug: string) {
@@ -247,6 +299,6 @@ export function readingMinutes(post: BlogPost) {
     if (block.type === "list") return [block.title ?? "", ...block.items];
     if (block.type === "steps") return block.items.flatMap((item) => [item.title, item.copy]);
     return [block.caption];
-  })])].join(" ");
+  })]), ...(post.questions ?? []).flatMap((item) => [item.question, item.answer])].join(" ");
   return Math.max(1, Math.round(text.split(/\s+/).filter(Boolean).length / 200));
 }

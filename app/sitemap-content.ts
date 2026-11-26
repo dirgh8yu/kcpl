@@ -4,7 +4,7 @@ import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth, type D
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { englishOnlyPath, siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
-import { blogIndex, blogPost, blogPosts } from "./blog-data.ts";
+import { blogIndex, blogPost, blogPosts, blogTopics } from "./blog-data.ts";
 import { guideReview } from "./guide-review.ts";
 
 /*
@@ -71,8 +71,8 @@ function depthPageSource(depth: DepthContent) {
 
 export function contentFingerprint(locale: SiteLocale, path: string) {
   if (path === "/blog") {
-    const listed = blogPosts.map((post) => [post.title, post.description, post.published]);
-    return createHash("sha256").update(JSON.stringify({ blogIndex, listed })).digest("hex").slice(0, 16);
+    const listed = blogPosts.map((post) => [post.topic, post.title, post.description, post.published]);
+    return createHash("sha256").update(JSON.stringify({ blogIndex, blogTopics, listed })).digest("hex").slice(0, 16);
   }
   const post = path.startsWith("/blog/") ? blogPost(path.slice("/blog/".length)) : null;
   if (post) return createHash("sha256").update(JSON.stringify({ post, labels: blogIndex })).digest("hex").slice(0, 16);

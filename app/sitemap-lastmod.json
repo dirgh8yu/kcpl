@@ -561,19 +561,439 @@
       "lastmod": "2026-10-11"
     },
     "en/blog": {
-      "fingerprint": "97b149c83f12c8a4",
+      "fingerprint": "ad6386ac834448ba",
       "lastmod": "2026-11-26"
     },
     "en/blog/moving-power-transformers-to-nepal": {
-      "fingerprint": "b4da3118185df0f0",
+      "fingerprint": "e0eda338b9c6de9a",
       "lastmod": "2026-11-26"
     },
     "en/blog/container-at-birgunj-what-happens-next": {
-      "fingerprint": "1a408505f879e186",
+      "fingerprint": "56e654fb579c7a68",
       "lastmod": "2026-11-26"
     },
     "en/blog/telex-release-or-original-bill-of-lading": {
-      "fingerprint": "95765bacf56facab",
+      "fingerprint": "bddd145d0a822c93",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/choosing-an-indian-gateway-for-nepal": {
+      "fingerprint": "c4508a38151d93ad",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/visakhapatnam-to-birgunj-by-rail": {
+      "fingerprint": "b56d5e00a7826401",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/fcl-or-lcl-for-a-nepal-import": {
+      "fingerprint": "0d126066d73ce92a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/how-lcl-reaches-nepal": {
+      "fingerprint": "58b7ef96e895d3e9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/choosing-a-container-for-nepal": {
+      "fingerprint": "ff703b67eaf90017",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/what-a-pre-alert-should-contain": {
+      "fingerprint": "6aa2630124c59e2d",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/igm-amendments-explained": {
+      "fingerprint": "46d0f330e5a57952",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/electronic-seals-on-transit-containers": {
+      "fingerprint": "ae447aa319b60ce1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-delivery-order-explained": {
+      "fingerprint": "6e980fe670719be0",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/destuff-at-birgunj-or-at-your-warehouse": {
+      "fingerprint": "3cd6e3878a6549be",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/returning-the-empty-container": {
+      "fingerprint": "a2707d5a87c23887",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/transshipment-and-feeder-vessels": {
+      "fingerprint": "87b3b8ed9cdbae61",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-a-sailing-schedule": {
+      "fingerprint": "3065ad4a46232da8",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/china-to-nepal-sea-or-road": {
+      "fingerprint": "55497f3a213f3714",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-through-kerung-and-rasuwagadhi": {
+      "fingerprint": "bda4f6b4a927d91f",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lcl-from-guangzhou-via-tatopani": {
+      "fingerprint": "e423f6865b85998a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/india-to-nepal-by-road": {
+      "fingerprint": "cf68c8fa862ff3a7",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/raxaul-and-birgunj-crossing": {
+      "fingerprint": "03aef5d58a90b1a3",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/freight-for-eastern-nepal-via-jogbani": {
+      "fingerprint": "f92f11e9bcfcf247",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reaching-western-nepal": {
+      "fingerprint": "8c6a0a20a24173c5",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepal-customs-points-for-freight": {
+      "fingerprint": "91ba550d015252da",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/delhi-to-kathmandu-road-or-air": {
+      "fingerprint": "a77d8c48b4eb1427",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/buying-from-an-indian-supplier": {
+      "fingerprint": "525da8267dac857f",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/part-loads-from-india": {
+      "fingerprint": "c5517cf848c2d3ea",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/chinese-holidays-and-nepal-orders": {
+      "fingerprint": "c886854521f4e1f5",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/commercial-invoice-for-nepal-customs": {
+      "fingerprint": "f099ab0438c9dfe4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-packing-list-and-delays": {
+      "fingerprint": "843c13d6fd2d6340",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exim-code-for-nepal-traders": {
+      "fingerprint": "3dc920c83865c4cb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepal-national-single-window": {
+      "fingerprint": "42096656dc335bd9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/how-nepal-customs-values-goods": {
+      "fingerprint": "aa39bf01cb1f4c72",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/customs-inspection-in-nepal": {
+      "fingerprint": "5257820885ec6665",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/certificates-of-origin": {
+      "fingerprint": "fede40df848af357",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/goods-that-need-a-permit": {
+      "fingerprint": "704a6c7f6bb39088",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/letters-of-authority": {
+      "fingerprint": "758a599a77509eb6",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/duty-concessions-and-the-letter": {
+      "fingerprint": "abc4f58ed0fde153",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-customs-disagrees-with-your-hs-code": {
+      "fingerprint": "c50db2ae0a1656f4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/importing-used-machinery": {
+      "fingerprint": "3436af1fc1119e13",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/fixing-document-errors-after-shipping": {
+      "fingerprint": "b0ca142aae51b902",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-carpets-by-air": {
+      "fingerprint": "dbab1e1b638f7641",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-felt-products": {
+      "fingerprint": "746c389de8a72505",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lcl-export-nepal-to-usa": {
+      "fingerprint": "13219593ba263885",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/ams-and-isf-for-nepal-exporters": {
+      "fingerprint": "75031b0555f4fef3",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/vgm-for-nepal-exporters": {
+      "fingerprint": "746a4093f508ead7",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-export-file": {
+      "fingerprint": "d30d2847c9302c34",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-the-buyer-nominates-the-forwarder": {
+      "fingerprint": "02134895344b59a2",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/garment-exports-from-nepal": {
+      "fingerprint": "518f3ef1b214f50b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/packing-handicrafts-for-export": {
+      "fingerprint": "b720fca716013cdf",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-tea-coffee-and-spices": {
+      "fingerprint": "ab7d7b2138a8a630",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-from-nepal-to-europe": {
+      "fingerprint": "9274b86a81d750be",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-to-australia": {
+      "fingerprint": "4daa94d7b84c869c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/delivering-to-the-buyers-door": {
+      "fingerprint": "3fd9c895ff3441bb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/rerouting-an-air-export": {
+      "fingerprint": "403a4fb86a296a4b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/chargeable-weight-explained": {
+      "fingerprint": "699d5c004099bd7c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-air-beats-sea": {
+      "fingerprint": "43fe67bc3bc81f09",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/importing-by-air-into-kathmandu": {
+      "fingerprint": "d56534ad61b9c222",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-an-air-waybill": {
+      "fingerprint": "6e20bc9759f8d7c0",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/dangerous-goods-by-air": {
+      "fingerprint": "4beadc507d08b927",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lithium-batteries-in-air-cargo": {
+      "fingerprint": "1adfcede42ceb681",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/perishable-cargo-by-air": {
+      "fingerprint": "54d25e22c6aada10",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/urgent-spares-into-nepal": {
+      "fingerprint": "e849644757374bf8",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/carting-an-air-export-at-kathmandu": {
+      "fingerprint": "95daa68131289629",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/consolidated-air-cargo": {
+      "fingerprint": "986c3cd4327b98b1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/packing-for-air-cargo": {
+      "fingerprint": "ba0a39b5e4e5f73c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/courier-or-air-cargo": {
+      "fingerprint": "1a06308d74ffb344",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/route-survey-for-oversized-cargo": {
+      "fingerprint": "8edf59bc499e2f3b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/flat-rack-and-open-top-to-nepal": {
+      "fingerprint": "99049939036b7068",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/breakbulk-through-kolkata": {
+      "fingerprint": "3e6c298f33232efa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/phased-delivery-to-a-live-site": {
+      "fingerprint": "062a879f203113d7",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/moving-conductor-drums": {
+      "fingerprint": "a20e9da2f7d4253a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/dispatch-authorisation-on-projects": {
+      "fingerprint": "35fe562aabacd239",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/matching-every-package": {
+      "fingerprint": "24e26d0bc2599e5a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/damages-and-discrepancies": {
+      "fingerprint": "0b7d1fc3e0974ca9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/insurance-on-project-cargo": {
+      "fingerprint": "2f6f29bd88753717",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/hydropower-equipment-logistics": {
+      "fingerprint": "59d2ffc62c2b4daa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/repair-and-return-shipments": {
+      "fingerprint": "f9bf7ad580fe333b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/logistics-in-a-tender": {
+      "fingerprint": "f39dc5b18c15af0a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/getting-a-site-ready-to-receive": {
+      "fingerprint": "5b1b7b39eedc8a37",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/incoterms-for-nepal-buyers": {
+      "fingerprint": "125a42141ed989de",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exw-fob-or-cif": {
+      "fingerprint": "1d58da6d9ca0d676",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/can-a-seller-ship-ddp-to-nepal": {
+      "fingerprint": "50b6af80976c8fe9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/demurrage-detention-and-storage": {
+      "fingerprint": "f4318e614e359318",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/estimating-duty-and-vat": {
+      "fingerprint": "3560e6764906aa45",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-a-freight-quote": {
+      "fingerprint": "25e5441d3317e172",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/local-charges-on-a-sea-invoice": {
+      "fingerprint": "ffb31eac4bc333c9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/paying-freight-in-three-currencies": {
+      "fingerprint": "7031afc94658e5d2",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/letters-of-credit-and-shipping-documents": {
+      "fingerprint": "4a7f4185071e0263",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/cbm-and-weight-in-sea-freight": {
+      "fingerprint": "1e8d2d4c23e42b05",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/why-the-cheapest-rate-costs-more": {
+      "fingerprint": "2c21ddf7b0c89068",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/landed-cost-of-an-import": {
+      "fingerprint": "0be24e115205a9b4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/surcharges-on-a-freight-bill": {
+      "fingerprint": "b669f1b29798c973",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/why-quotes-expire": {
+      "fingerprint": "a0b7e95cb1ce3bfe",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/freight-around-festivals": {
+      "fingerprint": "0226d3fde5e25349",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/monsoon-freight-in-nepal": {
+      "fingerprint": "235cbbe5902d0608",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepali-calendar-on-freight-paperwork": {
+      "fingerprint": "4b829f7bf7488a70",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/storing-cargo-before-delivery": {
+      "fingerprint": "1377203f201806b1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/proof-of-delivery-checklist": {
+      "fingerprint": "6fcd81e8a05b5769",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/receiving-a-delivery": {
+      "fingerprint": "e120a11ff90005d1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/cargo-insurance-for-nepal-imports": {
+      "fingerprint": "7a57b4dded54e0aa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/making-a-cargo-claim": {
+      "fingerprint": "ef5df736a0c0201b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/your-first-import-into-nepal": {
+      "fingerprint": "f8b23e3bfefd30e4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/briefing-a-freight-forwarder": {
+      "fingerprint": "40181c98edaf48cb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/tracking-a-nepal-shipment": {
+      "fingerprint": "1970e12655e66344",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/a-nepal-partner-for-overseas-forwarders": {
+      "fingerprint": "b2c68b0eec542e51",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/one-team-gateway-to-door": {
+      "fingerprint": "38677bac42bb4647",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/deliveries-inside-kathmandu-valley": {
+      "fingerprint": "35d923d8e52ee393",
       "lastmod": "2026-11-26"
     }
   }
