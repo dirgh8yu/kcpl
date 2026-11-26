@@ -1,9 +1,10 @@
+import { blogIndex, blogPosts } from "./blog-data.ts";
 import { guideIndex, guides, guideSlugs } from "./guide-data.ts";
 import { services } from "./services-data.ts";
 import { sitePath, siteText, type SiteLocale, type SiteTextKey } from "./site-i18n.ts";
 import { toolSlugs, tools } from "./tool-data.ts";
 
-export const searchKinds = ["service", "guide", "tool", "page"] as const;
+export const searchKinds = ["service", "guide", "tool", "post", "page"] as const;
 export type SearchKind = (typeof searchKinds)[number];
 
 export type SearchEntry = {
@@ -57,12 +58,20 @@ export function publicSearchIndex(locale: SiteLocale): SearchEntry[] {
     href: sitePath(locale, `/tools/${slug}`),
     kind: "tool" as const,
   }));
+  // The blog is written in English only, so its notes join the English index alone:
+  // every other locale's results keep linking inside that locale.
+  const blogEntries: SearchEntry[] = locale === "en"
+    ? [
+        { title: blogIndex.title, description: blogIndex.description, href: "/blog", kind: "page" },
+        ...blogPosts.map((post) => ({ title: post.title, description: post.description, href: `/blog/${post.slug}`, kind: "post" as const })),
+      ]
+    : [];
   return [...serviceEntries, ...guideEntries, ...toolEntries, ...pageEntries(locale), {
     title: guideIndex[locale].title,
     description: guideIndex[locale].description,
     href: sitePath(locale, "/guides"),
     kind: "page" as const,
-  }];
+  }, ...blogEntries];
 }
 
 export function searchPublicSite(locale: SiteLocale, query: string, limit = 24): SearchEntry[] {
@@ -86,6 +95,7 @@ export function searchKindLabel(locale: SiteLocale, kind: SearchKind) {
     service: siteText(locale, "search.kind_service"),
     guide: siteText(locale, "search.kind_guide"),
     tool: siteText(locale, "search.kind_tool"),
+    post: siteText(locale, "chrome.blog"),
     page: siteText(locale, "search.kind_page"),
   }[kind];
 }
