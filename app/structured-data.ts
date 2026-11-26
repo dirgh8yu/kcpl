@@ -5,7 +5,7 @@ import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data";
 import { guideReview } from "./guide-review";
 import sitemapLastmod from "./sitemap-lastmod.json";
-import { blogIndex, blogPhotos, blogPost } from "./blog-data";
+import { blogIndex, blogPhotos, blogPost, blogTopics } from "./blog-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -243,6 +243,7 @@ export function blogPostingNode(slug: string) {
     dateModified: recorded && recorded.lastmod > post.published ? recorded.lastmod : post.published,
     author: { "@type": "Organization", "@id": organizationId, name: siteName, url: siteUrl },
     publisher: { "@id": organizationId },
+    articleSection: blogTopics.find((topic) => topic.id === post.topic)?.title,
     image: absoluteUrl(blogPhotos[post.cover].src),
     mainEntityOfPage: url,
     isPartOf: { "@type": "Blog", "@id": `${absoluteUrl("/blog")}#blog`, name: blogIndex.title, url: absoluteUrl("/blog") },

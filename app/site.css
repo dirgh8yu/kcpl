@@ -570,6 +570,7 @@ html:has(.site-menu[open]) { overflow: hidden; }
 .post-card-media { display: block; }
 .post-card-media img { aspect-ratio: 3 / 2; }
 .post-card .post-meta { margin-top: 12px; }
+.post-count { color: var(--muted); font-size: 14px; white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) {
   .post-lead .stop-title a { transition: color 160ms ease; }
   .post-lead .stop-title a:hover { color: var(--crimson); }

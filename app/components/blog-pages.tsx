@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
-import { blogIndex, blogPhotos, blogPosts, readingMinutes, type BlogBlock, type BlogPhotoKey, type BlogPost } from "../blog-data";
+import { blogIndex, blogPhotos, blogPosts, blogTopics, readingMinutes, type BlogBlock, type BlogPhotoKey, type BlogPost, type BlogTopicId } from "../blog-data";
 import { guides } from "../guide-data";
 import { tools } from "../tool-data";
 import { blogPostingNode, graph } from "../structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ClosingBand } from "./closing-band";
-import { Lined, PageHead, Stop } from "./route-parts";
+import { Lined, PageHead, QaList, Stop } from "./route-parts";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 
@@ -74,7 +74,7 @@ function Blocks({ blocks }: { blocks: readonly BlogBlock[] }) {
 }
 
 export function BlogIndexPage() {
-  const [lead, ...rest] = blogPosts;
+  const [lead, ...rest] = blogPosts.slice(0, 3);
   return (
     <SiteShell locale="en" path="/blog">
       <PageHead title={blogIndex.title} intro={blogIndex.intro} breadcrumb={<Breadcrumbs locale="en" path="/blog"/>}/>
@@ -104,15 +104,34 @@ export function BlogIndexPage() {
             </ul>
           </Stop>
         ) : null}
+        <Stop title={blogIndex.topics}>
+          <ul className="link-list">
+            {blogTopics.map((topic) => <li key={topic.id}><a href={`#${topic.id}`}>{topic.title}<span className="post-count">{inTopic(topic.id).length} {blogIndex.notes}</span></a></li>)}
+          </ul>
+        </Stop>
+        {blogTopics.map((topic) => (
+          <Stop key={topic.id} id={topic.id} title={topic.title} intro={topic.intro}>
+            <ul className="link-list">
+              {inTopic(topic.id).map((post) => <li key={post.slug}><Link href={`/blog/${post.slug}`}>{post.title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>)}
+            </ul>
+          </Stop>
+        ))}
         <ClosingBand locale="en"/>
       </Lined>
     </SiteShell>
   );
 }
 
+function inTopic(topic: BlogTopicId) {
+  return blogPosts.filter((post) => post.topic === topic);
+}
+
 export function BlogPostPage({ post }: { post: BlogPost }) {
   const path = `/blog/${post.slug}`;
-  const others = blogPosts.filter((entry) => entry.slug !== post.slug);
+  // The next four in the same topic, wrapping round, so every note is linked from its neighbours.
+  const topic = inTopic(post.topic);
+  const at = topic.indexOf(post);
+  const others = [...topic.slice(at + 1), ...topic.slice(0, at)].slice(0, 4);
   return (
     <SiteShell locale="en" path={path}>
       <StructuredData data={graph([blogPostingNode(post.slug)])}/>
@@ -129,6 +148,7 @@ export function BlogPostPage({ post }: { post: BlogPost }) {
             <Blocks blocks={section.blocks}/>
           </Stop>
         ))}
+        {post.questions?.length ? <Stop title={blogIndex.questions}><QaList items={[...post.questions]}/></Stop> : null}
         <section className="stop page-actions">
           <Link href="/quote" className="btn" data-analytics-event="quote_tap">Ask for a quote<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           <Link href={post.related.service.href} className="text-link">{post.related.service.label}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>

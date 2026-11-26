@@ -8,7 +8,7 @@ import { siteText } from "../app/site-i18n.ts";
 import { tools } from "../app/tool-data.ts";
 import { company } from "../app/company-data.ts";
 import { sitemapLocales, sitemapPaths } from "../app/sitemap-content.ts";
-import { blogIndex, blogPhotos, blogPosts } from "../app/blog-data.ts";
+import { blogIndex, blogPhotos, blogPosts, blogTopics, readingMinutes } from "../app/blog-data.ts";
 import { guideSlugs } from "../app/guide-data.ts";
 import { existsSync } from "node:fs";
 
@@ -292,12 +292,21 @@ test("the blog is English only, sourced, and every post points somewhere real", 
   }
   // Photographs from the supplied set that show faces or a client's banner stay out until the owner decides.
   assert.deepEqual(Object.keys(blogPhotos).filter((key) => blogPhotos[key].kcpl).sort(), ["cribbing", "mountain-approach", "port-lift", "site-yard", "sleepers"]);
+  const paths = sitemapPaths();
+  assert.equal(new Set(blogPosts.map((post) => post.slug)).size, blogPosts.length, "blog slugs are unique");
+  for (const topic of blogTopics) assert.ok(blogPosts.some((post) => post.topic === topic.id), `${topic.id} has no notes`);
   for (const post of blogPosts) {
     const count = [...post.description].length;
     assert.ok(count >= 140 && count <= 155, `${post.slug} description has ${count} characters`);
+    // The page title adds " | Kapileshwor Cargo", so the post's own title stays short enough to show whole in search.
+    assert.ok([...post.title].length <= 60, `${post.slug} title has ${[...post.title].length} characters`);
+    assert.ok(blogTopics.some((topic) => topic.id === post.topic), `${post.slug}: ${post.topic}`);
     assert.ok(post.sections.length >= 3, post.slug);
+    // A floor against thin pages: every note is at least a two-minute read.
+    assert.ok(readingMinutes(post) >= 2, `${post.slug} reads in ${readingMinutes(post)} minute`);
     for (const slug of post.related.guides) assert.ok(guideSlugs.includes(slug), `${post.slug}: ${slug}`);
-    assert.ok(sitemapPaths().includes(`/blog/${post.slug}`), post.slug);
+    assert.ok(paths.includes(post.related.service.href), `${post.slug}: ${post.related.service.href}`);
+    assert.ok(paths.includes(`/blog/${post.slug}`), post.slug);
   }
   const index = [...blogIndex.description].length;
   assert.ok(index >= 140 && index <= 155, `blog index description has ${index} characters`);

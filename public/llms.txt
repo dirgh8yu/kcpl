@@ -31,10 +31,139 @@
 
 ## Blog
 
-- [Notes from the route](https://kapileshworcargo.com.np/blog): KCPL's notes on moving freight into and out of Nepal.
-- [How a power transformer reaches a Nepal substation](https://kapileshworcargo.com.np/blog/moving-power-transformers-to-nepal): Route survey, port lift, papers and setting down at site.
-- [Your container has reached Birgunj. What happens next?](https://kapileshworcargo.com.np/blog/container-at-birgunj-what-happens-next): Release, transit, rail, customs and the empty return.
-- [Telex release or original bill of lading](https://kapileshworcargo.com.np/blog/telex-release-or-original-bill-of-lading): How the release method decides when a Nepal import leaves the Indian port.
+- [Notes from the route](https://kapileshworcargo.com.np/blog): KCPL's notes on moving freight into and out of Nepal, in English.
+
+### Sea freight into Nepal
+
+- [Your container has reached Birgunj. What happens next?](https://kapileshworcargo.com.np/blog/container-at-birgunj-what-happens-next)
+- [Kolkata, Haldia or Visakhapatnam: choosing a gateway](https://kapileshworcargo.com.np/blog/choosing-an-indian-gateway-for-nepal)
+- [From Visakhapatnam to Birgunj: a container's rail journey](https://kapileshworcargo.com.np/blog/visakhapatnam-to-birgunj-by-rail)
+- [FCL or LCL: how to ship a part load to Nepal](https://kapileshworcargo.com.np/blog/fcl-or-lcl-for-a-nepal-import)
+- [How LCL cargo reaches Nepal, box by box](https://kapileshworcargo.com.np/blog/how-lcl-reaches-nepal)
+- [20-foot, 40-foot or high cube: choosing a container](https://kapileshworcargo.com.np/blog/choosing-a-container-for-nepal)
+- [The pre-alert: what to receive before the ship arrives](https://kapileshworcargo.com.np/blog/what-a-pre-alert-should-contain)
+- [IGM amendments: fixing a manifest error in India](https://kapileshworcargo.com.np/blog/igm-amendments-explained)
+- [Electronic seals on India–Nepal transit containers](https://kapileshworcargo.com.np/blog/electronic-seals-on-transit-containers)
+- [The delivery order: the paper that lets a container go](https://kapileshworcargo.com.np/blog/the-delivery-order-explained)
+- [Unload at Birgunj or take the full box to your door?](https://kapileshworcargo.com.np/blog/destuff-at-birgunj-or-at-your-warehouse)
+- [Returning the empty: where, when and who pays](https://kapileshworcargo.com.np/blog/returning-the-empty-container)
+- [Transshipment: why your container changed ships](https://kapileshworcargo.com.np/blog/transshipment-and-feeder-vessels)
+- [ETD, ETA and cut-off: reading a sailing schedule](https://kapileshworcargo.com.np/blog/reading-a-sailing-schedule)
+
+### Borders and road corridors
+
+- [China to Nepal: by sea through India, or by road](https://kapileshworcargo.com.np/blog/china-to-nepal-sea-or-road)
+- [Shipping through Kerung and Rasuwagadhi](https://kapileshworcargo.com.np/blog/shipping-through-kerung-and-rasuwagadhi)
+- [LCL from Guangzhou to Nepal over the Tatopani border](https://kapileshworcargo.com.np/blog/lcl-from-guangzhou-via-tatopani)
+- [India to Nepal by road: factory gate to Nepal customs](https://kapileshworcargo.com.np/blog/india-to-nepal-by-road)
+- [Raxaul and Birgunj: how the main crossing works](https://kapileshworcargo.com.np/blog/raxaul-and-birgunj-crossing)
+- [Eastern Nepal freight through Jogbani and Biratnagar](https://kapileshworcargo.com.np/blog/freight-for-eastern-nepal-via-jogbani)
+- [Reaching western Nepal: Nepalgunj and Surkhet](https://kapileshworcargo.com.np/blog/reaching-western-nepal)
+- [Nepal's customs points: which ones matter for freight](https://kapileshworcargo.com.np/blog/nepal-customs-points-for-freight)
+- [Delhi to Kathmandu cargo: road or air?](https://kapileshworcargo.com.np/blog/delhi-to-kathmandu-road-or-air)
+- [Buying from an Indian supplier: papers a truck needs](https://kapileshworcargo.com.np/blog/buying-from-an-indian-supplier)
+- [Part loads from India: sharing a truck to Nepal](https://kapileshworcargo.com.np/blog/part-loads-from-india)
+- [Chinese New Year and Golden Week: planning orders](https://kapileshworcargo.com.np/blog/chinese-holidays-and-nepal-orders)
+
+### Customs and documents
+
+- [Telex release or original bill of lading: what to ask for](https://kapileshworcargo.com.np/blog/telex-release-or-original-bill-of-lading)
+- [Writing an invoice that clears Nepal customs](https://kapileshworcargo.com.np/blog/commercial-invoice-for-nepal-customs)
+- [The packing list: a small document, big delays](https://kapileshworcargo.com.np/blog/the-packing-list-and-delays)
+- [The EXIM code: what Nepal traders need first](https://kapileshworcargo.com.np/blog/exim-code-for-nepal-traders)
+- [The Nepal National Single Window, for traders](https://kapileshworcargo.com.np/blog/nepal-national-single-window)
+- [How Nepal customs values your goods](https://kapileshworcargo.com.np/blog/how-nepal-customs-values-goods)
+- [When customs opens the container](https://kapileshworcargo.com.np/blog/customs-inspection-in-nepal)
+- [Certificates of origin: when you need one](https://kapileshworcargo.com.np/blog/certificates-of-origin)
+- [Goods that need a permit before customs](https://kapileshworcargo.com.np/blog/goods-that-need-a-permit)
+- [Letters of authority: letting an agent act for you](https://kapileshworcargo.com.np/blog/letters-of-authority)
+- [Duty concessions: why the letter comes first](https://kapileshworcargo.com.np/blog/duty-concessions-and-the-letter)
+- [When customs disagrees with your HS code](https://kapileshworcargo.com.np/blog/when-customs-disagrees-with-your-hs-code)
+- [Importing used machinery into Nepal](https://kapileshworcargo.com.np/blog/importing-used-machinery)
+- [Fixing a document error after the cargo has sailed](https://kapileshworcargo.com.np/blog/fixing-document-errors-after-shipping)
+
+### Exporting from Nepal
+
+- [Exporting hand-knotted carpets from Nepal by air](https://kapileshworcargo.com.np/blog/exporting-carpets-by-air)
+- [Shipping felt from Nepal: light cargo, big volume](https://kapileshworcargo.com.np/blog/shipping-felt-products)
+- [LCL from Nepal to the USA: Birgunj to a US door](https://kapileshworcargo.com.np/blog/lcl-export-nepal-to-usa)
+- [AMS and ISF: US filings Nepal exporters are asked for](https://kapileshworcargo.com.np/blog/ams-and-isf-for-nepal-exporters)
+- [Verified gross mass: weighing an export container](https://kapileshworcargo.com.np/blog/vgm-for-nepal-exporters)
+- [The export file: documents a Nepal shipper prepares](https://kapileshworcargo.com.np/blog/the-export-file)
+- [When the buyer names the forwarder: what you still own](https://kapileshworcargo.com.np/blog/when-the-buyer-nominates-the-forwarder)
+- [Garment exports: cartons, hangers and buyer labels](https://kapileshworcargo.com.np/blog/garment-exports-from-nepal)
+- [Packing handicrafts for export: fragile and mixed](https://kapileshworcargo.com.np/blog/packing-handicrafts-for-export)
+- [Food exports from Nepal: tea, coffee and spices](https://kapileshworcargo.com.np/blog/exporting-tea-coffee-and-spices)
+- [Shipping from Nepal to Europe: air or sea](https://kapileshworcargo.com.np/blog/shipping-from-nepal-to-europe)
+- [Exporting from Nepal to Australia: packing and checks](https://kapileshworcargo.com.np/blog/exporting-to-australia)
+- [Delivering to the buyer's door abroad](https://kapileshworcargo.com.np/blog/delivering-to-the-buyers-door)
+- [When the flight network breaks: rerouting an export](https://kapileshworcargo.com.np/blog/rerouting-an-air-export)
+
+### Air freight
+
+- [Chargeable weight: why a light box costs like a heavy one](https://kapileshworcargo.com.np/blog/chargeable-weight-explained)
+- [When air freight beats sea for a Nepal shipment](https://kapileshworcargo.com.np/blog/when-air-beats-sea)
+- [Importing by air into Kathmandu: landing to release](https://kapileshworcargo.com.np/blog/importing-by-air-into-kathmandu)
+- [Reading an air waybill](https://kapileshworcargo.com.np/blog/reading-an-air-waybill)
+- [Dangerous goods by air: what changes the booking](https://kapileshworcargo.com.np/blog/dangerous-goods-by-air)
+- [Lithium batteries in air cargo](https://kapileshworcargo.com.np/blog/lithium-batteries-in-air-cargo)
+- [Perishable cargo by air: timing is the packaging](https://kapileshworcargo.com.np/blog/perishable-cargo-by-air)
+- [Urgent spares into Nepal: planning a breakdown shipment](https://kapileshworcargo.com.np/blog/urgent-spares-into-nepal)
+- [Carting an air export at Kathmandu](https://kapileshworcargo.com.np/blog/carting-an-air-export-at-kathmandu)
+- [Consolidated air cargo: the house air waybill](https://kapileshworcargo.com.np/blog/consolidated-air-cargo)
+- [Packing for air cargo: weight, stacking and pallets](https://kapileshworcargo.com.np/blog/packing-for-air-cargo)
+- [Courier or air cargo? Where the line falls](https://kapileshworcargo.com.np/blog/courier-or-air-cargo)
+
+### Project and heavy cargo
+
+- [How a power transformer reaches a Nepal substation](https://kapileshworcargo.com.np/blog/moving-power-transformers-to-nepal)
+- [The route survey: planning oversized cargo in Nepal](https://kapileshworcargo.com.np/blog/route-survey-for-oversized-cargo)
+- [Flat-rack and open-top containers to Nepal](https://kapileshworcargo.com.np/blog/flat-rack-and-open-top-to-nepal)
+- [Breakbulk through Kolkata: cargo that won't fit a box](https://kapileshworcargo.com.np/blog/breakbulk-through-kolkata)
+- [Phased delivery to a live construction site](https://kapileshworcargo.com.np/blog/phased-delivery-to-a-live-site)
+- [Moving conductor drums to transmission line sites](https://kapileshworcargo.com.np/blog/moving-conductor-drums)
+- [Dispatch authorisation on employer-run projects](https://kapileshworcargo.com.np/blog/dispatch-authorisation-on-projects)
+- [Project cargo documents: matching every package](https://kapileshworcargo.com.np/blog/matching-every-package)
+- [Damages and discrepancies: recording every hand-over](https://kapileshworcargo.com.np/blog/damages-and-discrepancies)
+- [Insurance on project cargo: the evidence a claim needs](https://kapileshworcargo.com.np/blog/insurance-on-project-cargo)
+- [Hydropower equipment: turbines, steel and hill roads](https://kapileshworcargo.com.np/blog/hydropower-equipment-logistics)
+- [Sending equipment out for repair, and back](https://kapileshworcargo.com.np/blog/repair-and-return-shipments)
+- [Logistics in a tender: what an EPC needs from a forwarder](https://kapileshworcargo.com.np/blog/logistics-in-a-tender)
+- [Getting a site ready to receive heavy cargo](https://kapileshworcargo.com.np/blog/getting-a-site-ready-to-receive)
+
+### Costs, terms and charges
+
+- [Incoterms for Nepal buyers: where delivered really ends](https://kapileshworcargo.com.np/blog/incoterms-for-nepal-buyers)
+- [EXW, FOB or CIF: which to buy on for a Nepal import](https://kapileshworcargo.com.np/blog/exw-fob-or-cif)
+- [Can a seller ship DDP to Nepal?](https://kapileshworcargo.com.np/blog/can-a-seller-ship-ddp-to-nepal)
+- [Demurrage, detention and storage: three clocks](https://kapileshworcargo.com.np/blog/demurrage-detention-and-storage)
+- [Estimating Nepal import duty and VAT before you buy](https://kapileshworcargo.com.np/blog/estimating-duty-and-vat)
+- [Reading a freight quote: what is in, what is out](https://kapileshworcargo.com.np/blog/reading-a-freight-quote)
+- [Local charges: the other lines on a sea freight invoice](https://kapileshworcargo.com.np/blog/local-charges-on-a-sea-invoice)
+- [Paying for freight: USD, INR and NPR on one shipment](https://kapileshworcargo.com.np/blog/paying-freight-in-three-currencies)
+- [Letters of credit and shipping documents](https://kapileshworcargo.com.np/blog/letters-of-credit-and-shipping-documents)
+- [CBM and weight: how sea freight is charged](https://kapileshworcargo.com.np/blog/cbm-and-weight-in-sea-freight)
+- [Why the cheapest freight rate can cost more](https://kapileshworcargo.com.np/blog/why-the-cheapest-rate-costs-more)
+- [Landed cost: what a Nepal import really costs](https://kapileshworcargo.com.np/blog/landed-cost-of-an-import)
+- [Surcharges on a freight bill, explained](https://kapileshworcargo.com.np/blog/surcharges-on-a-freight-bill)
+- [Why a freight quote has an expiry date](https://kapileshworcargo.com.np/blog/why-quotes-expire)
+
+### Planning, delivery and risk
+
+- [Freight around Dashain, Tihar and India's festivals](https://kapileshworcargo.com.np/blog/freight-around-festivals)
+- [Monsoon freight in Nepal: landslides and closures](https://kapileshworcargo.com.np/blog/monsoon-freight-in-nepal)
+- [The Nepali calendar on freight paperwork](https://kapileshworcargo.com.np/blog/nepali-calendar-on-freight-paperwork)
+- [Storing cargo before delivery: when it pays](https://kapileshworcargo.com.np/blog/storing-cargo-before-delivery)
+- [A proof-of-delivery checklist for importers](https://kapileshworcargo.com.np/blog/proof-of-delivery-checklist)
+- [Receiving a delivery: what to check before you sign](https://kapileshworcargo.com.np/blog/receiving-a-delivery)
+- [Cargo insurance for Nepal imports: what to ask for](https://kapileshworcargo.com.np/blog/cargo-insurance-for-nepal-imports)
+- [Making a cargo claim: notice, survey and documents](https://kapileshworcargo.com.np/blog/making-a-cargo-claim)
+- [Your first import into Nepal: a planning checklist](https://kapileshworcargo.com.np/blog/your-first-import-into-nepal)
+- [How to brief a freight forwarder in five lines](https://kapileshworcargo.com.np/blog/briefing-a-freight-forwarder)
+- [Tracking a Nepal shipment: which number to watch](https://kapileshworcargo.com.np/blog/tracking-a-nepal-shipment)
+- [For overseas forwarders: what a Nepal partner handles](https://kapileshworcargo.com.np/blog/a-nepal-partner-for-overseas-forwarders)
+- [Why one team from gateway to door saves days](https://kapileshworcargo.com.np/blog/one-team-gateway-to-door)
+- [Deliveries inside the Kathmandu valley](https://kapileshworcargo.com.np/blog/deliveries-inside-kathmandu-valley)
 
 ## Planning tools
 
