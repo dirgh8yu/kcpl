@@ -476,6 +476,7 @@ export const zh: Record<SiteTextKey, string> = {
   "cookies.decline": "拒绝",
   "cookies.more": "隐私",
   "chrome.resources": "资源",
+  "chrome.blog": "博客",
   "chrome.agents": "海外代理与合作伙伴",
   "chrome.faq": "常见问题",
   "chrome.careers": "招聘",

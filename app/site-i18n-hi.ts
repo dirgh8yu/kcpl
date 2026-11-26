@@ -477,6 +477,7 @@ export const hi: Record<SiteTextKey, string> = {
   "cookies.decline": "मना करें",
   "cookies.more": "गोपनीयता",
   "chrome.resources": "संसाधन",
+  "chrome.blog": "ब्लॉग",
   "chrome.agents": "एजेंट और साझेदार",
   "chrome.faq": "अक्सर पूछे जाने वाले प्रश्न",
   "chrome.careers": "करियर",

@@ -7,7 +7,10 @@ import { guideIndex, guides } from "../app/guide-data.ts";
 import { siteText } from "../app/site-i18n.ts";
 import { tools } from "../app/tool-data.ts";
 import { company } from "../app/company-data.ts";
-import { sitemapPaths } from "../app/sitemap-content.ts";
+import { sitemapLocales, sitemapPaths } from "../app/sitemap-content.ts";
+import { blogIndex, blogPhotos, blogPosts } from "../app/blog-data.ts";
+import { guideSlugs } from "../app/guide-data.ts";
+import { existsSync } from "node:fs";
 
 
 const require = createRequire(import.meta.url);
@@ -122,6 +125,7 @@ test("the analytics notice is a styled, fixed panel", async () => {
 test("no public page ships a photograph without a recorded source", async () => {
   const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
   const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "freight-guide-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));
+  code.push(await readFile(repo("app/blog-data.ts"), "utf8"));
   const used = new Set(code.join("\n").match(/\/images\/unsplash\/[\w-]+\.jpg/g));
   assert.ok(used.size);
   for (const path of used) assert.ok(sources.includes(path.slice(1)), path);
@@ -276,4 +280,27 @@ test("the header steps aside without trapping anyone, and the menu closes behind
   assert.match(menus, /addEventListener\("focusin", onFocus\)/);
   // A header that holds the focus, or an open menu, never slides away.
   assert.ok(site.toString().includes(".site-header.is-away:not(:focus-within, :has([open]))"));
+});
+
+test("the blog is English only, sourced, and every post points somewhere real", async () => {
+  const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
+  for (const [key, photo] of Object.entries(blogPhotos)) {
+    assert.ok(existsSync(repo(`public${photo.src}`)), `${key}: ${photo.src} is missing`);
+    assert.ok(sources.includes(photo.src.slice(1)), `${key}: no recorded source`);
+    // KCPL's photographs carry information, so they need words; illustrations stay silent.
+    assert.equal(Boolean(photo.alt), photo.kcpl, `${key}: alt text`);
+  }
+  // Photographs from the supplied set that show faces or a client's banner stay out until the owner decides.
+  assert.deepEqual(Object.keys(blogPhotos).filter((key) => blogPhotos[key].kcpl).sort(), ["cribbing", "mountain-approach", "port-lift", "site-yard", "sleepers"]);
+  for (const post of blogPosts) {
+    const count = [...post.description].length;
+    assert.ok(count >= 140 && count <= 155, `${post.slug} description has ${count} characters`);
+    assert.ok(post.sections.length >= 3, post.slug);
+    for (const slug of post.related.guides) assert.ok(guideSlugs.includes(slug), `${post.slug}: ${slug}`);
+    assert.ok(sitemapPaths().includes(`/blog/${post.slug}`), post.slug);
+  }
+  const index = [...blogIndex.description].length;
+  assert.ok(index >= 140 && index <= 155, `blog index description has ${index} characters`);
+  assert.deepEqual(sitemapLocales("/blog"), ["en"]);
+  assert.deepEqual(sitemapLocales("/guides"), ["en", "ne", "zh", "hi"]);
 });

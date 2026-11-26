@@ -39,13 +39,26 @@ export const siteLocaleTags: Record<SiteLocale, string> = {
 /** English sits at the root; every other language is prefixed with its code.
  * One helper owns that rule, so adding a language does not touch any page. */
 export function sitePath(locale: SiteLocale, path: string) {
+  if (englishOnlyPath(path)) return path;
   const clean = path === "/" ? "" : path;
   return locale === "en" ? clean || "/" : `/${locale}${clean}`;
 }
 
+/** The blog is written in English and has no translation yet, so every link to it,
+ * from any language, goes to the English page. */
+export function englishOnlyPath(path: string) {
+  return path === "/blog" || path.startsWith("/blog/");
+}
+
+/** Where the language switch goes: the same page, or that language's home page
+ * when the page exists only in English. */
+export function switchPath(locale: SiteLocale, path: string) {
+  return sitePath(locale, englishOnlyPath(path) && locale !== "en" ? "/" : path);
+}
+
 /** The same page in every other language, for the switch in the header. */
 export function siteAlternates(locale: SiteLocale, path: string) {
-  return siteLocales.filter((entry) => entry !== locale).map((entry) => ({ locale: entry, href: sitePath(entry, path), label: siteLocaleLabels[entry], tag: siteLocaleTags[entry] }));
+  return siteLocales.filter((entry) => entry !== locale).map((entry) => ({ locale: entry, href: switchPath(entry, path), label: siteLocaleLabels[entry], tag: siteLocaleTags[entry] }));
 }
 
 const en = {
@@ -514,6 +527,7 @@ const en = {
   "track.ask_title": "No portal access",
   "track.ask_copy": "Send the shipment, booking, bill of lading or airway bill reference to the operations desk and the current position comes back with the date it was confirmed.",
   "chrome.resources": "Resources",
+  "chrome.blog": "Blog",
   "chrome.agents": "Agents and partners",
   "chrome.faq": "FAQ",
   "chrome.careers": "Careers",
@@ -1063,6 +1077,7 @@ const ne: Record<SiteTextKey, string> = {
   "track.ask_title": "पोर्टल पहुँच छैन भने",
   "track.ask_copy": "शिपमेन्ट, बुकिङ, बिल अफ लेडिङ वा एयरवे बिल सन्दर्भ सञ्चालन डेस्कमा पठाउनुहोस्; हालको अवस्था पुष्टि भएको मितिसहित आउँछ।",
   "chrome.resources": "स्रोतहरू",
+  "chrome.blog": "ब्लग",
   "chrome.agents": "एजेन्ट र साझेदार",
   "chrome.faq": "बारम्बार सोधिने प्रश्न",
   "chrome.careers": "करियर",
