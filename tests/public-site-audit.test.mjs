@@ -108,6 +108,17 @@ test("hover styles only apply where hovering exists, and every moving thing can 
   site.walkDecls(/^animation/, (decl) => assert.doesNotMatch(decl.value, /infinite/, decl.parent.selector));
 });
 
+// A rebuild of site.css once dropped these rules and the notice shipped as bare text under the footer.
+test("the analytics notice is a styled, fixed panel", async () => {
+  const notice = await readFile(repo("app/components/analytics.tsx"), "utf8");
+  for (const [, name] of notice.matchAll(/className="([^"]+)"/g)) {
+    for (const cls of name.split(" ")) assert.ok(declarations(`.${cls}`).length, `.${cls} has no rule in site.css`);
+  }
+  assert.ok(declarations(".cookie-notice").some(({ prop, value, media }) => prop === "position" && value === "fixed" && !media));
+  // It renders beside .site-root, so it must carry the tokens its rules use.
+  assert.ok(declarations(".cookie-notice").some(({ prop }) => prop === "--crimson"));
+});
+
 test("no public page ships a photograph without a recorded source", async () => {
   const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
   const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "freight-guide-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));

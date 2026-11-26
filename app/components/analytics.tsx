@@ -26,13 +26,15 @@ export function Analytics() {
   // and the authenticated customer portal both carry customer data in the URL
   // and in the page, and neither is a marketing page.
   const internalRoute = pathname.startsWith("/admin") || pathname.startsWith("/portal");
-  const [consent, setConsent] = useState<"granted" | "denied" | null>(null);
+  // undefined until storage has been read, so a visitor who already chose never
+  // sees the notice flash up on load; null means no choice has been made.
+  const [consent, setConsent] = useState<"granted" | "denied" | null>();
 
   useEffect(() => {
     if (!enabled || internalRoute) return;
-    const stored = window.localStorage.getItem(consentKey);
-    if (stored !== "granted" && stored !== "denied") return;
-    const timeout = window.setTimeout(() => setConsent(stored), 0);
+    let stored: string | null = null;
+    try { stored = window.localStorage.getItem(consentKey); } catch { /* storage blocked: ask again */ }
+    const timeout = window.setTimeout(() => setConsent(stored === "granted" || stored === "denied" ? stored : null), 0);
     return () => window.clearTimeout(timeout);
   }, [internalRoute]);
 
@@ -71,17 +73,17 @@ export function Analytics() {
   if (!enabled || internalRoute || consent !== null) return null;
 
   function choose(next: "granted" | "denied") {
-    window.localStorage.setItem(consentKey, next);
+    try { window.localStorage.setItem(consentKey, next); } catch { /* storage blocked: the choice holds for this visit */ }
     setConsent(next);
   }
 
   return <aside className="cookie-notice" aria-label="Analytics preference">
     <div className="cookie-notice-copy">
-      <p className="cookie-notice-title">Analytics</p>
-      <p className="cookie-notice-text">KCPL can measure page visits to see which services people look for. Nothing you type into the quote form is sent to analytics.</p>
+      <p className="label">Analytics</p>
+      <p>KCPL can measure page visits to see which services people look for. Nothing you type into the quote form is sent to analytics.</p>
     </div>
     <div className="cookie-notice-actions">
-      <button type="button" className="cookie-notice-accept" onClick={() => choose("granted")}>Allow</button>
+      <button type="button" className="btn btn-small" onClick={() => choose("granted")}>Allow</button>
       <button type="button" className="cookie-notice-decline" onClick={() => choose("denied")}>Decline</button>
       <Link href="/privacy" className="cookie-notice-link">Privacy</Link>
     </div>

@@ -6,7 +6,8 @@
  * Off-white ground, ink text, crimson used whole. No cards and no tints.
  */
 
-.site-root {
+/* The analytics notice renders beside .site-root, not inside it, so it takes the tokens too. */
+.site-root, .cookie-notice {
   --ink: var(--kcpl-black);
   --crimson: var(--kcpl-crimson);
   --crimson-deep: #b80f31;
@@ -26,6 +27,8 @@
   --content-x: calc(var(--margin) + clamp(104px, 12vw, 184px));
   --h2: clamp(30px, 3.7vw, 56px);
   --cut: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.site-root {
   min-height: 100dvh;
   background: var(--canvas);
   color: var(--ink);
@@ -41,7 +44,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 
 .site-root ::selection { background: var(--crimson); color: #fff; }
 .site-root input { caret-color: var(--crimson); }
-.site-root :focus-visible { outline: 2px solid var(--crimson); outline-offset: 3px; }
+:is(.site-root, .cookie-notice) :focus-visible { outline: 2px solid var(--crimson); outline-offset: 3px; }
 /* Resets stay at zero specificity, so any class below can override them. */
 :where(.site-root) a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: .22em; }
 :where(.site-root) img { display: block; max-width: 100%; height: auto; }
@@ -75,7 +78,7 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
   clip-path: var(--cut);
   transition: transform 160ms ease-out, background-color 160ms ease, color 160ms ease;
 }
-.site-root .btn:focus-visible { outline-color: #fff; outline-offset: -5px; }
+:is(.site-root, .cookie-notice) .btn:focus-visible { outline-color: #fff; outline-offset: -5px; }
 .btn:disabled { opacity: .6; cursor: progress; }
 .btn-small { min-height: 44px; padding: 0 18px; font-size: 14px; }
 .btn-white { background: #fff; color: var(--crimson); }
@@ -663,6 +666,21 @@ html:has(.site-menu[open]) { overflow: hidden; }
 }
 .site-action-bar { display: none; }
 
+/* The analytics notice floats, so it is a square paper popover with the Popover
+ * shadow, standing on a stretch of the crimson line. It sits under the header
+ * (45) so the full-screen menu still covers it, and above the phone action bar. */
+.cookie-notice { position: fixed; z-index: 44; left: var(--margin); right: var(--margin); bottom: 24px; display: grid; gap: 16px; max-width: 520px; padding: 20px 24px; border-left: 6px solid var(--crimson); background: var(--paper); color: var(--ink); box-shadow: 0 12px 32px rgb(16 16 16 / 16%); font: 500 15px/1.6 var(--font-manrope), system-ui, sans-serif; animation: k-card 240ms var(--ease-out); }
+/* While the notice is up, the footer can scroll clear of it. */
+body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
+.cookie-notice-copy { display: grid; gap: 6px; }
+.cookie-notice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cookie-notice-decline { min-height: 44px; padding: 0 18px; border: 0; background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); font: 700 14px/1 var(--font-manrope), system-ui, sans-serif; cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
+.cookie-notice-link { display: inline-flex; align-items: center; min-height: 44px; margin-inline-start: auto; color: var(--muted); font-size: 14px; font-weight: 600; text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+  .cookie-notice-decline:hover { background: var(--ink); color: #fff; }
+  .cookie-notice-link:hover { color: var(--crimson); }
+}
+
 @media (max-width: 1100px) {
   .site-nav { display: none; }
   .site-footer-cols { grid-template-columns: 1fr 1fr; }
@@ -759,11 +777,13 @@ html:has(.site-menu[open]) { overflow: hidden; }
   .site-action-bar { position: fixed; inset: auto 0 0; z-index: 40; display: flex; gap: 8px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); background: var(--paper); box-shadow: 0 -1px 0 var(--rule); }
   .site-action { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; font-weight: 700; text-decoration: none; box-shadow: inset 0 0 0 1px var(--ink); }
   .site-action-primary { flex: 1.7; background: var(--crimson); color: #fff; box-shadow: none; clip-path: var(--cut); }
+  .cookie-notice { bottom: calc(76px + env(safe-area-inset-bottom)); padding: 16px 18px; font-size: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .route-draw, .route-map[data-mode="air"] .route-air { animation: none; stroke-dasharray: none; }
   .k-draw, .k-st, .k-name, .k-card { animation: none; }
+  .cookie-notice { animation: none; }
   .site-pop-panel, .site-menu-panel, .site-menu-list li { animation: none; }
   .site-header, .br i { transition: none; }
   .reveal-wait .br i { transform: none; }
@@ -782,6 +802,7 @@ html:has(.site-menu[open]) { overflow: hidden; }
 @media print {
   .reveal-wait .reveal-part, .reveal-wait .reveal-wipe { opacity: 1; transform: none; clip-path: none; }
   .qa details::details-content { height: auto; opacity: 1; content-visibility: visible; }
+  .cookie-notice { display: none; }
 }
 
 /* Devanagari needs room for vowel marks, and neither script takes Latin's tight tracking. */
