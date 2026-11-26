@@ -22,6 +22,7 @@ const tepcExports = "https://tepc.gov.np/pages/exports-transit-procedure";
 const tepcAir = "https://www.tepc.gov.np/pages/import-and-export-by-air";
 const customsTariff = "https://customs.gov.np/content/50/custom-tariff-rate/";
 const customsExim = "https://exim.customs.gov.np/";
+const customsOffices = "https://customs.gov.np/pages/customs-offices";
 const transitTreaty = "https://www.commerce.gov.in/wp-content/uploads/2023/06/MoU-Treaty-of-Trransit-dated-1-June-2023-1.pdf";
 const kolkataPort = "https://smportkolkata.shipping.gov.in/smpk/en/";
 const visakhapatnamPort = "https://vpt.shipping.gov.in/Template/navigateTemplate/gnt/T3VyIEJ1c2luZXNz";
@@ -247,6 +248,68 @@ export const guideDepth: Record<GuideSlug, DepthContent> = {
     sources: [
       { label: "Carrier example — demurrage and detention definitions", href: carrierTerms },
       { label: "Carrier example — operational counting events", href: carrierExamples },
+    ],
+  },
+  "cargo-from-china-to-nepal": {
+    sections: [
+      {
+        title: "Know which crossings are open",
+        paragraphs: [
+          "Nepal Customs lists nine customs offices on the China border, but most road trade with China has run through Rasuwagadhi, opposite Kerung, and Tatopani, opposite Khasa. Both sit in steep river valleys. In July 2025 a glacial-lake flood swept away the bridge at Rasuwagadhi, and trade there stopped for six months until the crossing reopened on 1 January 2026. A flood on the Bhotekoshi closed it again on 26 August 2026. The road to Tatopani has been cut by landslides on the Araniko Highway, and its trade fell sharply in late 2025.",
+          "While Rasuwagadhi was shut, traders moved cargo through Korala in Mustang, a customs point opened in November 2023. Korala is a long way from Kathmandu and gets hard to use in winter, so it is a fallback rather than a like-for-like replacement. Before a supplier in China dispatches, confirm which crossing is open, whether it accepts the goods and what the road on the Nepal side can carry.",
+        ],
+        points: [
+          "Before booking: confirm the crossing's current status and the road on both sides.",
+          "If the crossing closes: compare waiting, another northern crossing, sea through India and air to Kathmandu.",
+          "Keep the supplier informed, so cargo is not dispatched to a closed border.",
+        ],
+      },
+      {
+        title: "Keep one shipment record across both countries",
+        paragraphs: [
+          "A China shipment changes hands at the border, so the supplier's invoice and packing list, the Chinese export declaration, the transport document and the Nepal customs file need to describe the same goods, packages and consignee. A mismatch found at the border is harder to fix than one found before dispatch.",
+          "Nepal and China concluded a protocol to their Transit and Transportation Agreement in 2018 that lets Nepal use the seaports of Tianjin, Shenzhen, Lianyungang and Zhanjiang and the dry ports of Lanzhou, Lhasa and Shigatse. Tianjin, the nearest of those seaports, is about 3,300 km from the Nepal border. Ocean cargo from China's coast usually still reaches Nepal through an Indian port, and the route is chosen for each shipment.",
+        ],
+      },
+    ],
+    sources: [
+      { label: "Nepal Customs — customs offices", href: customsOffices },
+      { label: "Republica — Rasuwagadhi trade resumes after six-month closure", href: "https://myrepublica.nagariknetwork.com/amp/news/trade-via-rasuwagadhi-border-resumes-after-six-month-closure-30-32.html" },
+      { label: "The Annapurna Express — Rasuwagadhi border point reopens for trade", href: "https://theannapurnaexpress.com/story/61044/" },
+      { label: "Khabarhub — Rasuwagadhi closed since the 26 August flood", href: "https://english.khabarhub.com/2026/25/569260/" },
+      { label: "The Kathmandu Post — Tatopani trade slows sharply", href: "https://kathmandupost.com/money/2025/10/20/tatopani-trade-slows-sharply-as-china-sends-few-containers" },
+      { label: "The Himalayan Times — Nepal and China conclude TTA protocol", href: "https://thehimalayantimes.com/business/nepal-and-china-conclude-protocol-of-tta" },
+    ],
+  },
+  "cargo-from-india-to-nepal": {
+    movement: documentedMovements.westernNepal,
+    sections: [
+      {
+        title: "Bilateral trade and transit cargo are different files",
+        paragraphs: [
+          "Goods bought from a supplier in India cross the border as bilateral trade. Cargo from a third country that lands at Kolkata, Haldia or Visakhapatnam crosses India in bond under the Treaty of Transit, with a transit declaration and its own conditions on route and time. The two look alike on a truck but need different documents, so say which one a shipment is when asking for a quote.",
+          "For Indian goods, the supplier's tax invoice, the e-way bill and the export declaration on the Indian side need to match the Nepal customs file. For transit cargo, the bill of lading, the transit documents and the Nepal file need to describe the same container and goods. Duty in Nepal is assessed at the border on the goods' HS code; check the current tariff for the rate.",
+        ],
+      },
+      {
+        title: "Choose the crossing by the delivery point",
+        paragraphs: [
+          "Nepal Customs lists 23 customs offices on the India border, from Mechi in the east to Kanchanpur in the far west. Birgunj, opposite Raxaul, carries the most cargo and has the Sirsiya dry port, linked by rail to Indian ports. Under an amended transit protocol, rail cargo can now also run to Biratnagar and to Nautanwa near Bhairahawa; the first direct train from Kolkata Port to Biratnagar ran on 17 July 2026.",
+          "The nearest crossing to the delivery point usually saves the most road distance in Nepal, but not every customs office handles every kind of goods or every volume. Confirm the crossing with the cargo's description before the supplier books the truck or rake.",
+        ],
+        points: [
+          "Eastern Nepal: Biratnagar, Mechi and nearby points.",
+          "Central Nepal and Kathmandu: Birgunj, including Sirsiya dry port.",
+          "Western Nepal: Bhairahawa, Nepalgunj and points further west.",
+        ],
+      },
+    ],
+    sources: [
+      { label: "Nepal Customs — customs offices", href: customsOffices },
+      { label: "Nepal TEPC — Imports Transit Procedure", href: tepcImports },
+      { label: "Government of India — 2023 Treaty of Transit protocol", href: transitTreaty },
+      { label: "Nepal Customs — current customs tariff", href: customsTariff },
+      { label: "Maritime Gateway — Kolkata–Biratnagar rail cargo service begins", href: "https://www.maritimegateway.com/kolkata-biratnagar-rail-cargo-service-begins-operations/" },
     ],
   },
 };

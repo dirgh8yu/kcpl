@@ -51,7 +51,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Can a full container come by road over the northern border?", answer: "Cargo crossing the northern border is usually handed over between trucks, and the mountain roads limit size and weight. Large volumes often travel more reliably by sea. Ask your forwarder about the current situation before planning a full load by road." },
       { question: "Do Nepal customs rules differ by route?", answer: "The rules are the same. The clearance happens at a different office, the northern border for road cargo and usually Birgunj for sea cargo, and each office has its own working conditions." },
     ],
-    related: { service: service.ocean, guides: ["sea-freight-through-india", "importing-to-nepal"] },
+    related: { service: service.ocean, guides: ["cargo-from-china-to-nepal", "sea-freight-through-india", "importing-to-nepal"] },
   },
   {
     slug: "shipping-through-kerung-and-rasuwagadhi",
@@ -105,7 +105,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Can I visit the border to check my cargo?", answer: "Cargo is inspected and cleared under customs control, and your agent there is the best person to check it. Ask for a package count and photographs at the hand-over." },
       { question: "What if my goods are damaged at the hand-over?", answer: "Have your agent record the damage with photographs and package numbers before the Nepali truck leaves, and notify your insurer and the consolidator in writing at once. Damage reported later is much harder to place." },
     ],
-    related: { service: service.road, guides: ["importing-to-nepal", "customs-clearance-in-nepal"] },
+    related: { service: service.road, guides: ["cargo-from-china-to-nepal", "importing-to-nepal", "customs-clearance-in-nepal"] },
   },
   {
     slug: "lcl-from-guangzhou-via-tatopani",
@@ -155,7 +155,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "What happens if my supplier misses the truck?", answer: "The cargo waits at the consolidator's warehouse for the next departure, which may be a week or more later. Give your supplier the cut-off date with some margin." },
       { question: "Is Tatopani or Rasuwagadhi better?", answer: "It depends on the consolidator's service, the roads at that time of year and the state of each crossing. Your forwarder can tell you which one is running more reliably when you are ready to ship." },
     ],
-    related: { service: service.road, guides: ["importing-to-nepal", "hs-codes-and-import-duty"], tool: "volume-weight" },
+    related: { service: service.road, guides: ["cargo-from-china-to-nepal", "importing-to-nepal", "hs-codes-and-import-duty"], tool: "volume-weight" },
   },
   {
     slug: "india-to-nepal-by-road",
@@ -210,7 +210,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "How long does the border crossing take?", answer: "It depends on the queue, the papers and the day. With documents checked in advance and payment ready, a crossing can be quick. With papers started on arrival, or on a holiday, it can take days." },
       { question: "Do I need insurance for a road shipment from India?", answer: "It is strongly advised. Road transport carries risks of accident, theft and weather, and carriers' liability is limited. Make sure the cover includes the transit and any waiting at the border." },
     ],
-    related: { service: service.road, guides: ["importing-to-nepal", "customs-clearance-in-nepal"] },
+    related: { service: service.road, guides: ["cargo-from-india-to-nepal", "importing-to-nepal", "customs-clearance-in-nepal"] },
   },
   {
     slug: "raxaul-and-birgunj-crossing",
@@ -264,7 +264,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Does my truck need to wait at Raxaul or Birgunj?", answer: "That depends on where the clearance is and whether the papers are ready. A good plan keeps the truck moving from Indian clearance to Nepal clearance with as little waiting as possible." },
       { question: "Is the dry port the same as the road border?", answer: "No. The road crossing handles trucks. The dry port, a short distance away, handles containers that arrive by rail. Both are on the Birgunj side and deal with Nepal customs." },
     ],
-    related: { service: service.road, guides: ["customs-clearance-in-nepal", "sea-freight-through-india"] },
+    related: { service: service.road, guides: ["cargo-from-india-to-nepal", "customs-clearance-in-nepal", "sea-freight-through-india"] },
   },
   {
     slug: "freight-for-eastern-nepal-via-jogbani",
@@ -312,7 +312,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Is clearance slower at Biratnagar than Birgunj?", answer: "Not necessarily. Each office has its own workload. What matters most is that your documents are complete and your agent knows the office." },
       { question: "Can project cargo for the eastern hills cross here?", answer: "Yes, if the route from the border to the site has been surveyed and suits the loads. Over-dimensional cargo needs that survey before the crossing is chosen." },
     ],
-    related: { service: service.road, guides: ["importing-to-nepal", "customs-clearance-in-nepal"] },
+    related: { service: service.road, guides: ["cargo-from-india-to-nepal", "importing-to-nepal", "customs-clearance-in-nepal"] },
   },
   {
     slug: "reaching-western-nepal",
@@ -355,7 +355,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Can a 40-foot container reach Surkhet?", answer: "Possibly, depending on the exact address, the road and the season. Many deliveries in the hills move into smaller trucks first. A short survey of the road answers it." },
       { question: "What does KCPL do in the west?", answer: "KCPL has staff in Nepalgunj and Surkhet who handle clearance coordination, deliveries and records for consignees and project sites in the mid-west." },
     ],
-    related: { service: service.delivery, guides: ["importing-to-nepal", "sea-freight-through-india"] },
+    related: { service: service.delivery, guides: ["cargo-from-india-to-nepal", "importing-to-nepal", "sea-freight-through-india"] },
   },
   {
     slug: "nepal-customs-points-for-freight",
@@ -458,7 +458,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Is there a weight limit for air cargo from Delhi?", answer: "Each flight and aircraft has limits on piece size and weight. Heavy or bulky items may need a different flight, or the road. Send the dimensions of the largest piece when you ask." },
       { question: "Do I pay the same duty by road and by air?", answer: "The duty rate is set by the goods, not the mode. The customs value may differ slightly because freight costs to the customs point are taken into account." },
     ],
-    related: { service: service.air, guides: ["air-freight-to-kathmandu", "importing-to-nepal"], tool: "volume-weight" },
+    related: { service: service.air, guides: ["cargo-from-india-to-nepal", "air-freight-to-kathmandu", "importing-to-nepal"], tool: "volume-weight" },
   },
   {
     slug: "buying-from-an-indian-supplier",
@@ -514,7 +514,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Who files the Indian export declaration?", answer: "The supplier, through its customs broker in India. Make sure the supplier has a broker at the border point you are using." },
       { question: "What if the truck is stopped inside India?", answer: "Usually it is a paperwork question about the goods' movement within India, and the supplier or its transporter must resolve it. Make sure the supplier's papers are complete before loading." },
     ],
-    related: { service: service.customs, guides: ["customs-clearance-in-nepal", "hs-codes-and-import-duty"] },
+    related: { service: service.customs, guides: ["cargo-from-india-to-nepal", "customs-clearance-in-nepal", "hs-codes-and-import-duty"] },
   },
   {
     slug: "part-loads-from-india",
@@ -567,7 +567,7 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Can my part load travel with goods I do not know?", answer: "Yes, that is how part loads work. That is why marks, a clear packing list and insurance matter, and why you should ask how problems with other consignments are handled." },
       { question: "Is it faster to wait for a full truck?", answer: "A full truck leaves when you are ready. A part load leaves when the truck is full. If the date matters, ask your forwarder when the next part-load truck is expected to depart." },
     ],
-    related: { service: service.road, guides: ["importing-to-nepal", "customs-clearance-in-nepal"] },
+    related: { service: service.road, guides: ["cargo-from-india-to-nepal", "importing-to-nepal", "customs-clearance-in-nepal"] },
   },
   {
     slug: "chinese-holidays-and-nepal-orders",
@@ -619,6 +619,6 @@ export const borderPosts: readonly BlogPost[] = [
       { question: "Do freight rates rise before the holiday?", answer: "They often do, as exporters rush to ship before factories close. Booking early helps secure space and a known rate." },
       { question: "Will my cargo be delayed if it is already at sea?", answer: "Cargo at sea keeps moving. The delay usually hits orders not yet produced or shipped, and port and inland operations in China during the holiday." },
     ],
-    related: { service: service.ocean, guides: ["importing-to-nepal", "sea-freight-through-india"] },
+    related: { service: service.ocean, guides: ["cargo-from-china-to-nepal", "importing-to-nepal", "sea-freight-through-india"] },
   },
 ];

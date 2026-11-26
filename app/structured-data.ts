@@ -3,7 +3,7 @@ import { absoluteUrl, siteName, siteUrl } from "./seo";
 import { services } from "./services-data";
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data";
-import { guideReview } from "./guide-review";
+import { guideReview, reviewedGuideSlugs } from "./guide-review";
 import sitemapLastmod from "./sitemap-lastmod.json";
 import { blogIndex, blogPhotos, blogPost, blogTopics } from "./blog-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
@@ -213,14 +213,16 @@ export function guideArticleNodes(slug: GuideSlug, imagePath: string) {
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": `${url}#article` },
       breadcrumb: { "@id": `${url}#breadcrumb` },
-      lastReviewed: guideReview.reviewedAt,
-      reviewedBy: {
-        "@type": "Person",
-        name: guideReview.reviewer,
-        jobTitle: guideReview.role,
-        url: absoluteUrl("/about#leadership"),
-        worksFor: { "@id": organizationId },
-      },
+      ...(reviewedGuideSlugs.includes(slug) ? {
+        lastReviewed: guideReview.reviewedAt,
+        reviewedBy: {
+          "@type": "Person",
+          name: guideReview.reviewer,
+          jobTitle: guideReview.role,
+          url: absoluteUrl("/about#leadership"),
+          worksFor: { "@id": organizationId },
+        },
+      } : {}),
     },
   ];
 }

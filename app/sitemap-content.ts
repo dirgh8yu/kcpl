@@ -5,7 +5,7 @@ import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts"
 import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { englishOnlyPath, siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
 import { blogIndex, blogPost, blogPosts, blogTopics } from "./blog-data.ts";
-import { guideReview } from "./guide-review.ts";
+import { guideReview, reviewedGuideSlugs } from "./guide-review.ts";
 
 /*
  * A page's lastmod has to mean "this page's content changed", or search engines
@@ -79,7 +79,7 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
   const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
   if (guideSlugs.includes(guideSlug as GuideSlug)) {
     const slug = guideSlug as GuideSlug;
-    const source = locale === "en" ? { guide: guides[locale][slug], depth: depthPageSource(guideDepth[slug]), review: guideReview } : guides[locale][slug];
+    const source = locale === "en" ? { guide: guides[locale][slug], depth: depthPageSource(guideDepth[slug]), review: reviewedGuideSlugs.includes(slug) ? guideReview : null } : guides[locale][slug];
     return createHash("sha256").update(JSON.stringify(source)).digest("hex").slice(0, 16);
   }
   if (path === "/guides") {

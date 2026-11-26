@@ -369,20 +369,20 @@
       "lastmod": "2026-11-26"
     },
     "en/guides": {
-      "fingerprint": "d4e671856b897234",
+      "fingerprint": "3e250b0864ea531a",
       "lastmod": "2026-11-26"
     },
     "ne/guides": {
-      "fingerprint": "c0b6b2e2eca0d97f",
-      "lastmod": "2026-10-11"
+      "fingerprint": "db0ec6580e018872",
+      "lastmod": "2026-11-26"
     },
     "zh/guides": {
-      "fingerprint": "df4f8db0d2b36843",
-      "lastmod": "2026-10-11"
+      "fingerprint": "fd198eeef5760509",
+      "lastmod": "2026-11-26"
     },
     "hi/guides": {
-      "fingerprint": "d6c5202d1a327bc9",
-      "lastmod": "2026-10-11"
+      "fingerprint": "6e99a048c6a92750",
+      "lastmod": "2026-11-26"
     },
     "en/guides/importing-to-nepal": {
       "fingerprint": "ac4011dc39fc016f",
@@ -415,6 +415,38 @@
     "hi/guides/exporting-from-nepal": {
       "fingerprint": "931a52863295d7f8",
       "lastmod": "2026-09-23"
+    },
+    "en/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "b3c861e224e2bc02",
+      "lastmod": "2026-11-26"
+    },
+    "ne/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "fbb0bbc2d29814f9",
+      "lastmod": "2026-11-26"
+    },
+    "zh/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "a6dfb1f23116895d",
+      "lastmod": "2026-11-26"
+    },
+    "hi/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "d3acd98a17a869e0",
+      "lastmod": "2026-11-26"
+    },
+    "en/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "4bc6cb29dd35a73e",
+      "lastmod": "2026-11-26"
+    },
+    "ne/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "66caa811118015d6",
+      "lastmod": "2026-11-26"
+    },
+    "zh/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "7e7a928a4aecaed1",
+      "lastmod": "2026-11-26"
+    },
+    "hi/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "3e0a287f42dad41d",
+      "lastmod": "2026-11-26"
     },
     "en/guides/customs-clearance-in-nepal": {
       "fingerprint": "991a5569efadd93e",
@@ -629,31 +661,31 @@
       "lastmod": "2026-11-26"
     },
     "en/blog/china-to-nepal-sea-or-road": {
-      "fingerprint": "55497f3a213f3714",
+      "fingerprint": "d53556bcf6e312df",
       "lastmod": "2026-11-26"
     },
     "en/blog/shipping-through-kerung-and-rasuwagadhi": {
-      "fingerprint": "bda4f6b4a927d91f",
+      "fingerprint": "77c2463c5d5c6c17",
       "lastmod": "2026-11-26"
     },
     "en/blog/lcl-from-guangzhou-via-tatopani": {
-      "fingerprint": "e423f6865b85998a",
+      "fingerprint": "f16773766d6339c5",
       "lastmod": "2026-11-26"
     },
     "en/blog/india-to-nepal-by-road": {
-      "fingerprint": "cf68c8fa862ff3a7",
+      "fingerprint": "b9452144a43048c1",
       "lastmod": "2026-11-26"
     },
     "en/blog/raxaul-and-birgunj-crossing": {
-      "fingerprint": "03aef5d58a90b1a3",
+      "fingerprint": "7a499d5e02437dc2",
       "lastmod": "2026-11-26"
     },
     "en/blog/freight-for-eastern-nepal-via-jogbani": {
-      "fingerprint": "f92f11e9bcfcf247",
+      "fingerprint": "ae343b60927b564b",
       "lastmod": "2026-11-26"
     },
     "en/blog/reaching-western-nepal": {
-      "fingerprint": "8c6a0a20a24173c5",
+      "fingerprint": "88e804464312c934",
       "lastmod": "2026-11-26"
     },
     "en/blog/nepal-customs-points-for-freight": {
@@ -661,19 +693,19 @@
       "lastmod": "2026-11-26"
     },
     "en/blog/delhi-to-kathmandu-road-or-air": {
-      "fingerprint": "a77d8c48b4eb1427",
+      "fingerprint": "336fdd9c1235ce65",
       "lastmod": "2026-11-26"
     },
     "en/blog/buying-from-an-indian-supplier": {
-      "fingerprint": "525da8267dac857f",
+      "fingerprint": "5def903a4eb98e50",
       "lastmod": "2026-11-26"
     },
     "en/blog/part-loads-from-india": {
-      "fingerprint": "c5517cf848c2d3ea",
+      "fingerprint": "309fd3754971d7c9",
       "lastmod": "2026-11-26"
     },
     "en/blog/chinese-holidays-and-nepal-orders": {
-      "fingerprint": "c886854521f4e1f5",
+      "fingerprint": "eb1b98544bd1110d",
       "lastmod": "2026-11-26"
     },
     "en/blog/commercial-invoice-for-nepal-customs": {

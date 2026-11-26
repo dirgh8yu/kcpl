@@ -3,7 +3,7 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
 import { guideDepth } from "../content-depth";
 import { faqNode, graph, guideArticleNodes } from "../structured-data";
-import { guideReview } from "../guide-review";
+import { guideReview, reviewedGuideSlugs } from "../guide-review";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs } from "../tool-data";
 import { ClosingBand } from "./closing-band";
@@ -22,6 +22,8 @@ const guidePhotos: Record<GuideSlug, { src: string; position?: string }> = {
   "air-freight-to-kathmandu": { src: "/images/unsplash/airport-dollies.jpg" },
   "hs-codes-and-import-duty": { src: "/images/unsplash/tariff-ledger.jpg" },
   "free-time-and-demurrage": { src: "/images/unsplash/container-yard.jpg", position: "30% 50%" },
+  "cargo-from-china-to-nepal": { src: "/images/unsplash/nepal-road.jpg" },
+  "cargo-from-india-to-nepal": { src: "/images/unsplash/howrah-bridge.jpg" },
 };
 
 export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: GuideSlug }) {
@@ -34,9 +36,9 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
       <StructuredData data={graph([faqNode(locale, slug), ...(locale === "en" ? guideArticleNodes(slug, guidePhotos[slug].src) : [])])}/>
       <PageHead title={guide.title} intro={guide.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/guides/${slug}`}/>}>
         {locale === "en" ? <p className="guide-review">
-          {guideReview.labels.author} {guideReview.organization}<br/>
-          {guideReview.labels.reviewer} <Link href="/about#leadership">{guideReview.reviewer}, {guideReview.role}</Link>. {guideReview.labels.reviewedAt}{" "}
-          <time dateTime={guideReview.reviewedAt}>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${guideReview.reviewedAt}T00:00:00Z`))}</time>.
+          {guideReview.labels.author} {guideReview.organization}
+          {reviewedGuideSlugs.includes(slug) ? <><br/>{guideReview.labels.reviewer} <Link href="/about#leadership">{guideReview.reviewer}, {guideReview.role}</Link>. {guideReview.labels.reviewedAt}{" "}
+          <time dateTime={guideReview.reviewedAt}>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${guideReview.reviewedAt}T00:00:00Z`))}</time>.</> : null}
         </p> : null}
       </PageHead>
       <Lined reveal>

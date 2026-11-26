@@ -2,10 +2,10 @@ import { practicalGuides, practicalGuideSlugs } from "./guide-data-practical.ts"
 import type { SiteLocale } from "./site-i18n";
 import type { ToolSlug } from "./tool-data";
 
-const routeGuideSlugs = ["importing-to-nepal", "exporting-from-nepal"] as const;
+const routeGuideSlugs = ["importing-to-nepal", "exporting-from-nepal", "cargo-from-china-to-nepal", "cargo-from-india-to-nepal"] as const;
 type RouteGuideSlug = (typeof routeGuideSlugs)[number];
 
-/* The two route guides come first: they are the overview the practical
+/* The route guides come first: they are the overview the practical
  * guides hang off. */
 export const guideSlugs = [...routeGuideSlugs, ...practicalGuideSlugs] as const;
 export type GuideSlug = (typeof guideSlugs)[number];
@@ -69,6 +69,50 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       cta: "Plan an export with KCPL",
       related: "Explore freight services",
     },
+    "cargo-from-china-to-nepal": {
+      title: "Cargo from China to Nepal",
+      description: "Plan cargo from China to Nepal: road via the Kerung–Rasuwagadhi or Tatopani crossings, sea through an Indian port or air to Kathmandu, and the documents.",
+      intro: "Cargo from China reaches Nepal by road over the Himalayan crossings, by sea through an Indian port, or by air into Kathmandu. Which one works depends on the goods, the delivery point and whether the crossings are open.",
+      routeTitle: "How the movement is planned",
+      stages: [
+        { title: "01 / Choose road, sea or air", copy: "Road over the northern border suits cargo from inland and western China. Sea through Kolkata or another Indian gateway suits full containers from China's coastal ports. Air into Kathmandu suits urgent or high-value cargo. Share the supplier's city, the cargo and the delivery point in Nepal and the route is chosen from those." },
+        { title: "02 / Check the crossing before booking", copy: "Kerung–Rasuwagadhi and Tatopani are the main road crossings for trade with China. Both have closed for long periods after floods and landslides, so the crossing's current status is checked for each shipment before the supplier dispatches." },
+        { title: "03 / Clear and deliver in Nepal", copy: "Road cargo is cleared at the border customs office, sea cargo usually at Birgunj or another southern point after Indian transit, and air cargo at Tribhuvan International Airport. Delivery is then arranged to the consignee's site." },
+      ],
+      documentsTitle: "What to prepare before booking",
+      documentsIntro: "Requirements vary by commodity and route. This is a planning checklist, not a customs determination; KCPL can review the shipment record before booking.",
+      documents: ["Commercial invoice and packing list from the Chinese supplier, with matching quantities and descriptions", "Importer details in Nepal, including PAN or VAT registration, and the agreed Incoterm", "Supplier's city and pickup address, cargo dimensions and gross weight", "Transport document for the chosen route: road consignment note, bill of lading or air waybill", "Certificate of origin, licences or permits where the goods require them"],
+      questionsTitle: "Common planning questions",
+      questions: [
+        { question: "Which border crossings does KCPL use for China cargo?", answer: "KCPL moves cargo through the Kerung–Rasuwagadhi crossing and also routes China cargo through Tatopani. The crossing for a shipment is chosen after checking which one is open and suits the cargo." },
+        { question: "What happens if a crossing is closed?", answer: "The shipment can wait for the crossing to reopen, or move by sea through an Indian port or by air to Kathmandu instead. Which is better depends on the deadline, the cargo and the cost, so it is decided for each shipment." },
+        { question: "Does KCPL handle the China side of the movement?", answer: "KCPL plans road freight between inland China and Nepal. The scope of each leg, from pickup in China to delivery in Nepal, is confirmed in the quotation." },
+      ],
+      cta: "Plan a China shipment with KCPL",
+      related: "Explore road freight",
+    },
+    "cargo-from-india-to-nepal": {
+      title: "Cargo from India to Nepal",
+      description: "Plan cargo from India to Nepal: pick the border point, separate Indian goods from transit cargo, prepare the documents and arrange clearance and delivery.",
+      intro: "Most of Nepal's trade crosses the open border with India, by road through more than twenty customs points and by rail into Birgunj. The border point and the documents depend on where the goods come from and where they are going in Nepal.",
+      routeTitle: "How the movement is planned",
+      stages: [
+        { title: "01 / Pick the border point", copy: "Raxaul–Birgunj carries the most cargo and has the Sirsiya rail-linked dry port. Bhairahawa, Nepalgunj and Biratnagar are among the other main crossings. The right one is usually the one closest to the delivery point in Nepal." },
+        { title: "02 / Indian goods or transit cargo", copy: "Goods bought in India move under the bilateral Treaty of Trade. Cargo from a third country that lands at an Indian port moves under the Treaty of Transit, in bond, with its own transit documents. The two need different paperwork, so tell KCPL which one the shipment is." },
+        { title: "03 / Clear and deliver", copy: "Nepal customs clears the cargo at the border point, then it is delivered to the consignee's site. KCPL staff work on both sides of the Raxaul–Birgunj crossing." },
+      ],
+      documentsTitle: "What to prepare before booking",
+      documentsIntro: "Requirements vary by commodity and route. This is a planning checklist, not a customs determination; KCPL can review the shipment record before booking.",
+      documents: ["Tax invoice and packing list from the Indian supplier, with matching quantities and descriptions", "Importer details in Nepal, including PAN or VAT registration", "Indian export documents, such as the shipping bill and e-way bill", "Lorry consignment note or railway receipt for the move to the border", "Certificate of origin where a preferential duty rate is claimed, and any licences or permits the goods need"],
+      questionsTitle: "Common planning questions",
+      questions: [
+        { question: "Which border point should my cargo use?", answer: "Usually the one nearest the delivery point in Nepal, as long as that customs office handles the goods. KCPL staff are in Raxaul, Birgunj and Nepalgunj, and KCPL plans the crossing for each shipment." },
+        { question: "Can cargo from India move by rail?", answer: "Yes. Container trains run to the Sirsiya dry port at Birgunj, and a rail cargo service between Kolkata and Biratnagar began in 2026. Whether rail suits a shipment depends on the cargo, the origin and the delivery point." },
+        { question: "Is there import duty on goods from India?", answer: "Yes, Nepal customs assesses duty at the tariff rate for the goods' HS code, including any preference available under the trade treaty. Use the duty estimate tool for a planning figure; the assessment is customs' decision." },
+      ],
+      cta: "Plan an India shipment with KCPL",
+      related: "Explore road freight",
+    },
   },
   ne: {
     "importing-to-nepal": {
@@ -112,6 +156,50 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       ],
       cta: "KCPL सँग निर्यात योजना गर्नुहोस्",
       related: "ढुवानी सेवाहरू हेर्नुहोस्",
+    },
+    "cargo-from-china-to-nepal": {
+      title: "चीनबाट नेपालमा कार्गो",
+      description: "चीनबाट नेपालमा कार्गोको योजना: केरुङ–रसुवागढी वा तातोपानी नाका हुँदै सडक, भारतीय बन्दरगाह हुँदै समुद्री, वा काठमाडौँमा हवाई ढुवानी, र तयार गर्नुपर्ने कागजात।",
+      intro: "चीनबाट कार्गो हिमाली नाका हुँदै सडकबाट, भारतीय बन्दरगाह हुँदै समुद्रबाट, वा काठमाडौँसम्म हवाईमार्गबाट नेपाल आइपुग्छ। कुन मार्ग उपयुक्त हुन्छ भन्ने सामान, डेलिभरी स्थान र नाका खुला छ कि छैन भन्नेमा भर पर्छ।",
+      routeTitle: "मुभमेन्ट कसरी योजना हुन्छ",
+      stages: [
+        { title: "०१ / सडक, समुद्री वा हवाई छान्नुहोस्", copy: "भित्री र पश्चिमी चीनबाटको कार्गोलाई उत्तरी सीमाको सडकमार्ग उपयुक्त हुन्छ। चीनका तटीय बन्दरगाहबाट पूरा कन्टेनरका लागि कोलकाता वा अर्को भारतीय गेटवे हुँदै समुद्री मार्ग उपयुक्त हुन्छ। जरुरी वा उच्च मूल्यको कार्गोलाई काठमाडौँसम्म हवाई उपयुक्त हुन्छ। आपूर्तिकर्ताको सहर, कार्गो र नेपालको डेलिभरी स्थान दिनुहोस्, त्यसैका आधारमा मार्ग छानिन्छ।" },
+        { title: "०२ / बुकिङअघि नाका जाँच गर्नुहोस्", copy: "केरुङ–रसुवागढी र तातोपानी चीनसँगको व्यापारका मुख्य सडक नाका हुन्। बाढी र पहिरोपछि दुवै लामो समय बन्द भएका छन्, त्यसैले आपूर्तिकर्ताले सामान पठाउनुअघि हरेक शिपमेन्टका लागि नाकाको अहिलेको अवस्था जाँचिन्छ।" },
+        { title: "०३ / नेपालमा जाँचपास र डेलिभरी", copy: "सडक कार्गो सीमाको भन्सार कार्यालयमा, समुद्री कार्गो भारतीय ट्रान्जिटपछि प्रायः वीरगन्ज वा अर्को दक्षिणी नाकामा, र हवाई कार्गो त्रिभुवन अन्तर्राष्ट्रिय विमानस्थलमा जाँचपास हुन्छ। त्यसपछि प्रापकको स्थानसम्म डेलिभरी मिलाइन्छ।" },
+      ],
+      documentsTitle: "बुकिङअघि तयार गर्नुपर्ने कुरा",
+      documentsIntro: "आवश्यकता सामान र मार्गअनुसार फरक पर्छ। यो योजना सूची हो, भन्सार निर्णय होइन; बुकिङअघि KCPL ले शिपमेन्टको विवरण हेर्न सक्छ।",
+      documents: ["चिनियाँ आपूर्तिकर्ताको कमर्सियल इनभ्वाइस र प्याकिङ लिस्ट, मिल्दो परिमाण र विवरणसहित", "नेपालका आयातकर्ताको विवरण, PAN वा VAT दर्तासहित, र सहमत Incoterm", "आपूर्तिकर्ताको सहर र पिकअप ठेगाना, कार्गोको आकार र कुल तौल", "छानिएको मार्गको ढुवानी कागजात: सडक कन्साइनमेन्ट नोट, बिल अफ लेडिङ वा एयर वेबिल", "सामानलाई आवश्यक परेमा उत्पत्तिको प्रमाणपत्र, इजाजतपत्र वा अनुमति"],
+      questionsTitle: "योजनासम्बन्धी सामान्य प्रश्न",
+      questions: [
+        { question: "KCPL ले चीनको कार्गोका लागि कुन नाका प्रयोग गर्छ?", answer: "KCPL ले केरुङ–रसुवागढी नाका हुँदै कार्गो ल्याउँछ र तातोपानी हुँदै पनि चीनको कार्गो पठाउँछ। कुन नाका खुला छ र कार्गोलाई उपयुक्त छ भनी जाँचेर शिपमेन्टको नाका छानिन्छ।" },
+        { question: "नाका बन्द भए के हुन्छ?", answer: "शिपमेन्ट नाका खुल्ने प्रतीक्षा गर्न सक्छ, वा त्यसको सट्टा भारतीय बन्दरगाह हुँदै समुद्रबाट वा काठमाडौँसम्म हवाईबाट आउन सक्छ। कुन राम्रो भन्ने समयसीमा, कार्गो र लागतमा भर पर्छ, त्यसैले हरेक शिपमेन्टमा निर्णय गरिन्छ।" },
+        { question: "के KCPL ले चीनतर्फको मुभमेन्ट पनि सम्हाल्छ?", answer: "KCPL ले भित्री चीन र नेपालबीच सडक ढुवानीको योजना गर्छ। चीनमा पिकअपदेखि नेपालमा डेलिभरीसम्म हरेक खण्डको दायरा कोटेसनमा पुष्टि गरिन्छ।" },
+      ],
+      cta: "KCPL सँग चीनको शिपमेन्ट योजना गर्नुहोस्",
+      related: "सडक ढुवानी हेर्नुहोस्",
+    },
+    "cargo-from-india-to-nepal": {
+      title: "भारतबाट नेपालमा कार्गो",
+      description: "भारतबाट नेपालमा कार्गोको योजना: सीमा नाका छान्नुहोस्, भारतीय सामान र तेस्रो मुलुकको ट्रान्जिट कार्गो छुट्याउनुहोस्, कागजात तयार गर्नुहोस् र जाँचपास तथा डेलिभरी मिलाउनुहोस्।",
+      intro: "नेपालको धेरैजसो व्यापार भारतसँगको खुला सीमा हुँदै हुन्छ, बीसभन्दा बढी भन्सार नाकाबाट सडकमार्ग र वीरगन्जसम्म रेलमार्गबाट। सीमा नाका र कागजात सामान कहाँबाट आउँछ र नेपालमा कहाँ जान्छ भन्नेमा भर पर्छ।",
+      routeTitle: "मुभमेन्ट कसरी योजना हुन्छ",
+      stages: [
+        { title: "०१ / सीमा नाका छान्नुहोस्", copy: "रक्सौल–वीरगन्जले सबैभन्दा धेरै कार्गो बोक्छ र यहाँ सिर्सिया रेल-जडित सुक्खा बन्दरगाह छ। भैरहवा, नेपालगन्ज र विराटनगर अन्य मुख्य नाकामध्ये पर्छन्। प्रायः नेपालको डेलिभरी स्थाननजिकको नाका नै उपयुक्त हुन्छ।" },
+        { title: "०२ / भारतीय सामान वा ट्रान्जिट कार्गो", copy: "भारतमा किनिएको सामान द्विपक्षीय व्यापार सन्धिअन्तर्गत आउँछ। भारतीय बन्दरगाहमा आइपुग्ने तेस्रो मुलुकको कार्गो पारवहन सन्धिअन्तर्गत, बन्डमा, आफ्नै ट्रान्जिट कागजातसहित आउँछ। दुवैलाई फरक कागजात चाहिन्छ, त्यसैले शिपमेन्ट कुन हो KCPL लाई बताउनुहोस्।" },
+        { title: "०३ / जाँचपास र डेलिभरी", copy: "नेपाल भन्सारले सीमा नाकामा कार्गो जाँचपास गर्छ, त्यसपछि प्रापकको स्थानसम्म डेलिभरी हुन्छ। KCPL का कर्मचारी रक्सौल–वीरगन्ज नाकाको दुवैतर्फ काम गर्छन्।" },
+      ],
+      documentsTitle: "बुकिङअघि तयार गर्नुपर्ने कुरा",
+      documentsIntro: "आवश्यकता सामान र मार्गअनुसार फरक पर्छ। यो योजना सूची हो, भन्सार निर्णय होइन; बुकिङअघि KCPL ले शिपमेन्टको विवरण हेर्न सक्छ।",
+      documents: ["भारतीय आपूर्तिकर्ताको ट्याक्स इनभ्वाइस र प्याकिङ लिस्ट, मिल्दो परिमाण र विवरणसहित", "नेपालका आयातकर्ताको विवरण, PAN वा VAT दर्तासहित", "भारतीय निर्यात कागजात, जस्तै शिपिङ बिल र ई-वे बिल", "सीमासम्मको ढुवानीका लागि लरी कन्साइनमेन्ट नोट वा रेलवे रसिद", "सहुलियत भन्सार दर दाबी गर्दा उत्पत्तिको प्रमाणपत्र, र सामानलाई चाहिने इजाजतपत्र वा अनुमति"],
+      questionsTitle: "योजनासम्बन्धी सामान्य प्रश्न",
+      questions: [
+        { question: "मेरो कार्गो कुन सीमा नाकाबाट आउनुपर्छ?", answer: "प्रायः नेपालको डेलिभरी स्थाननजिकको नाका, यदि त्यो भन्सार कार्यालयले सो सामान जाँचपास गर्छ भने। KCPL का कर्मचारी रक्सौल, वीरगन्ज र नेपालगन्जमा छन्, र KCPL ले हरेक शिपमेन्टको नाका योजना गर्छ।" },
+        { question: "के भारतबाट रेलमार्गबाट कार्गो आउन सक्छ?", answer: "सक्छ। कन्टेनर रेल वीरगन्जको सिर्सिया सुक्खा बन्दरगाहसम्म चल्छ, र सन् २०२६ मा कोलकाता–विराटनगर रेल कार्गो सेवा सुरु भयो। रेल उपयुक्त हुन्छ कि हुँदैन भन्ने कार्गो, मूलस्थान र डेलिभरी स्थानमा भर पर्छ।" },
+        { question: "के भारतबाट आउने सामानमा भन्सार महसुल लाग्छ?", answer: "लाग्छ। नेपाल भन्सारले सामानको HS कोडको दरमा, व्यापार सन्धिअन्तर्गत पाइने सहुलियतसमेत लगाएर महसुल निर्धारण गर्छ। योजनाका लागि भन्सार अनुमान उपकरण प्रयोग गर्नुहोस्; निर्धारण भन्सारको निर्णय हो।" },
+      ],
+      cta: "KCPL सँग भारतको शिपमेन्ट योजना गर्नुहोस्",
+      related: "सडक ढुवानी हेर्नुहोस्",
     },
   },
   hi: {
@@ -157,6 +245,50 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       cta: "KCPL के साथ निर्यात की योजना बनाएँ",
       related: "माल ढुलाई सेवाएँ देखें",
     },
+    "cargo-from-china-to-nepal": {
+      title: "चीन से नेपाल कार्गो",
+      description: "चीन से नेपाल कार्गो की योजना: केरुंग–रसुवागढ़ी या तातोपानी बॉर्डर से सड़क, भारतीय बंदरगाह से समुद्री, या काठमांडू तक हवाई माल, और तैयार रखने वाले दस्तावेज़।",
+      intro: "चीन से कार्गो हिमालयी बॉर्डर से सड़क के रास्ते, भारतीय बंदरगाह से समुद्र के रास्ते, या काठमांडू तक हवाई रास्ते से नेपाल पहुँचता है। कौन-सा रास्ता सही है, यह माल, डिलीवरी की जगह और बॉर्डर खुला है या नहीं, इस पर निर्भर करता है।",
+      routeTitle: "मूवमेंट की योजना कैसे बनती है",
+      stages: [
+        { title: "01 / सड़क, समुद्र या हवाई चुनें", copy: "भीतरी और पश्चिमी चीन के कार्गो के लिए उत्तरी बॉर्डर का सड़क मार्ग सही रहता है। चीन के तटीय बंदरगाहों से पूरे कंटेनर के लिए कोलकाता या किसी अन्य भारतीय गेटवे से समुद्री मार्ग सही रहता है। ज़रूरी या महँगे कार्गो के लिए काठमांडू तक हवाई मार्ग सही रहता है। सप्लायर का शहर, कार्गो और नेपाल में डिलीवरी की जगह बताइए, उसी से रास्ता चुना जाता है।" },
+        { title: "02 / बुकिंग से पहले बॉर्डर जाँचें", copy: "केरुंग–रसुवागढ़ी और तातोपानी चीन के साथ व्यापार के मुख्य सड़क बॉर्डर हैं। बाढ़ और भूस्खलन के बाद दोनों लंबे समय तक बंद रहे हैं, इसलिए सप्लायर के माल भेजने से पहले हर शिपमेंट के लिए बॉर्डर की मौजूदा स्थिति जाँची जाती है।" },
+        { title: "03 / नेपाल में क्लियरेंस और डिलीवरी", copy: "सड़क कार्गो बॉर्डर के कस्टम्स कार्यालय में, समुद्री कार्गो भारतीय ट्रांज़िट के बाद आमतौर पर बीरगंज या किसी अन्य दक्षिणी बॉर्डर पर, और हवाई कार्गो त्रिभुवन अंतरराष्ट्रीय हवाई अड्डे पर क्लियर होता है। फिर कंसाइनी की साइट तक डिलीवरी की व्यवस्था की जाती है।" },
+      ],
+      documentsTitle: "बुकिंग से पहले क्या तैयार रखें",
+      documentsIntro: "ज़रूरतें माल और रास्ते के अनुसार बदलती हैं। यह योजना सूची है, कस्टम्स का निर्णय नहीं; बुकिंग से पहले KCPL शिपमेंट का विवरण देख सकता है।",
+      documents: ["चीनी सप्लायर का कमर्शियल इनवॉइस और पैकिंग लिस्ट, मेल खाती मात्रा और विवरण के साथ", "नेपाल के आयातक का विवरण, PAN या VAT पंजीकरण सहित, और तय Incoterm", "सप्लायर का शहर और पिकअप पता, कार्गो का आकार और कुल वज़न", "चुने गए रास्ते का परिवहन दस्तावेज़: सड़क कंसाइनमेंट नोट, बिल ऑफ़ लैडिंग या एयर वेबिल", "माल के लिए ज़रूरी हो तो मूल प्रमाणपत्र, लाइसेंस या परमिट"],
+      questionsTitle: "योजना से जुड़े आम सवाल",
+      questions: [
+        { question: "KCPL चीन के कार्गो के लिए कौन-से बॉर्डर इस्तेमाल करता है?", answer: "KCPL केरुंग–रसुवागढ़ी बॉर्डर से कार्गो लाता है और तातोपानी से भी चीन का कार्गो भेजता है। कौन-सा बॉर्डर खुला है और कार्गो के लिए सही है, यह जाँचकर शिपमेंट का बॉर्डर चुना जाता है।" },
+        { question: "बॉर्डर बंद हो तो क्या होता है?", answer: "शिपमेंट बॉर्डर खुलने का इंतज़ार कर सकता है, या उसकी जगह भारतीय बंदरगाह से समुद्र के रास्ते या काठमांडू तक हवाई रास्ते से आ सकता है। कौन-सा बेहतर है, यह समय-सीमा, कार्गो और लागत पर निर्भर करता है, इसलिए हर शिपमेंट के लिए तय किया जाता है।" },
+        { question: "क्या KCPL चीन की तरफ़ का मूवमेंट भी संभालता है?", answer: "KCPL भीतरी चीन और नेपाल के बीच सड़क माल ढुलाई की योजना बनाता है। चीन में पिकअप से नेपाल में डिलीवरी तक, हर हिस्से का दायरा कोटेशन में तय होता है।" },
+      ],
+      cta: "KCPL के साथ चीन के शिपमेंट की योजना बनाएँ",
+      related: "सड़क माल ढुलाई देखें",
+    },
+    "cargo-from-india-to-nepal": {
+      title: "भारत से नेपाल कार्गो",
+      description: "भारत से नेपाल कार्गो की योजना: बॉर्डर पॉइंट चुनें, भारतीय माल और तीसरे देश के ट्रांज़िट कार्गो में फ़र्क़ समझें, दस्तावेज़ तैयार करें और क्लियरेंस तथा डिलीवरी की व्यवस्था करें।",
+      intro: "नेपाल का ज़्यादातर व्यापार भारत के साथ खुले बॉर्डर से होता है, बीस से ज़्यादा कस्टम्स पॉइंट से सड़क के रास्ते और बीरगंज तक रेल से। बॉर्डर पॉइंट और दस्तावेज़ इस पर निर्भर करते हैं कि माल कहाँ से आ रहा है और नेपाल में कहाँ जा रहा है।",
+      routeTitle: "मूवमेंट की योजना कैसे बनती है",
+      stages: [
+        { title: "01 / बॉर्डर पॉइंट चुनें", copy: "रक्सौल–बीरगंज से सबसे ज़्यादा कार्गो गुज़रता है और यहाँ सिरसिया रेल-जुड़ा ड्राई पोर्ट है। भैरहवा, नेपालगंज और बिराटनगर अन्य मुख्य बॉर्डर में से हैं। आमतौर पर नेपाल में डिलीवरी की जगह के सबसे नज़दीक वाला पॉइंट सही रहता है।" },
+        { title: "02 / भारतीय माल या ट्रांज़िट कार्गो", copy: "भारत में खरीदा गया माल द्विपक्षीय व्यापार संधि के तहत जाता है। भारतीय बंदरगाह पर उतरने वाला तीसरे देश का कार्गो पारगमन संधि के तहत, बॉन्ड में, अपने ट्रांज़िट दस्तावेज़ों के साथ जाता है। दोनों के कागज़ात अलग होते हैं, इसलिए KCPL को बताइए कि शिपमेंट कौन-सा है।" },
+        { title: "03 / क्लियरेंस और डिलीवरी", copy: "नेपाल कस्टम्स बॉर्डर पॉइंट पर कार्गो क्लियर करता है, फिर कंसाइनी की साइट तक डिलीवरी होती है। KCPL का स्टाफ़ रक्सौल–बीरगंज बॉर्डर के दोनों तरफ़ काम करता है।" },
+      ],
+      documentsTitle: "बुकिंग से पहले क्या तैयार रखें",
+      documentsIntro: "ज़रूरतें माल और रास्ते के अनुसार बदलती हैं। यह योजना सूची है, कस्टम्स का निर्णय नहीं; बुकिंग से पहले KCPL शिपमेंट का विवरण देख सकता है।",
+      documents: ["भारतीय सप्लायर का टैक्स इनवॉइस और पैकिंग लिस्ट, मेल खाती मात्रा और विवरण के साथ", "नेपाल के आयातक का विवरण, PAN या VAT पंजीकरण सहित", "भारतीय निर्यात दस्तावेज़, जैसे शिपिंग बिल और ई-वे बिल", "बॉर्डर तक के मूवमेंट के लिए लॉरी कंसाइनमेंट नोट या रेलवे रसीद", "रियायती ड्यूटी दर का दावा करने पर मूल प्रमाणपत्र, और माल के लिए ज़रूरी लाइसेंस या परमिट"],
+      questionsTitle: "योजना से जुड़े आम सवाल",
+      questions: [
+        { question: "मेरा कार्गो किस बॉर्डर पॉइंट से जाना चाहिए?", answer: "आमतौर पर नेपाल में डिलीवरी की जगह के सबसे नज़दीक वाला, अगर वह कस्टम्स कार्यालय उस माल को क्लियर करता है। KCPL का स्टाफ़ रक्सौल, बीरगंज और नेपालगंज में है, और KCPL हर शिपमेंट के बॉर्डर की योजना बनाता है।" },
+        { question: "क्या भारत से कार्गो रेल से जा सकता है?", answer: "हाँ। कंटेनर ट्रेनें बीरगंज के सिरसिया ड्राई पोर्ट तक चलती हैं, और 2026 में कोलकाता–बिराटनगर रेल कार्गो सेवा शुरू हुई। रेल किसी शिपमेंट के लिए सही है या नहीं, यह कार्गो, मूल स्थान और डिलीवरी की जगह पर निर्भर करता है।" },
+        { question: "क्या भारत से आने वाले माल पर आयात ड्यूटी लगती है?", answer: "हाँ, नेपाल कस्टम्स माल के HS कोड की दर पर, व्यापार संधि के तहत मिलने वाली रियायत सहित, ड्यूटी तय करता है। योजना के लिए ड्यूटी अनुमान टूल इस्तेमाल करें; ड्यूटी तय करना कस्टम्स का निर्णय है।" },
+      ],
+      cta: "KCPL के साथ भारत के शिपमेंट की योजना बनाएँ",
+      related: "सड़क माल ढुलाई देखें",
+    },
   },
   zh: {
     "importing-to-nepal": {
@@ -201,6 +333,50 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       cta: "与 KCPL 规划出口运输",
       related: "了解货运服务",
     },
+    "cargo-from-china-to-nepal": {
+      title: "中国至尼泊尔货运",
+      description: "规划中国至尼泊尔货运：经吉隆–拉苏瓦加迪或樟木–塔托帕尼口岸陆运、经印度港口海运或空运至加德满都，以及需准备的单证。",
+      intro: "中国货物可经喜马拉雅口岸陆运、经印度港口海运或空运至加德满都进入尼泊尔。哪种方式可行，取决于货物、交付地点以及口岸是否开放。",
+      routeTitle: "运输如何规划",
+      stages: [
+        { title: "01 / 选择陆运、海运或空运", copy: "中国内陆和西部的货物适合经北部边境陆运。中国沿海港口的整箱货物适合经加尔各答或其他印度港口海运。紧急或高价值货物适合空运至加德满都。请提供供应商所在城市、货物信息和尼泊尔交付地点，据此选择路线。" },
+        { title: "02 / 订舱前确认口岸状况", copy: "吉隆–拉苏瓦加迪和樟木–塔托帕尼是中尼贸易的主要陆路口岸。两个口岸都曾因洪水和山体滑坡长期关闭，因此在供应商发货前，会逐票确认口岸的当前状况。" },
+        { title: "03 / 在尼泊尔清关和交付", copy: "陆运货物在边境海关清关，海运货物经印度过境后通常在比尔甘杰或其他南部口岸清关，空运货物在特里布万国际机场清关。之后安排送至收货人地点。" },
+      ],
+      documentsTitle: "订舱前需准备的资料",
+      documentsIntro: "具体要求因货物和路线而异。本清单仅供规划，不构成海关认定；KCPL 可在订舱前审核货物资料。",
+      documents: ["中国供应商的商业发票和装箱单，数量与描述一致", "尼泊尔进口商信息，包括 PAN 或 VAT 登记号，以及约定的贸易术语", "供应商所在城市和提货地址、货物尺寸和毛重", "所选路线的运输单证：公路托运单、提单或空运单", "货物需要时的原产地证书、许可证或批文"],
+      questionsTitle: "常见规划问题",
+      questions: [
+        { question: "KCPL 的中国货物经哪些口岸？", answer: "KCPL 经吉隆–拉苏瓦加迪口岸运输货物，也经樟木–塔托帕尼口岸安排中国货物。每票货物在确认哪个口岸开放且适合该货物后选定口岸。" },
+        { question: "口岸关闭怎么办？", answer: "货物可以等待口岸重新开放，也可以改经印度港口海运或空运至加德满都。哪种更合适取决于时限、货物和成本，因此逐票决定。" },
+        { question: "KCPL 负责中国段的运输吗？", answer: "KCPL 规划中国内陆与尼泊尔之间的公路货运。从中国提货到尼泊尔交付，各段的服务范围在报价中确认。" },
+      ],
+      cta: "与 KCPL 规划中国货运",
+      related: "了解公路货运",
+    },
+    "cargo-from-india-to-nepal": {
+      title: "印度至尼泊尔货运",
+      description: "规划印度至尼泊尔货运：选择边境口岸，区分印度货物与第三国过境货物，准备单证，并安排清关和交付。",
+      intro: "尼泊尔的大部分贸易经与印度的开放边境进行，经二十多个海关口岸公路运输，并经铁路进入比尔甘杰。边境口岸和单证取决于货物的来源地及其在尼泊尔的目的地。",
+      routeTitle: "运输如何规划",
+      stages: [
+        { title: "01 / 选择边境口岸", copy: "拉克索尔–比尔甘杰的货运量最大，设有西尔西亚铁路联运陆港。拜拉哈瓦、尼泊尔根杰和比拉德讷格尔也是主要口岸。通常选择离尼泊尔交付地点最近的口岸。" },
+        { title: "02 / 印度货物还是过境货物", copy: "在印度采购的货物按双边贸易条约运输。在印度港口卸下的第三国货物按过境条约以保税方式运输，并有专门的过境单证。两者所需单证不同，请告知 KCPL 货物属于哪一种。" },
+        { title: "03 / 清关和交付", copy: "尼泊尔海关在边境口岸清关，之后送至收货人地点。KCPL 员工在拉克索尔–比尔甘杰口岸两侧工作。" },
+      ],
+      documentsTitle: "订舱前需准备的资料",
+      documentsIntro: "具体要求因货物和路线而异。本清单仅供规划，不构成海关认定；KCPL 可在订舱前审核货物资料。",
+      documents: ["印度供应商的税务发票和装箱单，数量与描述一致", "尼泊尔进口商信息，包括 PAN 或 VAT 登记号", "印度出口单证，如出口报关单和电子运单（e-way bill）", "运至边境的卡车托运单或铁路收据", "申请优惠税率时的原产地证书，以及货物所需的许可证或批文"],
+      questionsTitle: "常见规划问题",
+      questions: [
+        { question: "我的货物应走哪个边境口岸？", answer: "通常是离尼泊尔交付地点最近、且该海关办理此类货物的口岸。KCPL 员工驻拉克索尔、比尔甘杰和尼泊尔根杰，并为每票货物规划口岸。" },
+        { question: "印度货物可以走铁路吗？", answer: "可以。集装箱列车开往比尔甘杰的西尔西亚陆港，加尔各答至比拉德讷格尔的铁路货运服务于 2026 年开通。铁路是否适合取决于货物、起运地和交付地点。" },
+        { question: "印度货物需缴纳进口关税吗？", answer: "需要。尼泊尔海关按货物 HS 编码的税率征税，并适用贸易条约下的优惠。规划时可使用关税估算工具；最终税额由海关核定。" },
+      ],
+      cta: "与 KCPL 规划印度货运",
+      related: "了解公路货运",
+    },
   },
 };
 
@@ -224,6 +400,8 @@ export const guideLinks: Record<GuideSlug, { service: string; tool: ToolSlug; ne
   "air-freight-to-kathmandu": { service: "/services/air-freight", tool: "volume-weight", next: ["customs-clearance-in-nepal", "importing-to-nepal"] },
   "hs-codes-and-import-duty": { service: "/services/customs-clearance", tool: "duty-estimate", next: ["customs-clearance-in-nepal", "importing-to-nepal"] },
   "free-time-and-demurrage": { service: "/services/ocean-freight", tool: "storage-charges", next: ["sea-freight-through-india", "customs-clearance-in-nepal"] },
+  "cargo-from-china-to-nepal": { service: "/services/road-freight", tool: "volume-weight", next: ["customs-clearance-in-nepal", "sea-freight-through-india"] },
+  "cargo-from-india-to-nepal": { service: "/services/road-freight", tool: "duty-estimate", next: ["sea-freight-through-india", "customs-clearance-in-nepal"] },
 };
 
 /** The guides' own index page, and the words around every guide. */
