@@ -14,6 +14,13 @@ test("public search indexes every service, guide and tool without duplicates", (
   assert.ok(index.some((entry) => entry.kind === "tool" && entry.href === "/tools/duty-estimate"));
 });
 
+test("search finds the blog's notes in English, and only there", () => {
+  const results = searchPublicSite("en", "birgunj");
+  assert.ok(results.some((entry) => entry.kind === "post" && entry.href.startsWith("/blog/")), "a place named in the notes is findable");
+  assert.ok(publicSearchIndex("en").some((entry) => entry.kind === "page" && entry.href === "/blog"));
+  for (const locale of ["ne", "hi", "zh"]) assert.ok(publicSearchIndex(locale).every((entry) => entry.kind !== "post"), `${locale} has no English notes`);
+});
+
 test("search ranks title matches above body matches and caps results", () => {
   const results = searchPublicSite("en", "customs");
   assert.ok(results.length > 0);

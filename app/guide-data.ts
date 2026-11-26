@@ -28,7 +28,7 @@ export type Guide = {
 const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
   en: {
     "importing-to-nepal": {
-      title: "Importing Freight to Nepal",
+      title: "Importing freight to Nepal",
       description: "Plan an import to Nepal: choose an Indian gateway, prepare freight documents, align transit and customs handovers, and arrange final delivery.",
       intro: "An ocean import into Nepal does not end when the vessel reaches India. The gateway, transit movement, border clearance and final delivery have to be planned as one shipment.",
       routeTitle: "How the movement is planned",
@@ -49,7 +49,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       related: "Explore customs and documentation",
     },
     "exporting-from-nepal": {
-      title: "Exporting Freight from Nepal",
+      title: "Exporting freight from Nepal",
       description: "Plan an export from Nepal by air or ocean: prepare cargo and trade documents, choose Kathmandu or Indian-gateway routes, and coordinate destination agents.",
       intro: "A Nepal export works best when the cargo, collection date, buyer's delivery terms and destination handover are agreed before a carrier is booked.",
       routeTitle: "How the movement is planned",

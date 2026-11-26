@@ -45,10 +45,11 @@ const moreNavigation = [
  */
 export function SiteLogo({ locale }: { locale: SiteLocale }) {
   return (
-    <Link href={sitePath(locale, "/")} className="site-lockup" aria-label={company.name}>
+    <Link href={sitePath(locale, "/")} className="site-lockup">
       <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={38} height={38} className="site-lockup-mark" loading="eager"/>
+      {/* The visible words are the link's name, so voice control can say what it sees; the space keeps them two words. */}
       <span className="site-lockup-text">
-        <span className="site-lockup-name">Kapileshwor</span>
+        <span className="site-lockup-name">Kapileshwor</span>{" "}
         <span className="site-lockup-meta">Cargo Pvt. Ltd.</span>
       </span>
     </Link>

@@ -80,6 +80,8 @@ html:has(.site-root) { scroll-padding-top: 88px; scrollbar-color: var(--kcpl-cri
 }
 :is(.site-root, .cookie-notice) .btn:focus-visible { outline-color: #fff; outline-offset: -5px; }
 .btn:disabled { opacity: .6; cursor: progress; }
+/* A press you can feel: the button gives a little under the finger, on touch as well as with a mouse. */
+.btn:not(:disabled):active { transform: scale(.97); }
 .btn-small { min-height: 44px; padding: 0 18px; font-size: 14px; }
 .btn-white { background: #fff; color: var(--crimson); }
 .site-root .btn-white:focus-visible { outline-color: var(--crimson); }
@@ -354,8 +356,12 @@ html:has(.site-menu[open]) { overflow: hidden; }
 .content-sources .link-list { margin-top: clamp(24px, 3vw, 40px); }
 .page-head { padding: clamp(32px, 6vw, 88px) var(--margin) clamp(8px, 2vw, 24px); }
 .breadcrumbs { margin-bottom: clamp(14px, 2vw, 24px); color: var(--muted); font-size: 14px; font-weight: 600; }
-.breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
-.breadcrumbs li { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; }
+.breadcrumbs ol { display: flex; align-items: center; gap: 0 6px; }
+.breadcrumbs li { display: inline-flex; flex: none; align-items: center; min-height: 44px; min-width: 0; }
+/* One line, always: a long page name ends in an ellipsis rather than wrapping its "/" to the start of a new line.
+ * The full name is the page title right below. */
+.breadcrumbs li:last-child { flex: 0 1 auto; }
+.breadcrumbs [aria-current] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .breadcrumbs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: none; }
 .breadcrumb-separator { margin-right: 6px; color: var(--muted); }
 @media (hover: hover) and (pointer: fine) {
@@ -406,7 +412,8 @@ html:has(.site-menu[open]) { overflow: hidden; }
 /* Clients: a still row in one colour. */
 .clients { position: relative; padding: clamp(48px, 6vw, 88px) var(--margin) 0 var(--content-x); }
 .clients-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(24px, 3vw, 44px) clamp(20px, 3vw, 48px); align-items: center; margin-top: 24px; }
-.clients-list img { width: 100%; height: 34px; object-fit: contain; filter: grayscale(1) contrast(1.1); mix-blend-mode: multiply; opacity: .72; }
+.clients-list li { display: flex; justify-content: center; }
+.clients-list img { width: auto; max-width: 100%; height: var(--h, 34px); object-fit: contain; filter: grayscale(1) contrast(1.1); mix-blend-mode: multiply; opacity: .72; }
 .clients-list span { display: block; color: var(--muted); font-size: 17px; font-weight: 800; letter-spacing: .02em; text-align: center; }
 
 /* Home sections, also used by inner pages. */
@@ -764,7 +771,7 @@ body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
   .br, .dot, .ret { display: none; }
   .clients { padding-top: 40px; }
   .clients-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .clients-list img { height: 28px; }
+  .clients-list img { height: calc(var(--h, 34px) * .8); }
   .figures { grid-template-columns: 1fr 1fr; }
   .svc a { grid-template-columns: minmax(0, 1fr) 20px; padding: 18px 0; }
   .svc a > span { grid-column: 1; }
@@ -816,6 +823,7 @@ body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
   .cookie-notice { animation: none; }
   .site-pop-panel, .site-menu-panel, .site-menu-list li { animation: none; }
   .site-header, .br i { transition: none; }
+  .btn:not(:disabled):active { transform: none; }
   .reveal-wait .br i { transform: none; }
   /* Fewer and gentler: a short fade stays, because it still shows order. Nothing moves. */
   .reveal-part, .reveal-wipe { clip-path: none; transition: opacity 200ms ease; }
