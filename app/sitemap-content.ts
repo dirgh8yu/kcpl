@@ -3,7 +3,8 @@ import { services } from "./services-data.ts";
 import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth, type DepthContent } from "./content-depth.ts";
 import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data.ts";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
-import { siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
+import { englishOnlyPath, siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
+import { blogIndex, blogPost, blogPosts, blogTopics } from "./blog-data.ts";
 import { guideReview, reviewedGuideSlugs } from "./guide-review.ts";
 
 /*
@@ -69,6 +70,12 @@ function depthPageSource(depth: DepthContent) {
 }
 
 export function contentFingerprint(locale: SiteLocale, path: string) {
+  if (path === "/blog") {
+    const listed = blogPosts.map((post) => [post.topic, post.title, post.description, post.published]);
+    return createHash("sha256").update(JSON.stringify({ blogIndex, blogTopics, listed })).digest("hex").slice(0, 16);
+  }
+  const post = path.startsWith("/blog/") ? blogPost(path.slice("/blog/".length)) : null;
+  if (post) return createHash("sha256").update(JSON.stringify({ post, labels: blogIndex })).digest("hex").slice(0, 16);
   const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
   if (guideSlugs.includes(guideSlug as GuideSlug)) {
     const slug = guideSlug as GuideSlug;
@@ -102,13 +109,20 @@ export function sitemapPaths() {
     ...guideSlugs.map((slug) => `/guides/${slug}`),
     "/tools",
     ...toolSlugs.map((slug) => `/tools/${slug}`),
+    "/blog",
+    ...blogPosts.map((post) => `/blog/${post.slug}`),
   ];
+}
+
+/** The languages a path exists in: all four, or English alone for the blog. */
+export function sitemapLocales(path: string): readonly SiteLocale[] {
+  return englishOnlyPath(path) ? ["en"] : siteLocales;
 }
 
 export function fingerprintAll() {
   const out: Record<string, string> = {};
   for (const path of sitemapPaths()) {
-    for (const locale of siteLocales) out[`${locale}${path}`] = contentFingerprint(locale, path);
+    for (const locale of sitemapLocales(path)) out[`${locale}${path}`] = contentFingerprint(locale, path);
   }
   return out;
 }

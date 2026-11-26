@@ -34,3 +34,17 @@ Each one is checked at full size before use: no other company's branding, no fac
 | `public/images/unsplash/freight-train.jpg` | Naveen Sharma | https://unsplash.com/photos/a-green-and-blue-train-traveling-down-train-tracks-U_UkoZ7xkyc |
 | `public/images/unsplash/kathmandu.jpg` | Pritush Munankarmi | https://unsplash.com/photos/a-view-of-a-city-from-the-top-of-a-hill-8JGSA8uYBpw |
 | `public/images/unsplash/howrah-bridge.jpg` | Nikhil Kumar | https://unsplash.com/photos/howrah-bridge-over-a-river-2yLQxfiqBys |
+
+## KCPL photographs (blog)
+
+These are KCPL's own photographs of its project cargo movements, supplied by KCPL on 26 November 2026 for the blog and the gallery. They are captioned "Photograph: KCPL" wherever they appear. The files carried no camera or location data.
+
+Each was checked against the same rules: no faces and no other company's branding. Two were cropped to meet them: `port-lift.jpg` (to leave out a worker's face) and `sleepers.jpg` (to leave out the maker's nameplate). Photographs from the same set that show faces, or a client's banner, are held back until the owner decides on them.
+
+| Local asset | Shows | Crop |
+| --- | --- | --- |
+| `public/images/blog/mountain-approach.jpg` | A mountain approach road, seen from the cab | None |
+| `public/images/blog/port-lift.jpg` | A transformer on a hydraulic modular trailer in a port yard | Left 700 of 1280 px |
+| `public/images/blog/cribbing.jpg` | Timber being packed under a raised transformer | None |
+| `public/images/blog/sleepers.jpg` | A transformer on timber sleepers at site | Right 860 of 1280 px |
+| `public/images/blog/site-yard.jpg` | Three transformers parked at a site | None |

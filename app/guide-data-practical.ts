@@ -20,7 +20,7 @@ export type PracticalGuideSlug = (typeof practicalGuideSlugs)[number];
 export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guide>> = {
   en: {
     "customs-clearance-in-nepal": {
-      title: "Clearing Imports Through Nepal Customs",
+      title: "Clearing imports through Nepal customs",
       description: "How an import clears Nepal customs: the documents customs expects, the declaration and assessment, paying duty and VAT, and release for delivery.",
       intro: "Clearance is where a shipment's paperwork is tested. When the invoice, packing list, transport documents and permits agree before the cargo reaches the border, customs has less to question and the cargo spends fewer days running up storage.",
       routeTitle: "How clearance runs",
@@ -42,7 +42,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       related: "Explore customs and documentation",
     },
     "sea-freight-through-india": {
-      title: "Sea Freight to Nepal Through Indian Ports",
+      title: "Sea freight to Nepal through Indian ports",
       description: "See how ocean freight reaches Nepal through Kolkata, Haldia or Visakhapatnam, with rail or road transit across India and a planned border handover.",
       intro: "Nepal has no seaport, so ocean cargo lands in India and continues in transit to the border. The gateway, the transit mode and the documents for the Indian leg matter as much as the ocean booking.",
       routeTitle: "How the route is planned",
@@ -64,7 +64,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       related: "Explore ocean freight",
     },
     "air-freight-to-kathmandu": {
-      title: "Air Freight into Kathmandu",
+      title: "Air freight into Kathmandu",
       description: "When air freight into Nepal makes sense, how chargeable weight is worked out, and how cargo is cleared and collected at Tribhuvan International Airport.",
       intro: "Air is the fast lane into Nepal for urgent, valuable or light cargo. It costs more per kilogram, so the cargo's size, weight and deadline decide whether it is worth it.",
       routeTitle: "How an air import is planned",
@@ -86,7 +86,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       related: "Explore air freight",
     },
     "hs-codes-and-import-duty": {
-      title: "HS Codes and Import Duty in Nepal",
+      title: "HS codes and import duty in Nepal",
       description: "What an HS code is, how Nepal's customs duty, excise and VAT follow from it, and how to check a classification before you ship.",
       intro: "The HS code decides which duty rate applies to your goods and whether they need a permit. Settling it before shipping avoids paying the wrong rate, or waiting at the border while customs reclassifies.",
       routeTitle: "From description to duty",
@@ -108,7 +108,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       related: "Explore customs and documentation",
     },
     "free-time-and-demurrage": {
-      title: "Free Time, Demurrage and Detention",
+      title: "Free time, demurrage and detention",
       description: "What free time, demurrage, detention and port storage mean on an import into Nepal, why landlocked shipments run them up, and how to keep them down.",
       intro: "Every container comes with a number of free days. After that, the terminal and the shipping line each charge by the day, and on a landlocked route the days add up quickly.",
       routeTitle: "Keeping the clock in check",

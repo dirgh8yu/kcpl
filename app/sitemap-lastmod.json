@@ -1,375 +1,375 @@
 {
   "entries": {
     "en/": {
-      "fingerprint": "6902d71843116b14",
-      "lastmod": "2026-11-11"
+      "fingerprint": "8c55223ba13ea801",
+      "lastmod": "2026-11-26"
     },
     "ne/": {
-      "fingerprint": "b2a11a0eb48c0bbd",
-      "lastmod": "2026-11-11"
+      "fingerprint": "f8993d2f2d16fc45",
+      "lastmod": "2026-11-26"
     },
     "zh/": {
-      "fingerprint": "dba7900788575812",
-      "lastmod": "2026-11-11"
+      "fingerprint": "2cc2c248650862a5",
+      "lastmod": "2026-11-26"
     },
     "hi/": {
-      "fingerprint": "b8e7d6b0a60dbac4",
-      "lastmod": "2026-11-11"
+      "fingerprint": "0d5cefa5b20af97b",
+      "lastmod": "2026-11-26"
     },
     "en/services": {
-      "fingerprint": "5887ecd4440ded04",
-      "lastmod": "2026-11-05"
+      "fingerprint": "4a46a29241a61273",
+      "lastmod": "2026-11-26"
     },
     "ne/services": {
-      "fingerprint": "ea890b8bf35ace9d",
-      "lastmod": "2026-11-05"
+      "fingerprint": "ac5750ed028b586e",
+      "lastmod": "2026-11-26"
     },
     "zh/services": {
-      "fingerprint": "2c2f7e6bb2e940e0",
-      "lastmod": "2026-11-05"
+      "fingerprint": "cd1e511d5e5a1379",
+      "lastmod": "2026-11-26"
     },
     "hi/services": {
-      "fingerprint": "2246d34861238a0f",
-      "lastmod": "2026-11-05"
+      "fingerprint": "d532ab2b6274180c",
+      "lastmod": "2026-11-26"
     },
     "en/sectors": {
-      "fingerprint": "faa8aaf50b2fa567",
-      "lastmod": "2026-11-05"
+      "fingerprint": "f5448e3399d602f9",
+      "lastmod": "2026-11-26"
     },
     "ne/sectors": {
-      "fingerprint": "ad94a1d4f7de56b8",
-      "lastmod": "2026-11-05"
+      "fingerprint": "8d81eb2e51cc330f",
+      "lastmod": "2026-11-26"
     },
     "zh/sectors": {
-      "fingerprint": "b7fe0fcc4d126c07",
-      "lastmod": "2026-11-05"
+      "fingerprint": "587ca7798bee46af",
+      "lastmod": "2026-11-26"
     },
     "hi/sectors": {
-      "fingerprint": "fabeb80a6d0d7ce3",
-      "lastmod": "2026-11-05"
+      "fingerprint": "0e3c932df62c6bd2",
+      "lastmod": "2026-11-26"
     },
     "en/work": {
-      "fingerprint": "98a83a90e4b150e5",
-      "lastmod": "2026-11-05"
+      "fingerprint": "cd3ba2e7a37d7903",
+      "lastmod": "2026-11-26"
     },
     "ne/work": {
-      "fingerprint": "2c6ee9999fa26eb7",
-      "lastmod": "2026-11-05"
+      "fingerprint": "536782bfda2eec62",
+      "lastmod": "2026-11-26"
     },
     "zh/work": {
-      "fingerprint": "a60921ea57833924",
-      "lastmod": "2026-11-05"
+      "fingerprint": "ce64c79976be8954",
+      "lastmod": "2026-11-26"
     },
     "hi/work": {
-      "fingerprint": "ae0d2787b50e19ed",
-      "lastmod": "2026-11-05"
+      "fingerprint": "f00df4a737547715",
+      "lastmod": "2026-11-26"
     },
     "en/network": {
-      "fingerprint": "6fcd6de12a7afe8b",
-      "lastmod": "2026-11-11"
+      "fingerprint": "d1201a37b645db33",
+      "lastmod": "2026-11-26"
     },
     "ne/network": {
-      "fingerprint": "cec713c8c83ff2e4",
-      "lastmod": "2026-11-11"
+      "fingerprint": "986713442d119c70",
+      "lastmod": "2026-11-26"
     },
     "zh/network": {
-      "fingerprint": "6d0d50b2d9b542b9",
-      "lastmod": "2026-11-11"
+      "fingerprint": "1ca8ca30cc7a4f3f",
+      "lastmod": "2026-11-26"
     },
     "hi/network": {
-      "fingerprint": "265ad88b0b8a17f8",
-      "lastmod": "2026-11-11"
+      "fingerprint": "df5a0d847286aa36",
+      "lastmod": "2026-11-26"
     },
     "en/gallery": {
-      "fingerprint": "af49fcfa83f6cadc",
-      "lastmod": "2026-11-05"
+      "fingerprint": "3442af505c74fd14",
+      "lastmod": "2026-11-26"
     },
     "ne/gallery": {
-      "fingerprint": "9fbd0815ebe80946",
-      "lastmod": "2026-11-05"
+      "fingerprint": "51fbba1d8342135c",
+      "lastmod": "2026-11-26"
     },
     "zh/gallery": {
-      "fingerprint": "0ec4f70d0f4d05b3",
-      "lastmod": "2026-11-05"
+      "fingerprint": "9aa88922b256792c",
+      "lastmod": "2026-11-26"
     },
     "hi/gallery": {
-      "fingerprint": "14dbe232213b99c5",
-      "lastmod": "2026-11-05"
+      "fingerprint": "3c55849c9a06a055",
+      "lastmod": "2026-11-26"
     },
     "en/awards": {
-      "fingerprint": "b30e71326f23b256",
-      "lastmod": "2026-11-05"
+      "fingerprint": "ebaf7999dd604998",
+      "lastmod": "2026-11-26"
     },
     "ne/awards": {
-      "fingerprint": "841f376cf2e7b6c7",
-      "lastmod": "2026-11-05"
+      "fingerprint": "3c611c01ea2a070f",
+      "lastmod": "2026-11-26"
     },
     "zh/awards": {
-      "fingerprint": "c48b206fde378bfa",
-      "lastmod": "2026-11-05"
+      "fingerprint": "44c244817d8d588d",
+      "lastmod": "2026-11-26"
     },
     "hi/awards": {
-      "fingerprint": "231a4bdcf1c0a9f0",
-      "lastmod": "2026-11-05"
+      "fingerprint": "4f451549ac99ecd7",
+      "lastmod": "2026-11-26"
     },
     "en/agents": {
-      "fingerprint": "468658c447bc00dd",
-      "lastmod": "2026-11-05"
+      "fingerprint": "2d01d9828e43613e",
+      "lastmod": "2026-11-26"
     },
     "ne/agents": {
-      "fingerprint": "f649d6994fb0ed92",
-      "lastmod": "2026-11-05"
+      "fingerprint": "10ddb5d1a8c31151",
+      "lastmod": "2026-11-26"
     },
     "zh/agents": {
-      "fingerprint": "5ced8387d23f0d92",
-      "lastmod": "2026-11-05"
+      "fingerprint": "d2787cf332e21584",
+      "lastmod": "2026-11-26"
     },
     "hi/agents": {
-      "fingerprint": "f0a321664165d605",
-      "lastmod": "2026-11-05"
+      "fingerprint": "29f1a38f4a96e896",
+      "lastmod": "2026-11-26"
     },
     "en/faq": {
-      "fingerprint": "a4d1b2bf91f53815",
-      "lastmod": "2026-11-05"
+      "fingerprint": "8234741f172e6be4",
+      "lastmod": "2026-11-26"
     },
     "ne/faq": {
-      "fingerprint": "d0c5fd94d3c8a984",
-      "lastmod": "2026-11-05"
+      "fingerprint": "4590adf0e805498b",
+      "lastmod": "2026-11-26"
     },
     "zh/faq": {
-      "fingerprint": "886d3d1498f85690",
-      "lastmod": "2026-11-05"
+      "fingerprint": "45b1974e8f15f683",
+      "lastmod": "2026-11-26"
     },
     "hi/faq": {
-      "fingerprint": "2f00d3dfd440565f",
-      "lastmod": "2026-11-05"
+      "fingerprint": "078e7c8493efa933",
+      "lastmod": "2026-11-26"
     },
     "en/careers": {
-      "fingerprint": "05b1bee0e53f1bf6",
-      "lastmod": "2026-11-05"
+      "fingerprint": "082743ff319390a4",
+      "lastmod": "2026-11-26"
     },
     "ne/careers": {
-      "fingerprint": "20f9a088bb7ac321",
-      "lastmod": "2026-11-05"
+      "fingerprint": "e6a4397224174bc9",
+      "lastmod": "2026-11-26"
     },
     "zh/careers": {
-      "fingerprint": "224e8ada5c278d4b",
-      "lastmod": "2026-11-05"
+      "fingerprint": "17d43defb07125be",
+      "lastmod": "2026-11-26"
     },
     "hi/careers": {
-      "fingerprint": "ec5cf1840973fb11",
-      "lastmod": "2026-11-05"
+      "fingerprint": "251eb45b6e96ba5c",
+      "lastmod": "2026-11-26"
     },
     "en/about": {
-      "fingerprint": "73f5b200c06a74ee",
-      "lastmod": "2026-11-06"
+      "fingerprint": "8d7657e8fa1960fd",
+      "lastmod": "2026-11-26"
     },
     "ne/about": {
-      "fingerprint": "20934c106e945117",
-      "lastmod": "2026-11-05"
+      "fingerprint": "7fcec876991ba9e3",
+      "lastmod": "2026-11-26"
     },
     "zh/about": {
-      "fingerprint": "8704ddfb4229b99e",
-      "lastmod": "2026-11-05"
+      "fingerprint": "e2cfca8d8e3ea459",
+      "lastmod": "2026-11-26"
     },
     "hi/about": {
-      "fingerprint": "041ba72ea89937b6",
-      "lastmod": "2026-11-05"
+      "fingerprint": "960ee573d88f7fcb",
+      "lastmod": "2026-11-26"
     },
     "en/contact": {
-      "fingerprint": "8532507264fc86e7",
-      "lastmod": "2026-11-06"
+      "fingerprint": "73ca517e1fedadef",
+      "lastmod": "2026-11-26"
     },
     "ne/contact": {
-      "fingerprint": "830bfa61fb9687ed",
-      "lastmod": "2026-11-06"
+      "fingerprint": "a6c01e53ee20ecec",
+      "lastmod": "2026-11-26"
     },
     "zh/contact": {
-      "fingerprint": "78ad965096452c49",
-      "lastmod": "2026-11-06"
+      "fingerprint": "34fecff68af988a1",
+      "lastmod": "2026-11-26"
     },
     "hi/contact": {
-      "fingerprint": "624423bd8772e77e",
-      "lastmod": "2026-11-06"
+      "fingerprint": "2dfd7619d9f02d0d",
+      "lastmod": "2026-11-26"
     },
     "en/quote": {
-      "fingerprint": "f6b0910fdb346fb4",
-      "lastmod": "2026-11-05"
+      "fingerprint": "0c169db459c8401d",
+      "lastmod": "2026-11-26"
     },
     "ne/quote": {
-      "fingerprint": "08fa8c7718365f8d",
-      "lastmod": "2026-11-05"
+      "fingerprint": "68ebf812de7066b1",
+      "lastmod": "2026-11-26"
     },
     "zh/quote": {
-      "fingerprint": "055f3f56f749f01b",
-      "lastmod": "2026-11-05"
+      "fingerprint": "6f6fa2a684922d56",
+      "lastmod": "2026-11-26"
     },
     "hi/quote": {
-      "fingerprint": "4d7f2931890722e3",
-      "lastmod": "2026-11-05"
+      "fingerprint": "7239bbe754762106",
+      "lastmod": "2026-11-26"
     },
     "en/track": {
-      "fingerprint": "427791c2d2556973",
-      "lastmod": "2026-11-05"
+      "fingerprint": "3cc1c7ed1ef5cf96",
+      "lastmod": "2026-11-26"
     },
     "ne/track": {
-      "fingerprint": "b5c748b795b71d15",
-      "lastmod": "2026-11-05"
+      "fingerprint": "12d8f6e9abb2423e",
+      "lastmod": "2026-11-26"
     },
     "zh/track": {
-      "fingerprint": "13a7db1562650d72",
-      "lastmod": "2026-11-05"
+      "fingerprint": "8fcc456618406360",
+      "lastmod": "2026-11-26"
     },
     "hi/track": {
-      "fingerprint": "2236cbec755256be",
-      "lastmod": "2026-11-05"
+      "fingerprint": "76c96c0ef448b550",
+      "lastmod": "2026-11-26"
     },
     "en/privacy": {
-      "fingerprint": "807de761b0eba581",
-      "lastmod": "2026-11-05"
+      "fingerprint": "d122d63467a2a074",
+      "lastmod": "2026-11-26"
     },
     "ne/privacy": {
-      "fingerprint": "344dd0376b125bea",
-      "lastmod": "2026-11-05"
+      "fingerprint": "b8287b60e6592fd5",
+      "lastmod": "2026-11-26"
     },
     "zh/privacy": {
-      "fingerprint": "50b3baf9bc6eff3a",
-      "lastmod": "2026-11-05"
+      "fingerprint": "732cd8a5272be134",
+      "lastmod": "2026-11-26"
     },
     "hi/privacy": {
-      "fingerprint": "ea0068d92312390f",
-      "lastmod": "2026-11-05"
+      "fingerprint": "66643070265cf773",
+      "lastmod": "2026-11-26"
     },
     "en/terms": {
-      "fingerprint": "5769f16bfc4f4dca",
-      "lastmod": "2026-11-05"
+      "fingerprint": "a6a53a9a1637d5d4",
+      "lastmod": "2026-11-26"
     },
     "ne/terms": {
-      "fingerprint": "7fbd2a879efb8d01",
-      "lastmod": "2026-11-05"
+      "fingerprint": "56c68779b7eeefd1",
+      "lastmod": "2026-11-26"
     },
     "zh/terms": {
-      "fingerprint": "01918605a7910c05",
-      "lastmod": "2026-11-05"
+      "fingerprint": "736ef6d3c63b0d2f",
+      "lastmod": "2026-11-26"
     },
     "hi/terms": {
-      "fingerprint": "41eda17e15aaa152",
-      "lastmod": "2026-11-05"
+      "fingerprint": "e9c4ba8b0c9dbd06",
+      "lastmod": "2026-11-26"
     },
     "en/services/air-freight": {
-      "fingerprint": "1c94c9e44f763136",
-      "lastmod": "2026-11-05"
+      "fingerprint": "745d8e9d4d3292dc",
+      "lastmod": "2026-11-26"
     },
     "ne/services/air-freight": {
-      "fingerprint": "7c1c6b71a11e4582",
-      "lastmod": "2026-11-05"
+      "fingerprint": "25c385dcf0f140bf",
+      "lastmod": "2026-11-26"
     },
     "zh/services/air-freight": {
-      "fingerprint": "c04e5c730a2b08b7",
-      "lastmod": "2026-11-05"
+      "fingerprint": "5ca02ae1557c43b3",
+      "lastmod": "2026-11-26"
     },
     "hi/services/air-freight": {
-      "fingerprint": "89884292af48aa62",
-      "lastmod": "2026-11-05"
+      "fingerprint": "71a9f71aff5b2942",
+      "lastmod": "2026-11-26"
     },
     "en/services/ocean-freight": {
-      "fingerprint": "bc6c4ff1134aff23",
-      "lastmod": "2026-11-05"
+      "fingerprint": "2e66a09df7c861d0",
+      "lastmod": "2026-11-26"
     },
     "ne/services/ocean-freight": {
-      "fingerprint": "ec9fef995631638b",
-      "lastmod": "2026-11-05"
+      "fingerprint": "e24e7fe03474884c",
+      "lastmod": "2026-11-26"
     },
     "zh/services/ocean-freight": {
-      "fingerprint": "1921c5c75e8f5a0a",
-      "lastmod": "2026-11-05"
+      "fingerprint": "5fb7ce90c2fb8e31",
+      "lastmod": "2026-11-26"
     },
     "hi/services/ocean-freight": {
-      "fingerprint": "d22f7aacc2e2ba47",
-      "lastmod": "2026-11-05"
+      "fingerprint": "aa6043257381c79b",
+      "lastmod": "2026-11-26"
     },
     "en/services/road-freight": {
-      "fingerprint": "aa2c31726a8cbf60",
-      "lastmod": "2026-11-05"
+      "fingerprint": "fcd51511004b0fe4",
+      "lastmod": "2026-11-26"
     },
     "ne/services/road-freight": {
-      "fingerprint": "cd6fa44f729ca4a7",
-      "lastmod": "2026-11-05"
+      "fingerprint": "82e9ff5ef3aad60c",
+      "lastmod": "2026-11-26"
     },
     "zh/services/road-freight": {
-      "fingerprint": "cd9c634976fa6fd8",
-      "lastmod": "2026-11-05"
+      "fingerprint": "5e6f830e589a52b9",
+      "lastmod": "2026-11-26"
     },
     "hi/services/road-freight": {
-      "fingerprint": "f67add3defa83f57",
-      "lastmod": "2026-11-05"
+      "fingerprint": "623e14ed634437b4",
+      "lastmod": "2026-11-26"
     },
     "en/services/customs-clearance": {
-      "fingerprint": "57f55ed7d3a7f7a1",
-      "lastmod": "2026-11-05"
+      "fingerprint": "a03de9eeed597347",
+      "lastmod": "2026-11-26"
     },
     "ne/services/customs-clearance": {
-      "fingerprint": "d50e620e33b0a3a6",
-      "lastmod": "2026-11-05"
+      "fingerprint": "0ca9c27c08f1a682",
+      "lastmod": "2026-11-26"
     },
     "zh/services/customs-clearance": {
-      "fingerprint": "18f2e1e91d609d40",
-      "lastmod": "2026-11-05"
+      "fingerprint": "5a98e461543516bb",
+      "lastmod": "2026-11-26"
     },
     "hi/services/customs-clearance": {
-      "fingerprint": "72e558635c55ab79",
-      "lastmod": "2026-11-05"
+      "fingerprint": "3b98470d8b759ceb",
+      "lastmod": "2026-11-26"
     },
     "en/services/project-cargo": {
-      "fingerprint": "c9e5fee70f3b0263",
-      "lastmod": "2026-11-05"
+      "fingerprint": "6b7b10130eef67ca",
+      "lastmod": "2026-11-26"
     },
     "ne/services/project-cargo": {
-      "fingerprint": "c4dfd4a3c6f020fc",
-      "lastmod": "2026-11-05"
+      "fingerprint": "2649407842e94b2d",
+      "lastmod": "2026-11-26"
     },
     "zh/services/project-cargo": {
-      "fingerprint": "b0d6708a10503dbb",
-      "lastmod": "2026-11-05"
+      "fingerprint": "6e29ab89fe2a7495",
+      "lastmod": "2026-11-26"
     },
     "hi/services/project-cargo": {
-      "fingerprint": "8316305758b5b46d",
-      "lastmod": "2026-11-05"
+      "fingerprint": "b8972dea6ea2f464",
+      "lastmod": "2026-11-26"
     },
     "en/services/warehousing": {
-      "fingerprint": "45508d7737986158",
-      "lastmod": "2026-11-05"
+      "fingerprint": "5505f04309ae51e4",
+      "lastmod": "2026-11-26"
     },
     "ne/services/warehousing": {
-      "fingerprint": "0f09d30488941e87",
-      "lastmod": "2026-11-05"
+      "fingerprint": "b3c2f0126746d2fb",
+      "lastmod": "2026-11-26"
     },
     "zh/services/warehousing": {
-      "fingerprint": "6283dac3d3fadf4e",
-      "lastmod": "2026-11-05"
+      "fingerprint": "078a01fa2d4adf3a",
+      "lastmod": "2026-11-26"
     },
     "hi/services/warehousing": {
-      "fingerprint": "7a25f1b81ffd9f50",
-      "lastmod": "2026-11-05"
+      "fingerprint": "b7b14185985daa17",
+      "lastmod": "2026-11-26"
     },
     "en/services/delivery": {
-      "fingerprint": "554192901c6c5404",
-      "lastmod": "2026-11-05"
+      "fingerprint": "f544a621e0445871",
+      "lastmod": "2026-11-26"
     },
     "ne/services/delivery": {
-      "fingerprint": "24d2e2cc0b41b18d",
-      "lastmod": "2026-11-05"
+      "fingerprint": "a1896b757f52bd8f",
+      "lastmod": "2026-11-26"
     },
     "zh/services/delivery": {
-      "fingerprint": "343b4e39f6d9792b",
-      "lastmod": "2026-11-05"
+      "fingerprint": "478ab45908f79d89",
+      "lastmod": "2026-11-26"
     },
     "hi/services/delivery": {
-      "fingerprint": "11678c441c872019",
-      "lastmod": "2026-11-05"
+      "fingerprint": "b1463b78fa96a4dc",
+      "lastmod": "2026-11-26"
     },
     "en/guides": {
-      "fingerprint": "4b25c01b792864d3",
+      "fingerprint": "3e250b0864ea531a",
       "lastmod": "2026-11-26"
     },
     "ne/guides": {
@@ -385,8 +385,8 @@
       "lastmod": "2026-11-26"
     },
     "en/guides/importing-to-nepal": {
-      "fingerprint": "1d7b51255e8a35ef",
-      "lastmod": "2026-11-06"
+      "fingerprint": "ac4011dc39fc016f",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/importing-to-nepal": {
       "fingerprint": "2d859aad9417619d",
@@ -401,8 +401,8 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/exporting-from-nepal": {
-      "fingerprint": "f56a44f29acd5775",
-      "lastmod": "2026-11-06"
+      "fingerprint": "4893aad2fccca2b4",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/exporting-from-nepal": {
       "fingerprint": "755240e6640d8d48",
@@ -449,8 +449,8 @@
       "lastmod": "2026-11-26"
     },
     "en/guides/customs-clearance-in-nepal": {
-      "fingerprint": "e7958e4c44aa909b",
-      "lastmod": "2026-11-06"
+      "fingerprint": "991a5569efadd93e",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/customs-clearance-in-nepal": {
       "fingerprint": "04fc994104fdb714",
@@ -465,8 +465,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/sea-freight-through-india": {
-      "fingerprint": "5d80ca7c40cb20a5",
-      "lastmod": "2026-11-06"
+      "fingerprint": "677a0a80fcaccc48",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/sea-freight-through-india": {
       "fingerprint": "3a3db91a1b89b47d",
@@ -481,8 +481,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/air-freight-to-kathmandu": {
-      "fingerprint": "c2087f1a154e7de3",
-      "lastmod": "2026-11-06"
+      "fingerprint": "07b26e78766f156c",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/air-freight-to-kathmandu": {
       "fingerprint": "f1d8408c48e92aad",
@@ -497,8 +497,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/hs-codes-and-import-duty": {
-      "fingerprint": "591c559999d3691d",
-      "lastmod": "2026-11-06"
+      "fingerprint": "ef6dab8a0ff21d30",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/hs-codes-and-import-duty": {
       "fingerprint": "eeb461590097e55c",
@@ -513,8 +513,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/free-time-and-demurrage": {
-      "fingerprint": "6618b0e2f9453c76",
-      "lastmod": "2026-11-06"
+      "fingerprint": "1ec726a79e473730",
+      "lastmod": "2026-11-26"
     },
     "ne/guides/free-time-and-demurrage": {
       "fingerprint": "b8252109828f3ed0",
@@ -591,6 +591,442 @@
     "hi/tools/volume-weight": {
       "fingerprint": "c41917f6a0531f11",
       "lastmod": "2026-10-11"
+    },
+    "en/blog": {
+      "fingerprint": "ad6386ac834448ba",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/moving-power-transformers-to-nepal": {
+      "fingerprint": "e0eda338b9c6de9a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/container-at-birgunj-what-happens-next": {
+      "fingerprint": "56e654fb579c7a68",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/telex-release-or-original-bill-of-lading": {
+      "fingerprint": "bddd145d0a822c93",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/choosing-an-indian-gateway-for-nepal": {
+      "fingerprint": "c4508a38151d93ad",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/visakhapatnam-to-birgunj-by-rail": {
+      "fingerprint": "b56d5e00a7826401",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/fcl-or-lcl-for-a-nepal-import": {
+      "fingerprint": "0d126066d73ce92a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/how-lcl-reaches-nepal": {
+      "fingerprint": "58b7ef96e895d3e9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/choosing-a-container-for-nepal": {
+      "fingerprint": "ff703b67eaf90017",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/what-a-pre-alert-should-contain": {
+      "fingerprint": "6aa2630124c59e2d",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/igm-amendments-explained": {
+      "fingerprint": "46d0f330e5a57952",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/electronic-seals-on-transit-containers": {
+      "fingerprint": "ae447aa319b60ce1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-delivery-order-explained": {
+      "fingerprint": "6e980fe670719be0",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/destuff-at-birgunj-or-at-your-warehouse": {
+      "fingerprint": "3cd6e3878a6549be",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/returning-the-empty-container": {
+      "fingerprint": "a2707d5a87c23887",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/transshipment-and-feeder-vessels": {
+      "fingerprint": "87b3b8ed9cdbae61",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-a-sailing-schedule": {
+      "fingerprint": "3065ad4a46232da8",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/china-to-nepal-sea-or-road": {
+      "fingerprint": "d53556bcf6e312df",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-through-kerung-and-rasuwagadhi": {
+      "fingerprint": "77c2463c5d5c6c17",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lcl-from-guangzhou-via-tatopani": {
+      "fingerprint": "f16773766d6339c5",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/india-to-nepal-by-road": {
+      "fingerprint": "b9452144a43048c1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/raxaul-and-birgunj-crossing": {
+      "fingerprint": "7a499d5e02437dc2",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/freight-for-eastern-nepal-via-jogbani": {
+      "fingerprint": "ae343b60927b564b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reaching-western-nepal": {
+      "fingerprint": "88e804464312c934",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepal-customs-points-for-freight": {
+      "fingerprint": "91ba550d015252da",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/delhi-to-kathmandu-road-or-air": {
+      "fingerprint": "336fdd9c1235ce65",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/buying-from-an-indian-supplier": {
+      "fingerprint": "5def903a4eb98e50",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/part-loads-from-india": {
+      "fingerprint": "309fd3754971d7c9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/chinese-holidays-and-nepal-orders": {
+      "fingerprint": "eb1b98544bd1110d",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/commercial-invoice-for-nepal-customs": {
+      "fingerprint": "f099ab0438c9dfe4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-packing-list-and-delays": {
+      "fingerprint": "843c13d6fd2d6340",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exim-code-for-nepal-traders": {
+      "fingerprint": "3dc920c83865c4cb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepal-national-single-window": {
+      "fingerprint": "42096656dc335bd9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/how-nepal-customs-values-goods": {
+      "fingerprint": "aa39bf01cb1f4c72",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/customs-inspection-in-nepal": {
+      "fingerprint": "5257820885ec6665",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/certificates-of-origin": {
+      "fingerprint": "fede40df848af357",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/goods-that-need-a-permit": {
+      "fingerprint": "704a6c7f6bb39088",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/letters-of-authority": {
+      "fingerprint": "758a599a77509eb6",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/duty-concessions-and-the-letter": {
+      "fingerprint": "abc4f58ed0fde153",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-customs-disagrees-with-your-hs-code": {
+      "fingerprint": "c50db2ae0a1656f4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/importing-used-machinery": {
+      "fingerprint": "3436af1fc1119e13",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/fixing-document-errors-after-shipping": {
+      "fingerprint": "b0ca142aae51b902",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-carpets-by-air": {
+      "fingerprint": "dbab1e1b638f7641",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-felt-products": {
+      "fingerprint": "746c389de8a72505",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lcl-export-nepal-to-usa": {
+      "fingerprint": "13219593ba263885",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/ams-and-isf-for-nepal-exporters": {
+      "fingerprint": "75031b0555f4fef3",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/vgm-for-nepal-exporters": {
+      "fingerprint": "746a4093f508ead7",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/the-export-file": {
+      "fingerprint": "d30d2847c9302c34",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-the-buyer-nominates-the-forwarder": {
+      "fingerprint": "02134895344b59a2",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/garment-exports-from-nepal": {
+      "fingerprint": "518f3ef1b214f50b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/packing-handicrafts-for-export": {
+      "fingerprint": "b720fca716013cdf",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-tea-coffee-and-spices": {
+      "fingerprint": "ab7d7b2138a8a630",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/shipping-from-nepal-to-europe": {
+      "fingerprint": "9274b86a81d750be",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exporting-to-australia": {
+      "fingerprint": "4daa94d7b84c869c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/delivering-to-the-buyers-door": {
+      "fingerprint": "3fd9c895ff3441bb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/rerouting-an-air-export": {
+      "fingerprint": "403a4fb86a296a4b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/chargeable-weight-explained": {
+      "fingerprint": "699d5c004099bd7c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/when-air-beats-sea": {
+      "fingerprint": "43fe67bc3bc81f09",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/importing-by-air-into-kathmandu": {
+      "fingerprint": "d56534ad61b9c222",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-an-air-waybill": {
+      "fingerprint": "6e20bc9759f8d7c0",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/dangerous-goods-by-air": {
+      "fingerprint": "4beadc507d08b927",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/lithium-batteries-in-air-cargo": {
+      "fingerprint": "1adfcede42ceb681",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/perishable-cargo-by-air": {
+      "fingerprint": "54d25e22c6aada10",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/urgent-spares-into-nepal": {
+      "fingerprint": "e849644757374bf8",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/carting-an-air-export-at-kathmandu": {
+      "fingerprint": "95daa68131289629",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/consolidated-air-cargo": {
+      "fingerprint": "986c3cd4327b98b1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/packing-for-air-cargo": {
+      "fingerprint": "ba0a39b5e4e5f73c",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/courier-or-air-cargo": {
+      "fingerprint": "1a06308d74ffb344",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/route-survey-for-oversized-cargo": {
+      "fingerprint": "8edf59bc499e2f3b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/flat-rack-and-open-top-to-nepal": {
+      "fingerprint": "99049939036b7068",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/breakbulk-through-kolkata": {
+      "fingerprint": "3e6c298f33232efa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/phased-delivery-to-a-live-site": {
+      "fingerprint": "062a879f203113d7",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/moving-conductor-drums": {
+      "fingerprint": "a20e9da2f7d4253a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/dispatch-authorisation-on-projects": {
+      "fingerprint": "35fe562aabacd239",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/matching-every-package": {
+      "fingerprint": "24e26d0bc2599e5a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/damages-and-discrepancies": {
+      "fingerprint": "0b7d1fc3e0974ca9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/insurance-on-project-cargo": {
+      "fingerprint": "2f6f29bd88753717",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/hydropower-equipment-logistics": {
+      "fingerprint": "59d2ffc62c2b4daa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/repair-and-return-shipments": {
+      "fingerprint": "f9bf7ad580fe333b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/logistics-in-a-tender": {
+      "fingerprint": "f39dc5b18c15af0a",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/getting-a-site-ready-to-receive": {
+      "fingerprint": "5b1b7b39eedc8a37",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/incoterms-for-nepal-buyers": {
+      "fingerprint": "125a42141ed989de",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/exw-fob-or-cif": {
+      "fingerprint": "1d58da6d9ca0d676",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/can-a-seller-ship-ddp-to-nepal": {
+      "fingerprint": "50b6af80976c8fe9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/demurrage-detention-and-storage": {
+      "fingerprint": "f4318e614e359318",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/estimating-duty-and-vat": {
+      "fingerprint": "3560e6764906aa45",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/reading-a-freight-quote": {
+      "fingerprint": "25e5441d3317e172",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/local-charges-on-a-sea-invoice": {
+      "fingerprint": "ffb31eac4bc333c9",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/paying-freight-in-three-currencies": {
+      "fingerprint": "7031afc94658e5d2",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/letters-of-credit-and-shipping-documents": {
+      "fingerprint": "4a7f4185071e0263",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/cbm-and-weight-in-sea-freight": {
+      "fingerprint": "1e8d2d4c23e42b05",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/why-the-cheapest-rate-costs-more": {
+      "fingerprint": "2c21ddf7b0c89068",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/landed-cost-of-an-import": {
+      "fingerprint": "0be24e115205a9b4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/surcharges-on-a-freight-bill": {
+      "fingerprint": "b669f1b29798c973",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/why-quotes-expire": {
+      "fingerprint": "a0b7e95cb1ce3bfe",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/freight-around-festivals": {
+      "fingerprint": "0226d3fde5e25349",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/monsoon-freight-in-nepal": {
+      "fingerprint": "235cbbe5902d0608",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/nepali-calendar-on-freight-paperwork": {
+      "fingerprint": "4b829f7bf7488a70",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/storing-cargo-before-delivery": {
+      "fingerprint": "1377203f201806b1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/proof-of-delivery-checklist": {
+      "fingerprint": "6fcd81e8a05b5769",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/receiving-a-delivery": {
+      "fingerprint": "e120a11ff90005d1",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/cargo-insurance-for-nepal-imports": {
+      "fingerprint": "7a57b4dded54e0aa",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/making-a-cargo-claim": {
+      "fingerprint": "ef5df736a0c0201b",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/your-first-import-into-nepal": {
+      "fingerprint": "f8b23e3bfefd30e4",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/briefing-a-freight-forwarder": {
+      "fingerprint": "40181c98edaf48cb",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/tracking-a-nepal-shipment": {
+      "fingerprint": "1970e12655e66344",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/a-nepal-partner-for-overseas-forwarders": {
+      "fingerprint": "b2c68b0eec542e51",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/one-team-gateway-to-door": {
+      "fingerprint": "38677bac42bb4647",
+      "lastmod": "2026-11-26"
+    },
+    "en/blog/deliveries-inside-kathmandu-valley": {
+      "fingerprint": "35d923d8e52ee393",
+      "lastmod": "2026-11-26"
     }
   }
 }

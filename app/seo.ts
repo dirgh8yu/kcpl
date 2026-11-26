@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { siteLocales, sitePath, type SiteLocale } from "./site-i18n";
+import { englishOnlyPath, siteLocales, sitePath, type SiteLocale } from "./site-i18n";
 
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kapileshworcargo.com.np").replace(/\/$/, "");
 
@@ -43,6 +43,7 @@ const openGraphLocales: Record<SiteLocale, string> = {
 
 export function languageAlternates(path: string) {
   const { basePath } = localeFromPath(path);
+  if (englishOnlyPath(basePath)) return { en: absoluteUrl(basePath), "x-default": absoluteUrl(basePath) };
   const languages = Object.fromEntries(siteLocales.map((entry) => [searchLocaleTags[entry], absoluteUrl(sitePath(entry, basePath))]));
   return { ...languages, "x-default": absoluteUrl(sitePath("en", basePath)) };
 }
@@ -69,7 +70,7 @@ export function createPageMetadata({
     openGraph: {
       type: "website",
       locale: openGraphLocales[localeFromPath(path).locale],
-      alternateLocale: siteLocales.filter((entry) => entry !== localeFromPath(path).locale).map((entry) => openGraphLocales[entry]),
+      alternateLocale: englishOnlyPath(path) ? [] : siteLocales.filter((entry) => entry !== localeFromPath(path).locale).map((entry) => openGraphLocales[entry]),
       siteName,
       title: resolvedTitle,
       description,

@@ -8,10 +8,11 @@ import { telHref, whatsappHref } from "../contact-links";
 import { breadcrumbNode, graph } from "../structured-data";
 import { StructuredData } from "./structured-data";
 import { SiteMenus } from "./site-menus";
-import { siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
+import { englishOnlyPath, siteLocaleLabels, siteLocaleTags, siteLocales, sitePath, siteText, siteTranslator, switchPath, type SiteLocale, type SiteTextKey } from "../site-i18n";
 
 const home = { path: "/", key: "chrome.home" } as const;
 const resources = { path: "/guides", key: "chrome.resources" } as const;
+const blog = { path: "/blog", key: "chrome.blog" } as const;
 
 /** The header bar: five links. Everything else is in the menu and the footer. */
 const primaryNavigation = [
@@ -23,7 +24,7 @@ const primaryNavigation = [
 ] as const;
 
 /** The menu's large links, in the order a visitor reads the site. */
-const menuNavigation = [home, primaryNavigation[0], primaryNavigation[1], primaryNavigation[2], resources, primaryNavigation[3], primaryNavigation[4]] as const;
+const menuNavigation = [home, primaryNavigation[0], primaryNavigation[1], primaryNavigation[2], resources, blog, primaryNavigation[3], primaryNavigation[4]] as const;
 
 /** Reached from the menu and the footer rather than the header bar. The gallery
  * keeps its address but stays out of navigation until it has more photographs. */
@@ -44,10 +45,11 @@ const moreNavigation = [
  */
 export function SiteLogo({ locale }: { locale: SiteLocale }) {
   return (
-    <Link href={sitePath(locale, "/")} className="site-lockup" aria-label={company.name}>
+    <Link href={sitePath(locale, "/")} className="site-lockup">
       <Image src="/images/brand/kcpl-gateway-k.svg" alt="" width={38} height={38} className="site-lockup-mark" loading="eager"/>
+      {/* The visible words are the link's name, so voice control can say what it sees; the space keeps them two words. */}
       <span className="site-lockup-text">
-        <span className="site-lockup-name">Kapileshwor</span>
+        <span className="site-lockup-name">Kapileshwor</span>{" "}
         <span className="site-lockup-meta">Cargo Pvt. Ltd.</span>
       </span>
     </Link>
@@ -82,7 +84,7 @@ export function SiteHeader({ locale, path }: { locale: SiteLocale; path: string 
             {siteLocales.map((entry) => (
               entry === locale
                 ? <span key={entry} className="site-pop-link" aria-current="true" lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}<Check size={14} weight="bold" aria-hidden="true"/></span>
-                : <Link key={entry} href={sitePath(entry, path)} className="site-pop-link" hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}</Link>
+                : <Link key={entry} href={switchPath(entry, path)} className="site-pop-link" hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]}>{siteLocaleLabels[entry]}</Link>
             ))}
           </div>
         </details>
@@ -139,6 +141,7 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
                 <li key={service.slug}><Link href={sitePath(locale, `/services/${service.slug}`)} aria-current={current(`/services/${service.slug}`)}>{siteText(locale, `svc.${service.key}.title` as SiteTextKey)}</Link></li>
               ))}
               <li><Link href={sitePath(locale, resources.path)} aria-current={current(resources.path)}>{t(resources.key)}</Link></li>
+              <li><Link href={sitePath(locale, blog.path)} aria-current={current(blog.path)}>{t(blog.key)}</Link></li>
             </ul>
           </div>
           <div>
@@ -161,10 +164,10 @@ export function SiteFooter({ locale, path }: { locale: SiteLocale; path: string 
         </div>
       </div>
       <div className="site-footer-base">
-        <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")} {t("chrome.photo_note")}</p>
+        <p>© {new Date().getFullYear()} {company.name} {t("chrome.rights")}{englishOnlyPath(path) ? null : <> {t("chrome.photo_note")}</>}</p>
         <nav aria-label={t("chrome.language")}>
           {siteLocales.map((entry) => (
-            <Link key={entry} href={sitePath(entry, path)} hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]} aria-current={entry === locale ? "true" : undefined}>{siteLocaleLabels[entry]}</Link>
+            <Link key={entry} href={switchPath(entry, path)} hrefLang={siteLocaleTags[entry]} lang={siteLocaleTags[entry]} aria-current={entry === locale ? "true" : undefined}>{siteLocaleLabels[entry]}</Link>
           ))}
         </nav>
         <span>
