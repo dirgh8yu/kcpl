@@ -29,6 +29,13 @@
 - [HS codes and import duty](https://kapileshworcargo.com.np/guides/hs-codes-and-import-duty): Classification and duty-estimate limitations.
 - [Free time and demurrage](https://kapileshworcargo.com.np/guides/free-time-and-demurrage): Release planning and time-related charges.
 
+## Blog
+
+- [Notes from the route](https://kapileshworcargo.com.np/blog): KCPL's notes on moving freight into and out of Nepal.
+- [How a power transformer reaches a Nepal substation](https://kapileshworcargo.com.np/blog/moving-power-transformers-to-nepal): Route survey, port lift, papers and setting down at site.
+- [Your container has reached Birgunj. What happens next?](https://kapileshworcargo.com.np/blog/container-at-birgunj-what-happens-next): Release, transit, rail, customs and the empty return.
+- [Telex release or original bill of lading](https://kapileshworcargo.com.np/blog/telex-release-or-original-bill-of-lading): How the release method decides when a Nepal import leaves the Indian port.
+
 ## Planning tools
 
 - [Freight tools](https://kapileshworcargo.com.np/tools): Volume, weight, storage and duty planning aids. Results are estimates, not binding rates or customs determinations.

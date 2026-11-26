@@ -549,6 +549,32 @@ html:has(.site-menu[open]) { overflow: hidden; }
   .search-result:hover strong { color: var(--crimson); }
 }
 
+/* Blog: long-form notes on the same line. KCPL's own photographs are shown larger than
+ * the illustrative ones elsewhere, cut like the K, and always captioned with their source. */
+.post-meta { display: flex; flex-wrap: wrap; gap: 0 18px; margin-top: 18px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.post-cover { margin-top: clamp(28px, 4vw, 56px); }
+.post-cover img, .post-lead-media img { width: 100%; aspect-ratio: 21 / 9; object-fit: cover; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.post-cover figcaption, .post-figure figcaption { max-width: 40em; margin-top: 12px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+:is(.post-cover, .post-figure) figcaption span { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.post-figure { max-width: 980px; margin-top: clamp(28px, 3.4vw, 48px); }
+.post-figure.is-tall { max-width: 520px; }
+.post-figure-media { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(10px, 1.4vw, 18px); }
+.post-figure img { aspect-ratio: auto; height: 100%; }
+.post-pair img { aspect-ratio: 4 / 5; }
+.post-list { max-width: 46em; margin-top: clamp(24px, 3vw, 40px); }
+.post-list .check-list { grid-template-columns: 1fr; margin-top: 12px; }
+.post-list .block-title + .check-list { margin-top: 14px; }
+.post-lead .stop-title a { text-decoration: none; }
+.post-lead-media { display: block; margin-top: clamp(28px, 3.4vw, 44px); }
+.post-lead > .text-link { margin-top: 18px; }
+.post-card-media { display: block; }
+.post-card-media img { aspect-ratio: 3 / 2; }
+.post-card .post-meta { margin-top: 12px; }
+@media (hover: hover) and (pointer: fine) {
+  .post-lead .stop-title a { transition: color 160ms ease; }
+  .post-lead .stop-title a:hover { color: var(--crimson); }
+}
+
 /* Quote */
 .quote { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 6vw, 96px); align-items: start; padding: clamp(32px, 5vw, 72px) var(--margin) clamp(64px, 8vw, 112px); }
 .quote-side .page-title { font-size: clamp(38px, 4.8vw, 72px); }
@@ -760,6 +786,9 @@ body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
   .mini-long li.is-raised i { transform: none; }
   .stories, .svc-list, .facts, .stop-split, .check-list, .qa, .link-list, .sector, .work-detail, .lanes, .contact-grid, .tool-layout, .tool-explain, .quote, .gallery { grid-template-columns: 1fr; }
   .plate-wide img { aspect-ratio: 3 / 2; }
+  .post-cover img, .post-lead-media img { aspect-ratio: 3 / 2; }
+  .post-pair .post-figure-media { grid-auto-flow: row; }
+  .post-pair img { aspect-ratio: 4 / 3; }
   .certs { grid-template-columns: 1fr 1fr; }
   .certs-large { grid-template-columns: 1fr; }
   .quote-fields { grid-template-columns: 1fr; }

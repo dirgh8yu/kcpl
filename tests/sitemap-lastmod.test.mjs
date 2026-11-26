@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { guides, guideSlugs } from "../app/guide-data.ts";
 import { depthMovementCopy, depthReferenceCopy, guideDepth, serviceDepth } from "../app/content-depth.ts";
-import { fingerprintAll, sitemapPaths } from "../app/sitemap-content.ts";
+import { fingerprintAll, sitemapLocales, sitemapPaths } from "../app/sitemap-content.ts";
 import { movementStories } from "../app/movement-data.ts";
 import { siteDictionary, siteLocales } from "../app/site-i18n.ts";
 import { guideReview } from "../app/guide-review.ts";
@@ -11,7 +11,7 @@ import { guideReview } from "../app/guide-review.ts";
 const manifest = JSON.parse(readFileSync(new URL("../app/sitemap-lastmod.json", import.meta.url), "utf8"));
 
 test("every sitemap URL has a recorded lastmod", () => {
-  const expected = sitemapPaths().flatMap((path) => siteLocales.map((locale) => `${locale}${path}`));
+  const expected = sitemapPaths().flatMap((path) => sitemapLocales(path).map((locale) => `${locale}${path}`));
   assert.equal(Object.keys(manifest.entries).length, expected.length);
   for (const key of expected) assert.ok(manifest.entries[key], `no lastmod recorded for ${key}`);
 });

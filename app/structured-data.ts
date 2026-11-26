@@ -5,6 +5,7 @@ import { guideIndex, guides, guideSlugs, type GuideSlug } from "./guide-data";
 import { tools, toolSlugs, type ToolSlug } from "./tool-data";
 import { guideReview } from "./guide-review";
 import sitemapLastmod from "./sitemap-lastmod.json";
+import { blogIndex, blogPhotos, blogPost } from "./blog-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -107,6 +108,9 @@ const crumbLabels: Record<string, SiteTextKey> = {
 };
 
 function crumbLabel(locale: SiteLocale, path: string) {
+  if (path === "/blog") return siteText(locale, "chrome.blog");
+  const post = path.startsWith("/blog/") ? blogPost(path.slice("/blog/".length)) : null;
+  if (post) return post.title;
   const guideSlug = path.startsWith("/guides/") ? path.slice("/guides/".length) : "";
   if (guideSlugs.includes(guideSlug as GuideSlug)) return guides[locale][guideSlug as GuideSlug].title;
   if (path === "/guides") return guideIndex[locale].title;
@@ -219,6 +223,29 @@ export function guideArticleNodes(slug: GuideSlug, imagePath: string) {
       },
     },
   ];
+}
+
+/** A blog post, written by KCPL as an organization; no person is named as reviewer until one has reviewed it. */
+export function blogPostingNode(slug: string) {
+  const post = blogPost(slug);
+  if (!post) return null;
+  const url = absoluteUrl(`/blog/${slug}`);
+  const recorded = (sitemapLastmod.entries as Record<string, { lastmod: string }>)[`en/blog/${slug}`];
+  return {
+    "@type": "BlogPosting",
+    "@id": `${url}#article`,
+    url,
+    headline: post.title,
+    description: post.description,
+    inLanguage: siteLocaleTags.en,
+    datePublished: post.published,
+    dateModified: recorded?.lastmod ?? post.published,
+    author: { "@type": "Organization", "@id": organizationId, name: siteName, url: siteUrl },
+    publisher: { "@id": organizationId },
+    image: absoluteUrl(blogPhotos[post.cover].src),
+    mainEntityOfPage: url,
+    isPartOf: { "@type": "Blog", "@id": `${absoluteUrl("/blog")}#blog`, name: blogIndex.title, url: absoluteUrl("/blog") },
+  };
 }
 
 /** One @graph per page rather than a stack of script tags, so the nodes can
