@@ -63,6 +63,8 @@ const nextConfig: NextConfig = {
       // These WordPress URLs still appear in search results and external links.
       { source: "/our-services", destination: "/services", permanent: true },
       { source: "/request-quote", destination: "/quote", permanent: true },
+      { source: "/about-us", destination: "/about", permanent: true },
+      { source: "/contact-us", destination: "/contact", permanent: true },
       { source: "/services/sea-freight", destination: "/services/ocean-freight", permanent: true },
       { source: "/services/break-bulk-cargo", destination: "/services/project-cargo", permanent: true },
       { source: "/services/open-top-container", destination: "/services/project-cargo", permanent: true },

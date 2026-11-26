@@ -1,17 +1,18 @@
 import { notFound } from "next/navigation";
-import { ServiceDetailPage, services, type ServiceSlug } from "../../../components/services-page";
+import { ServiceDetailPage, services } from "../../../components/services-page";
 import { createPageMetadata } from "../../../seo";
 import { siteText, type SiteTextKey } from "../../../site-i18n";
 import "../../../site.css";
 
+// Search wording, used for both the title tag and the H1; menus keep the short names.
 const searchTitles = {
-  air: "Air Freight to and from Nepal",
-  ocean: "Ocean Freight to and from Nepal",
-  road: "Road Freight in Nepal",
-  customs: "Customs Clearance in Nepal",
-  project: "Project Cargo in Nepal",
-  warehouse: "Cargo Warehousing in Nepal",
-  delivery: "Cargo Delivery in Nepal",
+  air: "Air freight to and from Nepal",
+  ocean: "Ocean freight to and from Nepal",
+  road: "Road freight in Nepal",
+  customs: "Customs clearance in Nepal",
+  project: "Project cargo in Nepal",
+  warehouse: "Cargo warehousing in Nepal",
+  delivery: "Cargo delivery in Nepal",
 } as const;
 
 export function generateStaticParams() {
@@ -35,6 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ service: 
 
 export default async function Page({ params }: { params: Promise<{ service: string }> }) {
   const { service } = await params;
-  if (!entry(service)) notFound();
-  return <ServiceDetailPage locale="en" slug={service as ServiceSlug}/>;
+  const found = entry(service);
+  if (!found) notFound();
+  return <ServiceDetailPage locale="en" slug={found.slug} heading={searchTitles[found.key]}/>;
 }
