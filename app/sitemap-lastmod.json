@@ -369,20 +369,20 @@
       "lastmod": "2026-11-05"
     },
     "en/guides": {
-      "fingerprint": "1a37362257ebe09c",
-      "lastmod": "2026-11-05"
+      "fingerprint": "4b25c01b792864d3",
+      "lastmod": "2026-11-26"
     },
     "ne/guides": {
-      "fingerprint": "c0b6b2e2eca0d97f",
-      "lastmod": "2026-10-11"
+      "fingerprint": "db0ec6580e018872",
+      "lastmod": "2026-11-26"
     },
     "zh/guides": {
-      "fingerprint": "df4f8db0d2b36843",
-      "lastmod": "2026-10-11"
+      "fingerprint": "fd198eeef5760509",
+      "lastmod": "2026-11-26"
     },
     "hi/guides": {
-      "fingerprint": "d6c5202d1a327bc9",
-      "lastmod": "2026-10-11"
+      "fingerprint": "6e99a048c6a92750",
+      "lastmod": "2026-11-26"
     },
     "en/guides/importing-to-nepal": {
       "fingerprint": "1d7b51255e8a35ef",
@@ -415,6 +415,38 @@
     "hi/guides/exporting-from-nepal": {
       "fingerprint": "931a52863295d7f8",
       "lastmod": "2026-09-23"
+    },
+    "en/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "b3c861e224e2bc02",
+      "lastmod": "2026-11-26"
+    },
+    "ne/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "fbb0bbc2d29814f9",
+      "lastmod": "2026-11-26"
+    },
+    "zh/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "a6dfb1f23116895d",
+      "lastmod": "2026-11-26"
+    },
+    "hi/guides/cargo-from-china-to-nepal": {
+      "fingerprint": "d3acd98a17a869e0",
+      "lastmod": "2026-11-26"
+    },
+    "en/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "4bc6cb29dd35a73e",
+      "lastmod": "2026-11-26"
+    },
+    "ne/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "66caa811118015d6",
+      "lastmod": "2026-11-26"
+    },
+    "zh/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "7e7a928a4aecaed1",
+      "lastmod": "2026-11-26"
+    },
+    "hi/guides/cargo-from-india-to-nepal": {
+      "fingerprint": "3e0a287f42dad41d",
+      "lastmod": "2026-11-26"
     },
     "en/guides/customs-clearance-in-nepal": {
       "fingerprint": "e7958e4c44aa909b",
