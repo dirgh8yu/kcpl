@@ -66,7 +66,7 @@ export function ServicesPage({ locale }: { locale: SiteLocale }) {
   );
 }
 
-export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: ServiceSlug }) {
+export function ServiceDetailPage({ locale, slug, heading }: { locale: SiteLocale; slug: ServiceSlug; heading?: string }) {
   const t = siteTranslator(locale);
   const service = services.find((entry) => entry.slug === slug);
   if (!service) return null;
@@ -77,7 +77,7 @@ export function ServiceDetailPage({ locale, slug }: { locale: SiteLocale; slug: 
         * crawler and points back at the organisation that provides it. */}
       <StructuredData data={graph([serviceNode(locale, slug)])}/>
       <PageHead
-        title={t(text(service.key, "title"))}
+        title={heading ?? t(text(service.key, "title"))}
         intro={t(text(service.key, "summary"))}
         breadcrumb={<Breadcrumbs locale={locale} path={`/services/${slug}`}/>}
       >

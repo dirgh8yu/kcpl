@@ -187,7 +187,7 @@ test("noindex on the App Hosting address can never reach the real site", async (
 test("indexed WordPress entry points redirect permanently to their matching public pages", async () => {
   const rules = await nextConfig.redirects();
   const paths = sitemapPaths();
-  for (const [source, destination] of [["/our-services", "/services"], ["/request-quote", "/quote"]]) {
+  for (const [source, destination] of [["/our-services", "/services"], ["/request-quote", "/quote"], ["/about-us", "/about"], ["/contact-us", "/contact"]]) {
     const matches = rules.filter((rule) => rule.source === source);
     assert.equal(matches.length, 1, `${source} must have one unambiguous redirect`);
     assert.equal(matches[0].destination, destination);
