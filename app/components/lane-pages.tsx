@@ -1,16 +1,39 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { absoluteUrl } from "../seo";
-import { laneFor, laneIndex, laneSlugs, type LaneSlug } from "../lane-data";
+import { laneFor, laneIndex, laneSlugs, type Lane, type LaneSlug } from "../lane-data";
 import { guides } from "../guide-data";
 import { services } from "../services-data";
 import { siteLocaleTags, sitePath, siteText, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools } from "../tool-data";
-import { faqNodeLane } from "../structured-data";
+import { faqNodeLane, graph, laneServiceNode } from "../structured-data";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
 import { Lined, PageHead, QaList, Stop } from "./route-parts";
+
+/**
+ * The closing CTA carries the corridor into the quote form: origin, destination
+ * and mode prefill the route, and `from` records which lane page produced the
+ * enquiry. Values come from the lane's own locale copy, so a Nepali reader is
+ * not handed English city names.
+ */
+function laneQuoteHref(locale: SiteLocale, lane: Lane) {
+  const params = new URLSearchParams({
+    origin: lane.origin,
+    destination: lane.destination,
+    mode: lane.mode,
+    source: "lane",
+    from: sitePath(locale, `/lanes/${lane.slug}`),
+  });
+  return `${sitePath(locale, "/quote")}?${params.toString()}`;
+}
+
+/** The index sends the reader on with the locale and the page, without a corridor. */
+function laneIndexQuoteHref(locale: SiteLocale) {
+  const params = new URLSearchParams({ source: "lane", from: sitePath(locale, "/lanes") });
+  return `${sitePath(locale, "/quote")}?${params.toString()}`;
+}
 
 const serviceLabel = (locale: SiteLocale, href: string) => {
   const slug = href.replace("/services/", "");
@@ -29,7 +52,7 @@ export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug 
 
   return (
     <SiteShell locale={locale} path={`/lanes/${slug}`}>
-      <StructuredData data={faqNodeLane(locale, slug)}/>
+      <StructuredData data={graph([laneServiceNode(locale, slug), faqNodeLane(locale, slug)])}/>
       <PageHead title={lane.title} intro={lane.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/lanes/${slug}`}/>}>
         <p className="guide-review">{lane.confirmedPrefix}{" "}
           <time dateTime={lane.confirmed}>{confirmed}</time>.
@@ -46,7 +69,7 @@ export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug 
           <QaList items={lane.questions}/>
         </Stop>
         <section className="stop page-actions">
-          <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{lane.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
+          <Link href={laneQuoteHref(locale, lane)} className="btn" data-analytics-event="quote_tap">{lane.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
           <Link href={sitePath(locale, lane.service)} className="text-link">{serviceLabel(locale, lane.service)}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           <Link href={sitePath(locale, `/tools/${lane.tool}`)} className="text-link">{tools[locale][lane.tool].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </section>
@@ -93,6 +116,9 @@ export function LanesIndexPage({ locale }: { locale: SiteLocale }) {
             ))}
           </ul>
         </Stop>
+        <section className="stop page-actions">
+          <Link href={laneIndexQuoteHref(locale)} className="btn" data-analytics-event="quote_tap">{index.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
+        </section>
       </Lined>
     </SiteShell>
   );

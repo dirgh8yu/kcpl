@@ -238,7 +238,10 @@ test("the client address comes from the proxy headers and is normalised", () => 
 });
 
 test("the quote route measures abuse before it does CRM or Firestore work", () => {
-  const route = readFileSync(new URL("../app/api/quotes/route.ts", import.meta.url), "utf8");
+  // The request path lives in the endpoint module; the route file only wires the
+  // store, CRM lookup and limiter into it.
+  const route = readFileSync(new URL("../app/api/quotes/quote-endpoint.ts", import.meta.url), "utf8");
+  const wiring = readFileSync(new URL("../app/api/quotes/route.ts", import.meta.url), "utf8");
   const policy = readFileSync(
     new URL("../app/api/quotes/quote-rate-limit-policy.ts", import.meta.url),
     "utf8",
@@ -255,10 +258,12 @@ test("the quote route measures abuse before it does CRM or Firestore work", () =
   assert.match(route, /quoteRateLimitPolicies\.contact/, "email limiting has to be wired too");
 
   const limitIndex = route.indexOf("checkQuoteRateLimit({");
-  const crmIndex = route.indexOf("findCrmDuplicates(");
-  const writeIndex = route.indexOf('.doc(reference).create(');
+  const crmIndex = route.indexOf("crmMatches = await crmMatcher");
+  const writeIndex = route.indexOf("store.create(");
   assert.ok(limitIndex > 0 && crmIndex > limitIndex, "the limit must run before CRM matching");
   assert.ok(writeIndex > limitIndex, "the limit must run before the Firestore write");
+  assert.match(wiring, /firestoreQuoteRateLimitStore/, "the store stays the durable Firestore one");
+  assert.match(wiring, /findCrmDuplicates/, "CRM matching is still the real lookup");
 
   // The honeypot and validation stay, as secondary controls.
   assert.match(route, /payload\.website/);

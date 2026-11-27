@@ -110,17 +110,20 @@ test("a provider HTTP error is treated as unavailable, not as a rejection", asyn
 });
 
 test("the quote route checks attestation before it does CRM or Firestore work", () => {
+  // The request path lives in the endpoint module; the route file only wires the
+  // store, CRM lookup and limiter into it.
+  const endpoint = readFileSync(new URL("../app/api/quotes/quote-endpoint.ts", import.meta.url), "utf8");
   const route = readFileSync(new URL("../app/api/quotes/route.ts", import.meta.url), "utf8");
 
-  assert.match(route, /evaluateQuoteChallenge/, "the route must verify the token");
-  assert.match(route, /challengeToken/, "the token has to come from the submitted payload");
-  assert.match(route, /403/, "an unattested submission is refused, not accepted");
-  assert.match(route, /transport_error/, "degradation is detected so it can be logged");
+  assert.match(endpoint, /evaluateQuoteChallenge/, "the route must verify the token");
+  assert.match(endpoint, /challengeToken/, "the token has to come from the submitted payload");
+  assert.match(endpoint, /403/, "an unattested submission is refused, not accepted");
+  assert.match(endpoint, /transport_error/, "degradation is detected so it can be logged");
 
-  const challengeIndex = route.indexOf("evaluateQuoteChallenge({");
-  const limitIndex = route.indexOf("checkQuoteRateLimit({");
-  const crmIndex = route.indexOf("findCrmDuplicates(");
-  const writeIndex = route.indexOf(".doc(reference).create(");
+  const challengeIndex = endpoint.indexOf("evaluateQuoteChallenge({");
+  const limitIndex = endpoint.indexOf("checkQuoteRateLimit({");
+  const crmIndex = endpoint.indexOf("crmMatches = await crmMatcher");
+  const writeIndex = endpoint.indexOf("store.create(");
   assert.ok(challengeIndex > 0, "the challenge call must be present");
   assert.ok(
     challengeIndex < limitIndex,
@@ -129,7 +132,11 @@ test("the quote route checks attestation before it does CRM or Firestore work", 
   assert.ok(challengeIndex < crmIndex && challengeIndex < writeIndex);
 
   // The challenge is optional, so it must not become a hard requirement in code.
-  assert.doesNotMatch(route, /CLOUDFLARE_TURNSTILE_SECRET_KEY/, "the route reads policy, not env");
+  assert.doesNotMatch(endpoint, /CLOUDFLARE_TURNSTILE_SECRET_KEY/, "the route reads policy, not env");
+
+  // The Firestore write is still the route's, reached through the endpoint.
+  assert.match(route, /createQuoteEndpoint/);
+  assert.match(route, /\.doc\(reference\)\.create\(/);
 });
 
 test("the form only asks for a token when a site key is configured", () => {

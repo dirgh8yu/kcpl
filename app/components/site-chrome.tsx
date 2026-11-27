@@ -29,6 +29,7 @@ const menuNavigation = [home, primaryNavigation[0], primaryNavigation[1], primar
 /** Reached from the menu and the footer rather than the header bar. The gallery
  * keeps its address but stays out of navigation until it has more photographs. */
 const moreNavigation = [
+  { path: "/lanes", key: "chrome.lanes" },
   { path: "/sectors", key: "chrome.sectors" },
   { path: "/awards", key: "chrome.awards" },
   { path: "/agents", key: "chrome.agents" },

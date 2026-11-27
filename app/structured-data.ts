@@ -175,6 +175,30 @@ export function serviceNode(locale: SiteLocale, slug: string) {
   };
 }
 
+/**
+ * A lane page describes one corridor KCPL runs, the same way a service page
+ * describes a service: provider, the two endpoints it serves, and the page it
+ * belongs to. It sits alongside the page's FAQPage rather than replacing it.
+ */
+export function laneServiceNode(locale: SiteLocale, slug: LaneSlug) {
+  const lane = laneFor(locale, slug);
+  const path = sitePath(locale, `/lanes/${slug}`);
+  return {
+    "@type": "Service",
+    "@id": `${absoluteUrl(path)}#service`,
+    name: lane.title,
+    description: lane.intro,
+    serviceType: laneFor("en", slug).title,
+    provider: { "@id": organizationId },
+    areaServed: [
+      { "@type": "City", name: lane.origin },
+      { "@type": "City", name: lane.destination },
+      { "@type": "Country", name: "Nepal" },
+    ],
+    url: absoluteUrl(path),
+  };
+}
+
 /** A lane page's questions, exactly as the page prints them. */
 export function faqNodeLane(locale: SiteLocale, slug: LaneSlug) {
   const lane = laneFor(locale, slug);

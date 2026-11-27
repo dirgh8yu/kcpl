@@ -1,5 +1,5 @@
 import "../organisation-premium.css";
-import { Megaphone } from "lucide-react";
+import { Download, Megaphone } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OpsBadge, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { OperationsShell } from "../operations-shell";
@@ -63,6 +63,7 @@ export default async function AttributionPage() {
         title="Lead sources"
         description="Where enquiries come from, and what those enquiries were later quoted and won."
         meta={<span>Last 2,000 quotes</span>}
+        actions={<a href="/api/admin/attribution/tracker" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download tracker CSV</a>}
       />
       <div className="ops-content">
         <OpsMetricStrip columns={4}>
@@ -80,9 +81,12 @@ export default async function AttributionPage() {
         </div> : null}
         <OpsSurface title="By source" description="A quote is attributed once, from the landing context captured with the enquiry." flush>
           {report.rows.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table">
-            <thead><tr><th>Source</th><th>Tool</th><th>Enquiries</th><th>Priced</th><th>Won</th><th>Lost</th><th>Quoted value</th><th>Realized</th></tr></thead>
+            <thead><tr><th>Source</th><th>Corridor</th><th>Tool</th><th>Enquiries</th><th>Priced</th><th>Won</th><th>Lost</th><th>Quoted value</th><th>Realized</th></tr></thead>
             <tbody>{report.rows.map((row) => <tr key={row.key}>
               <td data-cell="primary"><strong>{quoteAttributionLabel(row)}</strong><span className="ops-cell-secondary">{row.source}{row.medium ? ` · ${row.medium}` : ""}</span></td>
+              <td data-cell="meta" data-label="Corridor">{row.lane_origin && row.lane_destination
+                ? <><span>{row.lane_origin} → {row.lane_destination}</span><span className="ops-cell-secondary">{row.lane_slug}</span></>
+                : <span className="ops-cell-secondary">—</span>}</td>
               <td data-cell="meta" data-label="Tool">{row.tool ? <OpsBadge tone="info">{row.tool}</OpsBadge> : <span className="ops-cell-secondary">—</span>}</td>
               <td data-cell="meta" data-label="Enquiries">{row.enquiries}</td>
               <td data-cell="meta" data-label="Priced">{row.quoted}</td>

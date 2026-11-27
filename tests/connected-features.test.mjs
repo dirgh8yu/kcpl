@@ -170,8 +170,8 @@ test("new surfaces keep their authority boundaries in source", () => {
   assert.match(source("app/api/partner/tenders/[id]/respond/route.ts"), /partnerWriteRequest/);
   assert.match(source("app/api/integrations/free-time/route.ts"), /freeTimeMachineAuthorized/);
   assert.match(source("app/api/integrations/free-time/route.ts"), /applyCarrierFreeTime/);
-  assert.match(source("app/api/quotes/route.ts"), /sanitizeQuoteAttribution/);
-  assert.match(source("app/api/quotes/route.ts"), /attribution/);
+  assert.match(source("app/api/quotes/quote-endpoint.ts"), /sanitizeQuoteAttribution/);
+  assert.match(source("app/api/quotes/quote-endpoint.ts"), /attribution/);
   assert.match(source("app/portal/portal-document-intake.server.ts"), /documentReadingConfigured/);
   assert.match(source("app/portal/portal-document-intake.server.ts"), /readShipmentDocument/);
   assert.match(source("app/api/portal/invoices/[reference]/pay/route.ts"), /isTrustedSameOriginRequest/);
