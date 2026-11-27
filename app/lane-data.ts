@@ -1,46 +1,88 @@
-import type { ToolSlug } from "./tool-data";
+import type { ToolSlug } from "./tool-data.ts";
+import type { SiteLocale } from "./site-i18n.ts";
+import { laneCopyOther } from "./lane-copy.ts";
 
 /* Lane pages answer a corridor query — "Kolkata to Birgunj transport" — rather
- * than an origin query. They are written in English only for now, so every
- * link to one points at /lanes/..., the way blog links do.
+ * than an origin query. They exist in all four languages since 2026-11-27; the
+ * English lives here and the other three in lane-copy.ts, so a translator edits
+ * one file and the corridor metadata stays untouched.
  *
  * Two rules held while writing this:
  *  - A transit range appears only where the operations side confirmed one. The
  *    Kolkata and Birgunj legs carry no published number because KCPL quotes the
  *    range with the shipment; the northern leg carries the 14–21 day range
  *    KCPL gave on 2026-11-27, with the date it was confirmed.
- *  - Nothing here promises a clearance date, a free-time allowance or a rate. */
+ *  - Nothing here promises a clearance date, a free-time allowance or a rate.
+ */
 
 export const laneSlugs = ["kolkata-to-birgunj", "haldia-to-kathmandu", "nepal-to-tibet"] as const;
 export type LaneSlug = (typeof laneSlugs)[number];
 
-export type Lane = {
-  slug: LaneSlug;
+/** The prose of one lane page. Translated as a unit; facts must not drift. */
+export type LaneCopy = {
   title: string;
   description: string;
   intro: string;
-  /** The date the corridor facts were last confirmed by the operations side. */
-  confirmed: string;
+  questionsTitle: string;
+  otherTitle: string;
+  /** The quote button on the page. */
+  cta: string;
+  /** Sits before the confirmation date, so the date can be formatted per locale. */
+  confirmedPrefix: string;
   sections: { title: string; copy: string; list?: string[] }[];
   questions: { question: string; answer: string }[];
+};
+
+export type Lane = LaneCopy & {
+  slug: LaneSlug;
+  /** The date the corridor facts were last confirmed by the operations side. */
+  confirmed: string;
   service: string;
   tool: ToolSlug;
   next: LaneSlug[];
 };
 
-export const laneIndex = {
-  title: "Nepal freight lanes",
-  description: "The corridors KCPL moves freight on every month: Kolkata and Haldia through Birgunj, the northern crossings to Tibet, and India's land border points.",
-  intro: "Each page follows one corridor from the gateway to delivery, names the documents at every handover, and says which part of the transit KCPL controls and which part it does not.",
+export type LaneIndexCopy = {
+  title: string;
+  description: string;
+  intro: string;
+  corridorsTitle: string;
+  readingTitle: string;
+  /** Section heading used where another page links to the lane set. */
+  lanesTitle: string;
 };
 
-export const lanes: Record<LaneSlug, Lane> = {
+/** Everything that is not prose, shared by every language. */
+const laneMeta: Record<LaneSlug, Omit<Lane, keyof LaneCopy | "slug">> = {
   "kolkata-to-birgunj": {
-    slug: "kolkata-to-birgunj",
+    confirmed: "2026-11-27",
+    service: "/services/customs-clearance",
+    tool: "storage-charges",
+    next: ["haldia-to-kathmandu", "nepal-to-tibet"],
+  },
+  "haldia-to-kathmandu": {
+    confirmed: "2026-11-27",
+    service: "/services/ocean-freight",
+    tool: "storage-charges",
+    next: ["kolkata-to-birgunj", "nepal-to-tibet"],
+  },
+  "nepal-to-tibet": {
+    confirmed: "2026-11-27",
+    service: "/services/road-freight",
+    tool: "volume-weight",
+    next: ["kolkata-to-birgunj", "haldia-to-kathmandu"],
+  },
+};
+
+const laneCopyEn: Record<LaneSlug, LaneCopy> = {
+  "kolkata-to-birgunj": {
     title: "Kolkata to Birgunj transport",
     description: "How a container reaches Birgunj from Kolkata: port release, rail to the ICD or road across Raxaul, Nepal customs at Birgunj, and delivery to the door.",
     intro: "A container from Kolkata reaches Birgunj by rail to the inland container depot or by road across Raxaul, then clears Nepal customs at the ICD. Four stages decide the transit, and three of them begin before the container arrives.",
-    confirmed: "2026-11-27",
+    questionsTitle: "Common questions",
+    otherTitle: "Other lanes",
+    cta: "Send the cargo, route and date",
+    confirmedPrefix: "Corridor details confirmed with KCPL operations on",
     sections: [
       {
         title: "Release at Kolkata",
@@ -79,17 +121,16 @@ export const lanes: Record<LaneSlug, Lane> = {
         answer: "Free time is the period before demurrage, detention or storage starts. The shipping line and the terminal set it, and it is confirmed per booking.",
       },
     ],
-    service: "/services/customs-clearance",
-    tool: "storage-charges",
-    next: ["haldia-to-kathmandu", "nepal-to-tibet"],
   },
 
   "haldia-to-kathmandu": {
-    slug: "haldia-to-kathmandu",
     title: "Haldia to Kathmandu cargo",
     description: "Haldia and Kolkata as gateways for a Kathmandu delivery: which cargo suits Haldia, the inland leg to Birgunj, clearance at the ICD, then delivery.",
     intro: "Haldia and Kolkata both serve Nepal, and the port is chosen by the cargo, the sailing and the inland leg. From either one, the container moves by rail or road toward Birgunj and then up to Kathmandu.",
-    confirmed: "2026-11-27",
+    questionsTitle: "Common questions",
+    otherTitle: "Other lanes",
+    cta: "Send the cargo, route and date",
+    confirmedPrefix: "Corridor details confirmed with KCPL operations on",
     sections: [
       {
         title: "Which port fits the cargo",
@@ -127,17 +168,16 @@ export const lanes: Record<LaneSlug, Lane> = {
         answer: "Transit is quoted per shipment. Rail allocation and clearance time move the arrival date more than the choice between these two ports does.",
       },
     ],
-    service: "/services/ocean-freight",
-    tool: "storage-charges",
-    next: ["kolkata-to-birgunj", "nepal-to-tibet"],
   },
 
   "nepal-to-tibet": {
-    slug: "nepal-to-tibet",
     title: "Nepal to Tibet cargo",
     description: "Exports from Nepal to Tibet over Tatopani–Zhangmu and Kerung–Rasuwagadhi: the transit range, export documents, the consignee's role, and delays.",
     intro: "Exports from Nepal to China cross the same two Himalayan crossings that carry imports the other way. Allow 14 to 21 days between Kathmandu and Lhasa, depending on the season and the crossing.",
-    confirmed: "2026-11-27",
+    questionsTitle: "Common questions",
+    otherTitle: "Other lanes",
+    cta: "Send the cargo, route and date",
+    confirmedPrefix: "Corridor details confirmed with KCPL operations on",
     sections: [
       {
         title: "Which crossing",
@@ -177,8 +217,55 @@ export const lanes: Record<LaneSlug, Lane> = {
         answer: "The consignee's import declaration and the commodity paperwork the goods require. KCPL prepares the Nepal-side file; the Chinese import filing stays with the consignee or their agent.",
       },
     ],
-    service: "/services/road-freight",
-    tool: "volume-weight",
-    next: ["kolkata-to-birgunj", "haldia-to-kathmandu"],
   },
 };
+
+export const laneCopy: Record<SiteLocale, Record<LaneSlug, LaneCopy>> = {
+  en: laneCopyEn,
+  ne: laneCopyOther.ne,
+  hi: laneCopyOther.hi,
+  zh: laneCopyOther.zh,
+};
+
+export function laneFor(locale: SiteLocale, slug: LaneSlug): Lane {
+  return { ...laneCopy[locale][slug], slug, ...laneMeta[slug] };
+}
+
+export const laneIndex: Record<SiteLocale, LaneIndexCopy> = {
+  en: {
+    title: "Nepal freight lanes",
+    description: "The corridors KCPL moves freight on every month: Kolkata and Haldia through Birgunj, the northern crossings to Tibet, and India's land border points.",
+    intro: "Each page follows one corridor from the gateway to delivery, names the documents at every handover, and says which part of the transit KCPL controls and which part it does not.",
+    corridorsTitle: "Corridors",
+    readingTitle: "Related reading",
+    lanesTitle: "Lane pages",
+  },
+  ne: {
+    title: "नेपाल ढुवानी मार्गहरू",
+    description: "KCPL ले महिनैपिच्छे चलाउने मार्गहरू: वीरगन्ज हुँदै कोलकाता र हल्दिया, तिब्बततर्फका उत्तरी नाका, र भारतका स्थल सीमा नाका। हरेक पृष्ठमा कागजात र डेलिभरी।",
+    intro: "हरेक पृष्ठले एउटा मार्गलाई गेटवेबाट डेलिभरीसम्म देखाउँछ, हरेक हस्तान्तरणमा चाहिने कागजात बताउँछ, र कुन भाग KCPL ले नियन्त्रण गर्छ र कुन गर्दैन भन्ने पनि।",
+    corridorsTitle: "मार्गहरू",
+    readingTitle: "सम्बन्धित सामग्री",
+    lanesTitle: "मार्ग पृष्ठहरू",
+  },
+  hi: {
+    title: "नेपाल माल ढुलाई मार्ग",
+    description: "वे मार्ग जिन पर KCPL हर महीने माल ढुलाई करता है: बीरगंज के रास्ते कोलकाता और हल्दिया, तिब्बत के उत्तरी नाके, और भारत के स्थल नाके। हर पृष्ठ पर दस्तावेज़।",
+    intro: "हर पृष्ठ एक मार्ग को गेटवे से डिलीवरी तक दिखाता है, हर हैंडओवर पर दस्तावेज़ बताता है, और यह भी कि पारगमन का कौन सा हिस्सा KCPL नियंत्रित करता है और कौन सा नहीं।",
+    corridorsTitle: "मार्ग",
+    readingTitle: "संबंधित पठन",
+    lanesTitle: "मार्ग पृष्ठ",
+  },
+  zh: {
+    title: "尼泊尔货运路线",
+    description: "KCPL 每月实际承运的路线：经比尔根杰的加尔各答与哈尔迪亚、通往西藏的北向口岸，以及印度陆路边境点。",
+    intro: "每个页面沿着一条路线从口岸写到交付，标明每一次交接所需的单据，并说明哪些环节由 KCPL 控制、哪些不由 KCPL 控制。",
+    corridorsTitle: "路线",
+    readingTitle: "相关阅读",
+    lanesTitle: "路线页面",
+  },
+};
+
+export function lanesFor(locale: SiteLocale): Lane[] {
+  return laneSlugs.map((slug) => laneFor(locale, slug));
+}

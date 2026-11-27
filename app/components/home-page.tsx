@@ -119,7 +119,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           <Link href={sitePath(locale, "/services")} className="text-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           <div className="page-actions">
             <Link href={sitePath(locale, "/tools")} className="text-link">{tools[locale].index.title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-            {locale === "en" ? <Link href="/lanes" className="text-link">{laneIndex.title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link> : null}
+            <Link href={sitePath(locale, "/lanes")} className="text-link">{laneIndex[locale].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           </div>
         </Stop>
         {/* The line arrives in Kathmandu over the range, then ends on the quote. */}
