@@ -80,9 +80,12 @@ export default async function AttributionPage() {
         </div> : null}
         <OpsSurface title="By source" description="A quote is attributed once, from the landing context captured with the enquiry." flush>
           {report.rows.length ? <OpsTableWrap><table className="ops-table ops-register-table ops-stack-table">
-            <thead><tr><th>Source</th><th>Tool</th><th>Enquiries</th><th>Priced</th><th>Won</th><th>Lost</th><th>Quoted value</th><th>Realized</th></tr></thead>
+            <thead><tr><th>Source</th><th>Corridor</th><th>Tool</th><th>Enquiries</th><th>Priced</th><th>Won</th><th>Lost</th><th>Quoted value</th><th>Realized</th></tr></thead>
             <tbody>{report.rows.map((row) => <tr key={row.key}>
               <td data-cell="primary"><strong>{quoteAttributionLabel(row)}</strong><span className="ops-cell-secondary">{row.source}{row.medium ? ` · ${row.medium}` : ""}</span></td>
+              <td data-cell="meta" data-label="Corridor">{row.lane_origin && row.lane_destination
+                ? <><span>{row.lane_origin} → {row.lane_destination}</span><span className="ops-cell-secondary">{row.lane_slug}</span></>
+                : <span className="ops-cell-secondary">—</span>}</td>
               <td data-cell="meta" data-label="Tool">{row.tool ? <OpsBadge tone="info">{row.tool}</OpsBadge> : <span className="ops-cell-secondary">—</span>}</td>
               <td data-cell="meta" data-label="Enquiries">{row.enquiries}</td>
               <td data-cell="meta" data-label="Priced">{row.quoted}</td>

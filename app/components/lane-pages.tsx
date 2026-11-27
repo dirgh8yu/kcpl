@@ -6,7 +6,7 @@ import { guides } from "../guide-data";
 import { services } from "../services-data";
 import { siteLocaleTags, sitePath, siteText, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools } from "../tool-data";
-import { faqNodeLane } from "../structured-data";
+import { faqNodeLane, graph, laneServiceNode } from "../structured-data";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
@@ -52,7 +52,7 @@ export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug 
 
   return (
     <SiteShell locale={locale} path={`/lanes/${slug}`}>
-      <StructuredData data={faqNodeLane(locale, slug)}/>
+      <StructuredData data={graph([laneServiceNode(locale, slug), faqNodeLane(locale, slug)])}/>
       <PageHead title={lane.title} intro={lane.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/lanes/${slug}`}/>}>
         <p className="guide-review">{lane.confirmedPrefix}{" "}
           <time dateTime={lane.confirmed}>{confirmed}</time>.

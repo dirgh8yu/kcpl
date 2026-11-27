@@ -5,6 +5,7 @@ import {
   sanitizeQuoteAttribution,
   type QuoteAttribution,
 } from "../../quote-attribution.ts";
+import { quoteCorridor } from "../../quote-corridor.ts";
 
 export type AttributionInvoice = {
   quote_reference?: string | null;
@@ -22,6 +23,10 @@ export type AttributionRow = {
   tool: string | null;
   /** The lane page that handed the reader over, when there was one. */
   lane_path: string | null;
+  /** The same corridor in English: the slug and its two endpoints. */
+  lane_slug: string | null;
+  lane_origin: string | null;
+  lane_destination: string | null;
   enquiries: number;
   quoted: number;
   won: number;
@@ -104,6 +109,7 @@ export function buildAttributionReport(
       campaign: attribution?.campaign ?? null,
       tool: attribution?.tool ?? null,
       lane_path: attribution?.lane_path ?? null,
+      ...quoteCorridor(attribution?.lane_path),
       enquiries: 0,
       quoted: 0,
       won: 0,

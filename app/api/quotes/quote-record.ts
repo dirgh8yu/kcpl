@@ -1,4 +1,5 @@
 import type { QuoteAttribution } from "../../quote-attribution";
+import { quoteCorridor } from "../../quote-corridor.ts";
 
 /*
  * The document written to `quotes/{reference}`.
@@ -48,6 +49,10 @@ export function buildQuoteRecord({ reference, createdAt, quote, attribution, crm
     note_count: 0,
     origin: quote.origin,
     destination: quote.destination,
+    /* The same corridor in English, beside the localized words above, so a staff
+     * filter for "Kathmandu" finds an enquiry submitted as "काठमाडौं". Null for
+     * every enquiry that did not come from a lane page. */
+    ...quoteCorridor(attribution?.lane_path),
     mode: quote.mode,
     cargo_type: quote.cargoType || null,
     weight: quote.weight || null,

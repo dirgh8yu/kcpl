@@ -16,6 +16,7 @@ export const zh: Record<SiteTextKey, string> = {
   "chrome.sectors": "行业与项目",
   "chrome.work": "案例",
   "chrome.network": "网络",
+  "chrome.lanes": "货运路线",
   "chrome.gallery": "图片展示",
   "chrome.awards": "奖项",
   "chrome.about": "关于我们",

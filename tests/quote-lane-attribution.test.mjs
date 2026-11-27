@@ -147,6 +147,14 @@ test("the stored quote document carries the lane that produced it", () => {
   assert.equal(record.status, "new");
   assert.equal(record.contact_email, "test@example.com");
 
+  // The enquiry keeps the words the visitor typed, and carries the English
+  // corridor beside them, so a staff filter for "Kathmandu" finds it.
+  assert.equal(record.origin, quote.origin);
+  assert.equal(record.destination, quote.destination);
+  assert.equal(record.lane_slug, "nepal-to-tibet");
+  assert.equal(record.lane_origin, "Kathmandu");
+  assert.equal(record.lane_destination, "Lhasa");
+
   // A direct visit stores a record of the same shape with no lane on it.
   const directAttribution = sanitizeQuoteAttribution(captureQuoteAttribution({ search: "", referrer: "", pathname: "/quote" }));
   const directRecord = buildQuoteRecord({
@@ -157,7 +165,33 @@ test("the stored quote document carries the lane that produced it", () => {
     crmMatches: [],
   });
   assert.equal(directRecord.attribution.lane_path, null);
+  assert.equal(directRecord.lane_slug, null);
+  assert.equal(directRecord.lane_origin, null);
+  assert.equal(directRecord.lane_destination, null);
   assert.deepEqual(Object.keys(directRecord).sort(), Object.keys(record).sort());
+});
+
+test("the lane index names no corridor, and CRM matching is untouched", () => {
+  const indexAttribution = sanitizeQuoteAttribution(captureQuoteAttribution({
+    search: `?source=lane&from=${encodeURIComponent("/zh/lanes")}`,
+    referrer: "",
+    pathname: "/zh/quote",
+  }));
+  assert.equal(indexAttribution.lane_path, "/zh/lanes");
+
+  const record = buildQuoteRecord({
+    reference: "KCPL-Q-20261127-TEST0003",
+    createdAt: "2026-11-27T10:10:00.000Z",
+    quote,
+    attribution: indexAttribution,
+    crmMatches: [{ id: "crm-1", display_name: "Example Customer", reason: "email" }],
+  });
+  assert.equal(record.lane_slug, null, "the index has no corridor of its own");
+  assert.equal(record.lane_origin, null);
+  assert.equal(record.lane_destination, null);
+  // Dedupe output is still written exactly as before.
+  assert.equal(record.crm_match_state, "suggested");
+  assert.deepEqual(record.crm_match_ids, ["crm-1"]);
 });
 
 test("the attribution report counts each lane separately from direct submissions", () => {

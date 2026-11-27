@@ -17,6 +17,7 @@ export const hi: Record<SiteTextKey, string> = {
   "chrome.sectors": "क्षेत्र और परियोजनाएँ",
   "chrome.work": "केस स्टडी",
   "chrome.network": "नेटवर्क",
+  "chrome.lanes": "ढुलाई मार्ग",
   "chrome.gallery": "चित्र दीर्घा",
   "chrome.awards": "पुरस्कार",
   "chrome.about": "हमारे बारे में",
