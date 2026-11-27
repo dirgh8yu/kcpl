@@ -1,0 +1,57 @@
+name: Live smoke
+
+# The post-deploy smoke check, run without a human in the loop.
+#
+# A rollout can report success while the origin still answers with the previous
+# build — that is the failure this check exists for. Each push to main waits for
+# the App Hosting rollout of that exact commit, then smokes the deployed site:
+# lane index ItemList on all four locales, lane pages' Service/FAQ/canonical, the
+# quote form, the sitemap's lane URLs, a blog note's corridor link, and that the
+# private surfaces still refuse. It fails the run when production disagrees with
+# the merged code instead of leaving it to whoever next looks at the site.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: live-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+
+      - name: Wait for the App Hosting rollout
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 48); do
+            runs=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+              --jq '[.check_runs[] | select(.name | startswith("App Hosting")) | .status + "/" + (.conclusion // "-")] | join(",")')
+            echo "attempt ${attempt}: ${runs:-no App Hosting check yet}"
+            case "$runs" in
+              *"/failure"* | *"/cancelled"* | *"/timed_out"*) echo "App Hosting rollout did not succeed" >&2; exit 1 ;;
+              *"/success"*) exit 0 ;;
+            esac
+            sleep 15
+          done
+          echo "rollout has not reported after 12 minutes; running the smoke check anyway" >&2
+
+      - name: Smoke the deployed site
+        run: node scripts/post-deploy-smoke.mjs
