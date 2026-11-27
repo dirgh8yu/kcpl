@@ -134,9 +134,15 @@ test("the quote route checks attestation before it does CRM or Firestore work", 
   // The challenge is optional, so it must not become a hard requirement in code.
   assert.doesNotMatch(endpoint, /CLOUDFLARE_TURNSTILE_SECRET_KEY/, "the route reads policy, not env");
 
-  // The Firestore write is still the route's, reached through the endpoint.
+  // The Firestore write is still the route's, reached through the endpoint. The
+  // statement that performs it lives in the adapter module now, so both halves
+  // are asserted: the route wires the adapter, the adapter creates (never sets).
   assert.match(route, /createQuoteEndpoint/);
-  assert.match(route, /\.doc\(reference\)\.create\(/);
+  assert.match(route, /firestoreQuoteStore\(firebaseAdminDb\(\)\)/);
+  const adapter = readFileSync(new URL("../app/api/quotes/quote-firestore-store.ts", import.meta.url), "utf8");
+  assert.match(adapter, /collection\("quotes"\)/);
+  assert.match(adapter, /\.doc\(reference\)\.create\(/);
+  assert.doesNotMatch(adapter, /\.set\(/, "an enquiry is created once, never overwritten");
 });
 
 test("the form only asks for a token when a site key is configured", () => {
