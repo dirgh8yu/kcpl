@@ -38,6 +38,21 @@
 - [Nepal to Tibet cargo](https://kapileshworcargo.com.np/lanes/nepal-to-tibet): Northbound exports over Tatopani–Zhangmu and Kerung–Rasuwagadhi, 14 to 21 days between Kathmandu and Lhasa, and the documents on both sides.
 - [All lanes](https://kapileshworcargo.com.np/lanes): The corridors KCPL moves freight on.
 
+Nepali, Hindi and Chinese:
+
+- [नेपाल ढुवानी मार्गहरू](https://kapileshworcargo.com.np/ne/lanes)
+- [कोलकाताबाट वीरगन्जसम्म ढुवानी](https://kapileshworcargo.com.np/ne/lanes/kolkata-to-birgunj)
+- [हल्दियाबाट काठमाडौंसम्म मालसामान](https://kapileshworcargo.com.np/ne/lanes/haldia-to-kathmandu)
+- [नेपालबाट तिब्बतसम्म मालसामान](https://kapileshworcargo.com.np/ne/lanes/nepal-to-tibet)
+- [नेपाल माल ढुलाई मार्ग](https://kapileshworcargo.com.np/hi/lanes)
+- [कोलकाता से बीरगंज तक परिवहन](https://kapileshworcargo.com.np/hi/lanes/kolkata-to-birgunj)
+- [हल्दिया से काठमांडू तक माल](https://kapileshworcargo.com.np/hi/lanes/haldia-to-kathmandu)
+- [नेपाल से तिब्बत तक माल](https://kapileshworcargo.com.np/hi/lanes/nepal-to-tibet)
+- [尼泊尔货运路线](https://kapileshworcargo.com.np/zh/lanes)
+- [加尔各答至比尔根杰运输](https://kapileshworcargo.com.np/zh/lanes/kolkata-to-birgunj)
+- [哈尔迪亚至加德满都货运](https://kapileshworcargo.com.np/zh/lanes/haldia-to-kathmandu)
+- [尼泊尔至西藏货运](https://kapileshworcargo.com.np/zh/lanes/nepal-to-tibet)
+
 ## Blog
 
 - [Notes from the route](https://kapileshworcargo.com.np/blog): KCPL's notes on moving freight into and out of Nepal, in English.

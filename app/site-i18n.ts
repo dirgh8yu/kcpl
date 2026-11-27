@@ -45,9 +45,10 @@ export function sitePath(locale: SiteLocale, path: string) {
 }
 
 /** The blog is written in English and has no translation yet, so every link to it,
- * from any language, goes to the English page. */
+ * from any language, goes to the English page. The lane pages left this list on
+ * 2026-11-27, when their Nepali, Hindi and Chinese copy shipped. */
 export function englishOnlyPath(path: string) {
-  return path === "/blog" || path.startsWith("/blog/") || path === "/lanes" || path.startsWith("/lanes/");
+  return path === "/blog" || path.startsWith("/blog/");
 }
 
 /** Where the language switch goes: the same page, or that language's home page

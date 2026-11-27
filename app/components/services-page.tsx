@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guides, type GuideSlug } from "../guide-data";
+import { laneFor, type LaneSlug } from "../lane-data";
 import { serviceDepth } from "../content-depth";
 import { services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { graph, serviceNode } from "../structured-data";
@@ -41,21 +42,13 @@ const serviceResources: Record<ServiceSlug, { guides: GuideSlug[]; tool: ToolSlu
   delivery: { guides: ["importing-to-nepal", "exporting-from-nepal"], tool: "volume-weight" },
 };
 
-/* The lane pages are English-only, so they join the resources block on the
- * English service pages and stay out of the translated ones. */
-const serviceLanes: Partial<Record<string, { href: string; label: string }[]>> = {
-  "ocean-freight": [
-    { href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj transport" },
-    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
-  ],
-  "customs-clearance": [
-    { href: "/lanes/kolkata-to-birgunj", label: "Clearance at ICD Birgunj" },
-    { href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" },
-  ],
-  "road-freight": [
-    { href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" },
-    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
-  ],
+/* Lane pages join the resources block on the service page that answers for the
+ * corridor. Titles come from the lane data, so a translated service page links
+ * to the translated lane page with its own heading rather than English. */
+const serviceLanes: Partial<Record<string, LaneSlug[]>> = {
+  "ocean-freight": ["kolkata-to-birgunj", "haldia-to-kathmandu"],
+  "customs-clearance": ["kolkata-to-birgunj", "nepal-to-tibet"],
+  "road-freight": ["nepal-to-tibet", "haldia-to-kathmandu"],
 };
 
 export function ServicesPage({ locale }: { locale: SiteLocale }) {
@@ -130,9 +123,9 @@ export function ServiceDetailPage({ locale, slug, heading }: { locale: SiteLocal
               <li key={guide}><Link href={sitePath(locale, `/guides/${guide}`)}>{guides[locale][guide].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
             ))}
             <li><Link href={sitePath(locale, `/tools/${serviceResources[slug].tool}`)}>{tools[locale][serviceResources[slug].tool].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
-            {locale === "en" ? (serviceLanes[slug] ?? []).map((lane) => (
-              <li key={lane.href}><Link href={lane.href}>{lane.label}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
-            )) : null}
+            {(serviceLanes[slug] ?? []).map((lane) => (
+              <li key={lane}><Link href={sitePath(locale, `/lanes/${lane}`)}>{laneFor(locale, lane).title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            ))}
           </ul>
         </Stop>
         <Stop title={t("services.related")}>

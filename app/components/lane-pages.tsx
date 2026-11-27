@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { absoluteUrl } from "../seo";
-import { lanes, laneIndex, laneSlugs, type LaneSlug } from "../lane-data";
+import { laneFor, laneIndex, laneSlugs, type LaneSlug } from "../lane-data";
+import { guides } from "../guide-data";
 import { services } from "../services-data";
-import { siteText, type SiteTextKey } from "../site-i18n";
+import { siteLocaleTags, sitePath, siteText, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools } from "../tool-data";
 import { faqNodeLane } from "../structured-data";
 import { SiteShell } from "./site-chrome";
@@ -11,21 +12,27 @@ import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
 import { Lined, PageHead, QaList, Stop } from "./route-parts";
 
-const serviceLabel = (href: string) => {
+const serviceLabel = (locale: SiteLocale, href: string) => {
   const slug = href.replace("/services/", "");
   const service = services.find((entry) => entry.slug === slug);
-  return service ? siteText("en", `svc.${service.key}.title` as SiteTextKey) : slug.replace(/-/g, " ");
+  return service ? siteText(locale, `svc.${service.key}.title` as SiteTextKey) : slug.replace(/-/g, " ");
 };
 
-export function LanePage({ slug }: { slug: LaneSlug }) {
-  const lane = lanes[slug];
+export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug }) {
+  const lane = laneFor(locale, slug);
+  const confirmed = new Intl.DateTimeFormat(siteLocaleTags[locale], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${lane.confirmed}T00:00:00Z`));
 
   return (
-    <SiteShell locale="en" path={`/lanes/${slug}`}>
-      <StructuredData data={faqNodeLane(slug)}/>
-      <PageHead title={lane.title} intro={lane.intro} breadcrumb={<Breadcrumbs locale="en" path={`/lanes/${slug}`}/>}>
-        <p className="guide-review">Corridor details confirmed with KCPL operations on{" "}
-          <time dateTime={lane.confirmed}>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${lane.confirmed}T00:00:00Z`))}</time>.
+    <SiteShell locale={locale} path={`/lanes/${slug}`}>
+      <StructuredData data={faqNodeLane(locale, slug)}/>
+      <PageHead title={lane.title} intro={lane.intro} breadcrumb={<Breadcrumbs locale={locale} path={`/lanes/${slug}`}/>}>
+        <p className="guide-review">{lane.confirmedPrefix}{" "}
+          <time dateTime={lane.confirmed}>{confirmed}</time>.
         </p>
       </PageHead>
       <Lined reveal>
@@ -35,20 +42,20 @@ export function LanePage({ slug }: { slug: LaneSlug }) {
             {section.list ? <ul className="check-list">{section.list.map((item) => <li key={item}>{item}</li>)}</ul> : null}
           </Stop>
         ))}
-        <Stop title="Common questions">
+        <Stop title={lane.questionsTitle}>
           <QaList items={lane.questions}/>
         </Stop>
         <section className="stop page-actions">
-          <Link href="/quote" className="btn" data-analytics-event="quote_tap">Send the cargo, route and date<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
-          <Link href={lane.service} className="text-link">{serviceLabel(lane.service)}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
-          <Link href={`/tools/${lane.tool}`} className="text-link">{tools.en[lane.tool].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, "/quote")} className="btn" data-analytics-event="quote_tap">{lane.cta}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, lane.service)} className="text-link">{serviceLabel(locale, lane.service)}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <Link href={sitePath(locale, `/tools/${lane.tool}`)} className="text-link">{tools[locale][lane.tool].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </section>
-        <Stop title="Other lanes">
+        <Stop title={lane.otherTitle}>
           <ul className="link-list">
             {lane.next.map((next) => (
-              <li key={next}><Link href={`/lanes/${next}`}>{lanes[next].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+              <li key={next}><Link href={sitePath(locale, `/lanes/${next}`)}>{laneFor(locale, next).title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
             ))}
-            <li><Link href="/guides/cargo-from-india-to-nepal">Cargo from India to Nepal: the border points<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            <li><Link href={sitePath(locale, "/guides/cargo-from-india-to-nepal")}>{guides[locale]["cargo-from-india-to-nepal"].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
           </ul>
         </Stop>
       </Lined>
@@ -56,28 +63,34 @@ export function LanePage({ slug }: { slug: LaneSlug }) {
   );
 }
 
-export function LanesIndexPage() {
+export function LanesIndexPage({ locale }: { locale: SiteLocale }) {
+  const index = laneIndex[locale];
+  const reading = ["cargo-from-china-to-nepal", "cargo-from-india-to-nepal", "free-time-and-demurrage"] as const;
+
   return (
-    <SiteShell locale="en" path="/lanes">
-      <PageHead title={laneIndex.title} intro={laneIndex.intro} breadcrumb={<Breadcrumbs locale="en" path="/lanes"/>}/>
+    <SiteShell locale={locale} path="/lanes">
+      <PageHead title={index.title} intro={index.intro} breadcrumb={<Breadcrumbs locale={locale} path="/lanes"/>}/>
       <Lined reveal>
-        <Stop title="Corridors">
+        <Stop title={index.corridorsTitle}>
           <ol className="svc-list">
-            {laneSlugs.map((slug) => (
-              <li key={slug}>
-                <Link href={`/lanes/${slug}`}>
-                  <b>{lanes[slug].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></b>
-                  <span>{lanes[slug].description}</span>
-                </Link>
-              </li>
-            ))}
+            {laneSlugs.map((slug) => {
+              const lane = laneFor(locale, slug);
+              return (
+                <li key={slug}>
+                  <Link href={sitePath(locale, `/lanes/${slug}`)}>
+                    <b>{lane.title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></b>
+                    <span>{lane.description}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ol>
         </Stop>
-        <Stop title="Related reading">
+        <Stop title={index.readingTitle}>
           <ul className="link-list">
-            <li><Link href="/guides/cargo-from-china-to-nepal">Cargo from China to Nepal<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
-            <li><Link href="/guides/cargo-from-india-to-nepal">Cargo from India to Nepal<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
-            <li><Link href="/guides/free-time-and-demurrage">Free time and demurrage<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            {reading.map((slug) => (
+              <li key={slug}><Link href={sitePath(locale, `/guides/${slug}`)}>{guides[locale][slug].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            ))}
           </ul>
         </Stop>
       </Lined>
@@ -86,6 +99,6 @@ export function LanesIndexPage() {
 }
 
 /** The lane's FAQ as schema, printed on the page as the same questions. */
-export function laneFaqUrl(slug: LaneSlug) {
-  return `${absoluteUrl(`/lanes/${slug}`)}#faq`;
+export function laneFaqUrl(locale: SiteLocale, slug: LaneSlug) {
+  return `${absoluteUrl(sitePath(locale, `/lanes/${slug}`))}#faq`;
 }

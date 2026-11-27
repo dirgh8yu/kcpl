@@ -3,6 +3,6 @@ import { laneIndex } from "../../lane-data";
 import { createPageMetadata } from "../../seo";
 import "../../site.css";
 
-export const metadata = createPageMetadata({ title: laneIndex.title, description: laneIndex.description, path: "/lanes" });
+export const metadata = createPageMetadata({ title: laneIndex.en.title, description: laneIndex.en.description, path: "/lanes" });
 
-export default function Page() { return <LanesIndexPage/>; }
+export default function Page() { return <LanesIndexPage locale="en"/>; }

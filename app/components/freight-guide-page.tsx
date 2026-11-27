@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
+import { laneFor, laneIndex, type LaneSlug } from "../lane-data";
 import { guideDepth } from "../content-depth";
 import { guidePhotos } from "../guide-photos";
 import { faqNode, graph, guideArticleNodes } from "../structured-data";
@@ -15,16 +16,14 @@ import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
 
 
-/* Lane pages are English-only, so the links appear on the English guides and
- * nowhere else. A translated guide keeps its own language. */
-const guideLanes: Partial<Record<GuideSlug, { href: string; label: string }[]>> = {
-  "cargo-from-india-to-nepal": [{ href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj, stage by stage" }],
-  "sea-freight-through-india": [
-    { href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj transport" },
-    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
-  ],
-  "cargo-from-china-to-nepal": [{ href: "/lanes/nepal-to-tibet", label: "The same crossings, northbound: Nepal to Tibet" }],
-  "exporting-from-nepal": [{ href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" }],
+/* Which lane each guide should point at. English keeps the editorial phrasing;
+ * a translated guide uses the lane's own title in its own language, because the
+ * lanes exist in all four languages. */
+const guideLanes: Partial<Record<GuideSlug, { slug: LaneSlug; label?: string }[]>> = {
+  "cargo-from-india-to-nepal": [{ slug: "kolkata-to-birgunj", label: "Kolkata to Birgunj, stage by stage" }],
+  "sea-freight-through-india": [{ slug: "kolkata-to-birgunj" }, { slug: "haldia-to-kathmandu" }],
+  "cargo-from-china-to-nepal": [{ slug: "nepal-to-tibet", label: "The same crossings, northbound: Nepal to Tibet" }],
+  "exporting-from-nepal": [{ slug: "nepal-to-tibet" }],
 };
 
 export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: GuideSlug }) {
@@ -65,9 +64,11 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
           <Link href={sitePath(locale, links.service)} className="text-link">{guide.related}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           <Link href={sitePath(locale, `/tools/${links.tool}`)} className="text-link">{tools[locale][links.tool].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </section>
-        {locale === "en" && guideLanes[slug] ? <Stop title="Lane pages">
+        {guideLanes[slug] ? <Stop title={laneIndex[locale].lanesTitle}>
           <ul className="link-list">
-            {guideLanes[slug]!.map((lane) => <li key={lane.href}><Link href={lane.href}>{lane.label}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>)}
+            {guideLanes[slug]!.map((lane) => (
+              <li key={lane.slug}><Link href={sitePath(locale, `/lanes/${lane.slug}`)}>{(locale === "en" ? lane.label : undefined) ?? laneFor(locale, lane.slug).title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            ))}
           </ul>
         </Stop> : null}
         <Stop title={index.related}>
