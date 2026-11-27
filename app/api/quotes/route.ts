@@ -9,6 +9,7 @@ import {
 } from "./quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "./quote-rate-limit.server";
 import { sanitizeQuoteAttribution } from "../../quote-attribution";
+import { sendQuoteAcknowledgement } from "./quote-acknowledgement.server";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -268,9 +269,25 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "KCPL could not save the enquiry. Please try again or email us directly." }, 500);
   }
 
+  // The customer's first reply should not depend on a person remembering to
+  // write one. This runs after the enquiry is stored and never changes the
+  // outcome of the submission: if SendGrid is not configured or is down, the
+  // enquiry is still saved and still returns 201, and the failure is logged with
+  // its reference so staff can send the acknowledgement by hand.
+  const acknowledgement = await sendQuoteAcknowledgement({
+    reference,
+    contactName: quote.contactName,
+    contactEmail: quote.contactEmail,
+    origin: quote.origin,
+    destination: quote.destination,
+    mode: quote.mode,
+    cargoType: quote.cargoType,
+  });
+
   return json({
     ok: true,
     reference,
     message: "Your freight enquiry has been received by KCPL.",
+    acknowledgement: acknowledgement.kind,
   }, 201);
 }
