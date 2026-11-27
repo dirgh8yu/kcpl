@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { blogIndex, blogPhotos, blogPosts, blogTopics, readingMinutes, type BlogBlock, type BlogPhotoKey, type BlogPost, type BlogTopicId } from "../blog-data";
 import { guides } from "../guide-data";
+import { laneFor, laneIndex } from "../lane-data";
+import { laneLinksForPost } from "../blog-lane-links";
 import { tools } from "../tool-data";
 import { blogPostingNode, graph } from "../structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
@@ -132,6 +134,9 @@ export function BlogPostPage({ post }: { post: BlogPost }) {
   const topic = inTopic(post.topic);
   const at = topic.indexOf(post);
   const others = [...topic.slice(at + 1), ...topic.slice(0, at)].slice(0, 4);
+  /* The corridors this note is about, so a reader who arrived on a Kolkata
+   * container question can go and read how that corridor actually runs. */
+  const lanes = laneLinksForPost(post);
   return (
     <SiteShell locale="en" path={path}>
       <StructuredData data={graph([blogPostingNode(post.slug)])}/>
@@ -160,6 +165,11 @@ export function BlogPostPage({ post }: { post: BlogPost }) {
             {post.related.guides.map((slug) => <li key={slug}><Link href={`/guides/${slug}`}>{guides.en[slug].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>)}
           </ul>
         </Stop>
+        {lanes.length ? <Stop title={laneIndex.en.lanesTitle}>
+          <ul className="link-list">
+            {lanes.map((slug) => <li key={slug}><Link href={`/lanes/${slug}`}>{laneFor("en", slug).title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>)}
+          </ul>
+        </Stop> : null}
         <ClosingBand locale="en"/>
       </Lined>
     </SiteShell>
