@@ -373,20 +373,20 @@
       "lastmod": "2026-11-26"
     },
     "ne/guides": {
-      "fingerprint": "db0ec6580e018872",
-      "lastmod": "2026-11-26"
+      "fingerprint": "c7e55b119f1e39a5",
+      "lastmod": "2026-11-27"
     },
     "zh/guides": {
       "fingerprint": "fd198eeef5760509",
       "lastmod": "2026-11-26"
     },
     "hi/guides": {
-      "fingerprint": "6e99a048c6a92750",
-      "lastmod": "2026-11-26"
+      "fingerprint": "5e1dd027f52c8f7e",
+      "lastmod": "2026-11-27"
     },
     "en/guides/importing-to-nepal": {
-      "fingerprint": "ac4011dc39fc016f",
-      "lastmod": "2026-11-26"
+      "fingerprint": "c6f3594d0017647b",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/importing-to-nepal": {
       "fingerprint": "2d859aad9417619d",
@@ -401,8 +401,8 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/exporting-from-nepal": {
-      "fingerprint": "4893aad2fccca2b4",
-      "lastmod": "2026-11-26"
+      "fingerprint": "42d9e4dd4257ab7d",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/exporting-from-nepal": {
       "fingerprint": "755240e6640d8d48",
@@ -417,8 +417,8 @@
       "lastmod": "2026-09-23"
     },
     "en/guides/cargo-from-china-to-nepal": {
-      "fingerprint": "b3c861e224e2bc02",
-      "lastmod": "2026-11-26"
+      "fingerprint": "980e3ca757cf2211",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/cargo-from-china-to-nepal": {
       "fingerprint": "fbb0bbc2d29814f9",
@@ -433,24 +433,24 @@
       "lastmod": "2026-11-26"
     },
     "en/guides/cargo-from-india-to-nepal": {
-      "fingerprint": "4bc6cb29dd35a73e",
-      "lastmod": "2026-11-26"
+      "fingerprint": "3c6ac5c06d237ce4",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/cargo-from-india-to-nepal": {
-      "fingerprint": "66caa811118015d6",
-      "lastmod": "2026-11-26"
+      "fingerprint": "35579586e056c162",
+      "lastmod": "2026-11-27"
     },
     "zh/guides/cargo-from-india-to-nepal": {
       "fingerprint": "7e7a928a4aecaed1",
       "lastmod": "2026-11-26"
     },
     "hi/guides/cargo-from-india-to-nepal": {
-      "fingerprint": "3e0a287f42dad41d",
-      "lastmod": "2026-11-26"
+      "fingerprint": "dde2274dac310d41",
+      "lastmod": "2026-11-27"
     },
     "en/guides/customs-clearance-in-nepal": {
-      "fingerprint": "991a5569efadd93e",
-      "lastmod": "2026-11-26"
+      "fingerprint": "db9125f4f01069fb",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/customs-clearance-in-nepal": {
       "fingerprint": "04fc994104fdb714",
@@ -465,8 +465,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/sea-freight-through-india": {
-      "fingerprint": "677a0a80fcaccc48",
-      "lastmod": "2026-11-26"
+      "fingerprint": "2494788de0ea28c7",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/sea-freight-through-india": {
       "fingerprint": "3a3db91a1b89b47d",
@@ -481,8 +481,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/air-freight-to-kathmandu": {
-      "fingerprint": "07b26e78766f156c",
-      "lastmod": "2026-11-26"
+      "fingerprint": "08ea0e6503f157c9",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/air-freight-to-kathmandu": {
       "fingerprint": "f1d8408c48e92aad",
@@ -497,8 +497,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/hs-codes-and-import-duty": {
-      "fingerprint": "ef6dab8a0ff21d30",
-      "lastmod": "2026-11-26"
+      "fingerprint": "787a4d7ad24d7d09",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/hs-codes-and-import-duty": {
       "fingerprint": "eeb461590097e55c",
@@ -513,8 +513,8 @@
       "lastmod": "2026-10-11"
     },
     "en/guides/free-time-and-demurrage": {
-      "fingerprint": "1ec726a79e473730",
-      "lastmod": "2026-11-26"
+      "fingerprint": "b13f3052178bede8",
+      "lastmod": "2026-11-27"
     },
     "ne/guides/free-time-and-demurrage": {
       "fingerprint": "b8252109828f3ed0",
@@ -1027,6 +1027,22 @@
     "en/blog/deliveries-inside-kathmandu-valley": {
       "fingerprint": "35d923d8e52ee393",
       "lastmod": "2026-11-26"
+    },
+    "en/lanes": {
+      "fingerprint": "29ad9eed434db76e",
+      "lastmod": "2026-11-27"
+    },
+    "en/lanes/kolkata-to-birgunj": {
+      "fingerprint": "7bb896503e49b979",
+      "lastmod": "2026-11-27"
+    },
+    "en/lanes/haldia-to-kathmandu": {
+      "fingerprint": "21ac4ac2db76523e",
+      "lastmod": "2026-11-27"
+    },
+    "en/lanes/nepal-to-tibet": {
+      "fingerprint": "fb7ceb75aca0fa01",
+      "lastmod": "2026-11-27"
     }
   }
 }

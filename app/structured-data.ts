@@ -6,6 +6,7 @@ import { tools, toolSlugs, type ToolSlug } from "./tool-data";
 import { guideReview, reviewedGuideSlugs } from "./guide-review";
 import sitemapLastmod from "./sitemap-lastmod.json";
 import { blogIndex, blogPhotos, blogPost, blogTopics } from "./blog-data";
+import { laneIndex, lanes, laneSlugs, type LaneSlug } from "./lane-data";
 import { siteLocaleTags, siteText, sitePath, type SiteLocale, type SiteTextKey } from "./site-i18n";
 
 /* Schema.org for the public site. Everything here restates something the site
@@ -117,6 +118,9 @@ function crumbLabel(locale: SiteLocale, path: string) {
   if (path === "/tools") return tools[locale].index.title;
   const toolSlug = path.startsWith("/tools/") ? path.slice("/tools/".length) : "";
   if (toolSlugs.includes(toolSlug as ToolSlug)) return tools[locale][toolSlug as ToolSlug].title;
+  if (path === "/lanes") return laneIndex.title;
+  const laneSlug = path.startsWith("/lanes/") ? path.slice("/lanes/".length) : "";
+  if (laneSlugs.includes(laneSlug as LaneSlug)) return lanes[laneSlug as LaneSlug].title;
   const key = crumbLabels[path];
   if (key) return siteText(locale, key);
   const service = services.find((entry) => path === `/services/${entry.slug}`);
@@ -168,6 +172,21 @@ export function serviceNode(locale: SiteLocale, slug: string) {
     provider: { "@id": organizationId },
     areaServed: { "@type": "Country", name: "Nepal" },
     url: absoluteUrl(sitePath(locale, `/services/${service.slug}`)),
+  };
+}
+
+/** A lane page's questions, exactly as the page prints them. */
+export function faqNodeLane(slug: LaneSlug) {
+  const lane = lanes[slug];
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl(`/lanes/${slug}`)}#faq`,
+    inLanguage: siteLocaleTags.en,
+    mainEntity: lane.questions.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
   };
 }
 

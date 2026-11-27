@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { services } from "../services-data";
+import { laneIndex } from "../lane-data";
+import { tools } from "../tool-data";
 import { sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClientRail } from "./client-rail";
 import { ClosingBand } from "./closing-band";
@@ -115,6 +117,10 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
         <Stop title={t("home.capability_title")} intro={t("home.capability_intro")} line="a">
           <ServiceList locale={locale}/>
           <Link href={sitePath(locale, "/services")} className="text-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+          <div className="page-actions">
+            <Link href={sitePath(locale, "/tools")} className="text-link">{tools[locale].index.title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
+            {locale === "en" ? <Link href="/lanes" className="text-link">{laneIndex.title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link> : null}
+          </div>
         </Stop>
         {/* The line arrives in Kathmandu over the range, then ends on the quote. */}
         <div className="horizon" aria-hidden="true"><Image src="/images/unsplash/himalaya-dawn.jpg" alt="" width={2400} height={1600} sizes="100vw"/><i/></div>

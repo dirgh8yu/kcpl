@@ -6,6 +6,7 @@ import { tools, toolSlugs, type ToolSlug } from "./tool-data.ts";
 import { englishOnlyPath, siteLocales, siteDictionary, type SiteLocale } from "./site-i18n.ts";
 import { blogIndex, blogPost, blogPosts, blogTopics } from "./blog-data.ts";
 import { guideReview, reviewedGuideSlugs } from "./guide-review.ts";
+import { laneIndex, lanes, laneSlugs, type LaneSlug } from "./lane-data.ts";
 
 /*
  * A page's lastmod has to mean "this page's content changed", or search engines
@@ -86,6 +87,14 @@ export function contentFingerprint(locale: SiteLocale, path: string) {
     const listed = guideSlugs.map((slug) => [guides[locale][slug].title, guides[locale][slug].description]);
     return createHash("sha256").update(JSON.stringify({ index: guideIndex[locale], listed })).digest("hex").slice(0, 16);
   }
+  if (path === "/lanes") {
+    const listed = laneSlugs.map((slug) => [lanes[slug].title, lanes[slug].description]);
+    return createHash("sha256").update(JSON.stringify({ laneIndex, listed })).digest("hex").slice(0, 16);
+  }
+  const laneSlug = path.startsWith("/lanes/") ? path.slice("/lanes/".length) : "";
+  if (laneSlugs.includes(laneSlug as LaneSlug)) {
+    return createHash("sha256").update(JSON.stringify(lanes[laneSlug as LaneSlug])).digest("hex").slice(0, 16);
+  }
   const toolSource = toolPageSource(locale, path);
   if (toolSource) return createHash("sha256").update(JSON.stringify(toolSource)).digest("hex").slice(0, 16);
   const dictionary = siteDictionary(locale);
@@ -111,6 +120,8 @@ export function sitemapPaths() {
     ...toolSlugs.map((slug) => `/tools/${slug}`),
     "/blog",
     ...blogPosts.map((post) => `/blog/${post.slug}`),
+    "/lanes",
+    ...laneSlugs.map((slug) => `/lanes/${slug}`),
   ];
 }
 

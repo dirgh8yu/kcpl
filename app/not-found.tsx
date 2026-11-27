@@ -3,7 +3,7 @@ import { NotFoundPage } from "./components/not-found-page";
 import { SiteDocument } from "./site-document";
 import "./site.css";
 
-export const metadata: Metadata = { title: "Page not found | Kapileshwor Cargo" };
+export const metadata: Metadata = { title: "Page not found | Kapileshwor Cargo", description: "This address does not match a page on the Kapileshwor Cargo site. The freight guides, services and quote form are one click away.", robots: { index: false, follow: true } };
 
 /*
  * A URL that matches no segment at all has no root layout to fall into -- that
