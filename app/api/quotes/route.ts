@@ -1,4 +1,5 @@
 import { createQuoteEndpoint } from "./quote-endpoint.ts";
+import { firestoreQuoteStore } from "./quote-firestore-store.ts";
 
 /*
  * The Firestore wiring for the public quote endpoint. The request path itself
@@ -11,11 +12,9 @@ import { createQuoteEndpoint } from "./quote-endpoint.ts";
 export const POST = createQuoteEndpoint({
   async firestoreStore() {
     const { firebaseAdminDb } = await import("../../firebase-admin.server");
-    return {
-      async create(reference, record) {
-        await firebaseAdminDb().collection("quotes").doc(reference).create(record);
-      },
-    };
+    // The collection name and the create-not-set choice live in the adapter, so
+    // they are asserted by `tests/quote-firestore-write.test.mjs`.
+    return firestoreQuoteStore(firebaseAdminDb());
   },
   async crmMatcher(input) {
     const { findCrmDuplicates } = await import("../../admin/crm/crm-data.server");
