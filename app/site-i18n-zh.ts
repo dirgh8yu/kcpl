@@ -496,7 +496,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.proof_1_stops": "加尔各答|比尔根杰|内陆现场",
   "home.proof_2_stops": "加德满都|德里|亚的斯亚贝巴|罗马|夏洛特",
   "home.proof_3_stops": "上海|加尔各答|尼泊尔根杰",
-  "home.credibility_staff": "KCPL 团队驻地",
+  "home.credibility_staff": "KCPL 员工",
   "home.fact_established": "成立",
   "svc.air.stops": "始发机场|加德满都|交付",
   "svc.ocean.stops": "始发港|印度口岸|边境|尼泊尔交付",
