@@ -1,6 +1,7 @@
 import { mockQuoteDetail, mockQuoteSummaries, qaMockDataEnabled } from "./qa-fixtures";
 import { FieldValue } from "firebase-admin/firestore";
 import { firebaseAdminDb } from "../firebase-admin.server";
+import { quoteCorridor } from "../quote-corridor";
 import {
   quoteCurrencies,
   quoteStatuses,
@@ -53,6 +54,10 @@ function crmMatches(value: unknown): QuoteCrmMatch[] {
 }
 
 function summaryFromData(reference: string, data: Record<string, unknown>, profiles: KcplStaffProfile[] = []): QuoteSummary {
+  /* Enquiries written before the lane slug sat on the quote keep it inside the
+   * attribution block; both forms answer the corridor filter the same way. */
+  const attribution = data.attribution && typeof data.attribution === "object" ? data.attribution as Record<string, unknown> : null;
+  const laneSlug = nullableString(data.lane_slug) ?? quoteCorridor(nullableString(attribution?.lane_path)).lane_slug;
   const legacyAssignee = nullableString(data.assigned_to);
   const storedName = nullableString(data.assigned_to_name) ?? legacyAssignee;
   const identity = resolveStaffIdentityFromProfiles({
@@ -75,6 +80,7 @@ function summaryFromData(reference: string, data: Record<string, unknown>, profi
     company_name: nullableString(data.company_name),
     phone: nullableString(data.phone),
     customer_id: nullableString(data.customer_id),
+    lane_slug: laneSlug,
     assigned_to: assignedName,
     assigned_to_uid: identity.uid,
     assigned_to_name: assignedName,

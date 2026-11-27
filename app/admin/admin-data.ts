@@ -19,6 +19,8 @@ export type QuoteSummary = {
   company_name: string | null;
   phone: string | null;
   customer_id: string | null;
+  /** The corridor the enquiry came from, when it came from a lane page. */
+  lane_slug: string | null;
   assigned_to: string | null;
   assigned_to_uid?: string | null;
   assigned_to_name: string | null;

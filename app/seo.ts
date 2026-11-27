@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { englishOnlyPath, siteLocales, sitePath, type SiteLocale } from "./site-i18n";
+import { englishOnlyPath, siteLocales, sitePath, type SiteLocale } from "./site-i18n.ts";
 
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kapileshworcargo.com.np").replace(/\/$/, "");
 

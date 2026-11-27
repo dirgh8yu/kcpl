@@ -136,6 +136,9 @@
 .kcpl-admin-content .enq-list { position: sticky; top: calc(var(--app-toolbar-height) + 16px); overflow: hidden; border: 1px solid var(--admin-line); border-radius: var(--app-surface-radius); background: var(--admin-surface); }
 .kcpl-admin-content .enq-list-controls { display: grid; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--admin-line); }
 .kcpl-admin-content .enq-list-controls .ops-search { min-height: 34px; }
+.kcpl-admin-content .enq-list-controls .enq-corridor { display: grid; gap: 3px; }
+.kcpl-admin-content .enq-list-controls .enq-corridor span { color: var(--admin-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.kcpl-admin-content .enq-list-controls .enq-corridor select { width: 100%; min-height: 34px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-surface); color: var(--admin-ink); font: inherit; font-size: 12px; font-weight: 600; padding: 0 8px; }
 .kcpl-admin-content .enq-list-controls .ops-saved-views { margin: 0; }
 .kcpl-admin-content .enq-list-controls .ops-saved-view button { min-height: 28px; font-size: 12px; }
 .kcpl-admin-content .enq-rows { max-height: calc(100dvh - var(--app-toolbar-height) - 150px); overflow-y: auto; }

@@ -142,6 +142,9 @@ export type CrmCustomerSummary = {
   account_status: CrmAccountStatus;
   lead_stage: CrmLeadStage;
   lead_source: CrmLeadSource | null;
+  /** Corridor and source carried over when a website enquiry became a customer. */
+  lane_slug: string | null;
+  enquiry_source: string | null;
   primary_email: string | null;
   primary_phone: string | null;
   country: string;
@@ -201,6 +204,10 @@ export type CrmCreateCustomerInput = {
   accountStatus: CrmAccountStatus;
   leadStage: CrmLeadStage;
   leadSource: CrmLeadSource | "";
+  laneSlug?: string;
+  laneOrigin?: string;
+  laneDestination?: string;
+  enquirySource?: string;
   primaryEmail: string;
   primaryPhone: string;
   website: string;

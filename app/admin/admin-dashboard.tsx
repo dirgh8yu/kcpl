@@ -17,6 +17,8 @@ import type { QuoteCrmMatch, QuoteCurrency, QuoteDetail, QuoteStatus, QuoteSumma
 import { AdminShipmentPanel } from "./admin-shipment-panel";
 import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsInlineAlert, OpsInspectorNote, OpsKpiRail, OpsNoMatches, OpsNotice, OpsPage, OpsPageHeader, OpsRailMetric, OpsScopeTabs, OpsSearch, OpsSkeleton, OpsSurface } from "./operations-ui";
 import { SavedFilterViews } from "./saved-filter-views";
+import { anyCorridor, corridorOptions, filterQuotesByCorridor } from "./enquiry-corridor";
+import { laneFor, laneSlugs, type LaneSlug } from "../lane-data";
 import { StaffAssignmentPicker } from "./staff-assignment-picker";
 import { freightModeLabel } from "./freight-mode";
 
@@ -108,6 +110,7 @@ function summaryFromDetail(detail: QuoteDetail): QuoteSummary {
     origin: detail.origin,
     destination: detail.destination,
     mode: detail.mode,
+    lane_slug: detail.lane_slug ?? null,
     cargo_type: detail.cargo_type,
     contact_name: detail.contact_name,
     contact_email: detail.contact_email,
@@ -134,6 +137,9 @@ function workflowStatuses(current: QuoteStatus, canEditCommercial: boolean): Quo
 /** Open enquiries are the work: anything not yet won or lost. */
 type EnquiryScope = "open" | "all" | QuoteStatus;
 function openEnquiry(quote: Pick<QuoteSummary, "status">) { return quote.status !== "won" && quote.status !== "lost"; }
+function laneLabel(slug: string) {
+  return laneSlugs.includes(slug as LaneSlug) ? laneFor("en", slug as LaneSlug).title : slug;
+}
 
 export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommercial }: { initialQuotes: QuoteSummary[]; canViewCommercial: boolean; canEditCommercial: boolean }) {
   const [quotes, setQuotes] = useState(initialQuotes);
@@ -142,6 +148,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
   const [detail, setDetail] = useState<QuoteDetail | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<EnquiryScope>("open");
+  const [corridorFilter, setCorridorFilter] = useState<string>(anyCorridor);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [loading, setLoading] = useState(Boolean(initialQuotes[0]));
   const [saving, setSaving] = useState(false);
@@ -164,9 +171,11 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
     lost: quotes.filter((quote) => quote.status === "lost").length,
   }), [quotes]);
 
+  const corridors = useMemo(() => corridorOptions(quotes), [quotes]);
+
   const filtered = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return quotes.filter((quote) => {
+    return filterQuotesByCorridor(quotes, corridorFilter).filter((quote) => {
       if (statusFilter === "open" ? !openEnquiry(quote) : statusFilter !== "all" && quote.status !== statusFilter) return false;
       if (!terms.length) return true;
       const haystack = [
@@ -179,6 +188,8 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
         quote.phone ?? "",
         quote.cargo_type ?? "",
         quote.customer_id ?? "",
+        quote.lane_slug ?? "",
+        quote.lane_slug ? laneLabel(quote.lane_slug) : "",
         quote.assigned_to ?? "",
         quote.assigned_to_email ?? "",
         quote.assigned_to_phone ?? "",
@@ -187,7 +198,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
       ].join(" ").toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [query, quotes, statusFilter]);
+  }, [corridorFilter, query, quotes, statusFilter]);
 
   const availableTabs = useMemo(() => detailTabs.filter((tab) => tab !== "pricing" || canViewCommercial), [canViewCommercial]);
   const activityItems = useMemo(() => {
@@ -439,7 +450,14 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
         <div className="enq-layout">
           <aside className="enq-list" aria-label="Enquiry inbox">
             <div className="enq-list-controls">
-              <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, route, cargo, contact or reference" aria-label="Search enquiries"/>
+              <OpsSearch value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, route, corridor, cargo, contact or reference" aria-label="Search enquiries"/>
+              {corridors.length ? <label className="enq-corridor">
+                <span>Corridor</span>
+                <select value={corridorFilter} onChange={(event) => setCorridorFilter(event.target.value)} aria-label="Filter enquiries by corridor">
+                  <option value={anyCorridor}>All corridors</option>
+                  {corridors.map((slug) => <option key={slug} value={slug}>{laneLabel(slug)}</option>)}
+                </select>
+              </label> : null}
               <SavedFilterViews storageKey="kcpl-enquiry-saved-views-v1" query={query} status={statusFilter} onApply={(view) => { setQuery(view.query); setStatusFilter(view.status); }}/>
             </div>
             <div className="enq-rows">
@@ -456,7 +474,7 @@ export function AdminDashboard({ initialQuotes, canViewCommercial, canEditCommer
                     <span className="enq-row-signals">{quote.email_count ? <span title={`${quote.email_count} customer email${quote.email_count === 1 ? "" : "s"}`}><Mail size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.email_count}</span> : null}{quote.note_count ? <span title={`${quote.note_count} internal note${quote.note_count === 1 ? "" : "s"}`}><MessageSquareText size={12} strokeWidth={1.75} aria-hidden="true"/>{quote.note_count}</span> : null}</span>
                   </span>
                 </button>;
-              }) : quotes.length ? <OpsNoMatches noun="enquiries" onClear={() => { setQuery(""); setStatusFilter("open"); }}/> : <OpsEmptyState icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} compact kind="healthy" title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
+              }) : quotes.length ? <OpsNoMatches noun="enquiries" onClear={() => { setQuery(""); setStatusFilter("open"); setCorridorFilter(anyCorridor); }}/> : <OpsEmptyState icon={<CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true"/>} compact kind="healthy" title="Enquiry inbox is clear" description="New website freight enquiries will appear here automatically."/>}
             </div>
           </aside>
 

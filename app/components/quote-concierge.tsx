@@ -9,6 +9,7 @@ import type { SiteLocale } from "../site-i18n";
 import { requestChallengeToken, turnstileSiteKey } from "./turnstile-challenge";
 import { trackAnalyticsEvent } from "./analytics";
 import { quoteCopy } from "./quote-copy";
+import { quotePrefillRoute } from "./quote-prefill";
 import type { QuoteValues } from "./quote-enquiry";
 
 type Mode = "air" | "sea" | "road" | "unsure";
@@ -57,6 +58,12 @@ function QuoteForm({
   const successHeading = useRef<HTMLHeadingElement>(null);
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const modeLabels: Record<Mode, string> = { air: c.air, sea: c.sea, road: c.road, unsure: c.unsure };
+  /* A lane page hands the form its corridor. Say so, so a reader who did not
+   * notice the prefilled fields is not surprised by what they are sending, and
+   * so a screen reader hears the route and mode when it reaches them. */
+  const prefill = quotePrefillRoute(initial);
+  const prefillNotice = prefill ? c.prefillNotice(prefill.origin, prefill.destination, modeLabels[prefill.mode]) : "";
+  const successRoute = origin.trim() && destination.trim() ? c.receivedRoute(origin.trim(), destination.trim(), modeLabels[mode]) : "";
 
   useEffect(() => {
     if (reference) successHeading.current?.focus();
@@ -152,12 +159,14 @@ function QuoteForm({
           <CheckCircle size={32} aria-hidden="true"/>
           <h2 ref={successHeading} tabIndex={-1}>{c.received}</h2>
           <p>{c.receivedCopy} {c.replyTime}</p>
+          {successRoute ? <p className="quote-hint quote-received-route">{successRoute}</p> : null}
           <code>{reference}</code>
           <p>{c.packing}</p>
           <a href={`mailto:${company.email}?subject=${encodeURIComponent(`Quote ${reference}`)}`} className="text-link">{company.email}<ArrowRight size={15} weight="bold" aria-hidden="true"/></a>
         </div>
       ) : (
         <form className="quote-card" onSubmit={submit} noValidate aria-busy={submitting} onChange={() => { if (error) { setError(""); setChecked(false); } }}>
+          {prefillNotice ? <p className="quote-hint quote-prefill" id="quote-prefill-note" role="status">{prefillNotice}</p> : null}
           <ol className="quote-steps" aria-label={c.stepProgress(step + 1, 2)}>
             <li aria-current={step === 0 ? "step" : undefined}><i aria-hidden="true"/>{c.route}</li>
             <li aria-current={step === 1 ? "step" : undefined}><i aria-hidden="true"/>{c.contact}</li>
@@ -165,10 +174,10 @@ function QuoteForm({
           {step === 0 ? <>
             <h2>{c.routeTitle}</h2>
             <div className="quote-route">
-              <label className="field"><span>{c.origin}</span><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-invalid={checked && !origin.trim() ? true : undefined}/></label>
-              <label className="field"><span>{c.destination}</span><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-invalid={checked && !destination.trim() ? true : undefined}/></label>
+              <label className="field"><span>{c.origin}</span><input value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-describedby={prefillNotice ? "quote-prefill-note" : undefined} aria-invalid={checked && !origin.trim() ? true : undefined}/></label>
+              <label className="field"><span>{c.destination}</span><input value={destination} onChange={(event) => setDestination(event.target.value)} placeholder={c.cityCountry} autoComplete="off" maxLength={120} enterKeyHint="next" aria-required="true" aria-describedby={prefillNotice ? "quote-prefill-note" : undefined} aria-invalid={checked && !destination.trim() ? true : undefined}/></label>
             </div>
-            <fieldset className="mode-field">
+            <fieldset className="mode-field" aria-describedby={prefillNotice ? "quote-prefill-note" : undefined}>
               <legend>{c.mode}</legend>
               <div>
                 {modeOrder.map((value) => (
