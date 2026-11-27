@@ -4,12 +4,14 @@ import { company } from "../company-data";
 import { telHref } from "../contact-links";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
 
-/** The crimson band every page ends on: one job, the quote. */
+/** The crimson band every page ends on: one job, the quote, and what happens after it. */
 export function ClosingBand({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   return (
     <section className="end-band">
       <h2 className="end-band-title">{t("home.cta_title")}</h2>
+      {/* What happens after the click is the last doubt before it, so the band answers it. */}
+      <p className="end-band-note">{t("home.cta_note")}</p>
       <div className="end-band-actions">
         <Link href={sitePath(locale, "/quote")} className="btn btn-white" data-analytics-event="quote_tap">{t("home.cta_primary")}<ArrowRight size={17} weight="bold" aria-hidden="true"/></Link>
         <a href={telHref(company.phones[0])} data-analytics-event="call_tap">{t("chrome.or_call")} {company.phones[0]}</a>

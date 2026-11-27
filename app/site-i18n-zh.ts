@@ -96,7 +96,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.clients_pause": "暂停轮播",
   "home.clients_play": "播放轮播",
   "home.meta_title": "Kapileshwor Cargo | 尼泊尔货运代理",
-  "home.meta_description": "KCPL 是 2015 年成立于加德满都的货运与物流公司，为尼泊尔的进口商与出口商统筹空运、海运、陆运、报关单证与项目货物。",
+  "home.meta_description": "自 2015 年起扎根加德满都的货运代理。进出尼泊尔的海运、空运和公路货物，连同清关和派送，由同一团队统筹全程。",
   "home.hero_title": "整条路线，由一个团队统筹。",
   "home.hero_intro": "空运、海运、跨境公路与项目货物。一个加德满都团队为进出口客户统筹口岸、清关与交付。",
   "home.hero_cta": "获取报价",
@@ -107,7 +107,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.plan_cta": "继续询价",
   "home.index_resources": "指南与工具",
   "home.capability_title": "货运、清关与交付，统一规划。",
-  "home.capability_intro": "延误往往发生在单证、清关与船期之间的交接处。由一个团队把这些交接衔接起来。",
+  "home.capability_intro": "大多数延误始于单证、清关和承运人截止时间之间的空档。从起运港到签收回单，每一次交接都由 KCPL 同一个团队统筹。",
   "home.cap_1_title": "货运",
   "home.cap_1_copy": "空运、海运与陆运，整箱与拼箱，按货物、时限与路线选择，而不是套用固定航线。",
   "home.cap_2_title": "报关与单证",
@@ -170,8 +170,8 @@ export const zh: Record<SiteTextKey, string> = {
   "work.story_3_brief": "六个 40 英尺集装箱在加尔各答清关及发往尼泊尔西部前，需要跟进正本单证。",
   "work.story_3_coordination": "KCPL 审核提单信息，跟进正本文件及加尔各答清关和发运进度，随后提供卸货照片和交货回单。",
   "work.story_3_outcome": "集装箱在尼泊尔根杰卸货，交货回单于 2026 年 4 月 17 日发出。本案例不声称已完成尼泊尔根杰之后的交付。",
-  "home.credibility_title": "自2015年起立足加德满都的货运代理。",
-  "home.credibility_copy": "KCPL 以加德满都为基地，在海外与代理伙伴合作，并在尼泊尔各入境口岸具备清关能力。",
+  "home.credibility_title": "从港口、口岸到您门口，都有我们自己的人。",
+  "home.credibility_copy": "KCPL 员工跟进每票货物通过港口、口岸和海关，并以签字的交付回单结案。境外由合作代理负责另一端。",
   "home.credibility_award": "出口卓越奖",
   "home.credibility_award_detail": "拉利特普尔工商会，2022-2025 年",
   "home.credibility_storage": "安全仓储",
@@ -185,6 +185,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.cta_title": "告诉我们货物、路线与时间。",
   "home.cta_copy": "提供起运地、目的地、运输方式、重量与尺寸，KCPL 会就该如何规划这票货给出答复。",
   "home.cta_primary": "获取报价",
+  "home.cta_note": "KCPL 在一个工作日内回复，附上适合您货物的路线、设备和价格。",
   "home.cta_secondary": "联系团队",
 
   /* Services */
@@ -197,7 +198,7 @@ export const zh: Record<SiteTextKey, string> = {
   "services.how_title": "操作方式",
   "services.lanes_title": "航线与口岸",
   "services.docs_title": "单证与记录",
-  "services.ask": "请一并告知",
+  "services.ask": "报价所需信息",
   "services.back": "全部服务",
   "services.related": "常与以下服务配合",
   "services.questions_title": "运输规划常见问题",
@@ -206,10 +207,9 @@ export const zh: Record<SiteTextKey, string> = {
 
   /* Quote */
   "quote.meta_title": "获取货运报价",
-  "quote.meta_description": "将路线、运输方式、重量与尺寸发给 Kapileshwor Cargo，操作部门会就该如何规划这票货给出答复。",
+  "quote.meta_description": "把路线、货物和日期发给加德满都的 Kapileshwor Cargo。KCPL 在一个工作日内回复路线、设备和价格。",
   "quote.title": "获取报价",
-  "quote.intro": "路线、运输方式、重量与尺寸是准确报价的前提。若已知交付时限，一并告知更好。",
-
+  "quote.intro": "提供路线、运输方式、重量和尺寸，就能准确报价。估算数据也可以，请在备注中注明，如有截止日期也一并写上。",
   /* Air */
   "svc.air.title": "空运",
   "svc.air.summary": "自加德满都的机场到机场与门到门运输，以及时限决定运输方式时的进口空运。",
@@ -488,7 +488,7 @@ export const zh: Record<SiteTextKey, string> = {
   "home.mode_unsure": "不确定",
   "home.plan_origin_hint": "中国上海",
   "home.plan_destination_hint": "尼泊尔加德满都",
-  "home.plan_note_sea": "海运至印度口岸，再经公路跨境。这条线路上的每一站都有 KCPL 团队。",
+  "home.plan_note_sea": "海运至印度港口，再经铁路或公路过境。这条线路的每一站都有 KCPL 员工。",
   "home.plan_note_air": "时限决定运输方式时，经加德满都进出的空运。",
   "home.plan_note_road": "经拉克绍尔和比尔根杰跨境公路运输，再转运内陆。",
   "home.plan_note_unsure": "不确定运输方式？KCPL 会根据货物和日期给出建议。",
