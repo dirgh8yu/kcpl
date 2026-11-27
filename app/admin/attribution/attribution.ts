@@ -20,6 +20,8 @@ export type AttributionRow = {
   medium: string | null;
   campaign: string | null;
   tool: string | null;
+  /** The lane page that handed the reader over, when there was one. */
+  lane_path: string | null;
   enquiries: number;
   quoted: number;
   won: number;
@@ -64,6 +66,7 @@ function quoteAttribution(data: Record<string, unknown>): QuoteAttribution | nul
       tool: null,
       referrer_host: null,
       landing_path: source === "customer_app" ? "/app/requests" : "/portal/requests",
+      lane_path: null,
     };
   }
   return null;
@@ -100,6 +103,7 @@ export function buildAttributionReport(
       medium: attribution?.medium ?? null,
       campaign: attribution?.campaign ?? null,
       tool: attribution?.tool ?? null,
+      lane_path: attribution?.lane_path ?? null,
       enquiries: 0,
       quoted: 0,
       won: 0,

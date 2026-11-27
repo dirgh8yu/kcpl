@@ -22,8 +22,17 @@ export type QuoteAttribution = {
   term: string | null;
   tool: string | null;
   referrer_host: string | null;
+  /** The page the form was on — /quote, /ne/quote and so on. */
   landing_path: string;
+  /**
+   * The lane page that handed the reader to the form, when there was one, so an
+   * enquiry from /ne/lanes/nepal-to-tibet is distinguishable from one that
+   * started on /services, /guides or a bare /quote visit. Null everywhere else.
+   */
+  lane_path: string | null;
 };
+
+type AttributionIdentity = Pick<QuoteAttribution, "source" | "medium" | "campaign"> & { lane_path?: string | null };
 
 const limits: Record<QuoteAttributionKey, number> = {
   source: 80,
@@ -50,6 +59,20 @@ function safePath(value: unknown) {
   const path = clean(value, 180).split(/[?#]/, 1)[0];
   if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) return "/quote";
   return path.replace(/\/{2,}/g, "/");
+}
+
+/**
+ * A lane page path in any of the four locales, normalised, or null. Structural
+ * rather than a slug list, so this module stays free of the lane copy and keeps
+ * its cost on the client where the form reads it.
+ */
+export function lanePagePath(value: unknown): string | null {
+  const path = clean(value, 180).split(/[?#]/, 1)[0].toLowerCase();
+  // The lane index counts too: a reader who sent the enquiry from /lanes has
+  // not named a corridor, but the page still produced the enquiry.
+  const match = /^\/(?:(ne|hi|zh)\/)?lanes(?:\/([a-z0-9-]{1,64}))?\/?$/.exec(path);
+  if (!match) return null;
+  return `${match[1] ? `/${match[1]}` : ""}/lanes${match[2] ? `/${match[2]}` : ""}`;
 }
 
 function hostOnly(value: unknown) {
@@ -89,6 +112,7 @@ export function captureQuoteAttribution(input: {
     tool,
     referrer_host: hostOnly(input.referrer),
     landing_path: safePath(input.pathname),
+    lane_path: lanePagePath(params.get("from")),
   };
 }
 
@@ -111,12 +135,15 @@ export function sanitizeQuoteAttribution(value: unknown): QuoteAttribution | nul
     tool: toolValue && (quoteToolValues as readonly string[]).includes(toolValue) ? toolValue : null,
     referrer_host: hostOnly(raw.referrer_host),
     landing_path: safePath(raw.landing_path),
+    lane_path: lanePagePath(raw.lane_path),
   };
 }
 
-export function quoteAttributionLabel(attribution: Pick<QuoteAttribution, "source" | "medium" | "campaign"> | null | undefined) {
+export function quoteAttributionLabel(attribution: AttributionIdentity | null | undefined) {
   if (!attribution) return "Direct / unattributed";
-  const parts = [attribution.source, attribution.medium, attribution.campaign].filter(Boolean);
+  // A lane row names the corridor too, because "lane" alone is not a lead
+  // source anyone can act on.
+  const parts = [attribution.source, attribution.medium, attribution.campaign, attribution.lane_path].filter(Boolean);
   return parts.join(" · ") || "Direct / unattributed";
 }
 
@@ -132,5 +159,8 @@ export function quoteFunnelStage(status: unknown): QuoteFunnelStage {
 
 export function quoteAttributionGroupKey(attribution: QuoteAttribution | null | undefined) {
   if (!attribution) return "direct";
-  return [attribution.source || "direct", attribution.medium || "none", attribution.campaign || "none", attribution.tool || "none"].join("|");
+  // A lane path extends the key so each corridor is its own row; every other
+  // enquiry keeps the existing four-part key.
+  const key = [attribution.source || "direct", attribution.medium || "none", attribution.campaign || "none", attribution.tool || "none"];
+  return [...key, ...(attribution.lane_path ? [attribution.lane_path] : [])].join("|");
 }

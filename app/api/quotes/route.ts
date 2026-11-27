@@ -9,6 +9,7 @@ import {
 } from "./quote-rate-limit-policy";
 import { firestoreQuoteRateLimitStore } from "./quote-rate-limit.server";
 import { sanitizeQuoteAttribution } from "../../quote-attribution";
+import { buildQuoteRecord, type CleanQuote, type QuoteCrmMatch } from "./quote-record";
 
 const allowedModes = new Set(["air", "sea", "road", "unsure"]);
 const allowedWeightUnits = new Set(["kg", "tonnes", "lb"]);
@@ -50,25 +51,6 @@ type QuotePayload = {
   website?: unknown;
   challengeToken?: unknown;
   attribution?: unknown;
-};
-
-type CleanQuote = {
-  origin: string;
-  destination: string;
-  mode: string;
-  cargoType: string;
-  weight: string;
-  weightUnit: string;
-  length: string;
-  width: string;
-  height: string;
-  dimensionUnit: string;
-  timing: string;
-  requirements: string;
-  contactName: string;
-  contactEmail: string;
-  companyName: string;
-  phone: string;
 };
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -210,7 +192,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let crmMatches: Array<{ id: string; display_name: string; reason: string }> = [];
+  let crmMatches: QuoteCrmMatch[] = [];
 
   try {
     crmMatches = await findCrmDuplicates({
@@ -224,44 +206,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    await firebaseAdminDb().collection("quotes").doc(reference).create({
+    await firebaseAdminDb().collection("quotes").doc(reference).create(buildQuoteRecord({
       reference,
-      created_at: createdAt,
-      updated_at: createdAt,
-      status: "new",
-      assigned_to: null,
-      note_count: 0,
-      origin: quote.origin,
-      destination: quote.destination,
-      mode: quote.mode,
-      cargo_type: quote.cargoType || null,
-      weight: quote.weight || null,
-      weight_unit: quote.weightUnit,
-      length: quote.length || null,
-      width: quote.width || null,
-      height: quote.height || null,
-      dimension_unit: quote.dimensionUnit,
-      timing: quote.timing || null,
-      requirements: quote.requirements || null,
-      contact_name: quote.contactName,
-      contact_email: quote.contactEmail,
-      company_name: quote.companyName || null,
-      phone: quote.phone || null,
-      quote_currency: "USD",
-      quoted_amount: null,
-      internal_cost: null,
-      valid_until: null,
-      customer_quote_note: null,
-      shipment_reference: null,
-      customer_id: null,
-      crm_match_state: crmMatches.length ? "suggested" : "unmatched",
-      crm_match_ids: crmMatches.map((match) => match.id),
-      crm_matches: crmMatches,
-      crm_linked_at: null,
-      crm_linked_by_name: null,
-      crm_linked_by_email: null,
+      createdAt,
+      quote,
       attribution,
-    });
+      crmMatches,
+    }));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Failed to save KCPL Firestore quote enquiry", { message });

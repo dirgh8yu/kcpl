@@ -23,6 +23,10 @@ export type LaneCopy = {
   title: string;
   description: string;
   intro: string;
+  /** Prefilled into the quote form when the reader acts on the closing CTA, in this language. */
+  origin: string;
+  destination: string;
+  mode: "air" | "sea" | "road";
   questionsTitle: string;
   otherTitle: string;
   /** The quote button on the page. */
@@ -50,6 +54,8 @@ export type LaneIndexCopy = {
   readingTitle: string;
   /** Section heading used where another page links to the lane set. */
   lanesTitle: string;
+  /** The closing CTA on the index; the corridor is chosen on the detail pages. */
+  cta: string;
 };
 
 /** Everything that is not prose, shared by every language. */
@@ -79,6 +85,9 @@ const laneCopyEn: Record<LaneSlug, LaneCopy> = {
     title: "Kolkata to Birgunj transport",
     description: "How a container reaches Birgunj from Kolkata: port release, rail to the ICD or road across Raxaul, Nepal customs at Birgunj, and delivery to the door.",
     intro: "A container from Kolkata reaches Birgunj by rail to the inland container depot or by road across Raxaul, then clears Nepal customs at the ICD. Four stages decide the transit, and three of them begin before the container arrives.",
+    origin: "Kolkata",
+    destination: "Birgunj",
+    mode: "sea",
     questionsTitle: "Common questions",
     otherTitle: "Other lanes",
     cta: "Send the cargo, route and date",
@@ -127,6 +136,9 @@ const laneCopyEn: Record<LaneSlug, LaneCopy> = {
     title: "Haldia to Kathmandu cargo",
     description: "Haldia and Kolkata as gateways for a Kathmandu delivery: which cargo suits Haldia, the inland leg to Birgunj, clearance at the ICD, then delivery.",
     intro: "Haldia and Kolkata both serve Nepal, and the port is chosen by the cargo, the sailing and the inland leg. From either one, the container moves by rail or road toward Birgunj and then up to Kathmandu.",
+    origin: "Haldia",
+    destination: "Kathmandu",
+    mode: "sea",
     questionsTitle: "Common questions",
     otherTitle: "Other lanes",
     cta: "Send the cargo, route and date",
@@ -174,6 +186,9 @@ const laneCopyEn: Record<LaneSlug, LaneCopy> = {
     title: "Nepal to Tibet cargo",
     description: "Exports from Nepal to Tibet over Tatopani–Zhangmu and Kerung–Rasuwagadhi: the transit range, export documents, the consignee's role, and delays.",
     intro: "Exports from Nepal to China cross the same two Himalayan crossings that carry imports the other way. Allow 14 to 21 days between Kathmandu and Lhasa, depending on the season and the crossing.",
+    origin: "Kathmandu",
+    destination: "Lhasa",
+    mode: "road",
     questionsTitle: "Common questions",
     otherTitle: "Other lanes",
     cta: "Send the cargo, route and date",
@@ -239,6 +254,7 @@ export const laneIndex: Record<SiteLocale, LaneIndexCopy> = {
     corridorsTitle: "Corridors",
     readingTitle: "Related reading",
     lanesTitle: "Lane pages",
+    cta: "Send the cargo, route and date",
   },
   ne: {
     title: "नेपाल ढुवानी मार्गहरू",
@@ -247,6 +263,7 @@ export const laneIndex: Record<SiteLocale, LaneIndexCopy> = {
     corridorsTitle: "मार्गहरू",
     readingTitle: "सम्बन्धित सामग्री",
     lanesTitle: "मार्ग पृष्ठहरू",
+    cta: "माल, मार्ग र मिति पठाउनुहोस्",
   },
   hi: {
     title: "नेपाल माल ढुलाई मार्ग",
@@ -255,6 +272,7 @@ export const laneIndex: Record<SiteLocale, LaneIndexCopy> = {
     corridorsTitle: "मार्ग",
     readingTitle: "संबंधित पठन",
     lanesTitle: "मार्ग पृष्ठ",
+    cta: "माल, मार्ग और तारीख भेजें",
   },
   zh: {
     title: "尼泊尔货运路线",
@@ -263,6 +281,7 @@ export const laneIndex: Record<SiteLocale, LaneIndexCopy> = {
     corridorsTitle: "路线",
     readingTitle: "相关阅读",
     lanesTitle: "路线页面",
+    cta: "发送货物、路线和日期",
   },
 };
 
