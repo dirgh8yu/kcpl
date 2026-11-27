@@ -306,13 +306,11 @@ There are no content cards. The two working containers are plates.
 ### Photographs
 Illustrative Unsplash photographs, each listed in `docs/public-photo-sources.md`, with an empty alt because they add no information. At most one to a section: beside the text on service, sector and guide pages (`.sector`, 7fr of text to 5fr of photograph at 10:7), or across the column where the subject is wide (`.plate-wide`, 21:9, 3:2 on phones). Quote, contact, track, tools, FAQ, careers, awards and legal pages carry none because they are for doing or checking something; on the network page the route and the map are the image; movement stories stay without pictures because they are anonymous.
 
-The home page is photograph-led below the hero, and every picture hangs off the line rather than decorating it:
-- **Corridor** (`.corridor`): the route on the ground, from the sea to Kolkata, the railway to Raxaul and Birgunj, the road over the hills, and Kathmandu. Four panes of different sizes, drops and ratios run off both sides of the screen. The line crosses over them on track A, with a station only where KCPL has staff, and `.ret` brings it back underneath. On phones the panes become two staggered columns beside a straight line, each named above its picture.
-- **Band photograph** (`.band-photo`): one picture in the band's answer column reaches through the band's lower edge by `--pierce`, and the run back under the band drops to pass beneath it.
+The home page carries two more photographs, both hanging off the line rather than decorating it:
+- **Corridor** (`.corridor`), under the client logos: the route seen from above, all four pictures straight-down drone shots so they read as one set. The sea to Kolkata, the railway to Raxaul and Birgunj, the road over the hills, and Kathmandu sit at one height in a single row that starts on the content edge and runs off the right of the screen. A branch leaves the page line under them, like the service rows' branches, with a station only where KCPL has staff. On phones the row becomes two even columns, each picture named underneath.
 - **Horizon** (`.horizon`): the Himalaya over the closing band, square and edge to edge like a band, with the line running down it in crimson until it turns white on the band.
-- **Service peek** (`.svc-peek`): with a mouse, the hovered service's photograph rides above the pointer, so the row itself stays readable. Touch screens never show it, and never load the pictures.
 
-Cut panes use the 18px chamfer through `.pane`. Pictures drift a few percent against the scroll, nearer panes further, on a view timeline. Without support, or under reduced motion, they hold still.
+Corridor pictures use the 18px chamfer through `.pane`. Neither is zoomed or moved by the scroll; the corridor wipes in as the line reaches it, like any plate.
 
 ### Inputs / Fields
 - **Style:** a paper tile with a 14px Warm Grey label stacked over a borderless 16px, 600 value. Route ends carry the 2px ink ring, ordinary form fields the quiet ring. Tool inputs are the working variant: 48px tall, a 1px hairline border and a label above the box, with unit suffixes on a canvas tile.
@@ -365,7 +363,7 @@ Follows the site's ground, Manrope, a heading up to 42px at 500, and the 52px ch
 - **Don't** build grids of bordered or shadowed cards; plates are for forms and results only.
 - **Don't** use soft rounded corners, or bend a ground route at anything other than a 45-degree cut. The air arc is the only curve.
 - **Don't** stage a stock photograph under an overlaid headline; the route is the main image, and on the home page the photographs hang off it.
-- **Don't** put labels, credits or pills over a photograph; station names sit on the line beside it.
+- **Don't** put labels, credits or pills over a photograph; station names sit on the line under it.
 - **Don't** put a chamfer on certificates or redraw, recolour or crop the Gateway K.
 - **Don't** apply tight Latin tracking to Devanagari or Chinese.
 - **Don't** use monospace for anything but real data.

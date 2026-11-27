@@ -125,7 +125,7 @@ test("the analytics notice is a styled, fixed panel", async () => {
 test("no public page ships a photograph without a recorded source", async () => {
   const sources = await readFile(repo("docs/public-photo-sources.md"), "utf8");
   const code = await Promise.all(["home-page", "interior-pages", "showcase-pages", "services-page", "freight-guide-page", "network-page", "quote-concierge"].map((name) => readFile(repo(`app/components/${name}.tsx`), "utf8")));
-  code.push(await readFile(repo("app/blog-data.ts"), "utf8"), await readFile(repo("app/services-data.ts"), "utf8"));
+  code.push(await readFile(repo("app/blog-data.ts"), "utf8"));
   const used = new Set(code.join("\n").match(/\/images\/unsplash\/[\w-]+\.jpg/g));
   assert.ok(used.size);
   for (const path of used) assert.ok(sources.includes(path.slice(1)), path);
@@ -144,7 +144,7 @@ test("staged reveal never hides content on its own, and the line and the reveal 
   assert.match(reveal, /LINE_AT = 0\.72/);
   for (const line of [".spine i", ".ln i"]) assert.ok(declarations(line).some(({ prop, value }) => prop === "animation-range" && value.includes("28svh") && value.includes("72svh")), `${line}: the line's front must sit where the reveal fires`);
   // The line itself never waits: a hidden piece would leave a gap in it.
-  assert.match(reveal, /child\.matches\("\.stages, \.ln, \.band-cross, \.corridor-cross"\)/);
+  assert.match(reveal, /child\.matches\("\.stages, \.ln, \.br, \.band-cross"\)/);
   for (const required of ["focusin", ".site-footer", "getBoundingClientRect().top < window.innerHeight"]) assert.ok(reveal.includes(required), required);
 });
 

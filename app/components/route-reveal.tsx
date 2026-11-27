@@ -17,12 +17,12 @@ const UNITS = ".stop, .band, .end-band, .clients, .corridor, .network-map-sectio
 // Containers whose children arrive one at a time, rather than as a block.
 const GROUPS = ".svc, .svc-list, .check-list, .qa, .link-list, .stories, .story, .certs, .facts, .figures, .clients-list, .marks, .credentials, .stop-split > div, .sector > div, .work-detail, .band-stops, .band-copy, .band-copy > div, .mini, .mini > ol, .corridor-list, .corridor-list > li";
 // Images and drawn lines wipe in along the route instead of fading.
-const WIPES = ".certs figure, .plate, .mini svg, .corridor-list figure, .band-photo";
+const WIPES = ".certs figure, .plate, .mini svg, .corridor-list figure";
 const SETTLE_MS = 1700;
 
 function partsOf(element: Element): HTMLElement[] {
   return [...element.children].flatMap((child) => {
-    if (child.matches(".stages, .ln, .band-cross, .corridor-cross")) return []; // Each stage is its own unit, and the line never waits.
+    if (child.matches(".stages, .ln, .br, .band-cross")) return []; // Each stage is its own unit, and the line never waits.
     return child.matches(GROUPS) ? partsOf(child) : [child as HTMLElement];
   });
 }

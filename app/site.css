@@ -27,8 +27,6 @@
   --content-x: calc(var(--margin) + clamp(104px, 12vw, 184px));
   --h2: clamp(30px, 3.7vw, 56px);
   --cut: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  /* How far a photograph reaches past a band's lower edge. */
-  --pierce: clamp(48px, 6vw, 96px);
 }
 .site-root {
   min-height: 100dvh;
@@ -279,7 +277,7 @@ html:has(.site-menu[open]) { overflow: hidden; }
 /* The spine carries on from the origin field and fills as the page scrolls. */
 .lined { position: relative; }
 .spine { position: absolute; top: 0; bottom: 0; left: var(--ta); width: var(--line); background: var(--rule); pointer-events: none; }
-.spine i, .ln i, .ret i, .band-cross i, .corridor-cross i { display: block; height: 100%; background: var(--crimson); }
+.spine i, .ln i, .ret i, .band-cross i { display: block; height: 100%; background: var(--crimson); }
 /* Where a page has been rebuilt, each section draws its own piece of the line: straight
  * down track A, or stepping across to track B just above its heading. */
 .ln { position: absolute; top: 0; bottom: -1px; left: var(--ta); width: var(--line); background: var(--rule); pointer-events: none; }
@@ -295,8 +293,7 @@ html:has(.site-menu[open]) { overflow: hidden; }
     animation: spine-fill linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(100% - 72svh); }
     .ln i { transform-origin: 50% 0; animation: spine-fill linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(100% - 72svh); }
     .ret i { animation: wipe-left linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(100% - 72svh); }
-    .band-cross i, .corridor-cross i { animation: wipe-right linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(28svh + 260px); }
-    .corridor-cross i { animation-range: cover 28svh cover calc(28svh + 520px); }
+    .band-cross i { animation: wipe-right linear both; animation-timeline: view(block 0px); animation-range: cover 28svh cover calc(28svh + 260px); }
   }
 }
 @keyframes spine-fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
@@ -395,47 +392,27 @@ html:has(.site-menu[open]) { overflow: hidden; }
 /* The featured movement: the line turns white and crosses the band as the movement's own
  * route, entering from track B and leaving on the right-hand track. */
 .band { --ya: 64px; --half: calc(var(--line) / 2); --far: calc(var(--half) + var(--mitre)); --near: calc(var(--half) - var(--mitre)); position: relative; padding: calc(var(--ya) + var(--jog) + clamp(88px, 9vw, 128px)) calc(var(--margin) + 72px) clamp(64px, 8vw, 112px) var(--content-x); background: var(--crimson); color: #fff; }
-.band-cross, .corridor-cross { position: absolute; top: 0; bottom: 0; left: var(--tb); right: var(--ta); background: rgb(255 255 255 / 30%); clip-path: polygon(0 0, var(--line) 0, var(--line) calc(var(--ya) - var(--mitre)), calc(var(--jog) + var(--far)) calc(var(--ya) + var(--jog) - var(--half)), calc(100% - var(--jog) - var(--near)) calc(var(--ya) + var(--jog) - var(--half)), 100% calc(var(--ya) + var(--jog) * 2 - var(--mitre)), 100% 100%, calc(100% - var(--line)) 100%, calc(100% - var(--line)) calc(var(--ya) + var(--jog) * 2 + var(--mitre)), calc(100% - var(--jog) - var(--far)) calc(var(--ya) + var(--jog) + var(--half)), calc(var(--jog) + var(--near)) calc(var(--ya) + var(--jog) + var(--half)), 0 calc(var(--ya) + var(--mitre))); }
+.band-cross { position: absolute; top: 0; bottom: 0; left: var(--tb); right: var(--ta); background: rgb(255 255 255 / 30%); clip-path: polygon(0 0, var(--line) 0, var(--line) calc(var(--ya) - var(--mitre)), calc(var(--jog) + var(--far)) calc(var(--ya) + var(--jog) - var(--half)), calc(100% - var(--jog) - var(--near)) calc(var(--ya) + var(--jog) - var(--half)), 100% calc(var(--ya) + var(--jog) * 2 - var(--mitre)), 100% 100%, calc(100% - var(--line)) 100%, calc(100% - var(--line)) calc(var(--ya) + var(--jog) * 2 + var(--mitre)), calc(100% - var(--jog) - var(--far)) calc(var(--ya) + var(--jog) + var(--half)), calc(var(--jog) + var(--near)) calc(var(--ya) + var(--jog) + var(--half)), 0 calc(var(--ya) + var(--mitre))); }
 .band-cross i { background: #fff; }
-/* A photograph in the band's answer column reaches through its lower edge, so the run back
- * under the band drops lower to pass beneath it. */
-.band-photo { grid-column: 2; position: relative; z-index: 2; margin: clamp(24px, 3vw, 40px) 0 calc((clamp(64px, 8vw, 112px) + var(--pierce)) * -1); }
-.band-photo .pane { aspect-ratio: 4 / 3; }
-.band + .ret { --ya: calc(var(--pierce) + 36px); }
 
-/* The home page's photographs hang off the line rather than decorate it. The corridor
- * shows the route on the ground with a station over each staffed stop; the panes run off
- * both sides of the screen, each at its own size, drop and drift. The line crosses over
- * them on track A and comes back under them, as it does at the band. */
+/* The home page's corridor: the route seen from above, four pictures at one height in a
+ * single row that starts on the content edge and runs off the right of the screen. A
+ * branch leaves the page line and runs under them, with a station under each staffed stop. */
+.corridor { --below: 72px; --pb: clamp(8px, 1.5vw, 24px); position: relative; padding: clamp(64px, 8vw, 120px) 0 var(--pb) var(--content-x); }
+/* The branch's stroke sits 2px above its box's foot, and its centre 28px under the pictures. */
+.corridor > .br { left: calc(var(--ta) + var(--line) / 2); right: 0; bottom: calc(var(--pb) + var(--below) - 30px); }
+.corridor-list { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1.25fr; gap: 10px; margin-right: calc(clamp(24px, 4.4vw, 64px) * -1); }
+.corridor-list li { position: relative; padding-bottom: var(--below); }
 .pane { display: block; overflow: hidden; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
 .pane img { width: 100%; height: 100%; object-fit: cover; }
-.corridor { --ya: 56px; --half: calc(var(--line) / 2); --far: calc(var(--half) + var(--mitre)); --near: calc(var(--half) - var(--mitre)); --bleed: clamp(32px, 6vw, 112px); position: relative; padding: calc(var(--ya) + var(--jog)) 0 clamp(56px, 7vw, 112px); }
-.corridor-cross { z-index: 2; left: var(--ta); background: var(--rule); }
-.corridor > .ln { display: none; }
-.corridor-list { display: grid; grid-template-columns: 1.3fr .95fr 1.15fr 1fr; align-items: start; gap: clamp(14px, 1.6vw, 28px); margin: 0 calc(var(--bleed) * -1); }
-.corridor-list li { position: relative; }
-.corridor-list li > i { position: absolute; z-index: 3; left: var(--at, 50%); top: -9px; width: 18px; height: 18px; margin-left: -9px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
+.corridor-list .pane { height: clamp(220px, 23vw, 340px); }
+.corridor-list .dot { z-index: 1; left: calc(50% - 6px); bottom: calc(var(--below) - 28px - 6px); }
 /* translate, not transform, so the staged reveal's rise never fights the centring. */
-.corridor-list b { position: absolute; left: var(--at, 50%); top: 20px; translate: -50% 0; font-size: 16px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
-.corridor-list figure { margin-top: var(--drop); }
-.corridor-list .pane { aspect-ratio: var(--ratio); }
-.corridor-list li:nth-child(1) { --at: 66%; --drop: 76px; --ratio: 4 / 3; --drift: 4%; }
-.corridor-list li:nth-child(2) { --drop: 140px; --ratio: 4 / 5; --drift: 9%; }
-.corridor-list li:nth-child(3) { --drop: 60px; --ratio: 1 / 1; --drift: 6%; }
-/* The last stop sits near the line's turn, so its name reads rightwards from the station. */
-.corridor-list li:nth-child(4) { --at: 28px; --drop: 108px; --ratio: 3 / 4; --drift: 7%; }
-.corridor-list li:nth-child(4) b { translate: -9px 0; }
+.corridor-list b { position: absolute; left: 50%; bottom: 0; translate: -50% 0; font-size: 16px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
 /* The range over the closing band: square and edge to edge, like the band it sits on. */
 .horizon { position: relative; height: clamp(260px, 34vw, 540px); overflow: clip; }
-.horizon img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+.horizon img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
 .horizon i { position: absolute; left: var(--ta); top: 0; bottom: 0; width: var(--line); background: var(--crimson); }
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    /* Nearer panes move further, so the strip reads in depth as it passes. */
-    .corridor-list img, .horizon img { animation: drift linear both; animation-timeline: view(); animation-range: cover; }
-  }
-}
-@keyframes drift { from { transform: translateY(calc(var(--drift, 5%) * -1)) scale(1.2); } to { transform: translateY(var(--drift, 5%)) scale(1.2); } }
 .band-stops { position: absolute; left: var(--content-x); right: calc(var(--margin) + 96px); top: calc(var(--ya) + var(--jog)); display: flex; justify-content: space-between; }
 .band-stops li { position: relative; width: 0; }
 .band-stops i { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 50%; background: var(--crimson); }
@@ -512,20 +489,6 @@ html:has(.site-menu[open]) { overflow: hidden; }
   .svc li:hover .dot { border-color: var(--crimson); background: var(--crimson); }
   .svc-list svg { transition: transform 200ms var(--ease-out); }
   .svc-list a:hover svg { transform: translateX(4px); }
-}
-/* With a mouse, the hovered service's photograph rides above the pointer (service-peek.tsx
- * moves it). Hidden everywhere else, so touch screens never load the pictures. */
-.svc-peek { display: none; }
-@media (hover: hover) and (pointer: fine) and (min-width: 901px) {
-  .svc-peek { position: absolute; z-index: 3; left: 0; top: 0; display: block; width: clamp(220px, 19vw, 300px); pointer-events: none; transition: transform 420ms var(--ease-out); }
-  .svc-peek span { position: absolute; left: 0; bottom: 22px; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); opacity: 0; transform: translateX(-50%) scale(.94); transform-origin: 50% 100%; transition: opacity 180ms ease-out, transform 220ms var(--ease-out); }
-  .svc:has(li:hover) + .svc-peek span { opacity: 1; transform: translateX(-50%); }
-  .svc-peek img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 160ms ease; }
-  .svc:has(li:nth-child(1):hover) + .svc-peek img:nth-child(1), .svc:has(li:nth-child(2):hover) + .svc-peek img:nth-child(2), .svc:has(li:nth-child(3):hover) + .svc-peek img:nth-child(3), .svc:has(li:nth-child(4):hover) + .svc-peek img:nth-child(4), .svc:has(li:nth-child(5):hover) + .svc-peek img:nth-child(5), .svc:has(li:nth-child(6):hover) + .svc-peek img:nth-child(6), .svc:has(li:nth-child(7):hover) + .svc-peek img:nth-child(7) { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .svc-peek { transition: none; }
-  .svc-peek span { transform: translateX(-50%); transition: opacity 180ms ease-out; }
 }
 .plate img { width: 100%; object-fit: cover; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
 
@@ -840,18 +803,13 @@ body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
   .band-stops i { left: calc(var(--ta) + var(--line) / 2 - 7px - var(--content-x)); top: 50%; width: 14px; height: 14px; margin-top: -7px; }
   .band-stops b, .band-stops li:first-child b, .band-stops li:last-child b { position: static; transform: none; }
   .band-copy { grid-template-columns: 1fr; }
-  .site-root { --pierce: 32px; }
-  .band-photo { grid-column: auto; margin: 24px 0 calc((48px + var(--pierce)) * -1); }
-  /* On a phone the line runs straight down beside the corridor, which becomes two
-   * staggered columns running off the right edge, each named above its picture. */
-  .corridor { padding: 32px var(--margin) 48px var(--content-x); }
-  .corridor-cross { display: none; }
-  .corridor > .ln { display: block; }
-  .corridor-list { grid-template-columns: 1fr 1fr; gap: 28px 12px; margin: 0 calc(var(--margin) * -1) 0 0; }
-  .corridor-list li > i { display: none; }
-  .corridor-list b, .corridor-list li:nth-child(4) b { position: static; display: block; translate: none; font-size: 15px; }
-  .corridor-list li:nth-child(n) { --drop: 8px; --ratio: 4 / 5; }
-  .corridor-list li:nth-child(even) { margin-top: 48px; }
+  /* On a phone the corridor is two even columns beside the page line, each picture
+   * named underneath, still running off the right edge. */
+  .corridor { --pb: 8px; padding-top: 40px; }
+  .corridor-list { grid-template-columns: 1fr 1fr; gap: 20px 10px; margin-right: calc(var(--margin) * -1); }
+  .corridor-list li { padding-bottom: 0; }
+  .corridor-list .pane { height: auto; aspect-ratio: 1; }
+  .corridor-list b { position: static; display: block; margin-top: 8px; translate: none; font-size: 15px; }
   .facts > div { padding: 10px 0 12px; }
   .svc-list a { padding: 12px 0 14px; }
   .route-fork { display: block; }

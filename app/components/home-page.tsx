@@ -2,20 +2,18 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
-import { servicePhotos, services } from "../services-data";
+import { services } from "../services-data";
 import { sitePath, siteText, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { ClientRail } from "./client-rail";
 import { ClosingBand } from "./closing-band";
 import { quoteCopy } from "./quote-copy";
 import { Lined, Stop } from "./route-parts";
 import { RoutePlanner } from "./route-planner";
-import { ServicePeek } from "./service-peek";
 import { SiteShell } from "./site-chrome";
 
 /** Every service in large type, each on its own thin branch of the page line. */
 export function ServiceList({ locale }: { locale: SiteLocale }) {
   return (
-    <>
     <ul className="svc">
       {services.map((service, index) => (
         <li key={service.slug} style={{ "--i": index } as CSSProperties}>
@@ -28,32 +26,30 @@ export function ServiceList({ locale }: { locale: SiteLocale }) {
         </li>
       ))}
     </ul>
-    <ServicePeek photos={services.map((service) => servicePhotos[service.slug])}/>
-    </>
   );
 }
 
-/* The route the diagram plans, as it looks on the ground: the sea to Kolkata, the
- * railway to the border, the road over the hills, Kathmandu. Stations stand only
- * where KCPL has staff, so the road runs between stops. */
+/* The route the diagram plans, seen from above: the sea to Kolkata, the railway to the
+ * border, the road over the hills, Kathmandu. One branch off the page line runs under
+ * the pictures, with a station only where KCPL has staff, so the road runs between stops. */
 const corridor = [
   { src: "/images/unsplash/ship-aerial.jpg", station: "route.kolkata" },
-  { src: "/images/unsplash/freight-train.jpg", station: "route.raxaul_birgunj" },
-  { src: "/images/unsplash/nepal-road.jpg" },
-  { src: "/images/unsplash/kathmandu.jpg", station: "route.kathmandu" },
+  { src: "/images/unsplash/rail-aerial.jpg", station: "route.raxaul_birgunj" },
+  { src: "/images/unsplash/road-hairpins.jpg" },
+  { src: "/images/unsplash/kathmandu-above.jpg", station: "route.kathmandu" },
 ] as const;
 
 function Corridor({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   return (
     <section className="corridor" aria-label={t("route.summary")}>
-      <span className="corridor-cross" aria-hidden="true"><i/></span>
       <span className="ln" aria-hidden="true"><i/></span>
+      <span className="br" aria-hidden="true"><i/></span>
       <ul className="corridor-list">
         {corridor.map((pane) => (
           <li key={pane.src}>
-            {"station" in pane ? <><i aria-hidden="true"/><b>{t(pane.station)}</b></> : null}
-            <figure><span className="pane"><Image src={pane.src} alt="" width={1200} height={1000} sizes="(max-width: 900px) 46vw, 32vw"/></span></figure>
+            <figure><span className="pane"><Image src={pane.src} alt="" width={1200} height={1000} sizes="(max-width: 900px) 46vw, 26vw"/></span></figure>
+            {"station" in pane ? <><i className="dot" aria-hidden="true"/><b>{t(pane.station)}</b></> : null}
           </li>
         ))}
       </ul>
@@ -91,9 +87,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
       </section>
       <Lined reveal tracks>
         <ClientRail title={t("home.clients_title")}/>
-        {/* The first of two crossings: the line steps over the corridor and comes back under it. */}
         <Corridor locale={locale}/>
-        <div className="ret" aria-hidden="true"><i/></div>
         <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")} line="a-b">
           {/* Only what KCPL can back with a document. The figures stay in Latin numerals in every language. */}
           <dl className="figures">
@@ -103,7 +97,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
             <div><dt><b>6,000+</b>{t("home.credibility_storage")}</dt><dd>{t("home.credibility_storage_detail")}</dd></div>
           </dl>
         </Stop>
-        {/* The second crossing: the line goes over the band as the movement's own route. */}
+        {/* The one crossing on this page: the line goes over the band as the movement's own route. */}
         <section className="band">
           <span className="band-cross" aria-hidden="true"><i/></span>
           <ol className="band-stops">
@@ -115,8 +109,6 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
               <p>{t("home.proof_2_copy")}</p>
               <Link href={sitePath(locale, "/work#air-export")} className="text-link">{t("home.proof_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
             </div>
-            {/* An air movement's photograph, cutting through the band's lower edge. */}
-            <figure className="band-photo"><span className="pane"><Image src="/images/unsplash/airport-dollies.jpg" alt="" width={1200} height={900} sizes="(max-width: 900px) 90vw, 34vw"/></span></figure>
           </div>
         </section>
         <div className="ret" aria-hidden="true"><i/></div>
