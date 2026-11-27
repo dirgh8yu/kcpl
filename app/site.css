@@ -340,7 +340,7 @@ html:has(.site-menu[open]) { overflow: hidden; }
 @keyframes stage-line { from { transform: scaleY(0); } }
 .stop { --stop-top: clamp(96px, 11vw, 168px); --stop-size: var(--h2); position: relative; padding: var(--stop-top) var(--margin) clamp(32px, 4vw, 56px) var(--content-x); }
 .stop::before { content: ""; position: absolute; z-index: 1; left: calc(var(--tx) + var(--line) / 2 - 9px); top: calc(var(--stop-top) + var(--stop-size) * .525 - 9px); width: 18px; height: 18px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); }
-.stop:has(+ .band, + .end-band) { padding-bottom: clamp(72px, 9vw, 144px); }
+.stop:has(+ .band, + .end-band, + .horizon) { padding-bottom: clamp(72px, 9vw, 144px); }
 .page-head + .lined .stop { --stop-top: clamp(40px, 5vw, 72px); --stop-size: clamp(26px, 2.9vw, 40px); }
 .stop-title { max-width: 17em; font-size: var(--stop-size); line-height: 1.05; letter-spacing: -.035em; }
 .stop-intro { max-width: 34em; margin-top: 18px; color: var(--muted); font-size: clamp(18px, 1.4vw, 21px); }
@@ -394,6 +394,25 @@ html:has(.site-menu[open]) { overflow: hidden; }
 .band { --ya: 64px; --half: calc(var(--line) / 2); --far: calc(var(--half) + var(--mitre)); --near: calc(var(--half) - var(--mitre)); position: relative; padding: calc(var(--ya) + var(--jog) + clamp(88px, 9vw, 128px)) calc(var(--margin) + 72px) clamp(64px, 8vw, 112px) var(--content-x); background: var(--crimson); color: #fff; }
 .band-cross { position: absolute; top: 0; bottom: 0; left: var(--tb); right: var(--ta); background: rgb(255 255 255 / 30%); clip-path: polygon(0 0, var(--line) 0, var(--line) calc(var(--ya) - var(--mitre)), calc(var(--jog) + var(--far)) calc(var(--ya) + var(--jog) - var(--half)), calc(100% - var(--jog) - var(--near)) calc(var(--ya) + var(--jog) - var(--half)), 100% calc(var(--ya) + var(--jog) * 2 - var(--mitre)), 100% 100%, calc(100% - var(--line)) 100%, calc(100% - var(--line)) calc(var(--ya) + var(--jog) * 2 + var(--mitre)), calc(100% - var(--jog) - var(--far)) calc(var(--ya) + var(--jog) + var(--half)), calc(var(--jog) + var(--near)) calc(var(--ya) + var(--jog) + var(--half)), 0 calc(var(--ya) + var(--mitre))); }
 .band-cross i { background: #fff; }
+
+/* The home page's corridor: the route seen from above, four pictures at one height in a
+ * single row that starts on the content edge and runs off the right of the screen. A
+ * branch leaves the page line and runs under them, with a station under each staffed stop. */
+.corridor { --below: 72px; --pb: clamp(8px, 1.5vw, 24px); position: relative; padding: clamp(64px, 8vw, 120px) 0 var(--pb) var(--content-x); }
+/* The branch's stroke sits 2px above its box's foot, and its centre 28px under the pictures. */
+.corridor > .br { left: calc(var(--ta) + var(--line) / 2); right: 0; bottom: calc(var(--pb) + var(--below) - 30px); }
+.corridor-list { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1.25fr; gap: 10px; margin-right: calc(clamp(24px, 4.4vw, 64px) * -1); }
+.corridor-list li { position: relative; padding-bottom: var(--below); }
+.pane { display: block; overflow: hidden; clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.pane img { width: 100%; height: 100%; object-fit: cover; }
+.corridor-list .pane { height: clamp(220px, 23vw, 340px); }
+.corridor-list .dot { z-index: 1; left: calc(50% - 6px); bottom: calc(var(--below) - 28px - 6px); }
+/* translate, not transform, so the staged reveal's rise never fights the centring. */
+.corridor-list b { position: absolute; left: 50%; bottom: 0; translate: -50% 0; font-size: 16px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+/* The range over the closing band: square and edge to edge, like the band it sits on. */
+.horizon { position: relative; height: clamp(260px, 34vw, 540px); overflow: clip; }
+.horizon img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
+.horizon i { position: absolute; left: var(--ta); top: 0; bottom: 0; width: var(--line); background: var(--crimson); }
 .band-stops { position: absolute; left: var(--content-x); right: calc(var(--margin) + 96px); top: calc(var(--ya) + var(--jog)); display: flex; justify-content: space-between; }
 .band-stops li { position: relative; width: 0; }
 .band-stops i { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 50%; background: var(--crimson); }
@@ -785,6 +804,13 @@ body:has(> .cookie-notice) .site-footer { padding-bottom: 220px; }
   .band-stops i { left: calc(var(--ta) + var(--line) / 2 - 7px - var(--content-x)); top: 50%; width: 14px; height: 14px; margin-top: -7px; }
   .band-stops b, .band-stops li:first-child b, .band-stops li:last-child b { position: static; transform: none; }
   .band-copy { grid-template-columns: 1fr; }
+  /* On a phone the corridor is two even columns beside the page line, each picture
+   * named underneath, still running off the right edge. */
+  .corridor { --pb: 8px; padding-top: 40px; }
+  .corridor-list { grid-template-columns: 1fr 1fr; gap: 20px 10px; margin-right: calc(var(--margin) * -1); }
+  .corridor-list li { padding-bottom: 0; }
+  .corridor-list .pane { height: auto; aspect-ratio: 1; }
+  .corridor-list b { position: static; display: block; margin-top: 8px; translate: none; font-size: 15px; }
   .facts > div { padding: 10px 0 12px; }
   .svc-list a { padding: 12px 0 14px; }
   .route-fork { display: block; }

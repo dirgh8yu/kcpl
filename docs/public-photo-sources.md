@@ -34,6 +34,10 @@ Each one is checked at full size before use: no other company's branding, no fac
 | `public/images/unsplash/freight-train.jpg` | Naveen Sharma | https://unsplash.com/photos/a-green-and-blue-train-traveling-down-train-tracks-U_UkoZ7xkyc |
 | `public/images/unsplash/kathmandu.jpg` | Pritush Munankarmi | https://unsplash.com/photos/a-view-of-a-city-from-the-top-of-a-hill-8JGSA8uYBpw |
 | `public/images/unsplash/howrah-bridge.jpg` | Nikhil Kumar | https://unsplash.com/photos/howrah-bridge-over-a-river-2yLQxfiqBys |
+| `public/images/unsplash/himalaya-dawn.jpg` | Yves Alarie | https://unsplash.com/photos/62qybFmz4p0 |
+| `public/images/unsplash/rail-aerial.jpg` | Bernd Dittrich | https://unsplash.com/photos/ygUHonDyhRk |
+| `public/images/unsplash/road-hairpins.jpg` | Calin Stan | https://unsplash.com/photos/J8VWeMr5_Tg |
+| `public/images/unsplash/kathmandu-above.jpg` | Alexis Rodriguez | https://unsplash.com/photos/V7vO6O0wmGY |
 
 ## KCPL photographs (blog)
 

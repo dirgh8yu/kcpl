@@ -144,7 +144,7 @@ test("staged reveal never hides content on its own, and the line and the reveal 
   assert.match(reveal, /LINE_AT = 0\.72/);
   for (const line of [".spine i", ".ln i"]) assert.ok(declarations(line).some(({ prop, value }) => prop === "animation-range" && value.includes("28svh") && value.includes("72svh")), `${line}: the line's front must sit where the reveal fires`);
   // The line itself never waits: a hidden piece would leave a gap in it.
-  assert.match(reveal, /child\.matches\("\.stages, \.ln, \.band-cross"\)/);
+  assert.match(reveal, /child\.matches\("\.stages, \.ln, \.br, \.band-cross"\)/);
   for (const required of ["focusin", ".site-footer", "getBoundingClientRect().top < window.innerHeight"]) assert.ok(reveal.includes(required), required);
 });
 

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { services } from "../services-data";
@@ -25,6 +26,34 @@ export function ServiceList({ locale }: { locale: SiteLocale }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/* The route the diagram plans, seen from above: the sea to Kolkata, the railway to the
+ * border, the road over the hills, Kathmandu. One branch off the page line runs under
+ * the pictures, with a station only where KCPL has staff, so the road runs between stops. */
+const corridor = [
+  { src: "/images/unsplash/ship-aerial.jpg", station: "route.kolkata" },
+  { src: "/images/unsplash/rail-aerial.jpg", station: "route.raxaul_birgunj" },
+  { src: "/images/unsplash/road-hairpins.jpg" },
+  { src: "/images/unsplash/kathmandu-above.jpg", station: "route.kathmandu" },
+] as const;
+
+function Corridor({ locale }: { locale: SiteLocale }) {
+  const t = siteTranslator(locale);
+  return (
+    <section className="corridor" aria-label={t("route.summary")}>
+      <span className="ln" aria-hidden="true"><i/></span>
+      <span className="br" aria-hidden="true"><i/></span>
+      <ul className="corridor-list">
+        {corridor.map((pane) => (
+          <li key={pane.src}>
+            <figure><span className="pane"><Image src={pane.src} alt="" width={1200} height={1000} sizes="(max-width: 900px) 46vw, 26vw"/></span></figure>
+            {"station" in pane ? <><i className="dot" aria-hidden="true"/><b>{t(pane.station)}</b></> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -58,6 +87,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
       </section>
       <Lined reveal tracks>
         <ClientRail title={t("home.clients_title")}/>
+        <Corridor locale={locale}/>
         <Stop title={t("home.credibility_title")} intro={t("home.credibility_copy")} line="a-b">
           {/* Only what KCPL can back with a document. The figures stay in Latin numerals in every language. */}
           <dl className="figures">
@@ -86,6 +116,8 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           <ServiceList locale={locale}/>
           <Link href={sitePath(locale, "/services")} className="text-link">{t("home.capability_link")}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </Stop>
+        {/* The line arrives in Kathmandu over the range, then ends on the quote. */}
+        <div className="horizon" aria-hidden="true"><Image src="/images/unsplash/himalaya-dawn.jpg" alt="" width={2400} height={1600} sizes="100vw"/><i/></div>
         <ClosingBand locale={locale}/>
       </Lined>
     </SiteShell>
