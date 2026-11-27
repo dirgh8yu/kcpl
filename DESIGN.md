@@ -179,7 +179,7 @@ Scope: every public page in all four languages, plus the customer sign-in page, 
 
 The whole site is one transit diagram. A thick crimson line with white stations on it starts at the origin field on the home page, runs through the route diagram to the destination field, and continues down the left of marketing and guide pages as a spine with one station per section. On the crimson bands the same line carries through in white. A new surface joins this system by finding its place on the line, not by adding a decorative layer around it.
 
-The ground is off-white and quiet, the type is one family at a modest display weight, and separation comes from hairlines and whitespace. Crimson is never rationed into small accents: it appears as the line, as primary controls, and as whole bands. Density is generous on marketing pages and tighter on quote and tool pages, where chamfered plates hold the working parts. Photographs appear rarely, so the diagram stays the main image.
+The ground is off-white and quiet, the type is one family at a modest display weight, and separation comes from hairlines and whitespace. Crimson is never rationed into small accents: it appears as the line, as primary controls, and as whole bands. Density is generous on marketing pages and tighter on quote and tool pages, where chamfered plates hold the working parts. On inner pages photographs appear rarely, so the diagram stays the main image. The home page is the one exception: below the hero, where the diagram has already made its point, photographs carry the same route on the ground.
 
 The geometry comes from the Gateway K logo. Its corners are cut, so buttons, plates and photographs are cut the same way, and the ground legs of the line bend at 45 degrees.
 
@@ -278,7 +278,7 @@ The station is the only round form: an 18px white disc with a 3px ink ring (16px
 The line itself is 8px as the spine (6px on phones), a scaled 9-unit stroke in the 800 by 240 diagram, and 4 to 6px in small routes, stages and form rails. Ground legs bend at 45 degrees. The air route is the one curve, an arc over the top at a thinner weight, and that contrast is deliberate. Small routes stretch to their column, so their raised bends read as cuts without holding an exact angle.
 
 ### Named Rules
-**The Certificates As Issued Rule.** Award certificates are never chamfered, cropped or tinted. Client logos on the rail are greyscale at 85% opacity with a multiply blend. The Gateway K is never recoloured or redrawn.
+**The Certificates As Issued Rule.** Award certificates are never chamfered, cropped or tinted. Client logos keep their own colours, with a multiply blend so their white grounds drop away. The Gateway K is never recoloured or redrawn.
 
 ## Components
 
@@ -305,6 +305,14 @@ There are no content cards. The two working containers are plates.
 
 ### Photographs
 Illustrative Unsplash photographs, each listed in `docs/public-photo-sources.md`, with an empty alt because they add no information. At most one to a section: beside the text on service, sector and guide pages (`.sector`, 7fr of text to 5fr of photograph at 10:7), or across the column where the subject is wide (`.plate-wide`, 21:9, 3:2 on phones). Quote, contact, track, tools, FAQ, careers, awards and legal pages carry none because they are for doing or checking something; on the network page the route and the map are the image; movement stories stay without pictures because they are anonymous.
+
+The home page is photograph-led below the hero, and every picture hangs off the line rather than decorating it:
+- **Corridor** (`.corridor`): the route on the ground, from the sea to Kolkata, the railway to Raxaul and Birgunj, the road over the hills, and Kathmandu. Four panes of different sizes, drops and ratios run off both sides of the screen. The line crosses over them on track A, with a station only where KCPL has staff, and `.ret` brings it back underneath. On phones the panes become two staggered columns beside a straight line, each named above its picture.
+- **Band photograph** (`.band-photo`): one picture in the band's answer column reaches through the band's lower edge by `--pierce`, and the run back under the band drops to pass beneath it.
+- **Horizon** (`.horizon`): the Himalaya over the closing band, square and edge to edge like a band, with the line running down it in crimson until it turns white on the band.
+- **Service peek** (`.svc-peek`): with a mouse, the hovered service's photograph rides above the pointer, so the row itself stays readable. Touch screens never show it, and never load the pictures.
+
+Cut panes use the 18px chamfer through `.pane`. Pictures drift a few percent against the scroll, nearer panes further, on a view timeline. Without support, or under reduced motion, they hold still.
 
 ### Inputs / Fields
 - **Style:** a paper tile with a 14px Warm Grey label stacked over a borderless 16px, 600 value. Route ends carry the 2px ink ring, ordinary form fields the quiet ring. Tool inputs are the working variant: 48px tall, a 1px hairline border and a label above the box, with unit suffixes on a canvas tile.
@@ -334,7 +342,7 @@ Full-bleed crimson in two inks with the white line running through. The feature 
 Service, question, fact, link and search lists: a top hairline, generous padding, title in 600 and detail in Warm Grey, usually in two columns. Hover turns the title crimson and nudges the arrow.
 
 ### Client Rail
-A slow 70-second marquee of greyscale logos with edge fades and a 44px square pause button. It pauses on hover and becomes a static wrapped list under reduced motion.
+A still grid of client logos in their own colours, six to a row (three on phones). Each logo's height is set from its proportions, so wide wordmarks and square marks carry the same visual weight.
 
 ### Customer Sign-In
 Follows the site's ground, Manrope, a heading up to 42px at 500, and the 52px chamfered crimson submit, with square inputs at 16px. The staff sign-in keeps the app's own canvas and is not covered.
@@ -356,7 +364,8 @@ Follows the site's ground, Manrope, a heading up to 42px at 500, and the 52px ch
 - **Don't** use a tinted crimson surface, or any second accent outside charts and status.
 - **Don't** build grids of bordered or shadowed cards; plates are for forms and results only.
 - **Don't** use soft rounded corners, or bend a ground route at anything other than a 45-degree cut. The air arc is the only curve.
-- **Don't** stage a stock photograph under an overlaid headline; the route is the main image.
+- **Don't** stage a stock photograph under an overlaid headline; the route is the main image, and on the home page the photographs hang off it.
+- **Don't** put labels, credits or pills over a photograph; station names sit on the line beside it.
 - **Don't** put a chamfer on certificates or redraw, recolour or crop the Gateway K.
 - **Don't** apply tight Latin tracking to Devanagari or Chinese.
 - **Don't** use monospace for anything but real data.

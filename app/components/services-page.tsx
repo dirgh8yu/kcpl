@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guides, type GuideSlug } from "../guide-data";
 import { serviceDepth } from "../content-depth";
-import { services, type ServiceKey, type ServiceSlug } from "../services-data";
+import { servicePhotos, services, type ServiceKey, type ServiceSlug } from "../services-data";
 import { graph, serviceNode } from "../structured-data";
 import { sitePath, siteTranslator, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools, type ToolSlug } from "../tool-data";
@@ -17,17 +17,6 @@ import { StructuredData } from "./structured-data";
 export { services, type ServiceKey, type ServiceSlug } from "../services-data";
 
 const text = (key: ServiceKey, part: string) => `svc.${key}.${part}` as SiteTextKey;
-
-/* Only photographs with a recorded source and no other company's branding. */
-const servicePhotos: Record<ServiceSlug, { src: string; position?: string }> = {
-  "air-freight": { src: "/images/unsplash/air-pallets.jpg", position: "70% 100%" },
-  "ocean-freight": { src: "/images/unsplash/ship-terminal.jpg", position: "30% 50%" },
-  "road-freight": { src: "/images/unsplash/ghat-trucks.jpg", position: "100% 70%" },
-  "customs-clearance": { src: "/images/unsplash/container-plate.jpg", position: "20% 50%" },
-  "project-cargo": { src: "/images/unsplash/heavy-lift.jpg" },
-  warehousing: { src: "/images/unsplash/warehouse-racks.jpg" },
-  delivery: { src: "/images/unsplash/clipboard-sign.jpg" },
-};
 
 /* The guides link to the services, and this links back, so a reader and a crawler
  * can reach the deeper pages from the page they arrived on. */
