@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { sitePath, type SiteLocale } from "../site-i18n";
 import { tools, toolSlugs, type ToolSlug } from "../tool-data";
+import { graph, toolApplicationNode } from "../structured-data";
+import { StructuredData } from "./structured-data";
 import { DutyEstimator, StorageEstimator, VolumeEstimator } from "./importer-tool-forms";
 import { ClosingBand } from "./closing-band";
 import { Lined, PageHead } from "./route-parts";
@@ -33,6 +35,7 @@ export function ToolPage({ locale, slug }: { locale: SiteLocale; slug: ToolSlug 
   const quotePath = `${sitePath(locale, "/quote")}?tool=${encodeURIComponent(slug)}`;
   return (
     <SiteShell locale={locale} path={`/tools/${slug}`}>
+      <StructuredData data={graph([toolApplicationNode(locale, slug)])}/>
       <PageHead title={page.title} intro={page.intro}>
         <Link href={sitePath(locale, "/tools")} className="back-link"><ArrowLeft size={15} weight="bold" aria-hidden="true"/>{copy.index.title}</Link>
       </PageHead>

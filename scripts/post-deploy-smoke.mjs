@@ -9,6 +9,12 @@
  * into one command that exits non-zero when the live site disagrees with the
  * merged code.
  *
+ * The first pass covered corridors and the surfaces that must stay closed. The
+ * second closed its blind spots: the twelve calculator pages (a 5xx on one of
+ * them used to be invisible), the guide pages' FAQ schema, the tracker's entry
+ * box, robots.txt, an unknown corridor answering 200, and a lane page that does
+ * not link the notes which link it.
+ *
  *   node scripts/post-deploy-smoke.mjs
  *   node scripts/post-deploy-smoke.mjs --base=https://preview.example
  *
@@ -18,12 +24,19 @@
 import {
   adminGuardProblems,
   blogPostProblems,
+  guidePageProblems,
   laneIndexProblems,
+  laneNotFoundProblems,
+  laneNoteProblems,
   lanePageProblems,
   laneSlugs,
   locales,
   quotePageProblems,
+  robotsProblems,
   sitemapProblems,
+  toolPageProblems,
+  toolSlugs,
+  trackPageProblems,
 } from "./smoke-checks.mjs";
 
 const arg = process.argv.find((value) => value.startsWith("--base="));
@@ -81,6 +94,45 @@ for (const locale of locales) {
     });
   }
 }
+
+for (const locale of locales) {
+  for (const slug of toolSlugs) {
+    await guard(`${locale.id} tool ${slug}`, async () => {
+      const { status, body } = await fetchText(`${locale.prefix}/tools/${slug}`);
+      const problems = status === 200 ? toolPageProblems({ html: body, prefix: locale.prefix, slug, origin: base }) : [`answered ${status}`];
+      report(`${locale.id} tool ${slug}`, problems, ` ${locale.prefix}/tools/${slug}`);
+    });
+  }
+}
+
+await guard("guide faq", async () => {
+  const slug = "importing-to-nepal";
+  const { status, body } = await fetchText(`/guides/${slug}`);
+  report("guide faq", status === 200 ? guidePageProblems({ html: body, slug, origin: base }) : [`answered ${status}`], ` /guides/${slug}`);
+});
+
+await guard("tracker entry", async () => {
+  const { status, body } = await fetchText("/track");
+  report("tracker entry", status === 200 ? trackPageProblems(body) : [`answered ${status}`], " /track");
+});
+
+await guard("robots", async () => {
+  const { status, body } = await fetchText("/robots.txt");
+  report("robots", robotsProblems({ status, body, origin: base }), " /robots.txt");
+});
+
+await guard("unknown lane is 404", async () => {
+  const slug = "no-such-corridor";
+  const { status, body } = await fetchText(`/lanes/${slug}`);
+  report("unknown lane is 404", laneNotFoundProblems({ status, html: body, slug }), ` /lanes/${slug}`);
+});
+
+await guard("lane blog notes", async () => {
+  const slug = "kolkata-to-birgunj";
+  const notes = ["container-at-birgunj-what-happens-next"];
+  const { status, body } = await fetchText(`/lanes/${slug}`);
+  report("lane blog notes", status === 200 ? laneNoteProblems({ html: body, slug, notes }) : [`answered ${status}`], ` /lanes/${slug}`);
+});
 
 await guard("quote form", async () => {
   const { status, body } = await fetchText("/quote");
