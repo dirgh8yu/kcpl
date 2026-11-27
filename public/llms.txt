@@ -31,6 +31,13 @@
 - [HS codes and import duty](https://kapileshworcargo.com.np/guides/hs-codes-and-import-duty): Classification and duty-estimate limitations.
 - [Free time and demurrage](https://kapileshworcargo.com.np/guides/free-time-and-demurrage): Release planning and time-related charges.
 
+## Lane pages
+
+- [Kolkata to Birgunj transport](https://kapileshworcargo.com.np/lanes/kolkata-to-birgunj): Port release at Kolkata, rail to ICD Birgunj or road across Raxaul, clearance, delivery and the empty return.
+- [Haldia to Kathmandu cargo](https://kapileshworcargo.com.np/lanes/haldia-to-kathmandu): Which cargo suits Haldia, the inland leg to Birgunj, and delivery to Kathmandu.
+- [Nepal to Tibet cargo](https://kapileshworcargo.com.np/lanes/nepal-to-tibet): Northbound exports over Tatopani–Zhangmu and Kerung–Rasuwagadhi, 14 to 21 days between Kathmandu and Lhasa, and the documents on both sides.
+- [All lanes](https://kapileshworcargo.com.np/lanes): The corridors KCPL moves freight on.
+
 ## Blog
 
 - [Notes from the route](https://kapileshworcargo.com.np/blog): KCPL's notes on moving freight into and out of Nepal, in English.

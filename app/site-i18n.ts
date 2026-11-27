@@ -47,7 +47,7 @@ export function sitePath(locale: SiteLocale, path: string) {
 /** The blog is written in English and has no translation yet, so every link to it,
  * from any language, goes to the English page. */
 export function englishOnlyPath(path: string) {
-  return path === "/blog" || path.startsWith("/blog/");
+  return path === "/blog" || path.startsWith("/blog/") || path === "/lanes" || path.startsWith("/lanes/");
 }
 
 /** Where the language switch goes: the same page, or that language's home page

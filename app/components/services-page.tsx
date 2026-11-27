@@ -41,6 +41,23 @@ const serviceResources: Record<ServiceSlug, { guides: GuideSlug[]; tool: ToolSlu
   delivery: { guides: ["importing-to-nepal", "exporting-from-nepal"], tool: "volume-weight" },
 };
 
+/* The lane pages are English-only, so they join the resources block on the
+ * English service pages and stay out of the translated ones. */
+const serviceLanes: Partial<Record<string, { href: string; label: string }[]>> = {
+  "ocean-freight": [
+    { href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj transport" },
+    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
+  ],
+  "customs-clearance": [
+    { href: "/lanes/kolkata-to-birgunj", label: "Clearance at ICD Birgunj" },
+    { href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" },
+  ],
+  "road-freight": [
+    { href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" },
+    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
+  ],
+};
+
 export function ServicesPage({ locale }: { locale: SiteLocale }) {
   const t = siteTranslator(locale);
   return (
@@ -113,6 +130,9 @@ export function ServiceDetailPage({ locale, slug, heading }: { locale: SiteLocal
               <li key={guide}><Link href={sitePath(locale, `/guides/${guide}`)}>{guides[locale][guide].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
             ))}
             <li><Link href={sitePath(locale, `/tools/${serviceResources[slug].tool}`)}>{tools[locale][serviceResources[slug].tool].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            {locale === "en" ? (serviceLanes[slug] ?? []).map((lane) => (
+              <li key={lane.href}><Link href={lane.href}>{lane.label}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+            )) : null}
           </ul>
         </Stop>
         <Stop title={t("services.related")}>

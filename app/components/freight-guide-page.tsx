@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { guideIndex, guideLinks, guides, guideSlugs, type GuideSlug } from "../guide-data";
 import { guideDepth } from "../content-depth";
+import { guidePhotos } from "../guide-photos";
 import { faqNode, graph, guideArticleNodes } from "../structured-data";
 import { guideReview, reviewedGuideSlugs } from "../guide-review";
 import { sitePath, siteTranslator, type SiteLocale } from "../site-i18n";
@@ -13,17 +14,17 @@ import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
 
-/* Only photographs with a recorded source and no other company's branding. */
-const guidePhotos: Record<GuideSlug, { src: string; position?: string }> = {
-  "importing-to-nepal": { src: "/images/unsplash/ghat-tunnel.jpg" },
-  "exporting-from-nepal": { src: "/images/unsplash/warp-threads.jpg" },
-  "customs-clearance-in-nepal": { src: "/images/unsplash/container-marks.jpg", position: "35% 40%" },
-  "sea-freight-through-india": { src: "/images/unsplash/port-sunset.jpg" },
-  "air-freight-to-kathmandu": { src: "/images/unsplash/airport-dollies.jpg" },
-  "hs-codes-and-import-duty": { src: "/images/unsplash/tariff-ledger.jpg" },
-  "free-time-and-demurrage": { src: "/images/unsplash/container-yard.jpg", position: "30% 50%" },
-  "cargo-from-china-to-nepal": { src: "/images/unsplash/nepal-road.jpg" },
-  "cargo-from-india-to-nepal": { src: "/images/unsplash/howrah-bridge.jpg" },
+
+/* Lane pages are English-only, so the links appear on the English guides and
+ * nowhere else. A translated guide keeps its own language. */
+const guideLanes: Partial<Record<GuideSlug, { href: string; label: string }[]>> = {
+  "cargo-from-india-to-nepal": [{ href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj, stage by stage" }],
+  "sea-freight-through-india": [
+    { href: "/lanes/kolkata-to-birgunj", label: "Kolkata to Birgunj transport" },
+    { href: "/lanes/haldia-to-kathmandu", label: "Haldia to Kathmandu cargo" },
+  ],
+  "cargo-from-china-to-nepal": [{ href: "/lanes/nepal-to-tibet", label: "The same crossings, northbound: Nepal to Tibet" }],
+  "exporting-from-nepal": [{ href: "/lanes/nepal-to-tibet", label: "Nepal to Tibet cargo" }],
 };
 
 export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: GuideSlug }) {
@@ -64,6 +65,11 @@ export function FreightGuidePage({ locale, slug }: { locale: SiteLocale; slug: G
           <Link href={sitePath(locale, links.service)} className="text-link">{guide.related}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
           <Link href={sitePath(locale, `/tools/${links.tool}`)} className="text-link">{tools[locale][links.tool].title}<ArrowRight size={15} weight="bold" aria-hidden="true"/></Link>
         </section>
+        {locale === "en" && guideLanes[slug] ? <Stop title="Lane pages">
+          <ul className="link-list">
+            {guideLanes[slug]!.map((lane) => <li key={lane.href}><Link href={lane.href}>{lane.label}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>)}
+          </ul>
+        </Stop> : null}
         <Stop title={index.related}>
           <ul className="link-list">
             {links.next.map((next) => (

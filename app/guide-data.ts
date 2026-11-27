@@ -31,7 +31,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       title: "Importing freight to Nepal",
       description: "Plan an import to Nepal: choose an Indian gateway, prepare freight documents, align transit and customs handovers, and arrange final delivery.",
       intro: "An ocean import into Nepal does not end when the vessel reaches India. The gateway, transit movement, border clearance and final delivery have to be planned as one shipment.",
-      routeTitle: "How the movement is planned",
+      routeTitle: "What happens between the port and your door",
       stages: [
         { title: "01 / Establish the cargo and delivery point", copy: "Share the origin, destination in Nepal, cargo description, dimensions, weight and delivery terms. These determine whether ocean, air or road is suitable and whether specialist equipment is needed." },
         { title: "02 / Connect the gateway to the inland leg", copy: "For ocean freight, the Indian gateway and onward rail-linked or road movement must fit the cargo and consignee. Kolkata, Haldia and Visakhapatnam are possible gateways; the workable route is confirmed for each shipment." },
@@ -52,7 +52,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       title: "Exporting freight from Nepal",
       description: "Plan an export from Nepal by air or ocean: prepare cargo and trade documents, choose Kathmandu or Indian-gateway routes, and coordinate destination agents.",
       intro: "A Nepal export works best when the cargo, collection date, buyer's delivery terms and destination handover are agreed before a carrier is booked.",
-      routeTitle: "How the movement is planned",
+      routeTitle: "How an export from Nepal is put together",
       stages: [
         { title: "01 / Define the shipment", copy: "Start with the commodity, number of packages, dimensions, weight, destination, required delivery window and buyer's Incoterm. Air from Kathmandu and ocean through an Indian gateway answer different cost and timing needs." },
         { title: "02 / Prepare the export handover", copy: "Confirm packing, collection, export documentation and any commodity-specific approvals before cargo is tendered. The invoice, packing list and transport instructions should describe the same shipment." },
@@ -73,7 +73,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       title: "Cargo from China to Nepal",
       description: "Plan cargo from China to Nepal: road via the Kerung–Rasuwagadhi or Tatopani crossings, sea through an Indian port or air to Kathmandu, and the documents.",
       intro: "Cargo from China reaches Nepal by road over the Himalayan crossings, by sea through an Indian port, or by air into Kathmandu. Which one works depends on the goods, the delivery point and whether the crossings are open.",
-      routeTitle: "How the movement is planned",
+      routeTitle: "Which route from China to Nepal fits the cargo",
       stages: [
         { title: "01 / Choose road, sea or air", copy: "Road over the northern border suits cargo from inland and western China. Sea through Kolkata or another Indian gateway suits full containers from China's coastal ports. Air into Kathmandu suits urgent or high-value cargo. Share the supplier's city, the cargo and the delivery point in Nepal and the route is chosen from those." },
         { title: "02 / Check the crossing before booking", copy: "Kerung–Rasuwagadhi and Tatopani are the main road crossings for trade with China. Both have closed for long periods after floods and landslides, so the crossing's current status is checked for each shipment before the supplier dispatches." },
@@ -95,7 +95,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
       title: "Cargo from India to Nepal",
       description: "Plan cargo from India to Nepal: pick the border point, separate Indian goods from transit cargo, prepare the documents and arrange clearance and delivery.",
       intro: "Most of Nepal's trade crosses the open border with India, by road through more than twenty customs points and by rail into Birgunj. The border point and the documents depend on where the goods come from and where they are going in Nepal.",
-      routeTitle: "How the movement is planned",
+      routeTitle: "Which border point fits this shipment",
       stages: [
         { title: "01 / Pick the border point", copy: "Raxaul–Birgunj carries the most cargo and has the Sirsiya rail-linked dry port. Bhairahawa, Nepalgunj and Biratnagar are among the other main crossings. The right one is usually the one closest to the delivery point in Nepal." },
         { title: "02 / Indian goods or transit cargo", copy: "Goods bought in India move under the bilateral Treaty of Trade. Cargo from a third country that lands at an Indian port moves under the Treaty of Transit, in bond, with its own transit documents. The two need different paperwork, so tell KCPL which one the shipment is." },
@@ -181,7 +181,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
     },
     "cargo-from-india-to-nepal": {
       title: "भारतबाट नेपालमा कार्गो",
-      description: "भारतबाट नेपालमा कार्गोको योजना: सीमा नाका छान्नुहोस्, भारतीय सामान र तेस्रो मुलुकको ट्रान्जिट कार्गो छुट्याउनुहोस्, कागजात तयार गर्नुहोस् र जाँचपास तथा डेलिभरी मिलाउनुहोस्।",
+      description: "भारतबाट नेपालमा कार्गोको योजना: सीमा नाका छान्नुहोस्, भारतीय सामान र ट्रान्जिट कार्गो छुट्याउनुहोस्, कागजात तयार गर्नुहोस् र जाँचपास मिलाउनुहोस्।",
       intro: "नेपालको धेरैजसो व्यापार भारतसँगको खुला सीमा हुँदै हुन्छ, बीसभन्दा बढी भन्सार नाकाबाट सडकमार्ग र वीरगन्जसम्म रेलमार्गबाट। सीमा नाका र कागजात सामान कहाँबाट आउँछ र नेपालमा कहाँ जान्छ भन्नेमा भर पर्छ।",
       routeTitle: "मुभमेन्ट कसरी योजना हुन्छ",
       stages: [
@@ -269,7 +269,7 @@ const routeGuides: Record<SiteLocale, Record<RouteGuideSlug, Guide>> = {
     },
     "cargo-from-india-to-nepal": {
       title: "भारत से नेपाल कार्गो",
-      description: "भारत से नेपाल कार्गो की योजना: बॉर्डर पॉइंट चुनें, भारतीय माल और तीसरे देश के ट्रांज़िट कार्गो में फ़र्क़ समझें, दस्तावेज़ तैयार करें और क्लियरेंस तथा डिलीवरी की व्यवस्था करें।",
+      description: "भारत से नेपाल कार्गो की योजना: बॉर्डर पॉइंट चुनें, भारतीय माल और ट्रांज़िट कार्गो में फ़र्क़ समझें, दस्तावेज़ तैयार करें और क्लियरेंस की व्यवस्था करें।",
       intro: "नेपाल का ज़्यादातर व्यापार भारत के साथ खुले बॉर्डर से होता है, बीस से ज़्यादा कस्टम्स पॉइंट से सड़क के रास्ते और बीरगंज तक रेल से। बॉर्डर पॉइंट और दस्तावेज़ इस पर निर्भर करते हैं कि माल कहाँ से आ रहा है और नेपाल में कहाँ जा रहा है।",
       routeTitle: "मूवमेंट की योजना कैसे बनती है",
       stages: [
@@ -415,14 +415,14 @@ export const guideIndex: Record<SiteLocale, { title: string; description: string
   },
   ne: {
     title: "ढुवानी मार्गदर्शिका",
-    description: "नेपालभित्र र बाहिर ढुवानीका व्यावहारिक मार्गदर्शिका: भन्सार जाँचपास, भारतीय बन्दरगाह हुँदै समुद्री ढुवानी, काठमाडौँमा हवाई ढुवानी, HS कोड र महसुल, र फ्री टाइम तथा डेमरेज।",
+    description: "नेपालभित्र र बाहिर ढुवानीका व्यावहारिक मार्गदर्शिका: भन्सार जाँचपास, भारतीय बन्दरगाह हुँदै समुद्री ढुवानी, काठमाडौँमा हवाई ढुवानी, HS कोड र महसुल।",
     intro: "नेपालमा र नेपालबाट मालसामान ढुवानीसम्बन्धी सामान्य प्रश्नका सरल उत्तर, योजना सूचीका रूपमा। आवश्यकताहरू सामान र समयअनुसार फरक पर्छन्, त्यसैले हरेक शिपमेन्टमा विवरण पुष्टि गर्नुहोस्।",
     related: "सम्बन्धित मार्गदर्शिका",
     open: "मार्गदर्शिका पढ्नुहोस्",
   },
   hi: {
     title: "माल ढुलाई गाइड",
-    description: "नेपाल में और नेपाल से माल भेजने की व्यावहारिक गाइड: कस्टम्स क्लियरेंस, भारतीय बंदरगाहों से समुद्री माल, काठमांडू में हवाई माल, HS कोड और ड्यूटी, तथा फ़्री टाइम और डेमरेज।",
+    description: "नेपाल में और नेपाल से माल भेजने की व्यावहारिक गाइड: कस्टम्स क्लियरेंस, भारतीय बंदरगाहों से समुद्री माल, काठमांडू में हवाई माल, HS कोड और ड्यूटी।",
     intro: "नेपाल में और नेपाल से माल ले जाने से जुड़े आम सवालों के सीधे जवाब, योजना सूची के रूप में। ज़रूरतें माल और समय के साथ बदलती हैं, इसलिए हर शिपमेंट के लिए विवरण की पुष्टि करें।",
     related: "संबंधित गाइड",
     open: "गाइड पढ़ें",

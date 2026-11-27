@@ -23,7 +23,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       title: "Clearing imports through Nepal customs",
       description: "How an import clears Nepal customs: the documents customs expects, the declaration and assessment, paying duty and VAT, and release for delivery.",
       intro: "Clearance is where a shipment's paperwork is tested. When the invoice, packing list, transport documents and permits agree before the cargo reaches the border, customs has less to question and the cargo spends fewer days running up storage.",
-      routeTitle: "How clearance runs",
+      routeTitle: "What order clearance runs in",
       stages: [
         { title: "01 / Documents before arrival", copy: "The clearing agent needs the commercial invoice, packing list, bill of lading or air waybill, the importer's PAN or VAT registration and any permit the goods require. A gap found before arrival costs a phone call; found at the border, it costs days." },
         { title: "02 / Declaration and assessment", copy: "The agent lodges the customs declaration with the HS code, value and origin of each line. Customs may accept it as declared, ask for documents or examine the cargo, and then assesses duty, excise and VAT." },
@@ -45,7 +45,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       title: "Sea freight to Nepal through Indian ports",
       description: "See how ocean freight reaches Nepal through Kolkata, Haldia or Visakhapatnam, with rail or road transit across India and a planned border handover.",
       intro: "Nepal has no seaport, so ocean cargo lands in India and continues in transit to the border. The gateway, the transit mode and the documents for the Indian leg matter as much as the ocean booking.",
-      routeTitle: "How the route is planned",
+      routeTitle: "Which Indian port for a Nepal delivery",
       stages: [
         { title: "01 / Choose the gateway", copy: "Kolkata and Haldia are the nearest ports for most of Nepal; Visakhapatnam is further but can offer other vessel services. The right gateway depends on the origin, the carrier's services and where in Nepal the cargo is going." },
         { title: "02 / Transit through India", copy: "From the port the cargo moves in transit, by rail to the dry port at Birgunj or by road to a border customs point. The transit documents have to match the bill of lading and the commercial documents exactly." },
@@ -67,7 +67,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       title: "Air freight into Kathmandu",
       description: "When air freight into Nepal makes sense, how chargeable weight is worked out, and how cargo is cleared and collected at Tribhuvan International Airport.",
       intro: "Air is the fast lane into Nepal for urgent, valuable or light cargo. It costs more per kilogram, so the cargo's size, weight and deadline decide whether it is worth it.",
-      routeTitle: "How an air import is planned",
+      routeTitle: "How an air import into Kathmandu is planned",
       stages: [
         { title: "01 / Decide whether air fits", copy: "Air suits spare parts, samples, medicines, electronics and anything a deadline makes urgent. Bulky, heavy or low-value cargo usually travels better by sea or road." },
         { title: "02 / Size the shipment", copy: "Airlines charge on the greater of the actual weight and the volumetric weight. Accurate dimensions, and packing that wastes no space, keep the chargeable weight down." },
@@ -89,7 +89,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       title: "HS codes and import duty in Nepal",
       description: "What an HS code is, how Nepal's customs duty, excise and VAT follow from it, and how to check a classification before you ship.",
       intro: "The HS code decides which duty rate applies to your goods and whether they need a permit. Settling it before shipping avoids paying the wrong rate, or waiting at the border while customs reclassifies.",
-      routeTitle: "From description to duty",
+      routeTitle: "How a description becomes a duty rate",
       stages: [
         { title: "01 / Describe the goods precisely", copy: "Classification follows what the goods are made of, what they do and how they are presented. A precise invoice description, with materials and model numbers, is what a correct code is built from." },
         { title: "02 / Find the tariff line", copy: "The first six digits of an HS code are shared internationally; Nepal's tariff adds its own digits and sets a duty rate for each line. The tariff is revised with each year's budget, so check the current year's rates." },
@@ -111,7 +111,7 @@ export const practicalGuides: Record<SiteLocale, Record<PracticalGuideSlug, Guid
       title: "Free time, demurrage and detention",
       description: "What free time, demurrage, detention and port storage mean on an import into Nepal, why landlocked shipments run them up, and how to keep them down.",
       intro: "Every container comes with a number of free days. After that, the terminal and the shipping line each charge by the day, and on a landlocked route the days add up quickly.",
-      routeTitle: "Keeping the clock in check",
+      routeTitle: "When each charge starts",
       stages: [
         { title: "01 / Know which clock is running", copy: "Demurrage is the line's charge for a full container held at the port or terminal; detention is its charge for keeping the container outside; storage is the terminal's charge for the space. Each has its own free time and rate." },
         { title: "02 / Be ready before arrival", copy: "Most of these charges build up while cargo waits for documents, payment or permits. Having the delivery order, transit documents, duty money and permits ready before the vessel arrives is the biggest saving." },

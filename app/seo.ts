@@ -48,6 +48,17 @@ export function languageAlternates(path: string) {
   return { ...languages, "x-default": absoluteUrl(sitePath("en", basePath)) };
 }
 
+/* A title gets about 60 characters in a result. The brand suffix is 21 of them,
+ * so appending it to a long title pushes the words a buyer searched for out of
+ * the snippet. Short titles keep the suffix; long ones keep the query. */
+const brandSuffix = " | Kapileshwor Cargo";
+const titleBudget = 60;
+
+export function pageTitle(title: string) {
+  if (title.includes("Kapileshwor Cargo")) return title;
+  return title.length + brandSuffix.length <= titleBudget ? `${title}${brandSuffix}` : title;
+}
+
 export function createPageMetadata({
   title,
   description,
@@ -60,7 +71,7 @@ export function createPageMetadata({
   noIndex?: boolean;
 }): Metadata {
   const url = absoluteUrl(path);
-  const resolvedTitle = title.includes("Kapileshwor Cargo") ? title : `${title} | Kapileshwor Cargo`;
+  const resolvedTitle = pageTitle(title);
 
   return {
     title: { absolute: resolvedTitle },
