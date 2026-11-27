@@ -23,6 +23,11 @@ import { OpsBadge, OpsButton, OpsEmptyState, OpsFact, OpsFacts, OpsField, OpsIns
 import { SavedFilterViews } from "../saved-filter-views";
 import { StaffAssignmentPicker } from "../staff-assignment-picker";
 import { readable } from "../readable";
+import { laneFor, laneSlugs, type LaneSlug } from "../../lane-data";
+
+function laneName(slug: string) {
+  return laneSlugs.includes(slug as LaneSlug) ? laneFor("en", slug as LaneSlug).title : slug;
+}
 
 const emptyForm: CrmCreateCustomerInput = {
   entityKind: "company", displayName: "", legalName: "", tradingName: "", relationshipTypes: ["customer"], accountStatus: "prospect", leadStage: "new_lead", leadSource: "", primaryEmail: "", primaryPhone: "", website: "", industry: "", taxId: "", country: "Nepal", primaryBranch: "Kathmandu", accountManagerName: "", accountManagerEmail: "", accountManagerPhone: "", billingEmail: "", preferredCurrency: "NPR", paymentTermsDays: "", creditLimit: "", outstandingBalance: "", pricingNotes: "", markupPercent: "", preferredCarriers: [], transportPreferences: [], tags: [], internalSummary: "",
@@ -224,6 +229,8 @@ function CustomerInspector({ customer, commercialVisible, inspectorRef, onClose 
         <OpsInspectorSection title="Relationship">
           <OpsFacts>
             <OpsFact label="Lead stage">{crmLeadStageLabels[customer.lead_stage]}</OpsFact>
+            {customer.lane_slug ? <OpsFact label="Corridor">{laneName(customer.lane_slug)}</OpsFact> : null}
+            {customer.enquiry_source ? <OpsFact label="Enquiry source">{customer.enquiry_source}</OpsFact> : null}
             <OpsFact label="Primary branch">{customer.primary_branch}</OpsFact>
             <OpsFact label="Account manager">{customer.account_manager_name || "Unassigned"}</OpsFact>
             <OpsFact label="Manager email">{customer.account_manager_email || "Not set"}</OpsFact>

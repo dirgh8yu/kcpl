@@ -6,6 +6,7 @@ import { recomputeCustomerFinance } from "../finance/finance.server";
 import { staffCanAccessBranch, type KcplStaffContext } from "../staff-directory.server";
 import { crmCurrencies, kcplBranches, type CrmCurrency, type KcplBranch } from "./crm-data";
 import { createCrmCustomer, findCrmDuplicates } from "./crm-data.server";
+import { customerCorridorFromQuote } from "./crm-corridor";
 
 type Actor = { name: string; email: string };
 
@@ -283,6 +284,9 @@ export async function createCrmCustomerFromQuote(
   if (!canonicalBranch) return { kind: "invalid_branch" as const };
   if (context && !canMutateBranchValue(context, canonicalBranch)) return { kind: "forbidden" as const };
 
+  /* The corridor and the source live on the customer too, so win rate per
+   * corridor is readable from customer data without replaying the quote. */
+  const corridor = customerCorridorFromQuote(quote.data() as Record<string, unknown>);
   const displayName = text(quote.get("company_name"), text(quote.get("contact_name"), "New customer")).trim();
   const primaryEmail = text(quote.get("contact_email")).trim().toLowerCase();
   const primaryPhone = text(quote.get("phone")).trim();
@@ -304,6 +308,10 @@ export async function createCrmCustomerFromQuote(
     accountStatus: "prospect",
     leadStage: "quote_requested",
     leadSource: "website",
+    laneSlug: corridor.laneSlug ?? "",
+    laneOrigin: corridor.laneOrigin ?? "",
+    laneDestination: corridor.laneDestination ?? "",
+    enquirySource: corridor.enquirySource ?? "",
     primaryEmail,
     primaryPhone,
     website: "",

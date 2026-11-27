@@ -7,6 +7,7 @@ import { services } from "../services-data";
 import { siteLocaleTags, sitePath, siteText, type SiteLocale, type SiteTextKey } from "../site-i18n";
 import { tools } from "../tool-data";
 import { faqNodeLane, graph, laneServiceNode } from "../structured-data";
+import { laneIndexItemListNode } from "../lane-index-schema";
 import { SiteShell } from "./site-chrome";
 import { StructuredData } from "./structured-data";
 import { Breadcrumbs } from "./breadcrumbs";
@@ -92,6 +93,7 @@ export function LanesIndexPage({ locale }: { locale: SiteLocale }) {
 
   return (
     <SiteShell locale={locale} path="/lanes">
+      <StructuredData data={graph([laneIndexItemListNode(locale)])}/>
       <PageHead title={index.title} intro={index.intro} breadcrumb={<Breadcrumbs locale={locale} path="/lanes"/>}/>
       <Lined reveal>
         <Stop title={index.corridorsTitle}>
