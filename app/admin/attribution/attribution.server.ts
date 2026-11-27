@@ -2,6 +2,21 @@ import { firebaseAdminDb, firebaseRuntimeConfigured } from "../../firebase-admin
 import { buildAttributionReport, type AttributionReport } from "./attribution";
 
 /**
+ * The same bounded read the report uses, handed back as raw records so the
+ * tracker download can build rows with the corridor columns already filled.
+ */
+export async function loadQuoteRecordsForTracker(): Promise<Array<Record<string, unknown>> | null> {
+  if (!firebaseRuntimeConfigured()) return null;
+  try {
+    const snapshot = await firebaseAdminDb().collection("quotes").orderBy("created_at", "desc").limit(2000).get();
+    return snapshot.docs.map((doc) => doc.data() as Record<string, unknown>);
+  } catch (error) {
+    console.error("KCPL quote tracker export failed", error);
+    return null;
+  }
+}
+
+/**
  * The source rollup is deliberately bounded. It is a management view of lead
  * origin, not a second copy of the quote book: 2,000 recent enquiries is more
  * than enough to see which tools and campaigns produce work, and keeps the

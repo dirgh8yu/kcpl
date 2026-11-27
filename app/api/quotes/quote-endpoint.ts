@@ -37,8 +37,6 @@ export type QuoteEndpointDeps = {
   firestoreStore: () => Promise<QuoteRecordStore>;
   crmMatcher: QuoteCrmMatcher;
   rateLimitStore: () => Promise<RateLimitStore>;
-  /** Defaults to the same environment check the route has always used. */
-  storageConfigured?: () => boolean;
 };
 
 type QuoteEndpointTestHooks = {
@@ -158,13 +156,12 @@ function createReference() {
   return `KCPL-Q-${date}-${suffix}`;
 }
 
-export function firebaseConfigured() {
+/** The guard's rule, unchanged: storage exists only where Firebase is configured. */
+function firebaseConfigured() {
   return Boolean(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 }
 
 export function createQuoteEndpoint(deps: QuoteEndpointDeps) {
-  const storageConfigured = deps.storageConfigured ?? firebaseConfigured;
-
   return async function POST(request: Request): Promise<Response> {
     const contentType = request.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("application/json")) {
@@ -195,7 +192,7 @@ export function createQuoteEndpoint(deps: QuoteEndpointDeps) {
     // same environment check as before.
     const store = testHooks.store !== undefined
       ? testHooks.store
-      : storageConfigured() ? await deps.firestoreStore() : null;
+      : firebaseConfigured() ? await deps.firestoreStore() : null;
     if (!store) {
       return json({ ok: false, error: "Quote storage is not configured yet. Please email KCPL instead." }, 503);
     }

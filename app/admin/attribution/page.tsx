@@ -1,5 +1,5 @@
 import "../organisation-premium.css";
-import { Megaphone } from "lucide-react";
+import { Download, Megaphone } from "lucide-react";
 import { getAdminAccess } from "../admin-auth";
 import { OpsBadge, OpsEmptyState, OpsMetric, OpsMetricStrip, OpsPage, OpsPageHeader, OpsSurface, OpsTableWrap } from "../operations-ui";
 import { OperationsShell } from "../operations-shell";
@@ -63,6 +63,7 @@ export default async function AttributionPage() {
         title="Lead sources"
         description="Where enquiries come from, and what those enquiries were later quoted and won."
         meta={<span>Last 2,000 quotes</span>}
+        actions={<a href="/api/admin/attribution/tracker" className="ops-button" data-variant="secondary" data-size="sm" download><Download size={14} strokeWidth={1.75} aria-hidden="true"/>Download tracker CSV</a>}
       />
       <div className="ops-content">
         <OpsMetricStrip columns={4}>

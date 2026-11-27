@@ -1,4 +1,4 @@
-import { createQuoteEndpoint, type QuoteCrmMatcher, type QuoteRecordStore } from "./quote-endpoint.ts";
+import { createQuoteEndpoint } from "./quote-endpoint.ts";
 
 /*
  * The Firestore wiring for the public quote endpoint. The request path itself
@@ -8,12 +8,8 @@ import { createQuoteEndpoint, type QuoteCrmMatcher, type QuoteRecordStore } from
  * module graph until a submission actually needs it.
  */
 
-export async function POST(request: Request) {
-  return post(request);
-}
-
-const post = createQuoteEndpoint({
-  async firestoreStore(): Promise<QuoteRecordStore> {
+export const POST = createQuoteEndpoint({
+  async firestoreStore() {
     const { firebaseAdminDb } = await import("../../firebase-admin.server");
     return {
       async create(reference, record) {
@@ -29,4 +25,4 @@ const post = createQuoteEndpoint({
     const { firestoreQuoteRateLimitStore } = await import("./quote-rate-limit.server");
     return firestoreQuoteRateLimitStore();
   },
-} satisfies Parameters<typeof createQuoteEndpoint>[0] & { crmMatcher: QuoteCrmMatcher });
+});
