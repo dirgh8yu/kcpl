@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { absoluteUrl } from "../seo";
 import { laneFor, laneIndex, laneSlugs, type Lane, type LaneSlug } from "../lane-data";
+import { postsForLane } from "../blog-lane-links";
 import { guides } from "../guide-data";
 import { services } from "../services-data";
 import { siteLocaleTags, sitePath, siteText, type SiteLocale, type SiteTextKey } from "../site-i18n";
@@ -44,6 +45,10 @@ const serviceLabel = (locale: SiteLocale, href: string) => {
 
 export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug }) {
   const lane = laneFor(locale, slug);
+  /* The blog's notes on this corridor, in the blog's own reading order. The notes
+   * are written in English and have no translation, so the list is marked as
+   * English inside a page that may be in any of the four languages. */
+  const notes = postsForLane(slug);
   const confirmed = new Intl.DateTimeFormat(siteLocaleTags[locale], {
     day: "numeric",
     month: "long",
@@ -82,6 +87,15 @@ export function LanePage({ locale, slug }: { locale: SiteLocale; slug: LaneSlug 
             <li><Link href={sitePath(locale, "/guides/cargo-from-india-to-nepal")}>{guides[locale]["cargo-from-india-to-nepal"].title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
           </ul>
         </Stop>
+        {notes.length ? (
+          <Stop title={siteText(locale, "chrome.blog")}>
+            <ul className="link-list" lang={siteLocaleTags.en}>
+              {notes.map((post) => (
+                <li key={post.slug}><Link href={sitePath(locale, `/blog/${post.slug}`)}>{post.title}<ArrowRight size={16} weight="bold" aria-hidden="true"/></Link></li>
+              ))}
+            </ul>
+          </Stop>
+        ) : null}
       </Lined>
     </SiteShell>
   );

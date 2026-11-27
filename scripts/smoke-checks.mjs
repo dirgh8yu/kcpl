@@ -131,6 +131,112 @@ export function sitemapProblems({ xml, origin }) {
   return problems;
 }
 
+/** The calculators, in the order the tools index lists them. */
+export const toolSlugs = ["duty-estimate", "storage-charges", "volume-weight"];
+
+/**
+ * A calculator page publishes exactly one WebApplication and the one trail the
+ * shell renders for every page. Two of either is as wrong as none: a duplicate
+ * means the page is stating itself twice, and a parser cannot tell which wins.
+ */
+export function toolPageProblems({ html, prefix = "", slug, origin }) {
+  const problems = [];
+  const url = `${origin}${prefix}/tools/${slug}`;
+  const nodes = jsonLdNodes(html);
+  const apps = nodes.filter((node) => node && node["@type"] === "WebApplication");
+  if (apps.length !== 1) problems.push(`${apps.length} WebApplication nodes, expected 1`);
+  else {
+    const app = apps[0];
+    if (trimmed(app.url) !== url) problems.push(`WebApplication url ${trimmed(app.url) || "(none)"} is not ${url}`);
+    if (!trimmed(app.name)) problems.push("WebApplication has no name");
+    if (!trimmed(app.operatingSystem)) problems.push("WebApplication has no operatingSystem");
+    if (!app.provider || !app.provider["@id"]) problems.push("WebApplication has no provider @id");
+  }
+  const trails = nodes.filter((node) => node && node["@type"] === "BreadcrumbList");
+  if (trails.length !== 1) problems.push(`${trails.length} BreadcrumbList nodes, expected 1`);
+  else {
+    const items = Array.isArray(trails[0].itemListElement) ? trails[0].itemListElement : [];
+    const last = items[items.length - 1];
+    if (items.length < 3) problems.push(`breadcrumb has ${items.length} items, expected home, tools and the page`);
+    else if (trimmed(last && last.item) !== url) problems.push(`breadcrumb ends at ${trimmed(last && last.item) || "(none)"}, not ${url}`);
+    items.forEach((item, index) => {
+      if (item.position !== index + 1) problems.push(`breadcrumb item ${index + 1} has position ${item.position}`);
+    });
+  }
+  if (!html.includes(`rel="canonical" href="${url}"`)) problems.push(`canonical is not ${url}`);
+  return problems;
+}
+
+/** A guide page keeps the questions it prints as FAQ schema, with answers, and its canonical. */
+export function guidePageProblems({ html, prefix = "", slug, origin }) {
+  const problems = [];
+  const nodes = jsonLdNodes(html);
+  const faqs = nodes.filter((node) => node && node["@type"] === "FAQPage");
+  if (faqs.length !== 1) problems.push(`${faqs.length} FAQPage nodes, expected 1`);
+  else {
+    const questions = Array.isArray(faqs[0].mainEntity) ? faqs[0].mainEntity : [];
+    if (questions.length === 0) problems.push("FAQPage has no questions");
+    for (const question of questions) {
+      if (!trimmed(question.name)) problems.push("a FAQPage question has no name");
+      if (!question.acceptedAnswer || !trimmed(question.acceptedAnswer.text)) problems.push(`question "${trimmed(question.name)}" has no answer`);
+    }
+  }
+  const url = `${origin}${prefix}/guides/${slug}`;
+  if (!html.includes(`rel="canonical" href="${url}"`)) problems.push(`canonical is not ${url}`);
+  return problems;
+}
+
+/** The tracker still opens with its entry box, and still hands readers to the portal. */
+export function trackPageProblems(html) {
+  const problems = [];
+  if (!/class="track-box"/.test(html)) problems.push("no tracking entry box");
+  if (!/<form[^>]*class="box-form"/.test(html)) problems.push("no tracking form");
+  if (!html.includes('href="/portal"')) problems.push("no customer-portal handoff");
+  return problems;
+}
+
+const escaped = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Crawlers get a wildcard rule, the API kept out of the index, and the sitemap named. */
+export function robotsProblems({ status, body, origin }) {
+  const problems = [];
+  const text = body ?? "";
+  if (status !== 200) problems.push(`/robots.txt answered ${status}`);
+  if (!/user-agent:\s*\*/i.test(text)) problems.push("no wildcard user-agent group");
+  if (!/disallow:\s*\/api\/?/i.test(text)) problems.push("the API is not disallowed");
+  if (/^disallow:\s*\/\s*$/im.test(text)) problems.push("robots.txt disallows the whole site");
+  if (!new RegExp(`sitemap:\\s*${escaped(origin)}/sitemap\\.xml`, "i").test(text)) problems.push(`no sitemap line for ${origin}/sitemap.xml`);
+  return problems;
+}
+
+/**
+ * A corridor that does not exist answers 404. A 200 that carries the lane's own
+ * Service schema means a mistyped or retired slug is being served as a real
+ * corridor, which is the soft 404 a crawler indexes.
+ */
+export function laneNotFoundProblems({ status, html, slug }) {
+  const problems = [];
+  if (status !== 404) problems.push(`/lanes/${slug} answered ${status}, expected 404`);
+  const nodes = jsonLdNodes(html ?? "");
+  if (nodes.some((node) => node && node["@type"] === "Service" && trimmed(node["@id"]).includes(`/lanes/${slug}`))) {
+    problems.push("the response still publishes lane Service schema");
+  }
+  return problems;
+}
+
+/**
+ * A lane page answers the notes that link it. The blog to lane link is only half
+ * the trail: a reader on the corridor page should reach the note that discusses
+ * it, and a lane that links none is the one-way link this check exists for.
+ */
+export function laneNoteProblems({ html, slug, notes }) {
+  const problems = [];
+  const hrefs = new Set([...html.matchAll(/href="(\/blog\/[a-z0-9-]+)"/g)].map((match) => match[1]));
+  if (hrefs.size === 0) problems.push(`${slug} links no blog note`);
+  for (const note of notes) if (!hrefs.has(`/blog/${note}`)) problems.push(`${slug} omits its note ${note}`);
+  return problems;
+}
+
 /** The private surfaces answer as private: the tracker refuses and the inbox ships no records. */
 export function adminGuardProblems({ trackerStatus, trackerBody, enquiriesHtml }) {
   const problems = [];

@@ -295,6 +295,28 @@ export function blogPostingNode(slug: string) {
   };
 }
 
+/**
+ * A tool page is an application the reader operates on the page, not a document
+ * about one, so it is a WebApplication rather than a WebPage. It restates only
+ * what the page prints: its title, its description, and that it runs in a
+ * browser. The trail above it is the shell's breadcrumb, not a second one.
+ */
+export function toolApplicationNode(locale: SiteLocale, slug: ToolSlug) {
+  const page = tools[locale][slug];
+  const path = sitePath(locale, `/tools/${slug}`);
+  return {
+    "@type": "WebApplication",
+    "@id": `${absoluteUrl(path)}#app`,
+    url: absoluteUrl(path),
+    name: page.title,
+    description: page.description,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    inLanguage: siteLocaleTags[locale],
+    provider: { "@id": organizationId },
+  };
+}
+
 /** One @graph per page rather than a stack of script tags, so the nodes can
  * reference each other by @id instead of repeating themselves. */
 export function graph(nodes: Array<Record<string, unknown> | null>) {

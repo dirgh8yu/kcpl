@@ -1,3 +1,4 @@
+import { blogPosts } from "./blog-data.ts";
 import { laneSlugs, type LaneSlug } from "./lane-data.ts";
 
 /*
@@ -39,6 +40,18 @@ const serviceLanes: Record<string, LaneSlug[]> = {
   "/services/road-freight": ["kolkata-to-birgunj", "nepal-to-tibet"],
   "/services/project-cargo": ["nepal-to-tibet"],
 };
+
+/*
+ * The same rule read backwards: the notes that point at a corridor, so a lane
+ * page can list them. Derived from `laneLinksForPost` rather than kept by hand,
+ * because a hand-kept list drifts and leaves a note that links a lane the lane
+ * page never answers -- a one-way link is the bug this function exists to stop.
+ */
+export function postsForLane(lane: LaneSlug) {
+  return blogPosts
+    .filter((post) => laneLinksForPost(post).includes(lane))
+    .sort((a, b) => b.published.localeCompare(a.published));
+}
 
 export function laneLinksForPost(post: LaneSource): LaneSlug[] {
   const text = `${post.title} ${post.description} ${post.intro}`;
