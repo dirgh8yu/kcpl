@@ -67,6 +67,7 @@ Undecided or not supplied yet: WhatsApp number, Google Analytics ID, transit ran
 - Storage, confirmed as KCPL's own: over 1,000 sqm air cargo, over 6,000 sqm road cargo.
 - Three anonymous movement stories in `app/site-i18n.ts`. They stay anonymous. Four to six more are expected within three months.
 - Established 2015. Managing Director Ramesh Mishra.
+- Staff: more than 25, shown as "25+". The owner's figure, given 27 November 2026.
 - Photographs: illustrative Unsplash pictures listed in `docs/public-photo-sources.md`. They do not show KCPL's cargo, staff or facilities. Real KCPL photographs exist in mixed quality, taken on phones, and have not been supplied yet.
 
 Not on hand, and not to be invented: shipment volumes or any other company numbers, testimonials, exact NEA project names and KCPL's role on each, Ramesh Mishra's portrait.

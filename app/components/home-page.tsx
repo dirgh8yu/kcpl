@@ -93,7 +93,7 @@ export function HomePage({ locale }: { locale: SiteLocale }) {
           <dl className="figures">
             <div><dt><b>2015</b>{t("home.fact_established")}</dt><dd>{t("company.established_where")}</dd></div>
             <div><dt><b>2022–25</b>{t("awards.label")}</dt><dd>{t("awards.issuer")}</dd></div>
-            <div><dt><b>6</b>{t("home.credibility_staff")}</dt><dd>{t("network.staffed_places")}</dd></div>
+            <div><dt><b>25+</b>{t("home.credibility_staff")}</dt><dd>{t("network.staffed_places")}</dd></div>
             <div><dt><b>6,000+</b>{t("home.credibility_storage")}</dt><dd>{t("home.credibility_storage_detail")}</dd></div>
           </dl>
         </Stop>

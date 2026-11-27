@@ -148,7 +148,7 @@ const en = {
 
   /* Home */
   "home.meta_title": "Kapileshwor Cargo | Freight Forwarding in Nepal",
-  "home.meta_description": "Kathmandu-based KCPL coordinates air, ocean and road freight, customs documentation and project cargo for importers and exporters into and out of Nepal.",
+  "home.meta_description": "Freight forwarder in Kathmandu since 2015. Sea, air and road cargo into and out of Nepal, with customs and delivery planned by one team on the whole route.",
   "home.hero_title": "Freight forwarding into and out of Nepal.",
   "home.hero_intro": "Sea, air and road, through India and China. Planned in Kathmandu.",
   "home.hero_cta": "Request a quote",
@@ -160,7 +160,7 @@ const en = {
   "home.index_resources": "Guides & tools",
 
   "home.capability_title": "Freight, clearance and delivery on one plan.",
-  "home.capability_intro": "Delays often begin between documents, customs and carrier deadlines. One team keeps those handoffs together.",
+  "home.capability_intro": "Most delays start in the gaps between documents, customs and carrier deadlines. One KCPL team plans every handoff, from the origin port to the signed receipt.",
   "home.cap_1_title": "Freight",
   "home.cap_1_copy": "Air, ocean and road freight, FCL and LCL, chosen around the cargo, the deadline and the route rather than a default lane.",
   "home.cap_2_title": "Customs and documents",
@@ -229,8 +229,8 @@ const en = {
   "work.story_3_coordination": "KCPL reviewed the bill-of-lading details, followed original documents and Kolkata-side clearance and dispatch, then supplied unloading photographs and a delivery receipt.",
   "work.story_3_outcome": "The containers were unloaded at Nepalgunj and a receipt was sent on 17 April 2026. This account does not claim delivery beyond Nepalgunj.",
 
-  "home.credibility_title": "A Kathmandu freight forwarder since 2015.",
-  "home.credibility_copy": "KCPL works from Kathmandu, with counterpart agents abroad and customs capability at Nepal's entry points.",
+  "home.credibility_title": "Our own people at the port, the border and the door.",
+  "home.credibility_copy": "KCPL staff follow each shipment through the port, the border and customs, then close it with a signed delivery receipt. Counterpart agents abroad cover the other end.",
   "home.credibility_award": "Export Excellence Award",
   "home.credibility_award_detail": "Lalitpur Chamber of Commerce, 2022-2025",
   "home.credibility_storage": "Secured storage",
@@ -245,6 +245,7 @@ const en = {
   "home.cta_title": "Tell us the cargo, the route and the date.",
   "home.cta_copy": "Send the origin, destination, mode, weight and dimensions, and KCPL will come back on how the movement should be planned.",
   "home.cta_primary": "Request a quote",
+  "home.cta_note": "KCPL replies within one working day, with the route, the equipment and the price for your actual cargo.",
   "home.cta_secondary": "Contact the team",
 
   /* Services */
@@ -257,7 +258,7 @@ const en = {
   "services.how_title": "How it runs",
   "services.lanes_title": "Where it runs",
   "services.docs_title": "Documents and records",
-  "services.ask": "Useful to tell us",
+  "services.ask": "What we need for a quote",
   "services.back": "All services",
   "services.related": "Often planned with",
   "services.questions_title": "Planning questions",
@@ -283,7 +284,7 @@ const en = {
   "svc.ocean.p4": "Draft bill of lading review before release, then original document follow-up and endorsement.",
   "svc.ocean.p5": "IGM amendments, transit paperwork and empty-container return after de-stuffing.",
   "svc.ocean.p6": "Destination and local charge reconciliation, so the invoice matches what was quoted.",
-  "svc.ocean.ask": "Container type and count or CBM, origin port, incoterm, final delivery address.",
+  "svc.ocean.ask": "Container type and count or CBM, origin port, Incoterm, final delivery address.",
   "svc.ocean.how": "Full container and consolidated cargo both move through an Indian gateway before they reach Nepal. The draft bill of lading is reviewed before release rather than after, originals are endorsed and chased, the manifest is amended where it needs correcting, and the delivery order is arranged with the handling parties at the port. Rail-linked movement under liner haulage to the inland container depot at Birgunj is routine, and de-stuffing is planned for the border or the consignee warehouse before the container gets there.",
   "svc.ocean.lanes": "Imports come from Shanghai, Ningbo, Qingdao, Shekou, Shenzhen, Hong Kong, Bangkok and Port Klang, routed through Kolkata, Haldia or Visakhapatnam. Exports go out through Kolkata to the United States, Canada, Mexico, the United Kingdom, Germany, the Netherlands, Switzerland, Australia and Indonesia.",
   "svc.ocean.docs": "Master and house bills of lading, draft review and endorsement, manifest amendment, transit and ECTS paperwork, delivery order, letter of authority, de-stuffing record and empty container return.",
@@ -383,10 +384,9 @@ const en = {
   "svc.delivery.a2": "Yes, where the site and transport plan support it. Agree the piece list, receiving contact, unloading equipment and hours for each drop in advance; each phase should have its own receipt so missing or damaged pieces are not hidden inside a final total.",
 
   "quote.meta_title": "Request a Freight Quote in Nepal",
-  "quote.meta_description": "Send your route, mode, weight and dimensions to Kapileshwor Cargo and the operations desk will come back on how the movement should be planned.",
+  "quote.meta_description": "Send your route, cargo and dates to Kapileshwor Cargo in Kathmandu. KCPL replies within one working day with the route, the equipment and the price.",
   "quote.title": "Request a quote",
-  "quote.intro": "Route, mode, weight and dimensions are what it takes to price a movement properly. Anything you already know about the deadline helps.",
-
+  "quote.intro": "Route, mode, weight and size are enough to price a movement properly. Estimates are fine: say so in the notes, along with any deadline.",
   /* Privacy */
   "privacy.meta_title": "Privacy",
   "privacy.meta_description": "What Kapileshwor Cargo collects through this website, why it is held, and how to ask for it to be removed.",
@@ -539,7 +539,7 @@ const en = {
   "home.mode_unsure": "Not sure",
   "home.plan_origin_hint": "Shanghai, China",
   "home.plan_destination_hint": "Kathmandu, Nepal",
-  "home.plan_note_sea": "Ocean to an Indian gateway, then road across the border. KCPL has staff at every stop on this line.",
+  "home.plan_note_sea": "Ocean to an Indian port, then rail or road across the border. KCPL staff work at every stop on this line.",
   "home.plan_note_air": "Air into or out of Kathmandu, where a deadline decides the mode.",
   "home.plan_note_road": "Road through Kerung, Tatopani or Birgunj, into and out of Nepal.",
   "home.plan_note_unsure": "Not sure of the mode? KCPL suggests one from the cargo and the date.",
@@ -698,7 +698,7 @@ const ne: Record<SiteTextKey, string> = {
 
   /* Home */
   "home.meta_title": "कपिलेश्वर कार्गो | नेपालमा फ्रेट फर्वार्डिङ",
-  "home.meta_description": "काठमाडौँमा २०१५ मा स्थापित कपिलेश्वर कार्गोले नेपालका आयातकर्ता र निर्यातकर्ताका लागि एयर, ओसन र रोड फ्रेट, भन्सार कागजात र प्रोजेक्ट कार्गो समन्वय गर्छ।",
+  "home.meta_description": "सन् २०१५ देखि काठमाडौँको फ्रेट फर्वार्डर। नेपाल भित्र र बाहिर समुद्री, हवाई र सडक कार्गो, भन्सार र डेलिभरीसहित एउटै टोलीले योजना गर्छ।",
   "home.hero_title": "पूरै रुटको योजना एउटै टोलीले बनाउँछ।",
   "home.hero_intro": "हवाई, समुद्री, सीमापार सडक र प्रोजेक्ट कार्गो। आयातकर्ता र निर्यातकर्ताका लागि गेटवे, भन्सार र डेलिभरी काठमाडौंको एउटै टोलीले समन्वय गर्छ।",
   "home.hero_cta": "कोटेसन माग्नुहोस्",
@@ -710,7 +710,7 @@ const ne: Record<SiteTextKey, string> = {
   "home.index_resources": "मार्गदर्शिका र उपकरण",
 
   "home.capability_title": "फ्रेट, भन्सार र डेलिभरीको एउटै योजना।",
-  "home.capability_intro": "धेरैजसो ढिलाइ ट्रान्सपोर्टको कारणले हुँदैन। कागजात, भन्सारको आवश्यकता र क्यारियरको समयसीमा जोडिने ठाउँमा कसैले जिम्मा नलिँदा हुन्छ।",
+  "home.capability_intro": "धेरैजसो ढिलाइ कागजात, भन्सार र क्यारियरको समयसीमाबीचको खाडलमा सुरु हुन्छ। मूल बन्दरगाहदेखि हस्ताक्षरित रसिदसम्म हरेक हस्तान्तरण KCPL को एउटै टोलीले योजना गर्छ।",
   "home.cap_1_title": "फ्रेट",
   "home.cap_1_copy": "एयर, ओसन र रोड फ्रेट, FCL र LCL: कार्गो, समयसीमा र रुट हेरेर छनोट गरिन्छ, बानीको लेन हेरेर होइन।",
   "home.cap_2_title": "भन्सार र कागजात",
@@ -779,8 +779,8 @@ const ne: Record<SiteTextKey, string> = {
   "work.story_3_coordination": "KCPL ले बिल अफ लेडिङ विवरण जाँच्यो, मूल कागजात र कोलकाताको भन्सार तथा डिस्प्याच पछ्यायो अनि अनलोडिङका तस्बिर र डेलिभरी रसिद पठायो।",
   "work.story_3_outcome": "कन्टेनर नेपालगन्जमा अनलोड भए र १७ अप्रिल २०२६ मा रसिद पठाइयो। यो विवरणले नेपालगन्जभन्दा अगाडिको डेलिभरी दाबी गर्दैन।",
 
-  "home.credibility_title": "सन् २०१५ देखि काठमाडौंमा रहेको फ्रेट फर्वार्डर।",
-  "home.credibility_copy": "KCPL काठमाडौँबाट काम गर्छ, विदेशमा समकक्षी एजेन्ट र नेपालका प्रवेश नाकाहरूमा भन्सार क्षमतासहित।",
+  "home.credibility_title": "बन्दरगाह, नाका र तपाईंको ढोकासम्म हाम्रै कर्मचारी।",
+  "home.credibility_copy": "KCPL का कर्मचारीले हरेक शिपमेन्ट बन्दरगाह, नाका र भन्सार हुँदै पछ्याउँछन्, र हस्ताक्षरसहितको डेलिभरी रसिदसँग टुङ्ग्याउँछन्। अर्को छेउ विदेशका समकक्षी एजेन्टले हेर्छन्।",
   "home.credibility_award": "निर्यात उत्कृष्टता पुरस्कार",
   "home.credibility_award_detail": "ललितपुर उद्योग वाणिज्य संघ, २०२२-२०२५",
   "home.credibility_storage": "सुरक्षित भण्डारण",
@@ -795,6 +795,7 @@ const ne: Record<SiteTextKey, string> = {
   "home.cta_title": "कार्गो, रुट र मिति भन्नुहोस्।",
   "home.cta_copy": "मूल, गन्तव्य, मोड, तौल र नाप पठाउनुहोस्। मुभमेन्ट कसरी योजना गर्ने भनेर KCPL जवाफ दिन्छ।",
   "home.cta_primary": "कोटेसन माग्नुहोस्",
+  "home.cta_note": "KCPL ले एक कार्यदिनभित्र तपाईंको कार्गोका लागि रुट, उपकरण र मूल्यसहित जवाफ दिन्छ।",
   "home.cta_secondary": "टोलीसँग सम्पर्क",
 
   /* Services */
@@ -807,7 +808,7 @@ const ne: Record<SiteTextKey, string> = {
   "services.how_title": "काम कसरी चल्छ",
   "services.lanes_title": "कहाँ-कहाँ चल्छ",
   "services.docs_title": "कागजात र अभिलेख",
-  "services.ask": "हामीलाई भन्दा राम्रो",
+  "services.ask": "कोटेसनका लागि चाहिने विवरण",
   "services.back": "सबै सेवाहरू",
   "services.related": "प्रायः सँगै",
   "services.questions_title": "योजना बनाउँदा सोधिने प्रश्नहरू",
@@ -933,10 +934,9 @@ const ne: Record<SiteTextKey, string> = {
   "svc.delivery.a2": "साइट र यातायात योजनाले अनुमति दिए सकिन्छ। प्रत्येक चरणको सामान सूची, प्राप्तकर्ता, अनलोडिङ उपकरण र समय पहिले मिलाउनुहोस्; हरेक चरणको छुट्टै रसिदले कमी वा क्षति लुक्न दिँदैन।",
 
   "quote.meta_title": "फ्रेट कोटेसन माग्नुहोस्",
-  "quote.meta_description": "रुट, मोड, तौल र नाप कपिलेश्वर कार्गोलाई पठाउनुहोस्; मुभमेन्ट कसरी योजना गर्ने भनेर सञ्चालन डेस्कले जवाफ दिन्छ।",
+  "quote.meta_description": "रुट, कार्गो र मिति काठमाडौँको कपिलेश्वर कार्गोलाई पठाउनुहोस्। KCPL ले एक कार्यदिनभित्र रुट, उपकरण र मूल्यसहित जवाफ दिन्छ।",
   "quote.title": "कोटेसन माग्नुहोस्",
-  "quote.intro": "मुभमेन्टको सही मूल्य निकाल्न रुट, मोड, तौल र नाप चाहिन्छ। समयसीमाबारे थाहा भएको कुरा थपे झनै राम्रो।",
-
+  "quote.intro": "मुभमेन्टको सही मूल्य निकाल्न रुट, मोड, तौल र नाप पर्याप्त हुन्छ। अनुमान पनि चल्छ: नोटमा त्यसो लेख्नुहोस्, र समयसीमा भए त्यो पनि।",
   /* Privacy */
   "privacy.meta_title": "गोपनीयता",
   "privacy.meta_description": "यो वेबसाइटमार्फत कपिलेश्वर कार्गोले के सङ्कलन गर्छ, किन राख्छ, र हटाउन कसरी अनुरोध गर्ने।",
@@ -1089,7 +1089,7 @@ const ne: Record<SiteTextKey, string> = {
   "home.mode_unsure": "थाहा छैन",
   "home.plan_origin_hint": "साङ्घाई, चीन",
   "home.plan_destination_hint": "काठमाडौं, नेपाल",
-  "home.plan_note_sea": "भारतीय गेटवेसम्म समुद्री मार्ग, त्यसपछि सडकबाट नाका पार। यो रुटका हरेक स्थानमा KCPL का कर्मचारी छन्।",
+  "home.plan_note_sea": "भारतीय बन्दरगाहसम्म समुद्री मार्ग, त्यसपछि रेल वा सडकबाट नाका पार। यो रुटका हरेक स्टपमा KCPL का कर्मचारी छन्।",
   "home.plan_note_air": "समयसीमाले मोड तय गर्दा काठमाडौं आउने वा जाने हवाई मार्ग।",
   "home.plan_note_road": "रक्सौल र वीरगन्ज हुँदै सीमापार सडक, अनि भित्री भागसम्म।",
   "home.plan_note_unsure": "मोड थाहा छैन? कार्गो र मितिका आधारमा KCPL ले सुझाव दिन्छ।",
